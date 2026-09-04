@@ -26,8 +26,11 @@ else
     docker run --detach \
         --name "${CONTAINER_NAME}" \
         --hostname "${CONTAINER_NAME}" \
+        --gpus all \
         --network host \
         --shm-size 8g \
+        --env NVIDIA_VISIBLE_DEVICES=all \
+        --env NVIDIA_DRIVER_CAPABILITIES=compute,utility \
         --volume "${PROJECT_ROOT}:/workspace" \
         --volume "${SDK_ROOT}:/opt/mtk:ro" \
         --volume "${DATASET_ROOT}:${DATASET_ROOT}:ro" \

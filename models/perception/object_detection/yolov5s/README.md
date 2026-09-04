@@ -69,6 +69,10 @@ MTK 补丁应用，不包含任何网络下载。`convert.sh` 按 MTK 官方 Neu
 升级到 MTK Converter 不支持的 2.x，或将 Ultralytics 升级到移除 `ultralytics.yolo`
 命名空间的新版本。转换开始前会执行 `pip check` 和关键模块导入检查。
 
+PyTorch 2.0.0 CUDA 11.8 使用 89 的 NVIDIA GPU 完成 TorchScript/ONNX 导出，PyTorch 和
+ONNX 基线精度评测也使用 GPU。MTK Converter 8.16.0 的公开接口没有 CUDA/GPU 选项，
+因此 INT8 PTQ 和 NCC 编译仍由 CPU 执行，不能将这两步描述为 GPU 加速。
+
 每一步会检查上一步产物，失败后立即停止。`convert.sh` 需要
 `/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images`
 作为校准图片来源；正式精度使用完整 COCO val2017，不复用校准结果冒充 mAP。

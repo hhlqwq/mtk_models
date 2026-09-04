@@ -34,6 +34,9 @@ else
 fi
 
 echo "[VERIFY] Python: $(python --version 2>&1)"
+echo "[VERIFY] 检查 NVIDIA GPU 透传。"
+nvidia-smi --query-gpu=index,name,driver_version,memory.total \
+    --format=csv,noheader
 python -c "import cv2, mtk_converter, numpy, onnx, onnxruntime; print('[VERIFY] Python 依赖导入成功。'); print('[VERIFY] mtk_converter:', mtk_converter.__version__)"
 test -x "${NP_ROOT}/neuron_sdk/host/bin/ncc-tflite"
 "${NP_ROOT}/neuron_sdk/host/bin/ncc-tflite" --version 2>&1 | head -n 5

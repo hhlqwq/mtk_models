@@ -3,6 +3,10 @@
 本目录定义 Genio 720 模型转换环境。容器名中的 `311` 对应 Python 3.11；该版本与服务器
 现有 NeuroPilot SDK 8.0.11 提供的 `mtk_converter 8.16.0 cp311` wheel 一致。
 
+容器通过 NVIDIA Container Toolkit 的 `--gpus all` 使用 89 的 GPU。GPU 用于 PyTorch/
+ONNX 导出和基线精度评测。MTK Converter 8.16.0 未提供 CUDA 执行选项，INT8 PTQ 与 NCC
+编译仍使用 CPU；板端最终推理由 Genio 720 NPU 执行。
+
 ## 创建
 
 ```bash

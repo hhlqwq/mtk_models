@@ -28,6 +28,12 @@ Python 3.11 虚拟环境。旧 YOLOv5 文档中的 Python 3.7 是历史转换链
 NCC 8.2.31 需要 SDK 自带的 `libc++.so.1`。容器只在 `/usr/local/lib` 建立该文件的软链接，
 不把整个 SDK `host/lib` 注册到动态链接器，避免 SDK 的 `libstdc++.so.6` 污染 ONNX Runtime。
 
+## GPU 使用边界
+
+89 的 Docker 容器通过 `--gpus all` 使用 NVIDIA GPU。GPU 用于 PyTorch/ONNX 导出及基线
+精度评测；MTK Converter 8.16.0 的 INT8 PTQ 和 NCC 编译没有 CUDA 执行接口，仍使用 CPU。
+最终部署性能只统计 92 的 Genio 720 NPU，不能用 89 的 GPU 性能替代板端结果。
+
 ## 数据集目录与原则
 
 89 服务器数据集根目录固定为：
