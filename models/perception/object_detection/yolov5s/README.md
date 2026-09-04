@@ -38,10 +38,20 @@ D:\code\github\mtk_models\models\perception\object_detection\yolov5s\models\yolo
 | `original/model_conversion_YOLOv5s_example_20240916.zip` | `8cb3ee3f7059a522e47fecd1be6983404e455e3f7069c19e9fe0a750df6a6fb7` |
 | `models/yolov5s.pt` | `8b3b748c1e592ddd8868022e8732fde20025197328490623cc16c6f24d0782ee` |
 
-89 服务器和 92 开发板不得联网下载上述文件。用户完成 GitHub 同步并手动放置权重后，才能
-继续下面的流程。
+89 服务器和 92 开发板不得联网下载上述模型、数据集或源码文件。用户完成 GitHub 同步并
+手动放置权重后，才能继续下面的流程。Docker 镜像和 Python 系统依赖仍可在 89 的 Docker
+环境内按项目约定安装。
 
 ## 服务器执行流程
+
+89 宿主机只在仓库目录执行命令：
+
+```bash
+cd /data/users/hailong.he/github/mtk_models
+docker exec -it hhl_g720_311 bash
+```
+
+宿主机仓库以可写方式映射到 Docker 内的 `/workspace`。进入容器后执行：
 
 ```bash
 cd /workspace/models/perception/object_detection/yolov5s
@@ -54,6 +64,10 @@ bash ./deploy/deploy_board.sh
 `download_original.sh` 名称为兼容统一交付结构而保留，实际只执行 SHA-256 校验、离线解压和
 MTK 补丁应用，不包含任何网络下载。`convert.sh` 按 MTK 官方 NeuroPilot Converter 流程，
 先导出 TorchScript 和 FP32 ONNX，再从 TorchScript 执行 INT8 PTQ。
+
+`deploy/constraints-py311.txt` 固定 Python 3.11 转换依赖，防止上游宽松版本范围将 NumPy
+升级到 MTK Converter 不支持的 2.x，或将 Ultralytics 升级到移除 `ultralytics.yolo`
+命名空间的新版本。转换开始前会执行 `pip check` 和关键模块导入检查。
 
 每一步会检查上一步产物，失败后立即停止。`convert.sh` 需要
 `/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images`
@@ -71,3 +85,15 @@ MTK 补丁应用，不包含任何网络下载。`convert.sh` 按 MTK 官方 Neu
 | 板端 Demo | 待执行 | `examples/output/` |
 | 正式精度 | 待执行 | `docs/accuracy.md` |
 | 正式性能 | 待执行 | `docs/benchmark.md` |
+
+## 全流程验收边界
+
+YOLOv5s 只有同时完成以下项目才视为交付完成：
+
+1. 在 `hhl_g720_311` 中生成 TorchScript、FP32 ONNX、INT8 TFLite 和 DLA。
+2. 在 92 的 Genio 720 EVK 上加载 DLA 并完成真实图片推理和检测框后处理。
+3. 报告预处理、纯 NPU、后处理及端到端延迟，并记录峰值内存。
+4. 使用同一 COCO val2017 评测集分别测量 PyTorch、ONNX 和 MTK NPU 的 mAP。
+5. 计算 ONNX 相对 PyTorch、MTK NPU INT8 相对 ONNX/PyTorch 的精度损失。
+
+少量样例只能证明部署链路和输出合理性，不能替代完整 COCO val2017 精度报告。

@@ -1,0 +1,11 @@
+# MTK Converter 8.16.0 要求 NumPy 版本低于 2.0。
+numpy==1.26.4
+
+# 固定仍提供 ultralytics.yolo 命名空间的兼容版本。
+ultralytics==8.0.111
+
+# 避免宽松依赖自动升级到未经当前工具链验证的 OpenCV 5。
+opencv-python==4.11.0.86
+
+# 避免后续版本提高最低 NumPy 版本并影响 MTK Converter。
+pandas==2.2.3
