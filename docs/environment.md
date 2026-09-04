@@ -34,6 +34,10 @@ NCC 8.2.31 需要 SDK 自带的 `libc++.so.1`。容器只在 `/usr/local/lib` �
 精度评测；MTK Converter 8.16.0 的 INT8 PTQ 和 NCC 编译没有 CUDA 执行接口，仍使用 CPU。
 最终部署性能只统计 92 的 Genio 720 NPU，不能用 89 的 GPU 性能替代板端结果。
 
+Torch 2.0 CUDA 11.8 wheel 内的 NVRTC 动态库采用哈希文件名。模型转换脚本会在 wheel 自带
+库目录建立 `libnvrtc.so` 标准名软链接，并执行一次 CUDA `Conv2d`，防止只检查设备可见但
+cuDNN 实际不可运行。
+
 ## 数据集目录与原则
 
 89 服务器数据集根目录固定为：
