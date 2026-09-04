@@ -1,4 +1,8 @@
 对标模型页面：https://huggingface.co/qualcomm/Yolo-v5
 上游源码：https://github.com/ultralytics/yolov5.git
-上游模型：https://github.com/ultralytics/assets/releases/download/v7.0/yolov5s.pt
+固定源码提交：485da42273839d20ea6bdaf142fd02c1027aba61
+源码压缩包：https://github.com/ultralytics/yolov5/archive/485da42.zip
+上游模型：https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.pt
+上游模型 SHA-256：8b3b748c1e592ddd8868022e8732fde20025197328490623cc16c6f24d0782ee
+MTK 官方补丁：https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/model-zoo/scripts/model_conversion_YOLOv5s_example_20240916.zip
 MTK 官方流程：https://genio.mediatek.com/doc/iot-aihub/ai_hub/model_zoo/litert_analytical/YOLOv5s.html

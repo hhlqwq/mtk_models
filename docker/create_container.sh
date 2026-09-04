@@ -18,7 +18,8 @@ if docker container inspect "${CONTAINER_NAME}" >/dev/null 2>&1; then
     docker start "${CONTAINER_NAME}" >/dev/null
 else
     echo "[2/4] 构建 Python 3.11 基础镜像。"
-    docker build --tag "${IMAGE_NAME}" --file "${PROJECT_ROOT}/docker/Dockerfile" \
+    docker build --progress=plain --network host \
+        --tag "${IMAGE_NAME}" --file "${PROJECT_ROOT}/docker/Dockerfile" \
         "${PROJECT_ROOT}"
 
     echo "[3/4] 创建 Genio 720 转换容器。"

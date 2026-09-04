@@ -54,12 +54,17 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现，用于率先�
 ssh ubuntu89
 cd /data/users/hailong.he/github/mtk_models
 source env.sh
-./docker/create_container.sh
-./docker/enter_container.sh
+bash ./docker/create_container.sh
+bash ./docker/enter_container.sh
 ```
 
-进入容器后，根据具体模型 README 执行下载、转换、编译和部署脚本。模型脚本不会自动下载
-正式评测数据集，也不会将缺少标注的样例推理结果写成正式精度。
+模型权重和数据集等大文件必须由用户下载到本机工作区，再由用户同步或放置到 89 服务器；
+89 服务器和 92 开发板禁止直接下载模型、数据集或补丁。允许由 Codex 在本机工作区下载并
+纳入 Git 的小型源码包、补丁和配置文件。服务器上的模型准备脚本只允许执行离线校验、解压
+和转换，不允许包含 `curl`、`wget`、`git clone` 或 Hugging Face 在线下载。
+
+进入容器后，根据具体模型 README 执行离线准备、转换、编译和部署脚本。正式评测数据集不会
+自动下载，也不会将缺少标注的样例推理结果写成正式精度。
 
 ## 模型目录规范
 
@@ -94,7 +99,7 @@ models/scenario_name/category_name/model_name/
 │   ├── model_int8.tflite
 │   └── model_int8.dla
 ├── deploy/
-│   ├── download_original.sh
+│   ├── download_original.sh  # 仅离线校验和展开，不执行网络下载。
 │   ├── convert.sh
 │   ├── build.sh
 │   ├── deploy_board.sh

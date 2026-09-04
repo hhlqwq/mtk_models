@@ -4,6 +4,8 @@
 
 - 对标页面：<https://huggingface.co/qualcomm/Yolo-v5>
 - 上游实现：<https://github.com/ultralytics/yolov5>
+- 固定源码提交：`485da42273839d20ea6bdaf142fd02c1027aba61`
+- YOLOv5s v7.0 权重：<https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.pt>
 - MTK 转换指南：<https://genio.mediatek.com/doc/iot-aihub/ai_hub/model_zoo/litert_analytical/YOLOv5s.html>
 - 模型变体：YOLOv5s，不是 Qualcomm 页面当前展示的 YOLOv5-M。
 
@@ -18,5 +20,6 @@ Ultralytics YOLOv5 使用 AGPL-3.0。使用和再分发模型、修改代码或�
 
 ## 文件校验
 
-首次生成后在此记录来源提交号、权重 SHA-256 和全部转换产物 SHA-256。在未记录前不得标记为
-“完整交付”。
+本机权重 `models/yolov5s.pt` 的大小为 14,808,437 bytes，SHA-256 为
+`8b3b748c1e592ddd8868022e8732fde20025197328490623cc16c6f24d0782ee`。转换后还必须记录
+TorchScript、ONNX、INT8 TFLite 和 DLA 的 SHA-256；未记录完整前不得标记为“完整交付”。

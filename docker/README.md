@@ -9,10 +9,12 @@
 ssh ubuntu89
 cd /data/users/hailong.he/github/mtk_models
 source env.sh
-./docker/create_container.sh
+bash ./docker/create_container.sh
 ```
 
 创建脚本不会停止、删除或重建其他容器。同名容器存在时，只启动并验证现有容器。
+镜像构建使用 host 网络，并将 Debian 与 pip 永久配置为阿里镜像，以适配 89 服务器的网络
+环境。`/etc/pip.conf` 位于容器可写层，容器重启后仍然生效。
 
 ## 挂载
 
@@ -27,8 +29,12 @@ source env.sh
 ## 进入
 
 ```bash
-./docker/enter_container.sh
+bash ./docker/enter_container.sh
 ```
 
 容器使用 host 网络，便于从 89 访问 `192.168.0.92`。SSH 凭据不挂载进容器；板端为
 `root` 无密码环境，首次连接仍需显式接受 host key。
+
+初始化脚本只向系统动态链接器暴露 SDK 的 `libc++.so.1`。禁止把整个
+`neuron_sdk/host/lib` 加入全局链接器缓存，否则 SDK 自带的旧 `libstdc++.so.6` 会覆盖
+Debian 系统库并导致 ONNX Runtime 导入失败。

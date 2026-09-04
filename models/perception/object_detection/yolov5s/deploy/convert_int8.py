@@ -1,4 +1,4 @@
-"""将 YOLOv5s ONNX 模型量化为 MTK INT8 TFLite。"""
+"""将 YOLOv5s TorchScript 模型量化为 MTK INT8 TFLite。"""
 
 import argparse
 from collections.abc import Iterator
@@ -44,9 +44,9 @@ def calibration_data(
 
 
 def convert_model(args: argparse.Namespace) -> None:
-    """创建 MTK ONNX Converter 并执行 INT8 PTQ。"""
-    converter = mtk_converter.ONNXConverter.from_onnx_file(
-        str(args.onnx), input_shapes=[(1, 3, 640, 640)])
+    """创建 MTK PyTorch Converter 并执行 INT8 PTQ。"""
+    converter = mtk_converter.PyTorchConverter.from_script_module_file(
+        str(args.torchscript), input_shapes=[(1, 3, 640, 640)])
     converter.quantize = True
     converter.calibration_data_gen = lambda: calibration_data(
         args.calibration_dir, args.samples)
@@ -56,7 +56,7 @@ def convert_model(args: argparse.Namespace) -> None:
 def parse_args() -> argparse.Namespace:
     """解析命令行参数。"""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--onnx", type=Path, required=True)
+    parser.add_argument("--torchscript", type=Path, required=True)
     parser.add_argument("--calibration-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--samples", type=int, default=100)
