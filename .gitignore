@@ -1,5 +1,3 @@
-AGENTS.md
-
 # Python 和工具缓存。
 __pycache__/
 *.py[cod]
