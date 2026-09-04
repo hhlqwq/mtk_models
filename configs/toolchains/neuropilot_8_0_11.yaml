@@ -1,0 +1,8 @@
+id: neuropilot_8_0_11
+python: "3.11"
+neuropilot_sdk: 8.0.11
+mtk_converter: 8.16.0
+mtk_quantization: 8.2.1
+neuron_compiler: 8.2.31
+sdk_root: /data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211
+

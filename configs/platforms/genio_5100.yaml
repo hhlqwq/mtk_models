@@ -1,0 +1,9 @@
+id: genio_5100
+name: MediaTek Genio 5100
+soc: 待确认
+board_host: 待确认
+board_root: /root/hailong.he
+os: 待确认
+npu: 待确认
+neuron_runtime: 待确认
+

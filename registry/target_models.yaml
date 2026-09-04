@@ -1,0 +1,194 @@
+schema_version: 1
+source: Target AI models 图片清单
+batch: first_batch
+scenarios:
+  perception:
+    display_name: Perception
+    categories:
+      object_detection:
+        display_name: Object detection
+        models:
+          - id: yolov5
+            display_name: YoloV5
+            pilot: true
+            pilot_implementation: yolov5s
+          - id: yolov8
+            display_name: YoloV8
+          - id: mobilenet_v2
+            display_name: MobileNetV2
+          - id: squeezenet
+            display_name: SqueezeNet
+          - id: resnet50
+            display_name: ResNet50
+          - id: mobilenet_v3
+            display_name: MobileNetV3
+          - id: rt_detr_v2_v4
+            display_name: RT-DETR v2/v4
+      image_classification:
+        display_name: Image classification
+        models:
+          - id: vit
+            display_name: ViT
+            pilot: true
+            pilot_implementation: vit_base_patch16_224
+  interaction:
+    display_name: Interaction
+    categories:
+      gesture:
+        display_name: Gesture
+        models:
+          - id: mediapipe
+            display_name: MediaPipe
+      hand_landmark:
+        display_name: Hand landmark
+        models:
+          - id: depthai_hand_tracker
+            display_name: DepthAI Hand Tracker
+      face_recognition:
+        display_name: Face recognition
+        models:
+          - id: vggface
+            display_name: VGGFace
+          - id: mobilenet_v3_embedding
+            display_name: MobileNetV3 Embedding
+      pose_detection:
+        display_name: Pose detection
+        models:
+          - id: movenet_lightning
+            display_name: MoveNet Lightning
+            source_label: MoveNet Lighting
+          - id: rtmpose
+            display_name: RTMPose
+            pilot: true
+            pilot_implementation: rtmpose_body2d
+          - id: hrnet_pose
+            display_name: HRNetPose
+          - id: blazepose_lite
+            display_name: BlazePose Lite
+      text_recognition:
+        display_name: Text recognition
+        models:
+          - id: procr_v4
+            display_name: PROCR v4
+  navigation:
+    display_name: Navigation
+    categories:
+      segmentation:
+        display_name: Segmentation
+        models:
+          - id: fast_scnn
+            display_name: Fast-SCNN
+          - id: deeplab_v3
+            display_name: DeepLabV3
+          - id: segformer_b0
+            display_name: SegFormer-B0
+          - id: fastsam
+            display_name: FastSAM
+          - id: edgesam
+            display_name: EdgeSAM
+      single_camera_depth:
+        display_name: Single camera depth
+        models:
+          - id: depth_anything_v2
+            display_name: Depth Anything V2
+      dual_camera_depth:
+        display_name: Dual camera depth
+        models:
+          - id: stereo_net_plus
+            display_name: StereoNetPlus
+            source_label: SteroNetPlus
+      vision_foundation_model:
+        display_name: Vision foundation model
+        models:
+          - id: dinov2
+            display_name: DINOv2
+  gen_ai:
+    display_name: Gen AI
+    categories:
+      vision_language:
+        display_name: Vision language
+        models:
+          - id: clip
+            display_name: CLIP
+      llm:
+        display_name: LLM
+        models:
+          - id: llama_3_2
+            display_name: Llama 3.2
+            source_label: Llma3.2
+          - id: qwen3
+            display_name: Qwen3
+      vlm:
+        display_name: VLM
+        models:
+          - id: internvl3
+            display_name: InternVL3
+          - id: qwen3_vl
+            display_name: Qwen3-VL
+          - id: gemma4
+            display_name: Gemma4
+  audio:
+    display_name: Audio
+    categories:
+      stt:
+        display_name: STT
+        models:
+          - id: whisper
+            display_name: Whisper
+          - id: qwen3_asr
+            display_name: Qwen3-ASR
+          - id: moonshine_tiny_streaming
+            display_name: Moonshine Tiny Streaming
+      tts:
+        display_name: TTS
+        models:
+          - id: melotts
+            display_name: MeloTTS
+      ambient_sound:
+        display_name: Ambient sound
+        models:
+          - id: webrtc_aec3
+            display_name: WebRTC AEC3
+            function: echo_cancellation
+          - id: rnnoise
+            display_name: RNNoise
+            function: noise_reduction
+          - id: yamnet_sound_detection
+            display_name: YAMNet Sound Detection
+  slam:
+    display_name: SLAM
+    categories:
+      object_tracking:
+        display_name: Object tracking
+        models:
+          - id: boxmot
+            display_name: BoxMOT
+      localization:
+        display_name: Localization
+        models:
+          - id: mobilenet_vlad
+            display_name: MobileNetVLAD
+          - id: hfnet
+            display_name: HFNet
+          - id: superpoint
+            display_name: SuperPoint
+          - id: lightglue
+            display_name: LightGlue
+  pointcloud:
+    display_name: PointCloud
+    categories:
+      pointcloud:
+        display_name: PointCloud
+        models:
+          - id: pointpillar_tiny
+            display_name: PointPillar-Tiny
+          - id: centerpoint_tint
+            display_name: CenterPoint-Tint
+  three_d:
+    display_name: 3D
+    categories:
+      three_d_fusion:
+        display_name: 3D fusion
+        models:
+          - id: camera_lidar_fusion
+            display_name: Camera-LiDAR Fusion

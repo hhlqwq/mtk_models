@@ -1,0 +1,9 @@
+id: genio_720
+name: MediaTek Genio 720 EVK
+soc: MT8189
+board_host: root@192.168.0.92
+board_root: /root/hailong.he
+os: Rity Demo 26.0-dev
+npu: MDLA 5.3
+neuron_runtime: 8.2.16
+

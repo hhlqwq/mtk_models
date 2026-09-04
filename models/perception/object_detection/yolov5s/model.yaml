@@ -1,0 +1,25 @@
+id: yolov5s
+name: YOLOv5s
+scenario: perception
+category: object_detection
+source:
+  provider: github
+  repository: ultralytics/yolov5
+  reference: qualcomm/Yolo-v5
+input:
+  shape: [1, 3, 640, 640]
+  layout: NCHW
+  color: RGB
+output:
+  type: detection_heads
+  classes: 80
+metrics:
+  accuracy: coco_map
+  performance: latency_ms
+targets:
+  genio_720:
+    status: environment_ready
+    precisions: [fp32, int8]
+  genio_5100:
+    status: not_started
+    precisions: []

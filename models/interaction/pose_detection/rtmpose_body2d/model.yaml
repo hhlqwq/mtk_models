@@ -1,0 +1,25 @@
+id: rtmpose_body2d
+name: RTMPose Body2d
+scenario: interaction
+category: pose_detection
+source:
+  provider: huggingface
+  repository: qualcomm/RTMPose-Body2d
+  release: v0.61.0
+input:
+  shape: [1, 3, 256, 192]
+  layout: NCHW
+  color: RGB
+output:
+  type: simcc_keypoints
+  keypoints: 133
+metrics:
+  accuracy: coco_wholebody_ap
+  performance: latency_ms
+targets:
+  genio_720:
+    status: environment_ready
+    precisions: [fp32, int8]
+  genio_5100:
+    status: not_started
+    precisions: []

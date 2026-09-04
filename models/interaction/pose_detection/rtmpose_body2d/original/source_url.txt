@@ -1,0 +1,4 @@
+Hugging Face：https://huggingface.co/qualcomm/RTMPose-Body2d
+FP32 ONNX：https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/rtmpose_body2d/releases/v0.61.0/rtmpose_body2d-onnx-float.zip
+上游实现：https://github.com/qualcomm/ai-hub-models/tree/v0.61.0/src/qai_hub_models/models/rtmpose_body2d
+论文：https://arxiv.org/abs/2303.07399

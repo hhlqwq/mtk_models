@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MTK Models Registry",
+  "type": "object",
+  "required": ["schema_version", "models"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "scenario",
+          "category",
+          "path",
+          "source",
+          "platforms"
+        ],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+          "batch": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+          "pilot": {"type": "boolean"},
+          "scenario": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+          "category": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+          "path": {"type": "string"},
+          "source": {"type": "string"},
+          "reference": {"type": "string"},
+          "platforms": {
+            "type": "object",
+            "additionalProperties": {
+              "enum": [
+                "not_started",
+                "environment_ready",
+                "converted",
+                "board_verified",
+                "complete",
+                "unsupported"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

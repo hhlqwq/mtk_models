@@ -1,0 +1,33 @@
+schema_version: 1
+models:
+  - id: yolov5s
+    batch: first_batch
+    pilot: true
+    scenario: perception
+    category: object_detection
+    path: models/perception/object_detection/yolov5s
+    source: ultralytics/yolov5
+    reference: qualcomm/Yolo-v5
+    platforms:
+      genio_720: environment_ready
+      genio_5100: not_started
+  - id: vit_base_patch16_224
+    batch: first_batch
+    pilot: true
+    scenario: perception
+    category: image_classification
+    path: models/perception/image_classification/vit_base_patch16_224
+    source: qualcomm/VIT
+    platforms:
+      genio_720: environment_ready
+      genio_5100: not_started
+  - id: rtmpose_body2d
+    batch: first_batch
+    pilot: true
+    scenario: interaction
+    category: pose_detection
+    path: models/interaction/pose_detection/rtmpose_body2d
+    source: qualcomm/RTMPose-Body2d
+    platforms:
+      genio_720: environment_ready
+      genio_5100: not_started

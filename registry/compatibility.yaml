@@ -1,0 +1,9 @@
+schema_version: 1
+status_definitions:
+  not_started: 尚未开始
+  environment_ready: 环境与目录已准备
+  converted: 已生成 MTK 部署模型
+  board_verified: 已在目标板运行
+  complete: 精度、性能、Demo 和文档已完整交付
+  unsupported: 已确认当前工具链或硬件不支持
+

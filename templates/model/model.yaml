@@ -1,0 +1,23 @@
+id: model_id
+name: MODEL_NAME
+scenario: scenario_name
+category: category_name
+source:
+  provider: huggingface
+  repository: owner/repository
+input:
+  shape: []
+  layout: NCHW
+  color: RGB
+output:
+  type: unknown
+metrics:
+  accuracy: unknown
+  performance: latency_ms
+targets:
+  genio_720:
+    status: not_started
+    precisions: []
+  genio_5100:
+    status: not_started
+    precisions: []

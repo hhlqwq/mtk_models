@@ -1,0 +1,41 @@
+AGENTS.md
+
+# Python 和工具缓存。
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+
+# 本地环境和日志。
+.env
+*.log
+logs/
+
+# 模型与转换产物。
+*.pt
+*.pth
+*.safetensors
+*.onnx
+*.tflite
+*.dla
+*.bin
+*.npy
+*.npz
+
+# 数据集和样例输出。
+datasets/
+**/examples/input/*
+**/examples/output/*
+!**/examples/input/README.md
+!**/examples/output/README.md
+
+# 保留空模型目录说明。
+!**/models/README.md
+
+# 编辑器和系统文件。
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
