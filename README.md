@@ -2,6 +2,7 @@
 
 编译环境改为 Ubuntu 22.04 预装镜像, MTK SDK、Python 3.11 和 CUDA Torch 在构建阶段安装。
 Ubuntu 系统依赖使用基础镜像官方软件源, pip 镜像地址在容器内永久配置。
+Python 3.11.11 源码地址由 Docker 构建参数管理, 默认使用服务器已验证可达的镜像地址。
 创建容器时仅验证工具, 操作方法见 [Docker 说明](docker/README.md)。
 
 本项目面向 MediaTek Genio 720（MT8189）和 Genio 5100，建立与

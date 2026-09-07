@@ -19,6 +19,7 @@ bash docker/create_container.sh
 构建使用命名上下文读取服务器已有 SDK, 完整复制到镜像 /opt/mtk。运行时不再挂载
 Dockerfile 使用 Docker 内置前端, 不额外下载 docker/dockerfile 镜像。
 Ubuntu 系统包保留基础镜像的官方软件源, 避免第三方镜像索引不可用导致构建失败。
+Python 3.11.11 源码默认从可达的阿里云镜像获取, 可通过 `PYTHON_SOURCE_URL` 构建参数覆盖。
 宿主机 SDK, 创建和模型转换均不再安装 pip 包。构建日志和 GPU 校验通过后才视为环境就绪。
 
 仅项目目录映射为 /workspace, 数据集以原绝对路径只读挂载:

@@ -1,6 +1,7 @@
 # 使用 Docker 内置前端, 避免额外拉取 docker/dockerfile 镜像。
 FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
+ARG PYTHON_SOURCE_URL=https://mirrors.aliyun.com/python-release/source/Python-3.11.11.tgz
 ENV PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 # 在 Ubuntu 内编译 Python, 保持 SDK 的 cp311 ABI。
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -10,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /tmp/hailongcodex/python-build \
     && cd /tmp/hailongcodex/python-build \
-    && curl --fail --location --retry 3 https://www.python.org/ftp/python/3.11.11/Python-3.11.11.tgz -o python.tgz \
+    && curl --fail --location --retry 3 "${PYTHON_SOURCE_URL}" -o python.tgz \
     && tar -xzf python.tgz && cd Python-3.11.11 \
     && ./configure --prefix=/usr/local --with-ensurepip=install \
     && make -j8 && make install && ln -s python3.11 /usr/local/bin/python
