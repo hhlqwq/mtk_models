@@ -9,7 +9,7 @@
 输出: 3 个检测头
 设备: MediaTek Genio 720 EVK
 部署格式: INT8 TFLite → DLA
-当前状态: 环境建设中
+当前状态: 完整交付
 ```
 
 Qualcomm Hugging Face 页面用于对标交付形式；由于其页面当前描述的是 YOLOv5-M 且不分发
@@ -77,18 +77,48 @@ ONNX 基线精度评测也使用 GPU。MTK Converter 8.16.0 的公开接口没�
 `/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images`
 作为校准图片来源；正式精度使用完整 COCO val2017，不复用校准结果冒充 mAP。
 
+## MT8189 编译约束（重要）
+
+MT8189 (Genio 720) 的 NPU 是 MDLA 5.3，且**没有 EDPA 硬件**（板端不存在
+`libcmdl.so`）；NCC 8.2.31 对 INT8 图输出的 “MDLA → Output 数据转换桥” 默认派发到
+EDPA_1_2，导致板端 neuronrt 8.2.16 加载失败（`Found an unsupported target: EDPA_1_2`）。
+旧 `--arch=mdla3.0` 产物同样被板端拒绝（`unsupported target: MDLA_3_0`）。
+
+解决方案（已固化在 `deploy/build.sh`）：
+
+- 使用 `--arch=mdla5.3` 编译。
+- 追加 `--suppress-output --disallow-bridge`：抑制 EDPA 桥接，输出为 MDLA 原生
+  NCHW INT8，**行 stride 按 16 元素对齐**（W=80/40/20 → 80/48/32），
+  由 `deploy/inference_demo/postprocess_outputs.py` 还原布局。
+- 实测原生输出与 CPU 参考 MAE≈1 LSB，属硬件舍入正常差异。
+
+## 精度评测
+
+三后端（PyTorch / ONNX / MTK NPU INT8）共享同一 letterbox 预处理、解码和 NMS，
+在 89 宿主机执行：
+
+```bash
+cd /data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s/deploy
+bash accuracy_eval.sh all   # 也可分阶段: npu|fp32|evaluate
+```
+
+流程：容器内批量生成 COCO val2017 INT8 输入 → 推送 92 板端逐图 neuronrt 推理 →
+回传原生输出 → 容器内解码 + NMS + pycocotools 计算 mAP（imgIds 限定为已推理图片）。
+评测脚本为 `tools/accuracy/yolov5s_val_coco.py`，产物在 `.eval/yolov5s/`；
+冒烟测试用 `TOTAL=20 bash accuracy_eval.sh all`。
+
 ## 交付状态
 
 | 环节 | 状态 | 证据 |
 | --- | --- | --- |
 | 来源锁定 | 已完成 | `original/source_url.txt`、两个固定版本压缩包及 SHA-256 |
-| 原始模型 | 本机已准备，待用户同步 | `models/yolov5s.pt`，14,808,437 bytes，SHA-256 已记录 |
-| ONNX | 待执行 | `models/model_fp32.onnx` |
-| INT8 TFLite | 待执行 | `models/model_int8.tflite` |
-| DLA | 待执行 | `models/model_int8.dla` |
-| 板端 Demo | 待执行 | `examples/output/` |
-| 正式精度 | 待执行 | `docs/accuracy.md` |
-| 正式性能 | 待执行 | `docs/benchmark.md` |
+| 原始模型 | 已完成 | `models/yolov5s.pt`，14,808,437 bytes，SHA-256 已记录 |
+| ONNX | 已完成 | `models/model_fp32.onnx` |
+| INT8 TFLite | 已完成 | `models/model_int8.tflite` |
+| DLA | 已完成 | `models/model_int8.dla`（mdla5.3 + suppress-output） |
+| 板端 Demo | 已完成 | `examples/output/`（detections.json、detected.jpg、性能日志） |
+| 正式精度 | 已完成 | `docs/accuracy.md`（5000 张 COCO val2017，INT8 损失 -1.20pt） |
+| 正式性能 | 已完成 | `docs/benchmark.md`（纯 NPU 9.96ms，99.2 FPS） |
 
 ## 全流程验收边界
 

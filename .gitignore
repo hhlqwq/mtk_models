@@ -6,6 +6,9 @@ __pycache__/
 .ruff_cache/
 .venv/
 
+# 精度评测工作区。
+.eval/
+
 # 本地环境和日志。
 .env
 *.log

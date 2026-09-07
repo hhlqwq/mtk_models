@@ -5,6 +5,11 @@
 构建时安装 Ubuntu 22.04、Python 3.11.11、CUDA 11.8 Torch 2.0.0、NeuroPilot SDK 8.0.11、
 Converter 8.16.0、Quantization 8.2.1、NCC 8.2.31 和 YOLOv5/COCO 依赖。
 ONNX Runtime GPU 1.18.0 对齐 CUDA 11.8/cuDNN 8, pip 永久使用阿里镜像。
+CUDA EP 依赖的 curand/cufft/cusolver/cusparse 通过 nvidia-*-cu11 pip 包补齐,
+并把 torch 与 nvidia wheel 的全部 .so 统一软链到 /usr/local/lib 后 ldconfig,
+否则 `InferenceSession(CUDAExecutionProvider)` 静默回退 CPU。
+2026-09-07 已在 hhl_g720_311:ubuntu22.04-np8.0.11 上验证: 新建容器仅执行
+setup_container.sh 即通过 pip check、Torch CUDA、ONNX Runtime CUDA 与 NCC 校验。
 
 ## 构建与创建
 

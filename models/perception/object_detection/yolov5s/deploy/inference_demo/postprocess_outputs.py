@@ -68,19 +68,34 @@ def class_aware_nms(boxes: np.ndarray, scores: np.ndarray,
     return sorted(kept, key=lambda index: scores[index], reverse=True)
 
 
+def load_raw_output(output_path: Path, shape: list[int]) -> np.ndarray:
+    """读取板端原生输出并还原为 NCHW, 处理行 stride 16 对齐 padding。
+
+    neuronrt 配合 ncc-tflite --suppress-output 输出 MDLA 原生格式:
+    NCHW INT8, 每通道平面内行 stride 为 ceil16(W)。
+    """
+    quantized = np.fromfile(output_path, dtype=np.int8)
+    n, c, height, width = shape
+    plain = n * c * height * width
+    pad = (width + 15) // 16 * 16
+    padded = n * c * height * pad
+    if quantized.size == plain:
+        return quantized.reshape(shape)
+    if quantized.size == padded:
+        return quantized.reshape(n, c, height, pad)[..., :width].copy()
+    raise ValueError(
+        f"输出大小错误: {output_path}, 期望 {plain} 或 {padded}, "
+        f"实际 {quantized.size}")
+
+
 def postprocess(args: argparse.Namespace) -> None:
     """读取板端输出、解码、执行 NMS 并写入结果。"""
     metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
     decoded_heads = []
     for index, detail in enumerate(metadata["outputs"]):
         output_path = args.output_dir / f"output_{index}.bin"
-        quantized = np.fromfile(output_path, dtype=np.int8)
-        expected_size = int(np.prod(detail["shape"]))
-        if quantized.size != expected_size:
-            raise ValueError(
-                f"输出大小错误: {output_path}, 期望 {expected_size}, "
-                f"实际 {quantized.size}")
-        values = quantized.reshape(detail["shape"]).astype(np.float32)
+        quantized = load_raw_output(output_path, detail["shape"])
+        values = quantized.astype(np.float32)
         values = (values - detail["zero_point"]) * detail["scale"]
         decoded_heads.append(decode_head(values, index))
 

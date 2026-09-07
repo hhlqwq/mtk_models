@@ -30,6 +30,13 @@ RUN python -m pip install \
     && test -n "${nvrtc_path}" \
     && ln -s "$(basename "${nvrtc_path}")" /usr/local/lib/python3.11/site-packages/torch/lib/libnvrtc.so \
     && ldconfig
+# 补齐 ONNX Runtime CUDA EP 需要的 cu11 库并统一挂到系统库路径。
+RUN python -m pip install nvidia-curand-cu11 nvidia-cufft-cu11 nvidia-cusolver-cu11 nvidia-cusparse-cu11 \
+    && for lib in /usr/local/lib/python3.11/site-packages/torch/lib/*.so* \
+                  /usr/local/lib/python3.11/site-packages/nvidia/*/lib/*.so*; do \
+           ln -sf "${lib}" /usr/local/lib/; \
+       done \
+    && ldconfig
 COPY setup_container.sh verify_environment.py /opt/mtk-build/
 RUN bash /opt/mtk-build/setup_container.sh --build \
     && python -m pip freeze > /opt/mtk-build/installed-requirements.txt

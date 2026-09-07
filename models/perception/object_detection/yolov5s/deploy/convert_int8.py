@@ -48,6 +48,9 @@ def convert_model(args: argparse.Namespace) -> None:
     converter = mtk_converter.PyTorchConverter.from_script_module_file(
         str(args.torchscript), input_shapes=[(1, 3, 640, 640)])
     converter.quantize = True
+    # 可选: 输出端追加 DEQUANTIZE。MT8189 部署走 --suppress-output 直取
+    # MDLA 原生 INT8 输出, 默认无需开启。
+    converter.append_output_dequantize_ops = args.append_output_dequantize
     converter.calibration_data_gen = lambda: calibration_data(
         args.calibration_dir, args.samples)
     converter.convert_to_tflite(str(args.output))
@@ -60,6 +63,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--calibration-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--samples", type=int, default=100)
+    parser.add_argument("--append-output-dequantize",
+                        dest="append_output_dequantize",
+                        action="store_true")
+    parser.set_defaults(append_output_dequantize=False)
     return parser.parse_args()
 
 
