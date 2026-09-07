@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# 使用 Docker 内置前端, 避免额外拉取 docker/dockerfile 镜像。
 FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1

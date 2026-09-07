@@ -3,7 +3,6 @@
 set -euo pipefail
 
 readonly PROJECT_ROOT="/data/users/hailong.he/github/mtk_models"
-readonly SDK_ROOT="/data/users/hailong.he/data/MTKG720"
 readonly DATASET_ROOT="/data/users/hailong.he/nas_smb/Datasets/open_source/raw"
 readonly IMAGE_NAME="hhl_g720_311:ubuntu22.04-np8.0.11"
 readonly CONTAINER_NAME="hhl_g720_311"
