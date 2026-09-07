@@ -1,7 +1,8 @@
 huggingface-hub==0.34.4
 numpy==1.26.4
 onnx==1.17.0
-onnxruntime-gpu==1.22.0
+onnxruntime-gpu==1.18.0
+protobuf==3.20.3
 opencv-python-headless==4.11.0.86
 pillow==11.3.0
 pyyaml==6.0.2

@@ -1,44 +1,37 @@
-# Docker 环境
+# Ubuntu 预装工具链镜像
 
-本目录定义 Genio 720 模型转换环境。容器名中的 `311` 对应 Python 3.11；该版本与服务器
-现有 NeuroPilot SDK 8.0.11 提供的 `mtk_converter 8.16.0 cp311` wheel 一致。
+镜像: `hhl_g720_311:ubuntu22.04-np8.0.11`, 容器: `hhl_g720_311`。
 
-容器通过 NVIDIA Container Toolkit 的 `--gpus all` 使用 89 的 GPU。GPU 用于 PyTorch/
-ONNX 导出和基线精度评测。MTK Converter 8.16.0 未提供 CUDA 执行选项，INT8 PTQ 与 NCC
-编译仍使用 CPU；板端最终推理由 Genio 720 NPU 执行。
+构建时安装 Ubuntu 22.04、Python 3.11.11、CUDA 11.8 Torch 2.0.0、NeuroPilot SDK 8.0.11、
+Converter 8.16.0、Quantization 8.2.1、NCC 8.2.31 和 YOLOv5/COCO 依赖。
+ONNX Runtime GPU 1.18.0 对齐 CUDA 11.8/cuDNN 8, pip 永久使用阿里镜像。
 
-## 创建
+## 构建与创建
+
+在 89 的指定仓库执行:
 
 ```bash
-ssh ubuntu89
 cd /data/users/hailong.he/github/mtk_models
-source env.sh
-bash ./docker/create_container.sh
+bash docker/build_image.sh
+bash docker/create_container.sh
 ```
 
-创建脚本不会停止、删除或重建其他容器。同名容器存在时，只启动并验证现有容器。
-镜像构建使用 host 网络，并将 Debian 与 pip 永久配置为阿里镜像，以适配 89 服务器的网络
-环境。`/etc/pip.conf` 位于容器可写层，容器重启后仍然生效。
+构建使用命名上下文读取服务器已有 SDK, 完整复制到镜像 /opt/mtk。运行时不再挂载
+宿主机 SDK, 创建和模型转换均不再安装 pip 包。构建日志和 GPU 校验通过后才视为环境就绪。
 
-## 挂载
+仅项目目录映射为 /workspace, 数据集以原绝对路径只读挂载:
+`/data/users/hailong.he/nas_smb/Datasets/open_source/raw`。
+容器支持 GPU, 启动校验执行 Torch Conv2d 和 ONNX Runtime CUDA 运算。
+实际依赖版本保存在镜像 /opt/mtk-build/installed-requirements.txt。
 
-| 主机目录 | 容器目录 | 权限 | 用途 |
-| --- | --- | --- | --- |
-| `/data/users/hailong.he/github/mtk_models` | `/workspace` | 读写 | 项目代码和产物 |
-| `/data/users/hailong.he/data/MTKG720` | `/opt/mtk` | 只读 | NeuroPilot/Neuron SDK |
-| `/data/users/hailong.he/nas_smb/Datasets/open_source/raw` | 同一绝对路径 | 只读 | 正式评测数据集 |
+旧同名容器不会被脚本自动删除, 镜像不匹配时明确报错。先构建验证新镜像, 再安排迁移。
+SDK 属于本地供应商资料, 镜像仅保存在 89, 不推送公共镜像仓库。
+GitHub 仅提交构建代码, 模型和数据集继续由用户下载。
 
-数据集使用同路径只读挂载，容器和宿主机命令中的路径保持一致，不使用 `/datasets` 别名。
+## GPU 证据边界
 
-## 进入
+此前“MTK PTQ 必然只使用 CPU”的结论证据不足: 没有显式 CUDA 参数不能证明内部执行设备。
+已观察到 GPU 导出后 PTQ 加快, 具体原因需通过运行时 GPU 进程监测验证。
+板端正式性能以 92 的 NPU 结果为准。
 
-```bash
-bash ./docker/enter_container.sh
-```
-
-容器使用 host 网络，便于从 89 访问 `192.168.0.92`。SSH 凭据不挂载进容器；板端为
-`root` 无密码环境，首次连接仍需显式接受 host key。
-
-初始化脚本只向系统动态链接器暴露 SDK 的 `libc++.so.1`。禁止把整个
-`neuron_sdk/host/lib` 加入全局链接器缓存，否则 SDK 自带的旧 `libstdc++.so.6` 会覆盖
-Debian 系统库并导致 ONNX Runtime 导入失败。
+ONNX GPU 兼容依据: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
