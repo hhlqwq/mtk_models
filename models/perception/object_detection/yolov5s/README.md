@@ -101,3 +101,7 @@ YOLOv5s 只有同时完成以下项目才视为交付完成：
 5. 计算 ONNX 相对 PyTorch、MTK NPU INT8 相对 ONNX/PyTorch 的精度损失。
 
 少量样例只能证明部署链路和输出合理性，不能替代完整 COCO val2017 精度报告。
+
+板端 Demo 使用当前 TFLite 的实际量化参数生成输入，调用 92 的 `neuronrt 8.2.16` 完成
+推理并回传三个检测头。性能阶段执行 10 次预热和 100 次连续推理，保存 Runtime 日志和
+进程峰值 RSS；89 上再执行解量化、YOLOv5 解码、NMS 和结果绘制。
