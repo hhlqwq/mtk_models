@@ -3,6 +3,7 @@
 set -euo pipefail
 
 readonly MODEL_ROOT="/workspace/models/perception/image_classification/vit_base_patch16_224"
+# NAS 原始目录内离线解包的 ImageNet val 图片。
 readonly CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ILSVRC2012/val"
 
 test -f "${MODEL_ROOT}/models/model_fp32.onnx"
@@ -11,9 +12,15 @@ if [[ ! -d "${CALIBRATION_DIR}" ]]; then
     exit 2
 fi
 
+echo "[1/2] 验证镜像内预装工具链。"
+bash /opt/mtk-build/setup_container.sh
+
+echo "[2/2] 使用 MTK ONNX Converter 执行 INT8 PTQ。"
 python "${MODEL_ROOT}/deploy/convert_int8.py" \
     --onnx "${MODEL_ROOT}/models/model_fp32.onnx" \
     --calibration-dir "${CALIBRATION_DIR}" \
     --output "${MODEL_ROOT}/models/model_int8.tflite"
-sha256sum "${MODEL_ROOT}/models/model_int8.tflite" \
+sha256sum "${MODEL_ROOT}/models/model_fp32.onnx" \
+    "${MODEL_ROOT}/models/model_int8.tflite" \
     >> "${MODEL_ROOT}/models/SHA256SUMS"
+echo "[OK] ViT INT8 TFLite 已生成。"

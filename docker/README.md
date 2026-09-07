@@ -5,6 +5,8 @@
 构建时安装 Ubuntu 22.04、Python 3.11.11、CUDA 11.8 Torch 2.0.0、NeuroPilot SDK 8.0.11、
 Converter 8.16.0、Quantization 8.2.1、NCC 8.2.31 和 YOLOv5/COCO 依赖。
 ONNX Runtime GPU 1.18.0 对齐 CUDA 11.8/cuDNN 8, pip 永久使用阿里镜像。
+`onnx` 固定 1.13.1: `mtk_converter.OnnxConverter` 硬性要求 1.14.0 > onnx >= 1.3.0,
+ONNX 输入路线 (ViT 等) 依赖此约束; onnxruntime 与 torch 已验证兼容。
 CUDA EP 依赖的 curand/cufft/cusolver/cusparse 通过 nvidia-*-cu11 pip 包补齐,
 并把 torch 与 nvidia wheel 的全部 .so 统一软链到 /usr/local/lib 后 ldconfig,
 否则 `InferenceSession(CUDAExecutionProvider)` 静默回退 CPU。

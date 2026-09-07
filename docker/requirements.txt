@@ -1,6 +1,7 @@
 huggingface-hub==0.34.4
 numpy==1.26.4
-onnx==1.17.0
+# mtk_converter.OnnxConverter 要求 1.14.0 > onnx >= 1.3.0, 不能升到 1.17。
+onnx==1.13.1
 onnxruntime-gpu==1.18.0
 protobuf==3.20.3
 opencv-python-headless==4.11.0.86
