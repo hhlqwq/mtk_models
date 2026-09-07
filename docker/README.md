@@ -2,6 +2,11 @@
 
 镜像: `hhl_g720_311:ubuntu22.04-np8.0.11`, 容器: `hhl_g720_311`。
 
+> 2026-09-07 部署核对：目标镜像已经存在于 89，但当前同名容器仍绑定旧镜像
+> `hhl_g720_311:np8.0.11`，容器内实际为 Debian 12。执行本页命令前必须先安排旧容器迁移；
+> `create_container.sh` 会检测镜像 ID 不一致并停止，不会覆盖旧容器。详细证据见
+> [Genio 720 环境与官方资料核对记录](../docs/genio_720_environment_audit_20260907.md)。
+
 构建时安装 Ubuntu 22.04、Python 3.11.11、CUDA 11.8 Torch 2.0.0、NeuroPilot SDK 8.0.11、
 Converter 8.16.0、Quantization 8.2.1、NCC 8.2.31 和 YOLOv5/COCO 依赖。
 ONNX Runtime GPU 1.18.0 对齐 CUDA 11.8/cuDNN 8, pip 永久使用阿里镜像。
@@ -12,6 +17,7 @@ CUDA EP 依赖的 curand/cufft/cusolver/cusparse 通过 nvidia-*-cu11 pip 包补
 否则 `InferenceSession(CUDAExecutionProvider)` 静默回退 CPU。
 2026-09-07 已在 hhl_g720_311:ubuntu22.04-np8.0.11 上验证: 新建容器仅执行
 setup_container.sh 即通过 pip check、Torch CUDA、ONNX Runtime CUDA 与 NCC 校验。
+该记录描述目标镜像的构建验证，不代表当前名为 `hhl_g720_311` 的旧容器已经切换完成。
 
 ## 构建与创建
 

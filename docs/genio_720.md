@@ -6,10 +6,38 @@
 设备: MediaTek Genio 720 EVK
 SoC: MT8189 / MT8391
 系统: Rity Demo 26.0-dev (scarthgap)
+内核: Linux 6.6.117-mtk+ge93786e7114b-gbdfdf5b7370c
 地址: root@192.168.0.92
 测试目录: /root/hailong.he
 Neuron Runtime: 8.2.16
 ```
+
+2026-09-07 已通过设备树确认该板为 `MediaTek Genio 720 EVK`，兼容标识包含
+`mediatek,mt8391-evk`、`mediatek,mt8391` 和 `mediatek,mt8189`。MediaTek 官网 G720
+硬件规格为 NPU 8.0、1× MDLA 5.3，与 `configs/platforms/genio_720.yaml` 一致。
+
+当前系统属于 Rity v26.0 的 Scarthgap 开发版本，不是官网 2026-07-29 发布的正式 v26.0
+镜像。官网正式 v26.0 使用 Linux 6.6.137，当前板端为 6.6.117。升级系统属于独立系统变更，
+必须在获得明确授权后执行，并在升级后重新核对 Runtime 和全部已交付模型。
+
+`neuronrt -v` 当前会先报告缺少 CMDL 相关动态库，再输出 `Version: 8.2.16`。版本查询成功
+不等于模型推理成功；每个 DLA 仍需执行真实板端加载和 NPU 推理验证。
+
+完整官网来源、实测命令摘要和对应关系见
+[2026-09-07 环境核对记录](genio_720_environment_audit_20260907.md)。
+
+## 编译器与运行时兼容边界
+
+主机使用 NCC 8.2.31，板端使用 Neuron Runtime 8.2.16。两者版本不相同，官网没有提供
+覆盖全部模型的通用兼容承诺。当前 YOLOv5s 已通过 `--arch=mdla5.3`、`--suppress-output`
+和 `--disallow-bridge` 完成针对性验证；该结果不能外推到其他模型。
+
+每个新模型必须至少确认：
+
+1. NCC 目标架构是 `mdla5.3`。
+2. 编译计划没有使用 Runtime 8.2.16 或 MT8189 不支持的桥接目标。
+3. DLA 在 92 上能够加载并使用 `-m hw` 完成真实输入推理。
+4. 日志中没有被忽略的版本、目标或动态库错误。
 
 ## 性能口径
 
