@@ -28,6 +28,11 @@ fi
     "${MODEL_ROOT}/models/model_int8.tflite" \
     -o "${OUTPUT_DLA}"
 if [[ "${OUTPUT_DLA}" == "${MODEL_ROOT}/models/model_int8.dla" ]]; then
-    sha256sum "${OUTPUT_DLA}" >> "${MODEL_ROOT}/models/SHA256SUMS"
+    sha256sum "${MODEL_ROOT}/models/yolov5s.pt" \
+        "${MODEL_ROOT}/models/yolov5s.torchscript" \
+        "${MODEL_ROOT}/models/model_fp32.onnx" \
+        "${MODEL_ROOT}/models/model_int8.tflite" \
+        "${OUTPUT_DLA}" \
+        > "${MODEL_ROOT}/models/SHA256SUMS"
 fi
 echo "[OK] DLA: ${OUTPUT_DLA}"

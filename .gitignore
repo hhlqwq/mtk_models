@@ -25,8 +25,10 @@ logs/
 *.bin
 *.npy
 *.npz
+*.zip
 # 正在下载的模型
 *.crdownload
+
 
 # 离线展开的第三方源码和补丁；固定版本压缩包保留在 Git 中。
 models/perception/object_detection/yolov5s/original/yolov5/
@@ -50,5 +52,3 @@ Thumbs.db
 
 # 排查 MT8189 平台配置时留下的本地第三方资料
 .vendor
-
-

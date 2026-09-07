@@ -28,8 +28,9 @@ python "${MODEL_ROOT}/deploy/convert_int8.py" \
     --torchscript "${MODEL_ROOT}/models/yolov5s.torchscript" \
     --calibration-dir "${CALIBRATION_DIR}" \
     --output "${MODEL_ROOT}/models/model_int8.tflite"
-sha256sum "${MODEL_ROOT}/models/model_fp32.onnx" \
+sha256sum "${MODEL_ROOT}/models/yolov5s.pt" \
     "${MODEL_ROOT}/models/yolov5s.torchscript" \
+    "${MODEL_ROOT}/models/model_fp32.onnx" \
     "${MODEL_ROOT}/models/model_int8.tflite" \
-    >> "${MODEL_ROOT}/models/SHA256SUMS"
+    > "${MODEL_ROOT}/models/SHA256SUMS"
 echo "[OK] YOLOv5s ONNX 和 INT8 TFLite 已生成。"

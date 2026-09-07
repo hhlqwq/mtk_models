@@ -9,7 +9,7 @@
 输出: 3 个检测头
 设备: MediaTek Genio 720 EVK
 部署格式: INT8 TFLite → DLA
-当前状态: 完整交付
+当前状态: 板端已验证
 ```
 
 Qualcomm Hugging Face 页面用于对标交付形式；由于其页面当前描述的是 YOLOv5-M 且不分发
@@ -103,9 +103,12 @@ bash accuracy_eval.sh all   # 也可分阶段: npu|fp32|evaluate
 ```
 
 流程：容器内批量生成 COCO val2017 INT8 输入 → 推送 92 板端逐图 neuronrt 推理 →
-回传原生输出 → 容器内解码 + NMS + pycocotools 计算 mAP（imgIds 限定为已推理图片）。
-评测脚本为 `tools/accuracy/yolov5s_val_coco.py`，产物在 `.eval/yolov5s/`；
-冒烟测试用 `TOTAL=20 bash accuracy_eval.sh all`。
+回传原生输出 → 容器内解码 + NMS + pycocotools 计算 mAP。评测前会检查清单内全部图片
+均已完成，即使某张图片没有检测结果也会纳入 COCO 指标。
+评测脚本为 `tools/accuracy/yolov5s_val_coco.py`，每次运行使用独立目录
+`.eval/yolov5s/runs/<run_id>/`，避免复用其他模型版本的旧结果。`all` 默认创建新运行；
+分阶段或中断续跑时必须为各阶段传入同一个 `EVAL_RUN_ID`。冒烟测试可使用
+`TOTAL=20 bash accuracy_eval.sh all`，冒烟结果不能覆盖正式全量结果。
 
 ## 交付状态
 
@@ -117,8 +120,8 @@ bash accuracy_eval.sh all   # 也可分阶段: npu|fp32|evaluate
 | INT8 TFLite | 已完成 | `models/model_int8.tflite` |
 | DLA | 已完成 | `models/model_int8.dla`（mdla5.3 + suppress-output） |
 | 板端 Demo | 已完成 | `examples/output/`（detections.json、detected.jpg、性能日志） |
-| 正式精度 | 已完成 | `docs/accuracy.md`（5000 张 COCO val2017，INT8 损失 -1.20pt） |
-| 正式性能 | 已完成 | `docs/benchmark.md`（纯 NPU 9.96ms，99.2 FPS） |
+| 正式精度 | 已完成 | `docs/accuracy.md`（5000 张 COCO val2017，INT8 损失 -1.21pt） |
+| 正式性能 | 部分完成 | `docs/benchmark.md`（纯 NPU平均 9.96ms；端到端、分位数和可追溯峰值内存待补测） |
 
 ## 全流程验收边界
 

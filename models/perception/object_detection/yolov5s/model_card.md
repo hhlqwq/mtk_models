@@ -20,6 +20,14 @@ Ultralytics YOLOv5 使用 AGPL-3.0。使用和再分发模型、修改代码或�
 
 ## 文件校验
 
-本机权重 `models/yolov5s.pt` 的大小为 14,808,437 bytes，SHA-256 为
-`8b3b748c1e592ddd8868022e8732fde20025197328490623cc16c6f24d0782ee`。转换后还必须记录
-TorchScript、ONNX、INT8 TFLite 和 DLA 的 SHA-256；未记录完整前不得标记为“完整交付”。
+以下哈希来自 2026-09-07 在 89 编译机生成并用于 Genio 720 实测的同一组产物：
+
+| 文件 | 大小（bytes） | SHA-256 |
+| --- | ---: | --- |
+| `models/yolov5s.pt` | 14,808,437 | `8b3b748c1e592ddd8868022e8732fde20025197328490623cc16c6f24d0782ee` |
+| `models/yolov5s.torchscript` | 29,215,556 | `cbef4136e07e79b59e26659a3cea4bb7c5cc7e7a2b6fb80e4e79409b9f0818bd` |
+| `models/model_fp32.onnx` | 28,942,238 | `a2e2f888f94ad07a93591de91f0e010792458b4c737795a13118fef9180f9778` |
+| `models/model_int8.tflite` | 7,723,624 | `49212dfd6d02842abc690871f6580578f4573487bc7b34882434b407746b3fee` |
+| `models/model_int8.dla` | 7,655,285 | `cf5b66c3fc1c24c9ef1d5c579d20f8d145cbd15d3a5be874b114f7f270c824c6` |
+
+模型文件默认不进入普通 Git 历史。重新转换或编译后必须重新生成并核对哈希，不能沿用本表。

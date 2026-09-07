@@ -9,7 +9,7 @@ models:
     source: ultralytics/yolov5
     reference: qualcomm/Yolo-v5
     platforms:
-      genio_720: environment_ready
+      genio_720: board_verified
       genio_5100: not_started
   - id: vit_base_patch16_224
     batch: first_batch

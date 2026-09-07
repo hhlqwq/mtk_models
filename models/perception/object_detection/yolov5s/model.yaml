@@ -18,7 +18,7 @@ metrics:
   performance: latency_ms
 targets:
   genio_720:
-    status: environment_ready
+    status: board_verified
     precisions: [fp32, int8]
   genio_5100:
     status: not_started

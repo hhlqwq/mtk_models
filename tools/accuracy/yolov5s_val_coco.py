@@ -11,6 +11,7 @@ import argparse
 import json
 import sys
 import types
+from collections import Counter
 from pathlib import Path
 
 import cv2
@@ -70,6 +71,10 @@ def stage_prepare(args: argparse.Namespace) -> None:
 
     image_paths = sorted(Path(args.images_dir).glob("*.jpg"))
     subset = image_paths[args.start:args.start + args.count]
+    if len(subset) != args.count:
+        raise ValueError(
+            f"评测图片不足: 请求 [{args.start}, {args.start + args.count}), "
+            f"实际仅取得 {len(subset)} 张")
     parser = mtk_converter.TFLiteParser(str(args.tflite))
     input_detail = parser.get_input_tensor_details()[0]
     q_scale = input_detail["quantization"]["scales"][0]
@@ -176,48 +181,94 @@ def append_results(path: Path, image_id: int, boxes: np.ndarray) -> None:
             }) + "\n")
 
 
-def done_ids(path: Path) -> set:
-    """读取已有结果 jsonl 的 image_id 集合, 支持断点续跑。"""
+def result_image_ids(path: Path) -> set[int]:
+    """读取结果 jsonl 中已有预测的 image_id 集合。"""
     if not path.exists():
         return set()
     return {json.loads(line)["image_id"]
             for line in path.read_text(encoding="utf-8").splitlines() if line}
 
 
+def processed_image_ids(path: Path) -> set[int]:
+    """读取已完成图片列表，包含没有任何检测结果的图片。"""
+    if not path.exists():
+        return set()
+    return {int(line.split(",", maxsplit=1)[0]) for line in path.read_text(
+        encoding="utf-8").splitlines() if line}
+
+
+def processed_record_counts(path: Path) -> dict[int, int]:
+    """读取各图片应有的检测记录数。"""
+    if not path.exists():
+        return {}
+    result = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line:
+            continue
+        image_id, count = line.split(",", maxsplit=1)
+        result[int(image_id)] = int(count)
+    return result
+
+
+def mark_processed(path: Path, image_id: int, record_count: int) -> None:
+    """在结果完整写出后追加图片完成标记和记录数。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(f"{image_id},{record_count}\n")
+
+
 def stage_decode(args: argparse.Namespace) -> None:
     """对指定后端输出做解码 + NMS, 写 COCO 结果 jsonl。"""
     manifest = load_manifest(args.manifest)
+    if not manifest:
+        raise ValueError(f"输入清单为空: {args.manifest}")
     args.result.parent.mkdir(parents=True, exist_ok=True)
+    processed = processed_image_ids(args.done)
+    orphan_results = result_image_ids(args.result) - processed
+    if orphan_results:
+        raise RuntimeError(
+            "结果文件包含未完成记录，可能是上次写入中断；请使用新的 "
+            f"EVAL_RUN_ID。示例 image_id: {min(orphan_results)}")
     if args.backend == "npu":
         import mtk_converter
 
         parser = mtk_converter.TFLiteParser(str(args.tflite))
         outputs = parser.get_output_tensor_details()
+        output_shapes = [list(output["shape"]) for output in outputs]
+        expected_shapes = [[1, 255, size, size] for size in HEAD_SIZES]
+        if output_shapes != expected_shapes:
+            raise ValueError(
+                f"TFLite 输出顺序或形状异常: {output_shapes}, "
+                f"期望 {expected_shapes}")
         scales = [o["quantization"]["scales"][0] for o in outputs]
         zeros = [o["quantization"]["zero_points"][0] for o in outputs]
-        bins = sorted(args.bins_dir.glob("*_0.bin"))
-        skip = done_ids(args.result)
-        for head0 in tqdm.tqdm(bins, desc="解码 NPU 输出", unit="img"):
-            stem = head0.name[: -len("_0.bin")]
-            if stem not in manifest or int(stem) in skip:
+        items = sorted(manifest.items(), key=lambda item: int(item[0]))
+        for stem, meta in tqdm.tqdm(items, desc="解码 NPU 输出", unit="img"):
+            image_id = int(stem)
+            if image_id in processed:
                 continue
             heads = []
             for index, size in enumerate(HEAD_SIZES):
-                raw = np.fromfile(head0.parent / f"{stem}_{index}.bin",
-                                  dtype=np.int8)
+                output_path = args.bins_dir / f"{stem}_{index}.bin"
+                if not output_path.is_file() or output_path.stat().st_size == 0:
+                    raise FileNotFoundError(f"NPU 输出缺失或为空: {output_path}")
+                raw = np.fromfile(output_path, dtype=np.int8)
                 nchw = rowpadded_to_nchw(raw, size, size, 255)
                 values = (nchw.astype(np.float32) - zeros[index]) * scales[index]
                 heads.append(torch.from_numpy(values))
             boxes = decode_heads(heads, args.confidence, args.iou,
                                  args.max_det)
-            append_results(args.result, int(stem), rescale_to_original(
-                boxes, manifest[stem], args.image_size))
+            append_results(args.result, image_id, rescale_to_original(
+                boxes, meta, args.image_size))
+            mark_processed(args.done, image_id, len(boxes))
     else:
         infer = build_fp32_infer(args)
-        skip = done_ids(args.result)
-        items = sorted((k, v) for k, v in manifest.items() if int(k) not in skip)
+        items = sorted(manifest.items(), key=lambda item: int(item[0]))
         for stem, meta in tqdm.tqdm(items, desc=f"解码 {args.backend}",
                                     unit="img"):
+            image_id = int(stem)
+            if image_id in processed:
+                continue
             image = cv2.imread(str(args.images_dir / f"{stem}.jpg"))
             if image is None:
                 raise ValueError(f"缺少图片: {stem}.jpg")
@@ -225,8 +276,9 @@ def stage_decode(args: argparse.Namespace) -> None:
             heads = infer(canvas)
             boxes = decode_heads(heads, args.confidence, args.iou,
                                  args.max_det)
-            append_results(args.result, int(stem), rescale_to_original(
+            append_results(args.result, image_id, rescale_to_original(
                 boxes, meta, args.image_size))
+            mark_processed(args.done, image_id, len(boxes))
     print(f"[OK] decode({args.backend}) 完成 -> {args.result}")
 
 
@@ -260,6 +312,9 @@ def build_fp32_infer(args: argparse.Namespace):
     providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
     session = onnxruntime.InferenceSession(str(args.onnx),
                                            providers=providers)
+    if "CUDAExecutionProvider" not in session.get_providers():
+        raise RuntimeError(
+            "ONNX Runtime 未启用 CUDAExecutionProvider，拒绝静默回退 CPU。")
     input_name = session.get_inputs()[0].name
     order = {80: 0, 40: 1, 20: 2}
 
@@ -281,14 +336,43 @@ def stage_evaluate(args: argparse.Namespace) -> None:
     from pycocotools.coco import COCO
     from pycocotools.cocoeval import COCOeval
 
+    manifest = load_manifest(args.manifest)
+    expected_ids = {int(image_id) for image_id in manifest}
+    processed_ids = processed_image_ids(args.done)
+    if not expected_ids:
+        raise ValueError(f"输入清单为空: {args.manifest}")
+    if args.expected_images and len(expected_ids) != args.expected_images:
+        raise RuntimeError(
+            f"清单图片数异常: 期望 {args.expected_images}, "
+            f"实际 {len(expected_ids)}")
+    if processed_ids != expected_ids:
+        missing = sorted(expected_ids - processed_ids)
+        unexpected = sorted(processed_ids - expected_ids)
+        raise RuntimeError(
+            "评测覆盖不完整: "
+            f"期望 {len(expected_ids)}, 已完成 {len(processed_ids)}, "
+            f"缺少 {missing[:3]}, 多余 {unexpected[:3]}")
     records = [json.loads(line) for line in
                args.result.read_text(encoding="utf-8").splitlines() if line]
+    expected_record_counts = processed_record_counts(args.done)
+    record_counter = Counter(record["image_id"] for record in records)
+    actual_record_counts = {
+        image_id: record_counter.get(image_id, 0) for image_id in expected_ids
+    }
+    if actual_record_counts != expected_record_counts:
+        raise RuntimeError(
+            "结果记录数与完成标记不一致，可能发生中断或文件损坏；"
+            "请使用新的 EVAL_RUN_ID。")
+    unexpected_results = result_image_ids(args.result) - expected_ids
+    if unexpected_results:
+        raise RuntimeError(
+            f"结果包含清单外 image_id: {sorted(unexpected_results)[:3]}")
     print(f"[INFO] {args.result.name}: {len(records)} 条检测结果")
     annotation = COCO(str(args.ann))
     prediction = annotation.loadRes(records)
     evaluator = COCOeval(annotation, prediction, "bbox")
-    # 与 yolov5 val.py 一致: 仅评测实际有预测结果的图片, 支持子集评测。
-    evaluator.params.imgIds = sorted({int(r["image_id"]) for r in records})
+    # 必须评测清单中的全部图片，包括没有任何预测结果的图片。
+    evaluator.params.imgIds = sorted(expected_ids)
     evaluator.evaluate()
     evaluator.accumulate()
     evaluator.summarize()
@@ -297,6 +381,7 @@ def stage_evaluate(args: argparse.Namespace) -> None:
     summary = {name: round(float(value), 4)
                for name, value in zip(names, evaluator.stats)}
     summary["backend"] = args.backend
+    summary["evaluated_images"] = len(expected_ids)
     args.summary.parent.mkdir(parents=True, exist_ok=True)
     args.summary.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     print(f"[OK] summary -> {args.summary}")
@@ -335,10 +420,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", type=Path, default=None)
     parser.add_argument("--result", type=Path, default=None)
     parser.add_argument("--summary", type=Path, default=None)
+    parser.add_argument("--done", type=Path, default=None)
     parser.add_argument("--backend", default="npu",
                         choices=["npu", "torch", "onnx"])
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--count", type=int, default=500)
+    parser.add_argument("--expected-images", type=int, default=None)
     parser.add_argument("--image-size", type=int, default=640)
     parser.add_argument("--confidence", type=float, default=0.001)
     parser.add_argument("--iou", type=float, default=0.6)
@@ -348,6 +435,7 @@ def parse_args() -> argparse.Namespace:
     args.manifest = args.manifest or args.work_dir / "manifest.json"
     args.result = args.result or args.work_dir / f"{args.backend}_results.jsonl"
     args.summary = args.summary or args.work_dir / f"{args.backend}_summary.json"
+    args.done = args.done or args.work_dir / f"{args.backend}_done_ids.txt"
     args.work_dir.mkdir(parents=True, exist_ok=True)
     return args
 
