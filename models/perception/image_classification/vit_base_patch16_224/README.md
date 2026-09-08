@@ -24,6 +24,28 @@ cd /workspace/models/perception/image_classification/vit_base_patch16_224
 正式 Top-1 需要 ImageNet ILSVRC2012 验证集及可靠标签映射. 当前 89 已有 50,000 张
 验证图片, 但没有可核验的 ground-truth 到模型输出类序映射, 因此不填写最终 Top-1.
 
+官方标签映射使用以下两个小型资源, 不需要重新下载验证图片:
+
+| 文件 | 官方地址 | SHA-256 |
+| --- | --- | --- |
+| `ILSVRC2012_devkit_t12.tar.gz` | `https://image-net.org/data/ILSVRC/2012/ILSVRC2012_devkit_t12.tar.gz` | `b59243268c0d266621fd587d2018f69e906fb22875aca0e295b48cafaa927953` |
+| `imagenet_class_index.json` | `https://storage.googleapis.com/download.tensorflow.org/data/imagenet_class_index.json` | `a1e7a966a1f601d39e4b43e119b3e7dd4a2ad3ea08cf69847cbaf021013767bc` |
+
+将文件放入 `original/imagenet_eval/`, 在 89 容器中执行:
+
+```bash
+python /workspace/tools/accuracy/imagenet_val_labels.py \
+    --devkit original/imagenet_eval/ILSVRC2012_devkit_t12.tar.gz \
+    --class-index original/imagenet_eval/imagenet_class_index.json \
+    --qualcomm-labels original/labels.txt \
+    --output original/imagenet_eval/imagenet_val_labels_0based.txt \
+    --manifest original/imagenet_eval/imagenet_val_labels_manifest.json
+```
+
+生成器通过 devkit 的 `ILSVRC2012_ID -> WNID` 和 Keras/TensorFlow 的
+`WNID -> 0-based 输出索引` 建立映射, 并校验 50,000 张、1000 类及每类 50 张.
+这些受 ImageNet 条款约束的原始和派生标签文件不进入普通 Git 历史.
+
 ## 交付状态
 
 | 环节 | 状态 | 证据 |
