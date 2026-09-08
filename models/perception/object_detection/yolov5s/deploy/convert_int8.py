@@ -1,4 +1,4 @@
-"""将 YOLOv5s TorchScript 模型量化为 MTK INT8 TFLite。"""
+"""将 YOLOv5s TorchScript 模型量化为 MTK INT8 TFLite."""
 
 import argparse
 from collections.abc import Iterator
@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 
 def preprocess_image(image_path: Path, image_size: int = 640) -> np.ndarray:
-    """读取图片并生成 YOLOv5 NCHW FP32 输入。"""
+    """读取图片并生成 YOLOv5 NCHW FP32 输入."""
     image = cv2.imread(str(image_path))
     if image is None:
         raise ValueError(f"无法读取校准图片: {image_path}")
@@ -31,25 +31,25 @@ def preprocess_image(image_path: Path, image_size: int = 640) -> np.ndarray:
 
 def calibration_data(
         calibration_dir: Path, sample_count: int) -> Iterator[list[np.ndarray]]:
-    """按固定顺序生成校准数据，并显示准备进度。"""
+    """按固定顺序生成校准数据,并显示准备进度."""
     image_paths = sorted(
         path for path in calibration_dir.iterdir()
         if path.suffix.lower() in {".jpg", ".jpeg", ".png"})
     selected_paths = image_paths[:sample_count]
     if len(selected_paths) < sample_count:
         raise ValueError(
-            f"校准图片不足: 需要 {sample_count}，实际 {len(selected_paths)}")
+            f"校准图片不足: 需要 {sample_count},实际 {len(selected_paths)}")
     for image_path in tqdm(selected_paths, desc="准备 YOLOv5s 校准数据"):
         yield [preprocess_image(image_path)]
 
 
 def convert_model(args: argparse.Namespace) -> None:
-    """创建 MTK PyTorch Converter 并执行 INT8 PTQ。"""
+    """创建 MTK PyTorch Converter 并执行 INT8 PTQ."""
     converter = mtk_converter.PyTorchConverter.from_script_module_file(
         str(args.torchscript), input_shapes=[(1, 3, 640, 640)])
     converter.quantize = True
-    # 可选: 输出端追加 DEQUANTIZE。MT8189 部署走 --suppress-output 直取
-    # MDLA 原生 INT8 输出, 默认无需开启。
+    # 可选: 输出端追加 DEQUANTIZE.MT8189 部署走 --suppress-output 直取
+    # MDLA 原生 INT8 输出, 默认无需开启.
     converter.append_output_dequantize_ops = args.append_output_dequantize
     converter.calibration_data_gen = lambda: calibration_data(
         args.calibration_dir, args.samples)
@@ -57,7 +57,7 @@ def convert_model(args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数。"""
+    """解析命令行参数."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--torchscript", type=Path, required=True)
     parser.add_argument("--calibration-dir", type=Path, required=True)

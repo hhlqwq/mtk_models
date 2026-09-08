@@ -1,10 +1,10 @@
-"""ViT-Base Patch16 224 精度评测: FP32 ONNX 基线与 MTK NPU INT8 对齐分析。
+"""ViT-Base Patch16 224 精度评测: FP32 ONNX 基线与 MTK NPU INT8 对齐分析.
 
 阶段 (均在容器内执行, 板端推理由 deploy/accuracy_eval.sh 驱动):
 
-- ``prepare``: 生成 NPU INT8 输入 bin + FP32 ONNX logits npy + 清单。
+- ``prepare``: 生成 NPU INT8 输入 bin + FP32 ONNX logits npy + 清单.
 - ``compare``: 解码 NPU 原生 logits, 与 FP32 基线比较 top-1/top-5 一致率和
-  logits 误差; 若提供 labels 同时报告双方绝对 Top-1/Top-5。
+  logits 误差; 若提供 labels 同时报告双方绝对 Top-1/Top-5.
 """
 
 import argparse
@@ -18,10 +18,10 @@ import tqdm
 
 def preprocess(image: np.ndarray, crop_size: int = 224,
                resize_size: int = 256) -> np.ndarray:
-    """ImageNet 标准评估几何预处理, 返回 NCHW FP32 [0,1]。
+    """ImageNet 标准评估几何预处理, 返回 NCHW FP32 [0,1].
 
     Qualcomm 导出的 ONNX 已在图内完成 mean/std 归一化 (首节点 Sub/Div),
-    外部输入必须是 rgb/255 的 [0,1] 范围, 不允许再次归一化。
+    外部输入必须是 rgb/255 的 [0,1] 范围, 不允许再次归一化.
     """
     height, width = image.shape[:2]
     scale = resize_size / min(height, width)
@@ -36,17 +36,17 @@ def preprocess(image: np.ndarray, crop_size: int = 224,
 
 
 def list_images(images_dir: Path) -> list:
-    """按文件名排序列出评测图片。"""
+    """按文件名排序列出评测图片."""
     return sorted(p for p in images_dir.iterdir()
                   if p.suffix.lower() in {".jpg", ".jpeg", ".png", ".JPEG"})
 
 
 def load_labels(path: Path, count: int) -> dict:
-    """加载 ImageNet val ground truth (行号 -> 0-based 类 id)。
+    """加载 ImageNet val ground truth (行号 -> 0-based 类 id).
 
-    此处只接受已经映射到模型输出顺序的 0-based 类 id。单列格式按图片排序
-    逐行对应；两列格式为 "1-based 图片序号 0-based 类 id"。原始 ILSVRC
-    ground truth 的 1-based synset id 必须先结合 devkit meta.mat 完成映射。
+    此处只接受已经映射到模型输出顺序的 0-based 类 id.单列格式按图片排序
+    逐行对应；两列格式为 "1-based 图片序号 0-based 类 id".原始 ILSVRC
+    ground truth 的 1-based synset id 必须先结合 devkit meta.mat 完成映射.
     """
     labels = {}
     for line_no, line in enumerate(
@@ -69,14 +69,14 @@ def load_labels(path: Path, count: int) -> dict:
 
 
 def topk_from_logits(logits: np.ndarray, k: int) -> np.ndarray:
-    """返回 logits 的 top-k 类 id。"""
+    """返回 logits 的 top-k 类 id."""
     return np.argpartition(logits, -k)[-k:][np.argsort(
         -logits[np.argpartition(logits, -k)[-k:]])]
 
 
 def load_npu_logit(path: Path, out_size: int, scale: float,
                    zero_point: int) -> np.ndarray:
-    """读取并反量化 NPU 原生 logits (兼容 16 对齐行 padding)。"""
+    """读取并反量化 NPU 原生 logits (兼容 16 对齐行 padding)."""
     raw = np.fromfile(path, dtype=np.int8)
     pad = (out_size + 15) // 16 * 16
     if raw.size == pad:
@@ -87,7 +87,7 @@ def load_npu_logit(path: Path, out_size: int, scale: float,
 
 
 def stage_prepare(args: argparse.Namespace) -> None:
-    """生成 NPU 输入 bin、FP32 基线 logits 与清单。"""
+    """生成 NPU 输入 bin、FP32 基线 logits 与清单."""
     import mtk_converter
     import onnxruntime
 
@@ -110,7 +110,7 @@ def stage_prepare(args: argparse.Namespace) -> None:
     if (args.onnx_provider == "cuda" and
             "CUDAExecutionProvider" not in session.get_providers()):
         raise RuntimeError(
-            "ONNX Runtime 未启用 CUDAExecutionProvider，拒绝静默回退 CPU。")
+            "ONNX Runtime 未启用 CUDAExecutionProvider,拒绝静默回退 CPU.")
     if args.onnx_provider == "cpu":
         print("[INFO] FP32 ONNX 显式使用 CPUExecutionProvider.")
     input_name = session.get_inputs()[0].name
@@ -139,11 +139,11 @@ def stage_prepare(args: argparse.Namespace) -> None:
     with args.manifest.open("a", encoding="utf-8", newline="\n") as file:
         for line in manifest_lines:
             file.write(f"{line}\n")
-    print(f"[OK] prepare 完成: {len(image_paths)} 张。")
+    print(f"[OK] prepare 完成: {len(image_paths)} 张.")
 
 
 def stage_compare(args: argparse.Namespace) -> None:
-    """NPU logits 与 FP32 基线对齐分析, 可选报告绝对精度。"""
+    """NPU logits 与 FP32 基线对齐分析, 可选报告绝对精度."""
     import mtk_converter
 
     parser = mtk_converter.TFLiteParser(str(args.tflite))
@@ -173,7 +173,7 @@ def stage_compare(args: argparse.Namespace) -> None:
     expected_indices = list(range(args.count))
     actual_indices = [record["index"] for record in manifest]
     if actual_indices != expected_indices:
-        raise ValueError("清单图片序号不连续或顺序异常。")
+        raise ValueError("清单图片序号不连续或顺序异常.")
     output_count = len(list(args.npu_dir.glob("*_0.bin")))
     if output_count != args.count:
         raise ValueError(
@@ -232,7 +232,7 @@ def stage_compare(args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数。"""
+    """解析命令行参数."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", required=True,
                         choices=["prepare", "compare"])

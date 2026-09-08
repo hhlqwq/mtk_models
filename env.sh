@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# MTK Genio 720 项目公共环境变量。
+# MTK Genio 720 项目公共环境变量.
 export MTK_MODELS_ROOT="/data/users/hailong.he/github/mtk_models"
 export MTK_SDK_ROOT="/data/users/hailong.he/data/MTKG720"
 export MTK_DATASET_ROOT="/data/users/hailong.he/nas_smb/Datasets/open_source/raw"

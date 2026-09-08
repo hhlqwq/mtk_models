@@ -1,4 +1,4 @@
-"""验证镜像工具链及实际 GPU 执行能力。"""
+"""验证镜像工具链及实际 GPU 执行能力."""
 
 import subprocess
 import sys
@@ -12,7 +12,7 @@ from onnx import TensorProto, helper
 
 
 def main():
-    """构建时检查依赖, 启动时额外检查真实 CUDA 运算。"""
+    """构建时检查依赖, 启动时额外检查真实 CUDA 运算."""
     subprocess.run([sys.executable, "-m", "pip", "check"], check=True)
     print("[VERIFY]", sys.version, mtk_converter.__version__, cv2.__version__)
     if "--build" in sys.argv:
@@ -34,7 +34,7 @@ def main():
     assert session.get_providers()[0] == "CUDAExecutionProvider", session.get_providers()
     result = session.run(None, {"x": np.ones((2, 2), np.float32)})[0]
     np.testing.assert_allclose(result, 1)
-    print("[VERIFY] Torch 和 ONNX Runtime GPU 运算通过。")
+    print("[VERIFY] Torch 和 ONNX Runtime GPU 运算通过.")
 
 
 if __name__ == "__main__":

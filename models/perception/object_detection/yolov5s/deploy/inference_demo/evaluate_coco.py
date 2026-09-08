@@ -1,4 +1,4 @@
-"""在开发板使用官方 pycocotools 计算 COCO bbox 指标。"""
+"""在开发板使用官方 pycocotools 计算 COCO bbox 指标."""
 
 import argparse
 import contextlib
@@ -27,7 +27,7 @@ METRIC_NAMES = [
 
 
 def load_processed_ids(path: Path) -> set[int]:
-    """读取 C++ 评测程序写出的已完成图片集合。"""
+    """读取 C++ 评测程序写出的已完成图片集合."""
     return {
         int(line)
         for line in path.read_text(encoding="utf-8").splitlines()
@@ -36,7 +36,7 @@ def load_processed_ids(path: Path) -> set[int]:
 
 
 def evaluate(args: argparse.Namespace) -> None:
-    """验证覆盖范围，执行 COCOeval 并保存指标和原始摘要。"""
+    """验证覆盖范围,执行 COCOeval 并保存指标和原始摘要."""
     annotation = COCO(str(args.annotations))
     expected_ids = set(annotation.getImgIds())
     processed_ids = load_processed_ids(args.processed_ids)
@@ -80,7 +80,7 @@ def evaluate(args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数。"""
+    """解析命令行参数."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--annotations", type=Path, required=True)
     parser.add_argument("--predictions", type=Path, required=True)

@@ -1,6 +1,6 @@
 # 模型目录
 
-模型使用“Scenario → Category → Model”三级目录，与首批 Target AI Models 清单一致：
+模型使用“Scenario → Category → Model"三级目录,与首批 Target AI Models 清单一致：
 
 ```text
 models/
@@ -35,8 +35,8 @@ models/
     └── three_d_fusion/
 ```
 
-未开始的模型只保留在 `registry/target_models.yaml`，不预先创建大量空目录。模型进入实现阶段时，
-使用 `tools/create_model.py` 创建完整交付目录，并加入 `registry/models.yaml`。
+未开始的模型只保留在 `registry/target_models.yaml`,不预先创建大量空目录.模型进入实现阶段时,
+使用 `tools/create_model.py` 创建完整交付目录,并加入 `registry/models.yaml`.
 
 当前先行实现：
 

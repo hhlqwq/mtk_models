@@ -1,4 +1,4 @@
-"""检查模型注册表与交付目录的一致性。"""
+"""检查模型注册表与交付目录的一致性."""
 
 import sys
 from pathlib import Path
@@ -32,16 +32,16 @@ VALID_STATUSES = {
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
-    """读取 YAML 文件。
+    """读取 YAML 文件.
 
     Args:
-        path: YAML 文件路径。
+        path: YAML 文件路径.
 
     Returns:
-        YAML 顶层字典。
+        YAML 顶层字典.
 
     Raises:
-        ValueError: YAML 顶层不是字典。
+        ValueError: YAML 顶层不是字典.
     """
     with path.open("r", encoding="utf-8") as file:
         data = yaml.safe_load(file)
@@ -51,13 +51,13 @@ def load_yaml(path: Path) -> dict[str, Any]:
 
 
 def check_model(entry: dict[str, Any]) -> list[str]:
-    """检查单个注册模型的路径、元数据和状态。
+    """检查单个注册模型的路径、元数据和状态.
 
     Args:
-        entry: `registry/models.yaml` 中的单模型条目。
+        entry: `registry/models.yaml` 中的单模型条目.
 
     Returns:
-        发现的问题列表；空列表表示通过。
+        发现的问题列表；空列表表示通过.
     """
     errors: list[str] = []
     model_id = str(entry.get("id", "<missing-id>"))
@@ -77,13 +77,13 @@ def check_model(entry: dict[str, Any]) -> list[str]:
             errors.append(
                 f"{model_id}: model.yaml id 不一致: {model_yaml.get('id')}")
         if model_yaml.get("scenario") != entry.get("scenario"):
-            errors.append(f"{model_id}: model.yaml scenario 与注册表不一致。")
+            errors.append(f"{model_id}: model.yaml scenario 与注册表不一致.")
         if model_yaml.get("category") != entry.get("category"):
-            errors.append(f"{model_id}: model.yaml category 与注册表不一致。")
+            errors.append(f"{model_id}: model.yaml category 与注册表不一致.")
 
     platforms = entry.get("platforms", {})
     if not isinstance(platforms, dict):
-        errors.append(f"{model_id}: platforms 必须是字典。")
+        errors.append(f"{model_id}: platforms 必须是字典.")
     else:
         for platform, status in platforms.items():
             if status not in VALID_STATUSES:
@@ -93,23 +93,23 @@ def check_model(entry: dict[str, Any]) -> list[str]:
 
 
 def main() -> int:
-    """检查整个注册表并输出关键节点信息。
+    """检查整个注册表并输出关键节点信息.
 
     Returns:
-        无错误时返回 0，否则返回 1。
+        无错误时返回 0,否则返回 1.
     """
     registry = load_yaml(REGISTRY_PATH)
     models = registry.get("models", [])
     if not isinstance(models, list):
-        print("[ERROR] registry.models 必须是列表。")
+        print("[ERROR] registry.models 必须是列表.")
         return 1
 
-    print(f"[CHECK] 开始检查 {len(models)} 个注册模型。")
+    print(f"[CHECK] 开始检查 {len(models)} 个注册模型.")
     errors: list[str] = []
     seen_ids: set[str] = set()
     for index, entry in enumerate(models, start=1):
         if not isinstance(entry, dict):
-            errors.append(f"第 {index} 个模型条目不是字典。")
+            errors.append(f"第 {index} 个模型条目不是字典.")
             continue
         model_id = str(entry.get("id", "<missing-id>"))
         print(f"[CHECK] {index}/{len(models)}: {model_id}")
@@ -121,9 +121,9 @@ def main() -> int:
     if errors:
         for error in errors:
             print(f"[ERROR] {error}")
-        print(f"[FAIL] 共发现 {len(errors)} 个问题。")
+        print(f"[FAIL] 共发现 {len(errors)} 个问题.")
         return 1
-    print("[OK] 模型注册表与目录结构一致。")
+    print("[OK] 模型注册表与目录结构一致.")
     return 0
 
 

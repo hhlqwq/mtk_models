@@ -7,16 +7,16 @@
 - 固定源码提交：`485da42273839d20ea6bdaf142fd02c1027aba61`
 - YOLOv5s v7.0 权重：<https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.pt>
 - MTK 转换指南：<https://genio.mediatek.com/doc/iot-aihub/ai_hub/model_zoo/litert_analytical/YOLOv5s.html>
-- 模型变体：YOLOv5s，不是 Qualcomm 页面当前展示的 YOLOv5-M。
+- 模型变体：YOLOv5s,不是 Qualcomm 页面当前展示的 YOLOv5-M.
 
 ## 许可证
 
-Ultralytics YOLOv5 使用 AGPL-3.0。使用和再分发模型、修改代码或服务前必须评估许可证义务。
+Ultralytics YOLOv5 使用 AGPL-3.0.使用和再分发模型、修改代码或服务前必须评估许可证义务.
 
 ## 输入输出
 
-输入为 NCHW RGB、FP32、范围 `[0, 1]`，固定形状 `1×3×640×640`。转换后的模型保留三个
-原始检测头，后处理执行 sigmoid、anchor 解码、置信度过滤和 NMS。
+输入为 NCHW RGB、FP32、范围 `[0, 1]`,固定形状 `1×3×640×640`.转换后的模型保留三个
+原始检测头,后处理执行 sigmoid、anchor 解码、置信度过滤和 NMS.
 
 ## 文件校验
 
@@ -30,4 +30,4 @@ Ultralytics YOLOv5 使用 AGPL-3.0。使用和再分发模型、修改代码或�
 | `models/model_int8.tflite` | 7,723,624 | `49212dfd6d02842abc690871f6580578f4573487bc7b34882434b407746b3fee` |
 | `models/model_int8.dla` | 7,655,285 | `cf5b66c3fc1c24c9ef1d5c579d20f8d145cbd15d3a5be874b114f7f270c824c6` |
 
-模型文件默认不进入普通 Git 历史。重新转换或编译后必须重新生成并核对哈希，不能沿用本表。
+模型文件默认不进入普通 Git 历史.重新转换或编译后必须重新生成并核对哈希,不能沿用本表.

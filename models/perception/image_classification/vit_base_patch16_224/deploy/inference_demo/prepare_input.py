@@ -1,4 +1,4 @@
-"""为 ViT 板端推理准备 NCHW INT8 输入。"""
+"""为 ViT 板端推理准备 NCHW INT8 输入."""
 
 import argparse
 import json
@@ -11,10 +11,10 @@ import numpy as np
 
 def preprocess(image: np.ndarray, crop_size: int = 224,
                resize_size: int = 256) -> np.ndarray:
-    """ImageNet 标准评估几何预处理, 返回 NCHW FP32 [0,1]。
+    """ImageNet 标准评估几何预处理, 返回 NCHW FP32 [0,1].
 
     Qualcomm 导出的 ONNX 已在图内完成 mean/std 归一化 (首节点 Sub/Div),
-    外部输入必须是 rgb/255 的 [0,1] 范围, 不允许再次归一化。
+    外部输入必须是 rgb/255 的 [0,1] 范围, 不允许再次归一化.
     """
     height, width = image.shape[:2]
     scale = resize_size / min(height, width)
@@ -29,7 +29,7 @@ def preprocess(image: np.ndarray, crop_size: int = 224,
 
 
 def prepare_input(args: argparse.Namespace) -> None:
-    """读取图片并按 TFLite 量化参数写入板端输入与元数据。"""
+    """读取图片并按 TFLite 量化参数写入板端输入与元数据."""
     image = cv2.imread(str(args.image))
     if image is None:
         raise ValueError(f"无法读取图片: {args.image}")
@@ -65,7 +65,7 @@ def prepare_input(args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数。"""
+    """解析命令行参数."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", type=Path, required=True)
     parser.add_argument("--tflite", type=Path, required=True)

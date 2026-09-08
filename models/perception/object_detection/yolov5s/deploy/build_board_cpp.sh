@@ -18,7 +18,7 @@ test -f "${OPENCV_BUILD}/opencv2/cvconfig.h"
 test -f "${NEURON_INCLUDE}/neuron/api/RuntimeAPI.h"
 test -f "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8"
 
-echo "[1/2] 交叉编译 Genio 720 YOLOv5s C++ 评测程序。"
+echo "[1/2] 交叉编译 Genio 720 YOLOv5s C++ 评测程序."
 "${CXX}" \
     -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${OPENCV_BUILD}" \
@@ -34,6 +34,6 @@ echo "[1/2] 交叉编译 Genio 720 YOLOv5s C++ 评测程序。"
     -Wl,--allow-shlib-undefined -pthread -ldl \
     -o "${OUTPUT}"
 
-echo "[2/2] 检查目标架构。"
+echo "[2/2] 检查目标架构."
 file "${OUTPUT}"
 sha256sum "${OUTPUT}"

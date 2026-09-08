@@ -1,4 +1,4 @@
-"""解码 YOLOv5s 板端 INT8 输出并绘制检测框。"""
+"""解码 YOLOv5s 板端 INT8 输出并绘制检测框."""
 
 import argparse
 import json
@@ -16,13 +16,13 @@ STRIDES = np.array([8.0, 16.0, 32.0], dtype=np.float32)
 
 
 def sigmoid(values: np.ndarray) -> np.ndarray:
-    """计算稳定的 Sigmoid。"""
+    """计算稳定的 Sigmoid."""
     values = np.clip(values, -30.0, 30.0)
     return 1.0 / (1.0 + np.exp(-values))
 
 
 def decode_head(values: np.ndarray, head_index: int) -> np.ndarray:
-    """将单个检测头解码为 xywh、置信度和类别概率。"""
+    """将单个检测头解码为 xywh、置信度和类别概率."""
     _, _, height, width = values.shape
     values = values.reshape(1, 3, 85, height, width)
     values = values.transpose(0, 1, 3, 4, 2)
@@ -40,7 +40,7 @@ def decode_head(values: np.ndarray, head_index: int) -> np.ndarray:
 
 
 def box_iou(box: np.ndarray, boxes: np.ndarray) -> np.ndarray:
-    """计算一个框与多个框的 IoU。"""
+    """计算一个框与多个框的 IoU."""
     top_left = np.maximum(box[:2], boxes[:, :2])
     bottom_right = np.minimum(box[2:], boxes[:, 2:])
     intersection = np.prod(np.maximum(bottom_right - top_left, 0.0), axis=1)
@@ -53,7 +53,7 @@ def box_iou(box: np.ndarray, boxes: np.ndarray) -> np.ndarray:
 
 def class_aware_nms(boxes: np.ndarray, scores: np.ndarray,
                     classes: np.ndarray, threshold: float) -> list[int]:
-    """执行逐类别 NMS。"""
+    """执行逐类别 NMS."""
     kept: list[int] = []
     for class_id in np.unique(classes):
         indices = np.where(classes == class_id)[0]
@@ -69,10 +69,10 @@ def class_aware_nms(boxes: np.ndarray, scores: np.ndarray,
 
 
 def load_raw_output(output_path: Path, shape: list[int]) -> np.ndarray:
-    """读取板端原生输出并还原为 NCHW, 处理行 stride 16 对齐 padding。
+    """读取板端原生输出并还原为 NCHW, 处理行 stride 16 对齐 padding.
 
     neuronrt 配合 ncc-tflite --suppress-output 输出 MDLA 原生格式:
-    NCHW INT8, 每通道平面内行 stride 为 ceil16(W)。
+    NCHW INT8, 每通道平面内行 stride 为 ceil16(W).
     """
     quantized = np.fromfile(output_path, dtype=np.int8)
     n, c, height, width = shape
@@ -89,7 +89,7 @@ def load_raw_output(output_path: Path, shape: list[int]) -> np.ndarray:
 
 
 def postprocess(args: argparse.Namespace) -> None:
-    """读取板端输出、解码、执行 NMS 并写入结果。"""
+    """读取板端输出、解码、执行 NMS 并写入结果."""
     metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
     decoded_heads = []
     for index, detail in enumerate(metadata["outputs"]):
@@ -147,7 +147,7 @@ def postprocess(args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数。"""
+    """解析命令行参数."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--metadata", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)

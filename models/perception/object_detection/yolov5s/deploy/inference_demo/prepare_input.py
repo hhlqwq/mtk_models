@@ -1,4 +1,4 @@
-"""为 YOLOv5s 板端推理准备 NCHW INT8 输入。"""
+"""为 YOLOv5s 板端推理准备 NCHW INT8 输入."""
 
 import argparse
 import json
@@ -11,7 +11,7 @@ import numpy as np
 
 def letterbox(image: np.ndarray, image_size: int) -> tuple[np.ndarray, float,
                                                             int, int]:
-    """按 YOLOv5 规则缩放并填充图片。"""
+    """按 YOLOv5 规则缩放并填充图片."""
     height, width = image.shape[:2]
     scale = min(image_size / width, image_size / height)
     resized_width = round(width * scale)
@@ -25,7 +25,7 @@ def letterbox(image: np.ndarray, image_size: int) -> tuple[np.ndarray, float,
 
 
 def prepare_input(args: argparse.Namespace) -> None:
-    """读取图片并按 TFLite 量化参数写入板端输入。"""
+    """读取图片并按 TFLite 量化参数写入板端输入."""
     image = cv2.imread(str(args.image))
     if image is None:
         raise ValueError(f"无法读取图片: {args.image}")
@@ -70,7 +70,7 @@ def prepare_input(args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数。"""
+    """解析命令行参数."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", type=Path, required=True)
     parser.add_argument("--tflite", type=Path, required=True)

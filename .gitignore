@@ -1,4 +1,4 @@
-# Python 和工具缓存。
+# Python 和工具缓存.
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -6,15 +6,15 @@ __pycache__/
 .ruff_cache/
 .venv/
 
-# 精度评测工作区。
+# 精度评测工作区.
 .eval/
 
-# 本地环境和日志。
+# 本地环境和日志.
 .env
 *.log
 logs/
 
-# 模型与转换产物。
+# 模型与转换产物.
 *.pt
 *.pth
 *.safetensors
@@ -29,25 +29,25 @@ logs/
 # 正在下载的模型
 *.crdownload
 
-# 板端 C++ 交叉编译产物。
+# 板端 C++ 交叉编译产物.
 models/perception/object_detection/yolov5s/deploy/inference_demo/yolov5s_board_eval
 
 
-# 离线展开的第三方源码和补丁；固定版本压缩包保留在 Git 中。
+# 离线展开的第三方源码和补丁；固定版本压缩包保留在 Git 中.
 models/perception/object_detection/yolov5s/original/yolov5/
 models/perception/object_detection/yolov5s/original/mtk_patch/
 
-# 数据集和样例输出。
+# 数据集和样例输出.
 datasets/
 **/examples/input/*
 **/examples/output/*
 !**/examples/input/README.md
 !**/examples/output/README.md
 
-# 保留空模型目录说明。
+# 保留空模型目录说明.
 !**/models/README.md
 
-# 编辑器和系统文件。
+# 编辑器和系统文件.
 .vscode/
 .idea/
 .DS_Store

@@ -16,16 +16,16 @@ test -f "${MODEL_ROOT}/models/model_int8.dla"
 test -f "${MODEL_ROOT}/models/model_int8.tflite"
 test -f "${DEMO_IMAGE}"
 
-echo "[1/4] 按当前 TFLite 量化参数生成 Demo 输入。"
+echo "[1/4] 按当前 TFLite 量化参数生成 Demo 输入."
 python "${MODEL_ROOT}/deploy/inference_demo/prepare_input.py" \
     --image "${DEMO_IMAGE}" \
     --tflite "${MODEL_ROOT}/models/model_int8.tflite" \
     --output "${INPUT_BIN}" \
     --metadata "${INPUT_METADATA}"
 
-echo "[2/4] 创建板端目录。"
+echo "[2/4] 创建板端目录."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DIR}'"
-echo "[3/4] 部署 DLA 和 Demo。"
+echo "[3/4] 部署 DLA 和 Demo."
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/models/model_int8.dla" \
     "${BOARD_HOST}:${BOARD_DIR}/model_int8.dla"
 scp "${SSH_OPTIONS[@]}" "${INPUT_BIN}" \
@@ -38,7 +38,7 @@ mkdir -p "${MODEL_ROOT}/examples/output"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "tar -C '${BOARD_DIR}/output' -cf - ." \
     | tar -C "${MODEL_ROOT}/examples/output" -xf -
-echo "[4/4] 反量化输出并生成 Top-5。"
+echo "[4/4] 反量化输出并生成 Top-5."
 postprocess_args=(
     --metadata "${INPUT_METADATA}"
     --output-dir "${MODEL_ROOT}/examples/output"
@@ -49,4 +49,4 @@ if [[ -f "${MODEL_ROOT}/original/labels.txt" ]]; then
 fi
 python "${MODEL_ROOT}/deploy/inference_demo/postprocess_top5.py" \
     "${postprocess_args[@]}"
-echo "[OK] ViT 已完成板端推理, 结果位于 examples/output。"
+echo "[OK] ViT 已完成板端推理, 结果位于 examples/output."

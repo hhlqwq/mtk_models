@@ -1,10 +1,10 @@
-"""YOLOv5s COCO val2017 三后端统一精度评测 (PyTorch / ONNX / MTK NPU)。
+"""YOLOv5s COCO val2017 三后端统一精度评测 (PyTorch / ONNX / MTK NPU).
 
 三个后端共享同一 letterbox 预处理、解码和 NMS 逻辑, 保证公平对比:
 
-- ``prepare``: 生成板端 NPU 推理所需 INT8 输入 bin 与清单。
-- ``decode``: 对某一后端的原始推理结果做解码 + NMS, 输出 COCO 结果 jsonl。
-- ``evaluate``: 用 pycocotools 计算 mAP 并写出 summary。
+- ``prepare``: 生成板端 NPU 推理所需 INT8 输入 bin 与清单.
+- ``decode``: 对某一后端的原始推理结果做解码 + NMS, 输出 COCO 结果 jsonl.
+- ``evaluate``: 用 pycocotools 计算 mAP 并写出 summary.
 """
 
 import argparse
@@ -37,7 +37,7 @@ STRIDES = [8.0, 16.0, 32.0]
 
 
 def letterbox(image: np.ndarray, image_size: int) -> tuple:
-    """按 YOLOv5 规则缩放并填充图片, 返回画布与仿射元数据。"""
+    """按 YOLOv5 规则缩放并填充图片, 返回画布与仿射元数据."""
     height, width = image.shape[:2]
     scale = min(image_size / width, image_size / height)
     resized_width = round(width * scale)
@@ -51,14 +51,14 @@ def letterbox(image: np.ndarray, image_size: int) -> tuple:
 
 
 def load_manifest(path: Path) -> dict:
-    """读取输入清单; 不存在时返回空 dict。"""
+    """读取输入清单; 不存在时返回空 dict."""
     if path.exists():
         return json.loads(path.read_text(encoding="utf-8"))
     return {}
 
 
 def save_manifest(path: Path, manifest: dict) -> None:
-    """原子写出输入清单。"""
+    """原子写出输入清单."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(manifest), encoding="utf-8")
@@ -66,7 +66,7 @@ def save_manifest(path: Path, manifest: dict) -> None:
 
 
 def stage_prepare(args: argparse.Namespace) -> None:
-    """生成 [start, start+count) 范围图片的 INT8 输入 bin 并更新清单。"""
+    """生成 [start, start+count) 范围图片的 INT8 输入 bin 并更新清单."""
     import mtk_converter
 
     image_paths = sorted(Path(args.images_dir).glob("*.jpg"))
@@ -100,12 +100,12 @@ def stage_prepare(args: argparse.Namespace) -> None:
             "original_shape": [int(orig_h), int(orig_w)],
         }
     save_manifest(args.manifest, manifest)
-    print(f"[OK] prepare 完成, 累计清单 {len(manifest)} 条。")
+    print(f"[OK] prepare 完成, 累计清单 {len(manifest)} 条.")
 
 
 def rowpadded_to_nchw(buffer: np.ndarray, height: int, width: int,
                       channels: int) -> np.ndarray:
-    """按 NCHW 行 stride 16 对齐 (或无 padding) 还原张量。"""
+    """按 NCHW 行 stride 16 对齐 (或无 padding) 还原张量."""
     plain = channels * height * width
     pad = (width + 15) // 16 * 16
     padded = channels * height * pad
@@ -119,7 +119,7 @@ def rowpadded_to_nchw(buffer: np.ndarray, height: int, width: int,
 
 def decode_heads(heads: list, confidence: float, iou_threshold: float,
                  max_det: int) -> torch.Tensor:
-    """解码 3 个检测头并做 NMS, 返回 (N,6) 的 xyxy+score+cls。"""
+    """解码 3 个检测头并做 NMS, 返回 (N,6) 的 xyxy+score+cls."""
     device = heads[0].device
     predictions = []
     for index, head in enumerate(heads):
@@ -157,7 +157,7 @@ def decode_heads(heads: list, confidence: float, iou_threshold: float,
 
 def rescale_to_original(boxes: torch.Tensor, meta: dict,
                         image_size: int) -> np.ndarray:
-    """把画布坐标检测框映射回原始图片尺寸并裁剪。"""
+    """把画布坐标检测框映射回原始图片尺寸并裁剪."""
     result = boxes.clone().cpu().numpy()
     result[:, [0, 2]] = (result[:, [0, 2]] - meta["left"]) / meta["scale"]
     result[:, [1, 3]] = (result[:, [1, 3]] - meta["top"]) / meta["scale"]
@@ -168,7 +168,7 @@ def rescale_to_original(boxes: torch.Tensor, meta: dict,
 
 
 def append_results(path: Path, image_id: int, boxes: np.ndarray) -> None:
-    """按 COCO 结果格式追加 jsonl 记录。"""
+    """按 COCO 结果格式追加 jsonl 记录."""
     with path.open("a", encoding="utf-8") as handle:
         for *xyxy, score, class_id in boxes:
             x1, y1, x2, y2 = xyxy
@@ -182,7 +182,7 @@ def append_results(path: Path, image_id: int, boxes: np.ndarray) -> None:
 
 
 def result_image_ids(path: Path) -> set[int]:
-    """读取结果 jsonl 中已有预测的 image_id 集合。"""
+    """读取结果 jsonl 中已有预测的 image_id 集合."""
     if not path.exists():
         return set()
     return {json.loads(line)["image_id"]
@@ -190,7 +190,7 @@ def result_image_ids(path: Path) -> set[int]:
 
 
 def processed_image_ids(path: Path) -> set[int]:
-    """读取已完成图片列表，包含没有任何检测结果的图片。"""
+    """读取已完成图片列表,包含没有任何检测结果的图片."""
     if not path.exists():
         return set()
     return {int(line.split(",", maxsplit=1)[0]) for line in path.read_text(
@@ -198,7 +198,7 @@ def processed_image_ids(path: Path) -> set[int]:
 
 
 def processed_record_counts(path: Path) -> dict[int, int]:
-    """读取各图片应有的检测记录数。"""
+    """读取各图片应有的检测记录数."""
     if not path.exists():
         return {}
     result = {}
@@ -211,14 +211,14 @@ def processed_record_counts(path: Path) -> dict[int, int]:
 
 
 def mark_processed(path: Path, image_id: int, record_count: int) -> None:
-    """在结果完整写出后追加图片完成标记和记录数。"""
+    """在结果完整写出后追加图片完成标记和记录数."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(f"{image_id},{record_count}\n")
 
 
 def stage_decode(args: argparse.Namespace) -> None:
-    """对指定后端输出做解码 + NMS, 写 COCO 结果 jsonl。"""
+    """对指定后端输出做解码 + NMS, 写 COCO 结果 jsonl."""
     manifest = load_manifest(args.manifest)
     if not manifest:
         raise ValueError(f"输入清单为空: {args.manifest}")
@@ -227,8 +227,8 @@ def stage_decode(args: argparse.Namespace) -> None:
     orphan_results = result_image_ids(args.result) - processed
     if orphan_results:
         raise RuntimeError(
-            "结果文件包含未完成记录，可能是上次写入中断；请使用新的 "
-            f"EVAL_RUN_ID。示例 image_id: {min(orphan_results)}")
+            "结果文件包含未完成记录,可能是上次写入中断；请使用新的 "
+            f"EVAL_RUN_ID.示例 image_id: {min(orphan_results)}")
     if args.backend == "npu":
         import mtk_converter
 
@@ -283,7 +283,7 @@ def stage_decode(args: argparse.Namespace) -> None:
 
 
 def build_fp32_infer(args: argparse.Namespace):
-    """构造返回 3 个原始检测头的 FP32 推理函数 (torch 或 onnx)。"""
+    """构造返回 3 个原始检测头的 FP32 推理函数 (torch 或 onnx)."""
     if args.backend == "torch":
         sys.path.insert(0, str(args.source_dir))
         from models.experimental import attempt_load
@@ -292,14 +292,14 @@ def build_fp32_infer(args: argparse.Namespace):
         detect = model.model[-1]
 
         def detect_forward(self, x):
-            """Detect 仅保留 3 个 conv 输出, 与部署图一致。"""
+            """Detect 仅保留 3 个 conv 输出, 与部署图一致."""
             return [self.m[i](x[i]) for i in range(self.nl)]
 
         detect.forward = types.MethodType(detect_forward, detect)
         model.eval().cuda()
 
         def infer(canvas: np.ndarray) -> list:
-            """FP32 PyTorch 推理。"""
+            """FP32 PyTorch 推理."""
             rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
             tensor = torch.from_numpy(
                 rgb.transpose(2, 0, 1).astype(np.float32) / 255.0).cuda()[None]
@@ -314,12 +314,12 @@ def build_fp32_infer(args: argparse.Namespace):
                                            providers=providers)
     if "CUDAExecutionProvider" not in session.get_providers():
         raise RuntimeError(
-            "ONNX Runtime 未启用 CUDAExecutionProvider，拒绝静默回退 CPU。")
+            "ONNX Runtime 未启用 CUDAExecutionProvider,拒绝静默回退 CPU.")
     input_name = session.get_inputs()[0].name
     order = {80: 0, 40: 1, 20: 2}
 
     def infer(canvas: np.ndarray) -> list:
-        """FP32 ONNX Runtime 推理, 输出按 stride 顺序重排。"""
+        """FP32 ONNX Runtime 推理, 输出按 stride 顺序重排."""
         rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
         tensor = rgb.transpose(2, 0, 1).astype(np.float32)[None] / 255.0
         outputs = session.run(None, {input_name: tensor})
@@ -332,7 +332,7 @@ def build_fp32_infer(args: argparse.Namespace):
 
 
 def stage_evaluate(args: argparse.Namespace) -> None:
-    """用 pycocotools 计算 mAP 并写出 summary。"""
+    """用 pycocotools 计算 mAP 并写出 summary."""
     from pycocotools.coco import COCO
     from pycocotools.cocoeval import COCOeval
 
@@ -361,8 +361,8 @@ def stage_evaluate(args: argparse.Namespace) -> None:
     }
     if actual_record_counts != expected_record_counts:
         raise RuntimeError(
-            "结果记录数与完成标记不一致，可能发生中断或文件损坏；"
-            "请使用新的 EVAL_RUN_ID。")
+            "结果记录数与完成标记不一致,可能发生中断或文件损坏；"
+            "请使用新的 EVAL_RUN_ID.")
     unexpected_results = result_image_ids(args.result) - expected_ids
     if unexpected_results:
         raise RuntimeError(
@@ -371,7 +371,7 @@ def stage_evaluate(args: argparse.Namespace) -> None:
     annotation = COCO(str(args.ann))
     prediction = annotation.loadRes(records)
     evaluator = COCOeval(annotation, prediction, "bbox")
-    # 必须评测清单中的全部图片，包括没有任何预测结果的图片。
+    # 必须评测清单中的全部图片,包括没有任何预测结果的图片.
     evaluator.params.imgIds = sorted(expected_ids)
     evaluator.evaluate()
     evaluator.accumulate()
@@ -388,7 +388,7 @@ def stage_evaluate(args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数。"""
+    """解析命令行参数."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", required=True,
                         choices=["prepare", "decode", "evaluate"])

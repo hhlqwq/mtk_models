@@ -1,4 +1,4 @@
-# 在镜像构建时安装导出和正式 COCO 评测依赖。
+# 在镜像构建时安装导出和正式 COCO 评测依赖.
 ultralytics==8.0.111
 opencv-python==4.11.0.86
 pandas==2.2.3

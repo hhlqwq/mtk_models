@@ -1,5 +1,5 @@
 #!/bin/sh
-# 板端 COCO 评测推理循环: 对 inputs/ 下每个 INT8 bin 跑一次 neuronrt。
+# 板端 COCO 评测推理循环: 对 inputs/ 下每个 INT8 bin 跑一次 neuronrt.
 # 用法: board_eval_loop.sh <DLA> <inputs_dir> <outputs_dir>
 
 set -eu

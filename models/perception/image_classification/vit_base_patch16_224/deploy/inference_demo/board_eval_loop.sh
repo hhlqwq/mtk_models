@@ -1,5 +1,5 @@
 #!/bin/sh
-# 板端 ViT 评测推理循环: inputs/ 每个 bin 单次 neuronrt, 输出 <stem>_0.bin。
+# 板端 ViT 评测推理循环: inputs/ 每个 bin 单次 neuronrt, 输出 <stem>_0.bin.
 
 set -eu
 
@@ -22,7 +22,7 @@ for bin in "${INPUTS}"/*.bin; do
     "${NEURONRT}" -m hw -a "${DLA}" -i "${bin}" -o "${out}" \
         > "${OUTPUTS}/${stem}.log" 2>&1
     if [ ! -s "${out}" ]; then
-        echo "FAIL ${stem}: neuronrt 未生成非空输出。" >&2
+        echo "FAIL ${stem}: neuronrt 未生成非空输出." >&2
         exit 1
     fi
     count=$((count + 1))

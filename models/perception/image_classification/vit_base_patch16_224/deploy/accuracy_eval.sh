@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# ViT-Base Patch16 224 精度评测驱动 (89 宿主机执行)。
+# ViT-Base Patch16 224 精度评测驱动 (89 宿主机执行).
 # 用法: bash accuracy_eval.sh [prepare|board|compare|all]
 # 环境变量: EVAL_RUN_ID / TOTAL(默认 1000) / CHUNK / IMAGENET_LABELS /
-# MTK_BOARD_HOST / MTK_BOARD_ROOT。
+# MTK_BOARD_HOST / MTK_BOARD_ROOT.
 
 set -euo pipefail
 
@@ -20,13 +20,13 @@ readonly IMAGES_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ILS
 
 if [[ -z "${EVAL_RUN_ID:-}" ]]; then
     if [[ "${STAGE}" != "all" ]]; then
-        echo "分阶段执行必须显式设置 EVAL_RUN_ID。" >&2
+        echo "分阶段执行必须显式设置 EVAL_RUN_ID." >&2
         exit 1
     fi
     EVAL_RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
 fi
 if [[ ! "${EVAL_RUN_ID}" =~ ^[A-Za-z0-9._-]+$ ]]; then
-    echo "EVAL_RUN_ID 只能包含字母、数字、点、下划线和连字符。" >&2
+    echo "EVAL_RUN_ID 只能包含字母、数字、点、下划线和连字符." >&2
     exit 1
 fi
 readonly EVAL_RUN_ID
@@ -61,7 +61,7 @@ write_or_check_config() {
     } > "${candidate}"
     if [[ -f "${RUN_CONFIG}" ]]; then
         if ! cmp -s "${candidate}" "${RUN_CONFIG}"; then
-            echo "运行输入与已有 EVAL_RUN_ID 不一致，请使用新的运行 ID。" >&2
+            echo "运行输入与已有 EVAL_RUN_ID 不一致,请使用新的运行 ID." >&2
             rm -f "${candidate}"
             exit 1
         fi
@@ -73,7 +73,7 @@ write_or_check_config() {
 }
 
 run_prepare() {
-    echo "[prepare] 生成 INT8 输入与 FP32 基线 logits。"
+    echo "[prepare] 生成 INT8 输入与 FP32 基线 logits."
     rm -rf "${WORK}/npu_bins" "${WORK}/fp32_logits"
     rm -f "${WORK}/manifest.jsonl" "${WORK}/prepare.done"
     mkdir -p "${WORK}/npu_bins" "${WORK}/fp32_logits"
@@ -93,7 +93,7 @@ run_prepare() {
 }
 
 run_board() {
-    echo "[board] 推送 DLA、输入并批量推理。"
+    echo "[board] 推送 DLA、输入并批量推理."
     test -f "${WORK}/prepare.done"
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "mkdir -p '${BOARD_EVAL}/inputs' '${BOARD_EVAL}/outputs'"
@@ -109,7 +109,7 @@ run_board() {
         "sh '${BOARD_EVAL}/board_eval_loop.sh' \
         '${BOARD_EVAL}/model_int8.dla' '${BOARD_EVAL}/inputs' \
         '${BOARD_EVAL}/outputs'"
-    echo "[board] 回传输出，板端原始证据保留在 ${BOARD_EVAL}。"
+    echo "[board] 回传输出,板端原始证据保留在 ${BOARD_EVAL}."
     mkdir -p "${WORK}/npu_outputs"
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "tar -C '${BOARD_EVAL}/outputs' -cf - ." \
@@ -122,11 +122,11 @@ run_board() {
 }
 
 run_compare() {
-    echo "[compare] NPU 与 FP32 基线对齐分析。"
+    echo "[compare] NPU 与 FP32 基线对齐分析."
     test -f "${WORK}/prepare.done"
     test -f "${WORK}/board.done"
     if [[ -n "${IMAGENET_LABELS:-}" ]]; then
-        echo "  使用已映射的 0-based ImageNet 标签报告绝对 Top-1/Top-5。"
+        echo "  使用已映射的 0-based ImageNet 标签报告绝对 Top-1/Top-5."
         docker_run --stage compare --count "${TOTAL}" \
             --labels "${IMAGENET_LABELS/#${PROJECT_ROOT}/\/workspace}"
     else
@@ -143,4 +143,4 @@ case "${STAGE}" in
     all) run_prepare; run_board; run_compare ;;
     *) echo "未知阶段: ${STAGE}" >&2; exit 1 ;;
 esac
-echo "[OK] ViT 评测驱动结束, run_id=${EVAL_RUN_ID}, 产物位于 ${WORK}。"
+echo "[OK] ViT 评测驱动结束, run_id=${EVAL_RUN_ID}, 产物位于 ${WORK}."

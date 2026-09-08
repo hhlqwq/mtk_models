@@ -1,6 +1,6 @@
-本目录中的 YOLOv5 源代码和模型权重受上游 AGPL-3.0 许可证约束。
+本目录中的 YOLOv5 源代码和模型权重受上游 AGPL-3.0 许可证约束.
 
 完整许可证：
 https://github.com/ultralytics/yolov5/blob/master/LICENSE
 
-本仓库自行编写的部署脚本沿用仓库根目录 LICENSE；这不会改变上游模型和代码的许可证。
+本仓库自行编写的部署脚本沿用仓库根目录 LICENSE；这不会改变上游模型和代码的许可证.

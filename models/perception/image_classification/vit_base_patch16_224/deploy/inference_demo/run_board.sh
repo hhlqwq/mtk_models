@@ -13,11 +13,11 @@ test -x "${NEURONRT}"
 test -f "${DLA_FILE}"
 test -f "${INPUT_FILE}"
 
-echo "[1/4] 单次真实输入冒烟推理。"
+echo "[1/4] 单次真实输入冒烟推理."
 "${NEURONRT}" -m hw -a "${DLA_FILE}" -i "${INPUT_FILE}" \
     -o "${OUTPUT_DIR}/output_0.bin" >"${OUTPUT_DIR}/smoke.log" 2>&1
 
-echo "[2/4] 预热 10 次 + 连续推理 100 次。"
+echo "[2/4] 预热 10 次 + 连续推理 100 次."
 "${NEURONRT}" -m hw -a "${DLA_FILE}" -i "${INPUT_FILE}" \
     -o "${OUTPUT_DIR}/warmup_0.bin" \
     -c 10 -b 100 -r turbo -l performance --verbose \
@@ -27,7 +27,7 @@ echo "[2/4] 预热 10 次 + 连续推理 100 次。"
     -c 100 -b 100 -r turbo -l performance --verbose \
     >"${OUTPUT_DIR}/benchmark.log" 2>&1
 
-echo "[3/4] 采样峰值内存 (VmHWM) 和单次进程端到端耗时。"
+echo "[3/4] 采样峰值内存 (VmHWM) 和单次进程端到端耗时."
 peak=0
 "${NEURONRT}" -m hw -a "${DLA_FILE}" -i "${INPUT_FILE}" \
     -o "${OUTPUT_DIR}/mem_0.bin" -c 100 -b 100 -r turbo \
@@ -47,7 +47,7 @@ start=$(date +%s%N)
 end=$(date +%s%N)
 echo "OneShotProcessMs=$(( (end - start) / 1000000 ))" >> "${OUTPUT_DIR}/memory.txt"
 
-echo "[4/4] 保存版本与校验信息。"
+echo "[4/4] 保存版本与校验信息."
 "${NEURONRT}" -v >"${OUTPUT_DIR}/neuronrt_version.txt" 2>&1 || true
 uname -a >"${OUTPUT_DIR}/system.txt"
 {
@@ -65,4 +65,4 @@ uname -a >"${OUTPUT_DIR}/system.txt"
     done
 } >"${OUTPUT_DIR}/cpu_frequency.txt"
 sha256sum "${DLA_FILE}" "${INPUT_FILE}" >"${OUTPUT_DIR}/SHA256SUMS"
-echo "[OK] ViT 板端冒烟和性能测试完成。"
+echo "[OK] ViT 板端冒烟和性能测试完成."

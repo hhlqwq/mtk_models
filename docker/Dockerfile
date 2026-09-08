@@ -1,9 +1,9 @@
-# 使用 Docker 内置前端, 避免额外拉取 docker/dockerfile 镜像。
+# 使用 Docker 内置前端, 避免额外拉取 docker/dockerfile 镜像.
 FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 ARG PYTHON_SOURCE_URL=https://mirrors.aliyun.com/python-release/source/Python-3.11.11.tgz
 ENV PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1
-# 在 Ubuntu 内编译 Python, 保持 SDK 的 cp311 ABI。
+# 在 Ubuntu 内编译 Python, 保持 SDK 的 cp311 ABI.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential ca-certificates curl git patch unzip openssh-client procps time \
     libgl1 libglib2.0-0 libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
@@ -20,7 +20,7 @@ RUN python -m pip config --global set global.index-url https://mirrors.aliyun.co
 COPY requirements.txt yolov5-requirements.txt /opt/mtk-build/
 RUN python -m pip install torch==2.0.0+cu118 torchvision==0.15.1+cu118 --index-url https://download.pytorch.org/whl/cu118 \
     && python -m pip install -r /opt/mtk-build/requirements.txt -r /opt/mtk-build/yolov5-requirements.txt
-# sdk 是构建脚本传入的服务器本地 SDK, 无远程下载。
+# sdk 是构建脚本传入的服务器本地 SDK, 无远程下载.
 COPY --from=sdk / /opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/
 RUN python -m pip install \
     /opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/offline_tool/mtk_converter-8.16.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl \
@@ -30,7 +30,7 @@ RUN python -m pip install \
     && test -n "${nvrtc_path}" \
     && ln -s "$(basename "${nvrtc_path}")" /usr/local/lib/python3.11/site-packages/torch/lib/libnvrtc.so \
     && ldconfig
-# 补齐 ONNX Runtime CUDA EP 需要的 cu11 库并统一挂到系统库路径。
+# 补齐 ONNX Runtime CUDA EP 需要的 cu11 库并统一挂到系统库路径.
 RUN python -m pip install nvidia-curand-cu11 nvidia-cufft-cu11 nvidia-cusolver-cu11 nvidia-cusparse-cu11 \
     && for lib in /usr/local/lib/python3.11/site-packages/torch/lib/*.so* \
                   /usr/local/lib/python3.11/site-packages/nvidia/*/lib/*.so*; do \

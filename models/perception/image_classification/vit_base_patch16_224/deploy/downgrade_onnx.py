@@ -1,16 +1,16 @@
-"""将 Qualcomm ViT FP32 ONNX 降级为 mtk_converter 8.16.0 可接受的版本。
+"""将 Qualcomm ViT FP32 ONNX 降级为 mtk_converter 8.16.0 可接受的版本.
 
 Qualcomm v0.61.0 导出为 IR v10 / opset 21, 且使用 opset 20 新增的 Gelu
-算子; mtk_converter (onnx 1.13.1) 要求 IR v3..v8 且 opset <= 18。
+算子; mtk_converter (onnx 1.13.1) 要求 IR v3..v8 且 opset <= 18.
 本脚本做三项等价改写:
 
 1. Gelu 展开为 TFLite 可导出的标准 tanh 近似子图;
 2. ai.onnx opset 21 -> 17 (LayerNormalization 所需的最低 opset,
    其余算子 schema 在 17..21 之间无变化);
 3. 删除常量 shape 且不含 0 的 Reshape allowzero=1 属性；
-4. ir_version -> 8。
+4. ir_version -> 8.
 
-模型无需降级 (IR<=8 且 opset<=18 且无 Gelu) 时保持原样退出。
+模型无需降级 (IR<=8 且 opset<=18 且无 Gelu) 时保持原样退出.
 """
 
 import argparse
@@ -27,12 +27,12 @@ TARGET_IR = 8
 
 
 def scalar_initializer(name: str, value: float):
-    """构造 float32 标量 initializer。"""
+    """构造 float32 标量 initializer."""
     return numpy_helper.from_array(np.array(value, dtype=np.float32), name)
 
 
 def expand_gelu(node, index: int) -> tuple[list, list]:
-    """把单个 Gelu 节点展开为标准 tanh 近似子图。"""
+    """把单个 Gelu 节点展开为标准 tanh 近似子图."""
     x = node.input[0]
     y = node.output[0]
     prefix = f"gelu_{index}"
@@ -69,10 +69,10 @@ def expand_gelu(node, index: int) -> tuple[list, list]:
 
 
 def remove_safe_reshape_allowzero(model) -> int:
-    """删除语义等价的 Reshape allowzero=1 属性。
+    """删除语义等价的 Reshape allowzero=1 属性.
 
-    allowzero 只影响 shape 中值为 0 的维度。当前 Qualcomm ViT 的相关 shape
-    均为非零常量，因此删除属性不会改变输出；遇到动态 shape 或包含 0 时拒绝猜测。
+    allowzero 只影响 shape 中值为 0 的维度.当前 Qualcomm ViT 的相关 shape
+    均为非零常量,因此删除属性不会改变输出；遇到动态 shape 或包含 0 时拒绝猜测.
     """
     initializers = {tensor.name: tensor for tensor in model.graph.initializer}
     removed = 0
@@ -100,7 +100,7 @@ def remove_safe_reshape_allowzero(model) -> int:
 
 
 def validate_target_schemas(model) -> None:
-    """确认全部标准 ONNX 算子在目标 opset 中存在且属性受支持。"""
+    """确认全部标准 ONNX 算子在目标 opset 中存在且属性受支持."""
     for node in model.graph.node:
         domain = node.domain or ""
         if domain not in {"", "ai.onnx"}:
@@ -116,7 +116,7 @@ def validate_target_schemas(model) -> None:
 
 
 def downgrade(model_path: Path) -> None:
-    """原地检查并执行降级, 完成后写回同一路径。"""
+    """原地检查并执行降级, 完成后写回同一路径."""
     model = onnx.load(str(model_path))
     opsets = {(op.domain or "ai.onnx"): op.version
               for op in model.opset_import}
@@ -128,7 +128,7 @@ def downgrade(model_path: Path) -> None:
     print(f"[INFO] 当前 IR={model.ir_version}, opset={opsets}, "
           f"Gelu 节点={gelu_count}")
     if not needs:
-        print("[INFO] 无需降级, 保持原样。")
+        print("[INFO] 无需降级, 保持原样.")
         return
 
     reshape_count = remove_safe_reshape_allowzero(model)
@@ -164,10 +164,10 @@ def downgrade(model_path: Path) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数。"""
+    """解析命令行参数."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path, required=True,
-                        help="待降级的单文件 ONNX, 原地写回。")
+                        help="待降级的单文件 ONNX, 原地写回.")
     return parser.parse_args()
 
 

@@ -1,4 +1,4 @@
-"""验证 Qualcomm 原始 ONNX 与 MTK 兼容模型的数值偏差。"""
+"""验证 Qualcomm 原始 ONNX 与 MTK 兼容模型的数值偏差."""
 
 import argparse
 from pathlib import Path
@@ -8,7 +8,7 @@ import onnxruntime
 
 
 def run_model(model_path: Path, input_data: np.ndarray) -> np.ndarray:
-    """使用 ONNX Runtime CPU 执行单输入单输出模型。"""
+    """使用 ONNX Runtime CPU 执行单输入单输出模型."""
     session = onnxruntime.InferenceSession(
         str(model_path), providers=["CPUExecutionProvider"])
     inputs = session.get_inputs()
@@ -20,7 +20,7 @@ def run_model(model_path: Path, input_data: np.ndarray) -> np.ndarray:
 
 
 def verify(args: argparse.Namespace) -> None:
-    """使用固定随机输入比较原始模型与兼容模型输出。"""
+    """使用固定随机输入比较原始模型与兼容模型输出."""
     input_data = np.random.default_rng(args.seed).random(
         (1, 3, 224, 224), dtype=np.float32)
     reference = run_model(args.reference, input_data)
@@ -46,7 +46,7 @@ def verify(args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数。"""
+    """解析命令行参数."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--reference", type=Path, required=True)
     parser.add_argument("--converted", type=Path, required=True)
