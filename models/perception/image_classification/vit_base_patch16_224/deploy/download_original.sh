@@ -67,6 +67,9 @@ PY
 # (onnx 1.13.1) 的 IR v3..v8 / opset <=18 支持范围, 需等价降级。
 python "${MODEL_ROOT}/deploy/downgrade_onnx.py" \
     --model "${MODEL_ROOT}/models/model_fp32.onnx"
+python "${MODEL_ROOT}/deploy/verify_onnx_equivalence.py" \
+    --reference "${ONNX_PATH}" \
+    --converted "${MODEL_ROOT}/models/model_fp32.onnx"
 
 readonly LABELS_PATH="$(find "${MODEL_ROOT}/original/exported" \
     -type f -name 'labels.txt' | sort | head -n 1)"
