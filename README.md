@@ -128,7 +128,8 @@ models/scenario_name/category_name/model_name/
 仓库通过 `registry/models.yaml` 维护模型索引,避免扫描上百个目录才能了解交付状态.
 
 大模型文件、转换产物、输入数据和输出数据默认不进入普通 Git 历史.正式发布模型文件时应使用
-Git LFS 或 Release,并在 `model_card.md` 中记录 SHA-256.
+Git LFS 或 Release,并在 `model_card.md` 中记录 SHA-256.ViT 官方归档的本地展开目录、标签副本
+和校验清单属于可再生资产,由 `.gitignore` 排除并保留在各自工作环境中.
 
 ## 验收原则
 

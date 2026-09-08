@@ -29,6 +29,12 @@ logs/
 # 正在下载的模型
 *.crdownload
 
+# ViT 官方归档的本地展开与校验产物.
+models/perception/image_classification/vit_base_patch16_224/original/exported/
+models/perception/image_classification/vit_base_patch16_224/original/labels.txt
+models/perception/image_classification/vit_base_patch16_224/models/vit-onnx-float/
+models/perception/image_classification/vit_base_patch16_224/models/SHA256SUMS
+
 # 板端 C++ 交叉编译产物.
 models/perception/object_detection/yolov5s/deploy/inference_demo/yolov5s_board_eval
 
