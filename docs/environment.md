@@ -73,6 +73,20 @@ Torch 2.0 CUDA 11.8 wheel 内的 NVRTC 动态库采用哈希文件名。模型�
 库目录建立 `libnvrtc.so` 标准名软链接，并执行一次 CUDA `Conv2d`，防止只检查设备可见但
 cuDNN 实际不可运行。
 
+## Genio 720 C++ 交叉编译补充
+
+板端正式模型评测由 89 的 `/usr/bin/aarch64-linux-gnu-g++` 交叉编译。OpenCV 头文件固定为
+官方 4.9.0 源码，下载地址为
+`https://github.com/opencv/opencv/archive/refs/tags/4.9.0.tar.gz`，SHA-256 为
+`ddf76f9dffd322c7c3cb1f721d0887f62d747b82059342213138dc190f28bc6c`。交叉链接所用
+OpenCV 4.9 和 `libneuronusdk_runtime.mtk.so.8` 来自当前 92 板端，只用于 ABI 对齐，不纳入
+Git。工具目录为 `/data/users/hailong.he/data/MTKG720/cpp_toolchain/`。
+
+板端标准 COCO 指标使用 `pycocotools 2.0.10` AArch64 wheel，来源为
+`https://pypi.org/project/pycocotools/2.0.10/`，SHA-256 为
+`075788c90bfa6a8989d628932854f3e32c25dac3c1bf7c1183cefad29aee16c8`。pycocotools 只计算
+最终指标；JPEG 预处理、NPU 推理和检测后处理均由板端 C++ 完成。
+
 ## 数据集目录与原则
 
 89 服务器数据集根目录固定为：

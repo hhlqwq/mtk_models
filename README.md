@@ -5,6 +5,8 @@ Ubuntu 系统依赖使用基础镜像官方软件源, pip 镜像地址在容器�
 Python 3.11.11 源码地址由 Docker 构建参数管理, 默认使用服务器已验证可达的镜像地址。
 2026-09-07 已将同名容器迁移到 Ubuntu 22.04 镜像，并删除旧 Debian 12 容器和旧镜像。
 创建容器时仅验证工具, 操作方法见 [Docker 说明](docker/README.md)。
+YOLOv5s 正式板端精度路径使用 C++ 完成 JPEG 预处理、Neuron Runtime 推理、YOLO 解码和
+NMS，直接在开发板生成 COCO 预测与耗时证据，不回传 5000 张原始 NPU 输出。
 
 本项目面向 MediaTek Genio 720（MT8189）和 Genio 5100，建立与
 [Qualcomm AI Hub Models](https://huggingface.co/qualcomm/models) 类似的模型交付仓库。

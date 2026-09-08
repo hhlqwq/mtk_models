@@ -102,9 +102,22 @@ cd /data/users/hailong.he/github/mtk_models/models/perception/object_detection/y
 bash accuracy_eval.sh all   # 也可分阶段: npu|fp32|evaluate
 ```
 
-流程：容器内批量生成 COCO val2017 INT8 输入 → 推送 92 板端逐图 neuronrt 推理 →
-回传原生输出 → 容器内解码 + NMS + pycocotools 计算 mAP。评测前会检查清单内全部图片
-均已完成，即使某张图片没有检测结果也会纳入 COCO 指标。
+正式板端 C++ 评测使用：
+
+```bash
+cd /data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s
+bash deploy/accuracy_board_cpp.sh
+```
+
+该流程要求 92 的 `/root/hailong.he/datasets/coco/val2017` 已有完整 5000 张图片与
+`instances_val2017.json`，并安装 AArch64 `pycocotools`。C++ 完成全部前处理、常驻 Runtime
+推理和后处理；pycocotools 只读取板端生成的最终预测 JSON 计算标准 COCO 指标，不参与模型
+前后处理。脚本只回传指标、耗时和日志，不回传逐图 NPU 原始输出。
+
+旧分阶段对照流程为：容器内批量生成 COCO val2017 INT8 输入 → 推送 92 板端逐图
+`neuronrt` 推理 → 回传原生输出 → 容器内解码 + NMS + pycocotools 计算 mAP。正式板端
+C++ 路径不再回传这些原生输出。两条路径在评测前都会检查清单内全部图片均已完成，即使
+某张图片没有检测结果也会纳入 COCO 指标。
 评测脚本为 `tools/accuracy/yolov5s_val_coco.py`，每次运行使用独立目录
 `.eval/yolov5s/runs/<run_id>/`，避免复用其他模型版本的旧结果。`all` 默认创建新运行；
 分阶段或中断续跑时必须为各阶段传入同一个 `EVAL_RUN_ID`。冒烟测试可使用
@@ -120,8 +133,8 @@ bash accuracy_eval.sh all   # 也可分阶段: npu|fp32|evaluate
 | INT8 TFLite | 已完成 | `models/model_int8.tflite` |
 | DLA | 已完成 | `models/model_int8.dla`（mdla5.3 + suppress-output） |
 | 板端 Demo | 已完成 | `examples/output/`（detections.json、detected.jpg、性能日志） |
-| 正式精度 | 已完成 | `docs/accuracy.md`（5000 张 COCO val2017，INT8 损失 -1.21pt） |
-| 正式性能 | 部分完成 | `docs/benchmark.md`（纯 NPU平均 9.96ms；端到端、分位数和可追溯峰值内存待补测） |
+| 正式精度 | 已完成 | `docs/accuracy.md`（板端 C++ 完整处理 5000 张 COCO val2017，INT8 损失 -1.23pt） |
+| 正式性能 | 部分完成 | `docs/benchmark.md`（板端 C++ 稳态端到端平均 33.57ms、P95 37.78ms；可追溯峰值内存待补测） |
 
 ## 全流程验收边界
 
@@ -136,5 +149,7 @@ YOLOv5s 只有同时完成以下项目才视为交付完成：
 少量样例只能证明部署链路和输出合理性，不能替代完整 COCO val2017 精度报告。
 
 板端 Demo 使用当前 TFLite 的实际量化参数生成输入，调用 92 的 `neuronrt 8.2.16` 完成
-推理并回传三个检测头。性能阶段执行 10 次预热和 100 次连续推理，保存 Runtime 日志和
-进程峰值 RSS；89 上再执行解量化、YOLOv5 解码、NMS 和结果绘制。
+推理并回传三个检测头。正式板端精度使用交叉编译的 C++ 程序
+`deploy/inference_demo/yolov5s_board_eval.cpp`：DLA 只加载一次，JPEG 读取、letterbox、
+INT8 量化、Neuron Runtime 推理、MDLA 行对齐输出还原、YOLO 解码和 NMS 全部在 92 完成，
+板端直接生成 COCO 预测 JSON、完成清单和逐图耗时。5000 张原始输出不再回传到 89。
