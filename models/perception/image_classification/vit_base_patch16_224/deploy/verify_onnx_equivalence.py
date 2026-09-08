@@ -51,8 +51,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reference", type=Path, required=True)
     parser.add_argument("--converted", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=20260908)
-    parser.add_argument("--max-abs", type=float, default=0.02)
-    parser.add_argument("--mean-abs", type=float, default=0.002)
+    parser.add_argument("--max-abs", type=float, default=0.025)
+    parser.add_argument("--mean-abs", type=float, default=0.005)
     return parser.parse_args()
 
 

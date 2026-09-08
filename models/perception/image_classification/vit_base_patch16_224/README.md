@@ -44,7 +44,8 @@ SHA-256 并合并外部权重为原始 FP32 基线 `model_fp32.onnx`. 另生成
 `model_mtk_compatible.onnx`: 通过 `downgrade_onnx.py` 降级 IR/opset、清理安全的
 `allowzero` 属性, 并将 MTK TFLite 导出器不支持的精确 Gelu 改为标准 tanh 近似.
 脚本会用固定输入限制近似误差与 Top-1 漂移; 遇到动态 shape、包含 0 的
-`allowzero=1` 或超出误差阈值时立即停止. 精度基线始终使用未近似的原始 FP32 ONNX.
+`allowzero=1`、最大绝对 logit 偏差超过 0.025、平均绝对偏差超过 0.005 或
+Top-1 漂移时立即停止. 精度基线始终使用未近似的原始 FP32 ONNX.
 
 Qualcomm ONNX 已在图内执行 mean/std 归一化, 外部输入固定为 NCHW RGB
 float32 `[0,1]`. `convert.sh` 默认使用排序后的 ImageNet val 第 1001~1100 张
