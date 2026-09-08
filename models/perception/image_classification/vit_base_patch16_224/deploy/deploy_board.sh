@@ -35,8 +35,9 @@ scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/deploy/inference_demo/run_board.sh" \
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "chmod +x '${BOARD_DIR}/run_board.sh' && '${BOARD_DIR}/run_board.sh'"
 mkdir -p "${MODEL_ROOT}/examples/output"
-scp "${SSH_OPTIONS[@]}" -r "${BOARD_HOST}:${BOARD_DIR}/output/." \
-    "${MODEL_ROOT}/examples/output/"
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "tar -C '${BOARD_DIR}/output' -cf - ." \
+    | tar -C "${MODEL_ROOT}/examples/output" -xf -
 echo "[4/4] 反量化输出并生成 Top-5。"
 postprocess_args=(
     --metadata "${INPUT_METADATA}"
