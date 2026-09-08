@@ -13,6 +13,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <sys/resource.h>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -91,6 +92,15 @@ struct Timing {
   double postprocess_ms = 0.0;
   double e2e_ms = 0.0;
 };
+
+// 读取当前进程的历史峰值常驻内存,Linux 返回单位为 KiB.
+int64_t GetPeakRssKb() {
+  rusage usage{};
+  if (getrusage(RUSAGE_SELF, &usage) != 0) {
+    throw std::runtime_error("getrusage 读取峰值内存失败。");
+  }
+  return static_cast<int64_t>(usage.ru_maxrss);
+}
 
 // 检查 Runtime 返回码，并在失败时中止。
 void CheckRuntime(int result, const std::string& operation) {
@@ -573,7 +583,10 @@ void WriteSummary(const fs::path& path, const std::vector<Timing>& timings,
 
   std::ofstream output(path);
   output << std::fixed << std::setprecision(6);
+  const int64_t peak_rss_kb = GetPeakRssKb();
   output << "{\n  \"processed_images\": " << total_images << ",\n";
+  output << "  \"peak_rss_kb\": " << peak_rss_kb << ",\n";
+  output << "  \"peak_rss_bytes\": " << peak_rss_kb * 1024 << ",\n";
   write_metric(&output, "preprocess_ms", preprocess, true);
   write_metric(&output, "npu_ms", npu, true);
   write_metric(&output, "postprocess_ms", postprocess, true);
