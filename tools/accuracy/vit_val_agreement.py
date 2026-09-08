@@ -102,12 +102,17 @@ def stage_prepare(args: argparse.Namespace) -> None:
         raise ValueError(f"TFLite 输入 shape 异常: {input_detail['shape']}")
     q_scale = float(input_detail["quantization"]["scales"][0])
     q_zero = int(input_detail["quantization"]["zero_points"][0])
-    session = onnxruntime.InferenceSession(
-        str(args.onnx), providers=["CUDAExecutionProvider",
-                                   "CPUExecutionProvider"])
-    if "CUDAExecutionProvider" not in session.get_providers():
+    providers = (["CUDAExecutionProvider", "CPUExecutionProvider"]
+                 if args.onnx_provider == "cuda"
+                 else ["CPUExecutionProvider"])
+    session = onnxruntime.InferenceSession(str(args.onnx),
+                                           providers=providers)
+    if (args.onnx_provider == "cuda" and
+            "CUDAExecutionProvider" not in session.get_providers()):
         raise RuntimeError(
             "ONNX Runtime 未启用 CUDAExecutionProvider，拒绝静默回退 CPU。")
+    if args.onnx_provider == "cpu":
+        print("[INFO] FP32 ONNX 显式使用 CPUExecutionProvider.")
     input_name = session.get_inputs()[0].name
     args.bins_dir.mkdir(parents=True, exist_ok=True)
     args.logits_dir.mkdir(parents=True, exist_ok=True)
@@ -246,6 +251,8 @@ def parse_args() -> argparse.Namespace:
                                      "image_classification/"
                                      "vit_base_patch16_224/models/"
                                      "model_fp32.onnx"))
+    parser.add_argument("--onnx-provider", choices=["cpu", "cuda"],
+                        default="cuda")
     parser.add_argument("--labels", type=Path, default=None)
     parser.add_argument("--bins-dir", type=Path, default=None)
     parser.add_argument("--logits-dir", type=Path, default=None)

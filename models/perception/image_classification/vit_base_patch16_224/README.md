@@ -56,3 +56,7 @@ float32 `[0,1]`. `convert.sh` 默认使用排序后的 ImageNet val 第 1001~110
 评测采用独立运行目录 `.eval/vit_base_patch16_224/runs/<run_id>/`. `all` 自动
 创建运行 ID; 分阶段执行必须为 `prepare`、`board`、`compare` 设置相同的
 `EVAL_RUN_ID`. 模型、脚本、样本数或标签变化时必须使用新的运行 ID.
+
+原始 FP32 ONNX 的 opset 21 `Squeeze` 在当前 ONNX Runtime 1.18 CUDA Provider
+中没有匹配内核, 因此评测脚本默认显式使用 CPU Provider, 不允许静默回退.
+如后续环境已验证 CUDA 支持, 可设置 `FP32_PROVIDER=cuda` 并使用新的运行 ID.

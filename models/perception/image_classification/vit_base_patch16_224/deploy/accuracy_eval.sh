@@ -14,6 +14,7 @@ readonly MODEL_DIR="${PROJECT_ROOT}/models/perception/image_classification/vit_b
 readonly EVAL_PY="/workspace/tools/accuracy/vit_val_agreement.py"
 readonly TOTAL="${TOTAL:-1000}"
 readonly CHUNK="${CHUNK:-500}"
+readonly FP32_PROVIDER="${FP32_PROVIDER:-cpu}"
 readonly STAGE="${1:-all}"
 readonly IMAGES_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ILSVRC2012/val"
 
@@ -47,6 +48,7 @@ write_or_check_config() {
         echo "run_id=${EVAL_RUN_ID}"
         echo "total=${TOTAL}"
         echo "images_dir=${IMAGES_DIR}"
+        echo "fp32_provider=${FP32_PROVIDER}"
         sha256sum "${MODEL_DIR}/models/model_fp32.onnx" \
             "${MODEL_DIR}/models/model_mtk_compatible.onnx" \
             "${MODEL_DIR}/models/model_int8.tflite" \
@@ -79,7 +81,8 @@ run_prepare() {
     while [ "${done_count}" -lt "${TOTAL}" ]; do
         local remaining=$((TOTAL - done_count))
         local size=$((remaining < CHUNK ? remaining : CHUNK))
-        docker_run --stage prepare --start "${done_count}" --count "${size}"
+        docker_run --stage prepare --start "${done_count}" --count "${size}" \
+            --onnx-provider "${FP32_PROVIDER}"
         done_count=$((done_count + size))
         echo "  已准备 ${done_count}/${TOTAL}"
     done
