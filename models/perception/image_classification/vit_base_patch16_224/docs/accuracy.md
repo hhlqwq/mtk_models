@@ -1,6 +1,7 @@
 # ViT-Base 精度报告
 
-状态：已完成 1000 张 FP32 ONNX / MTK NPU INT8 对齐评测; 绝对精度等待可靠标签映射.
+状态：已完成 1000 张 FP32 ONNX / MTK NPU INT8 对齐评测及 50,000 张官方标签映射;
+绝对精度尚未执行.
 
 | 后端 | ImageNet Top-1 | ImageNet Top-5 | 验证集 |
 | --- | ---: | ---: | --- |
@@ -29,6 +30,23 @@ INT8 DLA, 由板端 neuronrt 8.2.16 执行.
 `/root/hailong.he/vit_eval/runs/20260908_agreement1000/`. 运行目录绑定模型、脚本、
 样本数和 Provider 哈希, 且逐项校验 1000 个 FP32 logits 与 NPU 输出均存在且大小正确.
 
-该结果说明 INT8 PTQ 存在 7.7% 的 Top-1 预测漂移. 在缺少可靠逐图 ground truth 时,
-不能将 agreement 换算成 ImageNet Top-1/Top-5, 也不能标记为完整交付. Qualcomm 归档内
-`labels.txt` 只是 1000 个输出类别名称, 不能替代 50,000 张验证图片的真实标签.
+该结果说明 INT8 PTQ 存在 7.7% 的 Top-1 预测漂移. Agreement 不能直接换算成
+ImageNet Top-1/Top-5; 绝对精度必须使用逐图 ground truth 单独计算.
+
+## 官方标签映射
+
+2026-09-08 使用 ImageNet 官方 devkit ground truth、devkit `meta.mat` 和
+Keras/TensorFlow ImageNet 类索引生成 50,000 条 0-based 输出标签. 映射链为
+`ILSVRC2012_ID -> WNID -> model_output_index_0based`. 完整性结果如下:
+
+| 项目 | 结果 |
+| --- | ---: |
+| 标签数量 | 50,000 |
+| 类别范围 | 0–999 |
+| 每类样本数 | 50 |
+| Qualcomm 显示名称差异 | 0 |
+| 标签文件 SHA-256 | `098d797749a19d2c76f3243494b4d38079446eab41f3b8775212a33e4558a35f` |
+
+来源 URL、输入文件 SHA-256 和机器可读结果见 `imagenet_label_mapping.json`.
+原始和派生标签文件不进入普通 Git 历史. 当前仅完成标签映射, 尚未执行 50,000 张
+FP32 ONNX / MTK NPU INT8 绝对精度评测, 因此表中的 Top-1/Top-5 继续保持待测.

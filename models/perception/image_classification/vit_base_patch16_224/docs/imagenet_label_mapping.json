@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-08",
+  "mapping": "ILSVRC2012_ID -> WNID -> model_output_index_0based",
+  "sources": {
+    "devkit_url": "https://image-net.org/data/ILSVRC/2012/ILSVRC2012_devkit_t12.tar.gz",
+    "devkit_sha256": "b59243268c0d266621fd587d2018f69e906fb22875aca0e295b48cafaa927953",
+    "class_index_url": "https://storage.googleapis.com/download.tensorflow.org/data/imagenet_class_index.json",
+    "class_index_sha256": "a1e7a966a1f601d39e4b43e119b3e7dd4a2ad3ea08cf69847cbaf021013767bc",
+    "qualcomm_labels_sha256": "e697a491aa735cc6c2aaf982f8e86e8fc7b0a1ea7750a2cc6a2bdfc1e109012f",
+    "ground_truth_sha256": "88d44095bd81cb785618db8e72eeb025fa1f646adf359d9b0efbf625244e0df3",
+    "meta_mat_sha256": "e159ee2fe4bcc4d03e7429e7ff35e6ec553b2a901018b559f400a2b0ae117a30"
+  },
+  "result": {
+    "images": 50000,
+    "classes": 1000,
+    "images_per_class": 50,
+    "class_index_min": 0,
+    "class_index_max": 999,
+    "display_label_mismatch_count": 0,
+    "output_sha256": "098d797749a19d2c76f3243494b4d38079446eab41f3b8775212a33e4558a35f"
+  }
+}
