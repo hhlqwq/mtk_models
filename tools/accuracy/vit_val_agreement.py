@@ -9,6 +9,7 @@
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 import cv2
@@ -41,14 +42,27 @@ def list_images(images_dir: Path) -> list:
                   if p.suffix.lower() in {".jpg", ".jpeg", ".png", ".JPEG"})
 
 
-def load_labels(path: Path, count: int) -> dict:
-    """加载 ImageNet val ground truth (行号 -> 0-based 类 id).
+def imagenet_index_from_name(image_name: str) -> int:
+    """从 ILSVRC2012 验证图片名解析 0-based 图片序号."""
+    match = re.fullmatch(r"ILSVRC2012_val_(\d{8})\.(?:JPEG|jpeg|jpg)",
+                         image_name)
+    if match is None:
+        raise ValueError(f"ImageNet 验证图片名格式异常: {image_name}")
+    image_number = int(match.group(1))
+    if image_number < 1 or image_number > 50000:
+        raise ValueError(f"ImageNet 验证图片编号越界: {image_name}")
+    return image_number - 1
+
+
+def load_labels(path: Path, required_indices: list[int]) -> dict[int, int]:
+    """加载 ImageNet val ground truth, 并校验本次评测所需序号.
 
     此处只接受已经映射到模型输出顺序的 0-based 类 id.单列格式按图片排序
     逐行对应；两列格式为 "1-based 图片序号 0-based 类 id".原始 ILSVRC
     ground truth 的 1-based synset id 必须先结合 devkit meta.mat 完成映射.
+    标签文件可覆盖完整 50,000 张, 本次评测只要求所需图片序号全部存在.
     """
-    labels = {}
+    labels: dict[int, int] = {}
     for line_no, line in enumerate(
             path.read_text(encoding="utf-8").splitlines()):
         parts = line.split()
@@ -56,16 +70,44 @@ def load_labels(path: Path, count: int) -> dict:
             continue
         index = int(parts[0]) - 1 if len(parts) > 1 else line_no
         class_id = int(parts[-1])
-        if index < 0 or index >= count or class_id < 0 or class_id >= 1000:
+        if index < 0 or index >= 50000 or class_id < 0 or class_id >= 1000:
             raise ValueError(
                 f"标签越界: line={line_no + 1}, index={index}, "
                 f"class_id={class_id}")
         if index in labels:
             raise ValueError(f"标签图片序号重复: {index}")
         labels[index] = class_id
-    if len(labels) != count:
-        raise ValueError(f"标签数量错误: 需要 {count}, 实际 {len(labels)}")
+    missing = [index for index in required_indices if index not in labels]
+    if missing:
+        preview = ", ".join(str(index) for index in missing[:10])
+        raise ValueError(
+            f"缺少本次评测所需标签: count={len(missing)}, indices={preview}")
     return labels
+
+
+def load_manifest(path: Path, start: int, count: int) -> list[dict]:
+    """加载清单, 并严格校验序号、文件名和顺序."""
+    manifest = [json.loads(line) for line in path.read_text(
+        encoding="utf-8").splitlines() if line.strip()]
+    if len(manifest) != count:
+        raise ValueError(
+            f"清单数量错误: 需要 {count}, 实际 {len(manifest)}")
+    expected_indices = list(range(start, start + count))
+    actual_indices = [record["index"] for record in manifest]
+    if actual_indices != expected_indices:
+        raise ValueError(
+            f"清单图片序号不连续或顺序异常: start={start}, count={count}")
+    for record in manifest:
+        index = int(record["index"])
+        image_name = str(record["image"])
+        if imagenet_index_from_name(image_name) != index:
+            raise ValueError(
+                f"清单图片名与序号不一致: index={index}, image={image_name}")
+        expected_prefix = f"{index:06d}_"
+        if not str(record["stem"]).startswith(expected_prefix):
+            raise ValueError(
+                f"清单 stem 与序号不一致: index={index}, stem={record['stem']}")
+    return manifest
 
 
 def topk_from_logits(logits: np.ndarray, k: int) -> np.ndarray:
@@ -120,6 +162,11 @@ def stage_prepare(args: argparse.Namespace) -> None:
     for position, image_path in enumerate(tqdm.tqdm(
             image_paths, desc="ViT 评测准备", unit="img")):
         global_position = args.start + position
+        image_index = imagenet_index_from_name(image_path.name)
+        if image_index != global_position:
+            raise ValueError(
+                f"图片排序与官方编号不一致: index={global_position}, "
+                f"image={image_path.name}")
         stem = f"{global_position:06d}_{image_path.stem}"
         image = cv2.imread(str(image_path))
         if image is None:
@@ -154,8 +201,6 @@ def stage_compare(args: argparse.Namespace) -> None:
     out_scale = float(out_detail["quantization"]["scales"][0])
     out_zero = int(out_detail["quantization"]["zero_points"][0])
     out_size = int(np.prod(out_detail["shape"]))
-    labels = load_labels(args.labels, args.count) if args.labels else None
-
     top1_match = 0
     top5_overlap = 0.0
     max_abs = 0.0
@@ -165,15 +210,16 @@ def stage_compare(args: argparse.Namespace) -> None:
     fp32_top1_correct = 0
     npu_top5_correct = 0
     fp32_top5_correct = 0
-    manifest = [json.loads(line) for line in args.manifest.read_text(
-        encoding="utf-8").splitlines() if line.strip()]
-    if len(manifest) != args.count:
-        raise ValueError(
-            f"清单数量错误: 需要 {args.count}, 实际 {len(manifest)}")
-    expected_indices = list(range(args.count))
-    actual_indices = [record["index"] for record in manifest]
-    if actual_indices != expected_indices:
-        raise ValueError("清单图片序号不连续或顺序异常.")
+    holdout_count = 0
+    npu_holdout_top1_correct = 0
+    fp32_holdout_top1_correct = 0
+    npu_holdout_top5_correct = 0
+    fp32_holdout_top5_correct = 0
+    manifest = load_manifest(args.manifest, args.start, args.count)
+    required_indices = [int(record["index"]) for record in manifest]
+    labels = (load_labels(args.labels, required_indices)
+              if args.labels else None)
+    exclude_stop = (args.exclude_accuracy_start + args.exclude_accuracy_count)
     output_count = len(list(args.npu_dir.glob("*_0.bin")))
     if output_count != args.count:
         raise ValueError(
@@ -199,12 +245,18 @@ def stage_compare(args: argparse.Namespace) -> None:
         total_sq += float((diff ** 2).sum())
         total_ref += float((ref_logits ** 2).sum())
         if labels is not None:
-            index = int(stem.split("_")[0])
+            index = int(record["index"])
             truth = labels[index]
             npu_top1_correct += int(npu_top[0] == truth)
             fp32_top1_correct += int(ref_top[0] == truth)
             npu_top5_correct += int(truth in npu_top.tolist())
             fp32_top5_correct += int(truth in ref_top.tolist())
+            if not args.exclude_accuracy_start <= index < exclude_stop:
+                holdout_count += 1
+                npu_holdout_top1_correct += int(npu_top[0] == truth)
+                fp32_holdout_top1_correct += int(ref_top[0] == truth)
+                npu_holdout_top5_correct += int(truth in npu_top.tolist())
+                fp32_holdout_top5_correct += int(truth in ref_top.tolist())
         count += 1
         if count % 500 == 0:
             print(f"  已对比 {count} 张 ...")
@@ -220,10 +272,24 @@ def stage_compare(args: argparse.Namespace) -> None:
     }
     if labels is not None:
         summary.update({
+            "labeled_samples": count,
             "npu_top1": round(npu_top1_correct / max(count, 1), 4),
             "npu_top5": round(npu_top5_correct / max(count, 1), 4),
             "fp32_top1": round(fp32_top1_correct / max(count, 1), 4),
             "fp32_top5": round(fp32_top5_correct / max(count, 1), 4),
+            "accuracy_excluded_range": {
+                "start_0based": args.exclude_accuracy_start,
+                "count": args.exclude_accuracy_count,
+            },
+            "holdout_samples": holdout_count,
+            "npu_holdout_top1": round(
+                npu_holdout_top1_correct / max(holdout_count, 1), 4),
+            "npu_holdout_top5": round(
+                npu_holdout_top5_correct / max(holdout_count, 1), 4),
+            "fp32_holdout_top1": round(
+                fp32_holdout_top1_correct / max(holdout_count, 1), 4),
+            "fp32_holdout_top5": round(
+                fp32_holdout_top5_correct / max(holdout_count, 1), 4),
         })
     args.summary.parent.mkdir(parents=True, exist_ok=True)
     args.summary.write_text(json.dumps(summary, indent=2), encoding="utf-8")
@@ -261,7 +327,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", type=Path, default=None)
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--count", type=int, default=1000)
+    parser.add_argument("--exclude-accuracy-start", type=int, default=1000,
+                        help="绝对精度独立指标排除区间的 0-based 起点.")
+    parser.add_argument("--exclude-accuracy-count", type=int, default=100,
+                        help="绝对精度独立指标排除区间的样本数.")
     args = parser.parse_args()
+    if args.start < 0 or args.count <= 0:
+        parser.error("--start 必须大于等于 0, --count 必须大于 0.")
+    if args.exclude_accuracy_start < 0 or args.exclude_accuracy_count < 0:
+        parser.error("精度排除区间参数不能为负数.")
     args.bins_dir = args.bins_dir or args.work_dir / "npu_bins"
     args.logits_dir = args.logits_dir or args.work_dir / "fp32_logits"
     args.npu_dir = args.npu_dir or args.work_dir / "npu_outputs"

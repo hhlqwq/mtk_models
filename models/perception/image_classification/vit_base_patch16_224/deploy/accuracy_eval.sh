@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # ViT-Base Patch16 224 精度评测驱动 (89 宿主机执行).
 # 用法: bash accuracy_eval.sh [prepare|board|compare|all]
-# 环境变量: EVAL_RUN_ID / TOTAL(默认 1000) / CHUNK / IMAGENET_LABELS /
+# 环境变量: EVAL_RUN_ID / START / TOTAL(默认 1000) / CHUNK /
+# IMAGENET_LABELS / ACCURACY_EXCLUDE_START / ACCURACY_EXCLUDE_COUNT /
 # MTK_BOARD_HOST / MTK_BOARD_ROOT.
 
 set -euo pipefail
@@ -12,9 +13,12 @@ readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
 readonly BOARD_ROOT="${MTK_BOARD_ROOT:-/root/hailong.he}"
 readonly MODEL_DIR="${PROJECT_ROOT}/models/perception/image_classification/vit_base_patch16_224"
 readonly EVAL_PY="/workspace/tools/accuracy/vit_val_agreement.py"
+readonly START="${START:-0}"
 readonly TOTAL="${TOTAL:-1000}"
 readonly CHUNK="${CHUNK:-500}"
 readonly FP32_PROVIDER="${FP32_PROVIDER:-cpu}"
+readonly ACCURACY_EXCLUDE_START="${ACCURACY_EXCLUDE_START:-1000}"
+readonly ACCURACY_EXCLUDE_COUNT="${ACCURACY_EXCLUDE_COUNT:-100}"
 readonly STAGE="${1:-all}"
 readonly IMAGES_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ILSVRC2012/val"
 
@@ -46,6 +50,7 @@ write_or_check_config() {
     candidate="$(mktemp)"
     {
         echo "run_id=${EVAL_RUN_ID}"
+        echo "start=${START}"
         echo "total=${TOTAL}"
         echo "images_dir=${IMAGES_DIR}"
         echo "fp32_provider=${FP32_PROVIDER}"
@@ -81,7 +86,8 @@ run_prepare() {
     while [ "${done_count}" -lt "${TOTAL}" ]; do
         local remaining=$((TOTAL - done_count))
         local size=$((remaining < CHUNK ? remaining : CHUNK))
-        docker_run --stage prepare --start "${done_count}" --count "${size}" \
+        local global_start=$((START + done_count))
+        docker_run --stage prepare --start "${global_start}" --count "${size}" \
             --onnx-provider "${FP32_PROVIDER}"
         done_count=$((done_count + size))
         echo "  已准备 ${done_count}/${TOTAL}"
@@ -127,10 +133,12 @@ run_compare() {
     test -f "${WORK}/board.done"
     if [[ -n "${IMAGENET_LABELS:-}" ]]; then
         echo "  使用已映射的 0-based ImageNet 标签报告绝对 Top-1/Top-5."
-        docker_run --stage compare --count "${TOTAL}" \
+        docker_run --stage compare --start "${START}" --count "${TOTAL}" \
+            --exclude-accuracy-start "${ACCURACY_EXCLUDE_START}" \
+            --exclude-accuracy-count "${ACCURACY_EXCLUDE_COUNT}" \
             --labels "${IMAGENET_LABELS/#${PROJECT_ROOT}/\/workspace}"
     else
-        docker_run --stage compare --count "${TOTAL}"
+        docker_run --stage compare --start "${START}" --count "${TOTAL}"
     fi
 }
 

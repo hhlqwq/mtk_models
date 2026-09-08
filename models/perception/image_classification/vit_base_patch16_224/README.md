@@ -86,6 +86,11 @@ float32 `[0,1]`. `convert.sh` 默认使用排序后的 ImageNet val 第 1001~110
 评测采用独立运行目录 `.eval/vit_base_patch16_224/runs/<run_id>/`. `all` 自动
 创建运行 ID; 分阶段执行必须为 `prepare`、`board`、`compare` 设置相同的
 `EVAL_RUN_ID`. 模型、脚本、样本数或标签变化时必须使用新的运行 ID.
+`START` 和 `TOTAL` 可选择连续子集; 完整 50,000 条标签可以直接用于任意子集,
+评测器会严格校验图片文件名、官方图片编号、清单序号和标签序号的一致性.
+提供标签时默认同时报告全部样本指标, 以及排除第 1001~1100 张 PTQ 校准图片的
+独立指标. 排除区间可通过 `ACCURACY_EXCLUDE_START` 和
+`ACCURACY_EXCLUDE_COUNT` 显式调整.
 
 原始 FP32 ONNX 的 opset 21 `Squeeze` 在当前 ONNX Runtime 1.18 CUDA Provider
 中没有匹配内核, 因此评测脚本默认显式使用 CPU Provider, 不允许静默回退.
