@@ -17,3 +17,12 @@
 
 下载后必须记录归档文件和解压后 ONNX 的 SHA-256。Qualcomm 设备性能仅作对标，不能作为
 Genio 720 实测结果。
+
+## 交付产物
+
+| 产物 | 大小 (bytes) | SHA-256 |
+| --- | ---: | --- |
+| `model_fp32.onnx` | 347,444,621 | `e611b7797dcd835af914e69e732c931c3fab6102e781ea61afcc1a6bf1f86138` |
+| `model_mtk_compatible.onnx` | 347,417,235 | `dcae9ec010cc61b794da0299826f986cd0f34531cf4275fbc23461e2fd23c6e8` |
+| `model_int8.tflite` | 90,430,376 | `829f15a1891604e1fdf632ce6bf4d8f55abd0bc8d07942ee4169e5240d82aca1` |
+| `model_int8.dla` | 87,979,244 | `f0b14052868d571d4a5fce13935802815bd4ebb5e0d7c9a97c7eddb4d0d1611a` |

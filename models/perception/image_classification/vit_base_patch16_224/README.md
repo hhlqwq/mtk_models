@@ -8,7 +8,7 @@
 输入: 1×3×224×224 RGB
 输出: 1×1000 classes
 设备: MediaTek Genio 720 EVK
-当前状态: 环境建设中
+当前状态: 板端已验证
 ```
 
 ## 执行流程
@@ -21,20 +21,22 @@ cd /workspace/models/perception/image_classification/vit_base_patch16_224
 ./deploy/deploy_board.sh
 ```
 
-正式 Top-1 需要 ImageNet ILSVRC2012 验证集及标签映射。数据集缺失时只允许执行模型转换和
-单图 Demo，不填写最终 Top-1。
+正式 Top-1 需要 ImageNet ILSVRC2012 验证集及可靠标签映射. 当前 89 已有 50,000 张
+验证图片, 但没有可核验的 ground-truth 到模型输出类序映射, 因此不填写最终 Top-1.
 
 ## 交付状态
 
 | 环节 | 状态 | 证据 |
 | --- | --- | --- |
 | Hugging Face 来源 | 已锁定 | `original/source_url.txt` |
-| Qualcomm FP32 ONNX | 待下载 | `models/model_fp32.onnx` |
-| MTK INT8 TFLite | 待执行 | `models/model_int8.tflite` |
-| DLA | 待执行 | `models/model_int8.dla` |
-| 板端 Demo | 待执行 | `examples/output/` |
-| ImageNet Top-1 | 等待数据集 | `docs/accuracy.md` |
-| 板端性能 | 待执行 | `docs/benchmark.md` |
+| Qualcomm FP32 ONNX | 已完成 | `models/model_fp32.onnx`, SHA-256 已记录 |
+| MTK 兼容 ONNX | 已完成 | `models/model_mtk_compatible.onnx`, GELU tanh 近似偏差已校验 |
+| MTK INT8 TFLite | 已完成 | `models/model_int8.tflite` |
+| DLA | 已完成 | `models/model_int8.dla`, MDLA 5.3 |
+| 板端 Demo | 已完成 | `examples/output/top5.json`, Top-1 `sea snake` |
+| 1000 张对齐评测 | 已完成 | Top-1 agreement 92.3%, `docs/accuracy.md` |
+| ImageNet 绝对 Top-1 | 等待标签 | 不能用类名表替代逐图 ground truth |
+| 板端性能 | 已完成 | 纯 NPU 53.3903 ms/inf, `docs/benchmark.md` |
 
 ## 转换兼容性与评测约束
 

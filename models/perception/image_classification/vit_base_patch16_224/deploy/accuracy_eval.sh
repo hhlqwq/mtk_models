@@ -104,7 +104,7 @@ run_board() {
         "${BOARD_HOST}:${BOARD_EVAL}/board_eval_loop.sh"
     tar -C "${WORK}/npu_bins" -cf - . | \
         ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-        "tar -C '${BOARD_EVAL}/inputs' -xf -"
+        "tar -C '${BOARD_EVAL}/inputs' -m -xf -"
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "sh '${BOARD_EVAL}/board_eval_loop.sh' \
         '${BOARD_EVAL}/model_int8.dla' '${BOARD_EVAL}/inputs' \

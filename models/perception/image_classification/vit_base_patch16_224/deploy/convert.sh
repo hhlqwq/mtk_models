@@ -22,8 +22,6 @@ python "${MODEL_ROOT}/deploy/convert_int8.py" \
     --calibration-dir "${CALIBRATION_DIR}" \
     --offset 1000 \
     --output "${MODEL_ROOT}/models/model_int8.tflite"
-sha256sum "${MODEL_ROOT}/models/model_fp32.onnx" \
-    "${MODEL_ROOT}/models/model_mtk_compatible.onnx" \
-    "${MODEL_ROOT}/models/model_int8.tflite" \
+sha256sum "${MODEL_ROOT}/models/model_int8.tflite" \
     >> "${MODEL_ROOT}/models/SHA256SUMS"
 echo "[OK] ViT INT8 TFLite 已生成。"
