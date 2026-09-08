@@ -9,7 +9,7 @@
 输出: 3 个检测头
 设备: MediaTek Genio 720 EVK
 部署格式: INT8 TFLite → DLA
-当前状态: 板端已验证
+当前状态: 完整交付
 ```
 
 Qualcomm Hugging Face 页面用于对标交付形式；由于其页面当前描述的是 YOLOv5-M 且不分发
@@ -112,7 +112,9 @@ bash deploy/accuracy_board_cpp.sh
 该流程要求 92 的 `/root/hailong.he/datasets/coco/val2017` 已有完整 5000 张图片与
 `instances_val2017.json`，并安装 AArch64 `pycocotools`。C++ 完成全部前处理、常驻 Runtime
 推理和后处理；pycocotools 只读取板端生成的最终预测 JSON 计算标准 COCO 指标，不参与模型
-前后处理。脚本只回传指标、耗时和日志，不回传逐图 NPU 原始输出。
+前后处理。脚本回传指标、耗时、峰值 RSS、CPU 调频状态和输入/输出哈希证据，不回传逐图
+NPU 原始输出。正式运行要求使用全新的 `EVAL_RUN_ID`，同名本地或板端目录会直接中止，
+防止旧结果混入本次评测。
 
 旧分阶段对照流程为：容器内批量生成 COCO val2017 INT8 输入 → 推送 92 板端逐图
 `neuronrt` 推理 → 回传原生输出 → 容器内解码 + NMS + pycocotools 计算 mAP。正式板端
@@ -134,7 +136,10 @@ C++ 路径不再回传这些原生输出。两条路径在评测前都会检查�
 | DLA | 已完成 | `models/model_int8.dla`（mdla5.3 + suppress-output） |
 | 板端 Demo | 已完成 | `examples/output/`（detections.json、detected.jpg、性能日志） |
 | 正式精度 | 已完成 | `docs/accuracy.md`（板端 C++ 完整处理 5000 张 COCO val2017，INT8 损失 -1.23pt） |
-| 正式性能 | 部分完成 | `docs/benchmark.md`（板端 C++ 稳态端到端平均 33.57ms、P95 37.78ms；可追溯峰值内存待补测） |
+| 正式性能 | 已完成 | `docs/benchmark.md`（板端 C++ 稳态端到端平均 33.66ms、P95 38.01ms；峰值 RSS 33,224 KiB） |
+
+Genio 720 的转换、Demo、板端性能、三后端正式精度和文档证据均已完成，当前状态为
+“完整交付”。Genio 5100 仍为未开始，不属于本次状态结论。
 
 ## 全流程验收边界
 

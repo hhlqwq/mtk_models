@@ -31,3 +31,13 @@ Ultralytics YOLOv5 使用 AGPL-3.0。使用和再分发模型、修改代码或�
 | `models/model_int8.dla` | 7,655,285 | `cf5b66c3fc1c24c9ef1d5c579d20f8d145cbd15d3a5be874b114f7f270c824c6` |
 
 模型文件默认不进入普通 Git 历史。重新转换或编译后必须重新生成并核对哈希，不能沿用本表。
+
+## 最终交付运行
+
+Genio 720 最终交付运行 ID 为 `20260908_cpp_delivery_v3`，运行提交为
+`1dcadbe4a5dec82b2e95efd3e0ffea90354a6bfc`。板端二进制 SHA-256 为
+`daf756b4553c8ba07d36e0fa3761d9e6ce60651871b5a9a4d633aa0bdfffffaf`，COCO 标注
+SHA-256 为 `e8c7f7908f1d7278341fae127d0da654f102f11bd7b21d8aeefa635b8c810b6f`，
+5000 张图片哈希清单的 SHA-256 为
+`1bc0eca834162aace33aac3b67e9e5dc47a12aadc7f5e92108b4134161358f48`。详细清单见
+`examples/output/board_cpp_accuracy/20260908_cpp_delivery_v3/`。
