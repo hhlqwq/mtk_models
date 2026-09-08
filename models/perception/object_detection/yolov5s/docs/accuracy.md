@@ -43,10 +43,12 @@ PyTorch 基线 0.3708 与上游公布的 0.374 接近；是否接受 INT8 精度
   `full_eval` 日志 `/tmp/hailongcodex/2026-09-07/full_eval.log`.
 - 后续评测脚本使用 `.eval/yolov5s/runs/<run_id>/` 隔离每次运行,避免旧结果污染.
 - 样本数：5000/5000 图片；NPU、PyTorch、ONNX 分别为 718,881、709,477、709,518 条检测结果.
-- 板端 C++ 正式运行 ID：`20260908_cpp_full_v2`；5000/5000 图片,718,891 条检测结果.
+- 最终交付运行 ID：`20260908_cpp_delivery_v3`；5000/5000 图片,718,891 条检测结果.
 - 板端原始证据：
-  `/root/hailong.he/yolov5s_cpp/runs/20260908_cpp_full_v2/`；89 回传的指标、摘要和耗时证据：
-  `examples/output/board_cpp_accuracy/20260908_cpp_full_v2/`.逐图 NPU 原始输出未回传.
+  `/root/hailong.he/yolov5s_cpp/runs/20260908_cpp_delivery_v3/`；89 回传的完整证据：
+  `examples/output/board_cpp_accuracy/20260908_cpp_delivery_v3/`.逐图 NPU 原始输出未回传.
+- 输入清单绑定 Git 提交 `1dcadbe4a5dec82b2e95efd3e0ffea90354a6bfc`、源码、板端二进制、
+  DLA、评测器、COCO 标注和 5000 张图片哈希清单；输出清单记录正式结果文件 SHA-256.
 - 板端 C++ 精确 AP@0.5:0.95 为 `0.35859860348732847`,评测脚本会先验证
   `processed_ids.txt` 与 COCO 标注中的 5000 个 image_id 完全一致,再运行 COCOeval.
 - 五个模型产物的 SHA-256 见 `model_card.md`,板端 DLA 记录见
