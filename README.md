@@ -3,7 +3,7 @@
 目标编译环境为 Ubuntu 22.04 预装镜像, MTK SDK、Python 3.11 和 CUDA Torch 在构建阶段安装。
 Ubuntu 系统依赖使用基础镜像官方软件源, pip 镜像地址在容器内永久配置。
 Python 3.11.11 源码地址由 Docker 构建参数管理, 默认使用服务器已验证可达的镜像地址。
-2026-09-07 实测发现当前同名容器仍绑定旧 Debian 12 镜像；Ubuntu 22.04 新镜像已安装但未切换。
+2026-09-07 已将同名容器迁移到 Ubuntu 22.04 镜像，并删除旧 Debian 12 容器和旧镜像。
 创建容器时仅验证工具, 操作方法见 [Docker 说明](docker/README.md)。
 
 本项目面向 MediaTek Genio 720（MT8189）和 Genio 5100，建立与
@@ -40,8 +40,8 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现，用于率先�
 | --- | --- |
 | Ubuntu 编译服务器 | `ssh ubuntu89`；宿主 Ubuntu 24.04.4 LTS |
 | 服务器工作目录 | `/data/users/hailong.he/github/mtk_models` |
-| 目标 Docker 镜像 | `hhl_g720_311:ubuntu22.04-np8.0.11`；已安装、未切换 |
-| 当前 Docker 容器 | `hhl_g720_311`；旧镜像 `hhl_g720_311:np8.0.11`，Debian 12 |
+| Docker 镜像 | `hhl_g720_311:ubuntu22.04-np8.0.11`；镜像 ID `006a427a61fd` |
+| 当前 Docker 容器 | `hhl_g720_311`；Ubuntu 22.04.5 LTS，已完成迁移与运行验证 |
 | Python | 当前容器 3.11.11 |
 | NeuroPilot SDK | 8.0.11 |
 | MTK Converter | 8.16.0 |
@@ -66,8 +66,8 @@ bash ./docker/create_container.sh
 bash ./docker/enter_container.sh
 ```
 
-当前同名容器仍绑定旧镜像，`docker/create_container.sh` 会检测镜像 ID 不一致并停止。
-切换容器前应先阅读环境核对记录并单独安排旧容器迁移，不能直接覆盖。
+当前同名容器已绑定目标 Ubuntu 22.04 镜像。旧容器与旧镜像已在留存迁移证据后删除；
+迁移备份位于 89 的 `/data/users/hailong.he/data/MTKG720/migration_20260907/`。
 
 模型权重和数据集等大文件必须由用户下载到本机工作区，再由用户同步或放置到 89 服务器；
 89 服务器和 92 开发板禁止直接下载模型、数据集或补丁。允许由 Codex 在本机工作区下载并

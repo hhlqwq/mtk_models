@@ -18,7 +18,18 @@ Neuron Runtime: 8.2.16
 
 当前系统属于 Rity v26.0 的 Scarthgap 开发版本，不是官网 2026-07-29 发布的正式 v26.0
 镜像。官网正式 v26.0 使用 Linux 6.6.137，当前板端为 6.6.117。升级系统属于独立系统变更，
-必须在获得明确授权后执行，并在升级后重新核对 Runtime 和全部已交付模型。
+已获得用户明确授权。正式 eMMC 镜像已在 89 下载、校验、解包并通过 `genio-flash --dry-run`；
+开发板当前只能通过网络访问，无法通过 USB 接入 89，因此尚未实际写入。官网 `genio-flash`
+要求目标板通过 USB 进入 SoC 下载模式；当前镜像又只有一个正在挂载的 `rootfs`，板端没有
+OS OTA/A-B 更新组件，不能从 SSH 会话安全地原地覆盖整块 eMMC。刷写后必须重新核对 Runtime
+和全部已交付模型。
+
+正式镜像和工具位于：
+
+```text
+/data/users/hailong.he/data/MTKG720/rity-v26.0-genio-720-evk-emmc/
+/data/users/hailong.he/data/MTKG720/genio-tools-v1.7.1/
+```
 
 `neuronrt -v` 当前会先报告缺少 CMDL 相关动态库，再输出 `Version: 8.2.16`。版本查询成功
 不等于模型推理成功；每个 DLA 仍需执行真实板端加载和 NPU 推理验证。

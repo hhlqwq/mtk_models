@@ -9,7 +9,8 @@
 3. Genio 720 EVK（92）系统、SoC 和 Neuron Runtime。
 4. 本仓库登记的工具链与平台配置。
 
-本次仅执行只读查询。没有启动新容器、编译模型、运行板端推理或升级开发板系统。
+初始核对完成后，已按用户授权迁移 Docker 容器，并下载、校验、解包正式 Rity v26.0 镜像。
+开发板当前只能通过网络访问，无法通过 USB 接入 89；正式刷写尚未开始，板端系统未改变。
 
 ## 官方资料来源
 
@@ -39,28 +40,26 @@
 服务器仓库状态: clean
 ```
 
-89 上同时存在两个 Docker 镜像：
+容器迁移前 89 上同时存在两个 Docker 镜像；迁移后状态如下：
 
 | 镜像 | 镜像 ID | 状态 |
 | --- | --- | --- |
-| `hhl_g720_311:ubuntu22.04-np8.0.11` | `006a427a61fd` | 已安装；标签声明 Ubuntu 22.04、NP 8.0.11、Python 3.11、CUDA 11.8；本次没有启动验证。 |
-| `hhl_g720_311:np8.0.11` | `be3e3853ae0e` | 当前容器 `hhl_g720_311` 实际绑定的旧镜像。 |
+| `hhl_g720_311:ubuntu22.04-np8.0.11` | `006a427a61fd` | 当前容器使用；Ubuntu 22.04.5，已完成运行验证。 |
+| `hhl_g720_311:np8.0.11` | `be3e3853ae0e` | 旧 Debian 12 镜像，已删除。 |
 
-当前运行容器的实测结果：
+迁移后当前运行容器的实测结果：
 
 ```text
-容器镜像: hhl_g720_311:np8.0.11
-容器系统: Debian GNU/Linux 12 (bookworm)
-glibc: 2.36
+容器镜像: hhl_g720_311:ubuntu22.04-np8.0.11
+容器系统: Ubuntu 22.04.5 LTS
 Python: 3.11.11
-pip: 25.2
 mtk_converter: 8.16.0
 mtk_quantization: 8.2.1
 ncc-tflite: 8.2.31
 torch: 2.0.0+cu118
 onnx: 1.13.1
-cmake: 3.25.0
-gcc/g++: 未安装
+gcc/g++: 11.4.0
+GPU: NVIDIA GeForce RTX 4090 D；Torch CUDA 与 ONNX Runtime CUDA 运算通过
 ```
 
 SDK 根目录为：
@@ -92,6 +91,39 @@ Neuron Runtime: 8.2.16
 板端安装了 `mtk-apusys-driver`、`mtk-apusys-firmware`、`mtk-apusys-middleware`、
 `mtk-apusys-tools`、`neuropilot-bin` 和 `packagegroup-rity-mtk-neuropilot`。
 
+### 正式 Rity v26.0 镜像准备
+
+用户已明确同意 MediaTek 软件许可协议并授权下载。官方 eMMC 镜像保存于：
+
+```text
+/data/users/hailong.he/data/MTKG720/rity-v26.0-genio-720-evk-emmc/
+```
+
+| 项目 | 值 |
+| --- | --- |
+| 文件 | `scarthgap_k6.6_v26.0_genio-720-evk_private_260729015554.tar.gz` |
+| 下载地址 | https://download.mediatek.com/aiot/download/prebuilt/v26.0/scarthgap_k6.6_v26.0_genio-720-evk_private_260729015554.tar.gz |
+| 文件大小 | 约 1.9 GB |
+| 官网 MD5 | `507f111167fadf707c12d77e0b96e337` |
+| 实际校验 | `OK` |
+| 解包目录 | `image/genio-720-evk/`，约 4.4 GB |
+| Genio Tools | 1.7.1，安装于 `/data/users/hailong.he/data/MTKG720/genio-tools-v1.7.1/` |
+
+压缩包共 125 个成员，未发现绝对路径或 `..` 路径。`genio-flash --dry-run` 已识别为
+`Rity Demo Layer 26.0-release`、Scarthgap、`genio-720-evk`，计划擦除并写入
+`mmc0`、`mmc0boot0` 和 `mmc0boot1`。镜像内核文件版本为 6.6.137。
+
+板端升级前备份保存于
+`/data/users/hailong.he/data/MTKG720/migration_20260907/board_root_hailong.he_before_v26.0.tar.gz`，
+并附有 MD5。当前 89 的 USB 枚举尚无 MediaTek `0e8d:0003` 设备，而且开发板无法通过 USB
+接入 89，因此实际刷写未开始。
+
+板端只读检查确认 `/dev/mmcblk0p10` 是唯一 `rootfs`，并正挂载为 `/`；启动参数直接使用
+`root=PARTLABEL=rootfs`。系统未安装 RAUC、SWUpdate、Mender、OSTree 或 Aktualizr，也没有
+OS 的备用根分区。MediaTek 文档中的固件 A/B 分区不覆盖 OS 的 kernel/rootfs，`genio-flash`
+daemon 模式仍依赖目标板与刷机主机之间的 USB/fastboot 链路。因此不能把网络可达误认为支持
+网络整机刷写，也不能通过 SSH 向正在运行的 eMMC 写入完整 WIC 镜像。
+
 ## 对应关系与风险判断
 
 | 核对项 | 判断 | 依据与限制 |
@@ -103,30 +135,29 @@ Neuron Runtime: 8.2.16
 | ONNX 1.13.1 | 对应 | 位于官网 `>=1.3,<1.14` 范围，也是官网列出的充分测试版本。 |
 | PyTorch 2.0.0 | 条件对应 | 位于普通 PyTorch Converter 允许范围，但不在官网列出的充分测试版本中；不满足 PyTorch V2 Converter 的 `>=2.1` 要求。 |
 | NCC 8.2.31 + Runtime 8.2.16 | 条件兼容 | 版本不相同，官网没有提供对所有 DLA 的通用兼容保证。YOLOv5s 已通过特定编译参数完成板端验证，但其他模型仍需逐个实测。 |
-| 当前 Debian 12 容器 | 不符合目标部署 | 当前运行容器不是仓库定义的 Ubuntu 22.04 镜像，且缺少 GCC/G++。 |
-| Ubuntu 22.04 目标镜像 | 项目验证基线 | 镜像已安装；官网 Neuron SDK 推荐 OS 列表只到 Ubuntu 18.04，因此 Ubuntu 22.04 属于项目实测支持，不应表述为官网明确支持。 |
+| Ubuntu 22.04 当前容器 | 项目验证基线 | 已完成迁移和工具/GPU 运行验证；官网 Neuron SDK 推荐 OS 列表只到 Ubuntu 18.04，因此只能表述为项目实测支持。 |
 | Rity 26.0-dev | 同版本线、非正式基线 | 与正式 v26.0 同为 Scarthgap，但板端是较早的开发快照，内核 6.6.117；官网正式 v26.0 为 6.6.137。 |
 
 ## 使用约束
 
-1. 当前同名容器绑定旧镜像，执行 `docker/create_container.sh` 时应由脚本检测镜像 ID 不一致并停止；不得静默覆盖旧容器。
-2. 在迁移到 Ubuntu 22.04 镜像前，不能把当前运行容器描述为 Ubuntu 22.04 环境。
+1. 当前同名容器已绑定目标镜像；后续重建仍应由 `docker/create_container.sh` 检测镜像 ID，不得静默覆盖容器。
+2. 旧容器的 inspect、pip 清单和可写层 diff 仅用于追溯；恢复时应优先从 Git 和显式挂载数据重建。
 3. NCC 与 Runtime 必须在每个 benchmark 中分别记录，不能只写“NeuroPilot 8”。
 4. 每个新模型必须在 92 上验证 DLA 加载和真实 NPU 推理；YOLOv5s 的成功不能外推为所有模型兼容。
 5. 对 MT8189 编译时使用 MDLA 5.3。需要桥接或特殊输出格式的模型应先检查板端 Runtime 8.2.16 的支持情况。
-6. 板端升级到正式 Rity v26.0 属于系统变更，必须单独评估并获得明确授权，不能在模型验证过程中顺带升级。
+6. 板端升级已获得明确授权；但当前网络连接不能替代官方 USB 下载模式。需要将开发板 USB
+   接到任意可运行 Genio Tools 的 Linux/Windows 主机后再刷写，完成后重新采集系统、Runtime
+   和模型验证证据。
 
 ## 证据边界
 
 ### 已实时验证
 
-- 89 宿主系统、仓库提交、镜像清单、当前容器关联镜像和容器内已安装工具版本。
+- 89 宿主系统、镜像清单、迁移后容器关联镜像、容器内工具版本、NCC、Torch CUDA 和 ONNX Runtime CUDA。
 - 92 设备树、Rity 版本、内核版本、Neuron Runtime 版本和相关软件包。
 - 官网 G720、NeuroPilot 8.0.11、Converter、Neuron SDK、下载页和 IoT Yocto v26.0 页面内容。
 
 ### 本次未验证
 
-- `hhl_g720_311:ubuntu22.04-np8.0.11` 新镜像的启动与运行时状态。
-- 新镜像中的 Torch CUDA、ONNX Runtime CUDA、Converter、NCC 和系统编译器执行结果。
 - 任何模型的重新转换、NCC 编译、DLA 加载、板端推理、精度或性能。
 - 正式 Rity v26.0 刷写后的 Neuron Runtime 版本和模型兼容性。
