@@ -15,13 +15,14 @@ import cv2
 import numpy as np
 import tqdm
 
-MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-
 
 def preprocess(image: np.ndarray, crop_size: int = 224,
                resize_size: int = 256) -> np.ndarray:
-    """ImageNet 标准评估预处理, 返回 NCHW FP32。"""
+    """ImageNet 标准评估几何预处理, 返回 NCHW FP32 [0,1]。
+
+    Qualcomm 导出的 ONNX 已在图内完成 mean/std 归一化 (首节点 Sub/Div),
+    外部输入必须是 rgb/255 的 [0,1] 范围, 不允许再次归一化。
+    """
     height, width = image.shape[:2]
     scale = resize_size / min(height, width)
     resized = cv2.resize(image, (round(width * scale), round(height * scale)),
@@ -30,8 +31,8 @@ def preprocess(image: np.ndarray, crop_size: int = 224,
     left = (resized.shape[1] - crop_size) // 2
     crop = resized[top:top + crop_size, left:left + crop_size]
     rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
-    normalized = (rgb.astype(np.float32) / 255.0 - MEAN) / STD
-    return normalized.transpose(2, 0, 1)[np.newaxis].copy()
+    scaled = rgb.astype(np.float32) / 255.0
+    return scaled.transpose(2, 0, 1)[np.newaxis].copy()
 
 
 def list_images(images_dir: Path) -> list:
@@ -43,9 +44,9 @@ def list_images(images_dir: Path) -> list:
 def load_labels(path: Path, count: int) -> dict:
     """加载 ImageNet val ground truth (行号 -> 0-based 类 id)。
 
-    支持 ILSVRC devkit 的 ILSVRC2012_validation_ground_truth.txt (1-based WNID
-    顺序表需要 meta.mat, 此处接受已映射为类序号的两列/单列文本:
-    每行 "序号 类id" 或仅 "类id", 类 id 为 0-based)。
+    此处只接受已经映射到模型输出顺序的 0-based 类 id。单列格式按图片排序
+    逐行对应；两列格式为 "1-based 图片序号 0-based 类 id"。原始 ILSVRC
+    ground truth 的 1-based synset id 必须先结合 devkit meta.mat 完成映射。
     """
     labels = {}
     for line_no, line in enumerate(
@@ -54,7 +55,16 @@ def load_labels(path: Path, count: int) -> dict:
         if not parts:
             continue
         index = int(parts[0]) - 1 if len(parts) > 1 else line_no
-        labels[index] = int(parts[-1])
+        class_id = int(parts[-1])
+        if index < 0 or index >= count or class_id < 0 or class_id >= 1000:
+            raise ValueError(
+                f"标签越界: line={line_no + 1}, index={index}, "
+                f"class_id={class_id}")
+        if index in labels:
+            raise ValueError(f"标签图片序号重复: {index}")
+        labels[index] = class_id
+    if len(labels) != count:
+        raise ValueError(f"标签数量错误: 需要 {count}, 实际 {len(labels)}")
     return labels
 
 
@@ -82,28 +92,48 @@ def stage_prepare(args: argparse.Namespace) -> None:
     import onnxruntime
 
     image_paths = list_images(args.images_dir)[args.start:args.start + args.count]
+    if len(image_paths) != args.count:
+        raise ValueError(
+            f"评测图片不足: start={args.start}, 需要 {args.count}, "
+            f"实际 {len(image_paths)}")
     parser = mtk_converter.TFLiteParser(str(args.tflite))
     input_detail = parser.get_input_tensor_details()[0]
-    q_scale = input_detail["quantization"]["scales"][0]
-    q_zero = input_detail["quantization"]["zero_points"][0]
+    if list(input_detail["shape"]) != [1, 3, 224, 224]:
+        raise ValueError(f"TFLite 输入 shape 异常: {input_detail['shape']}")
+    q_scale = float(input_detail["quantization"]["scales"][0])
+    q_zero = int(input_detail["quantization"]["zero_points"][0])
     session = onnxruntime.InferenceSession(
         str(args.onnx), providers=["CUDAExecutionProvider",
                                    "CPUExecutionProvider"])
+    if "CUDAExecutionProvider" not in session.get_providers():
+        raise RuntimeError(
+            "ONNX Runtime 未启用 CUDAExecutionProvider，拒绝静默回退 CPU。")
     input_name = session.get_inputs()[0].name
     args.bins_dir.mkdir(parents=True, exist_ok=True)
     args.logits_dir.mkdir(parents=True, exist_ok=True)
+    manifest_lines = []
     for position, image_path in enumerate(tqdm.tqdm(
             image_paths, desc="ViT 评测准备", unit="img")):
+        global_position = args.start + position
+        stem = f"{global_position:06d}_{image_path.stem}"
         image = cv2.imread(str(image_path))
         if image is None:
             raise ValueError(f"无法读取图片: {image_path}")
         fp32 = preprocess(image)
         quantized = np.clip(np.round(fp32 / q_scale) + q_zero, -128,
                             127).astype(np.int8)
-        quantized.tofile(args.bins_dir / f"{position:06d}_{image_path.stem}.bin")
+        quantized.tofile(args.bins_dir / f"{stem}.bin")
         logits = session.run(None, {input_name: fp32})[0].reshape(-1)
         logits.astype(np.float32).tofile(
-            args.logits_dir / f"{position:06d}_{image_path.stem}.npy")
+            args.logits_dir / f"{stem}.f32")
+        manifest_lines.append(json.dumps({
+            "index": global_position,
+            "image": image_path.name,
+            "stem": stem,
+        }, ensure_ascii=False))
+    with args.manifest.open("a", encoding="utf-8", newline="\n") as file:
+        for line in manifest_lines:
+            file.write(f"{line}\n")
     print(f"[OK] prepare 完成: {len(image_paths)} 张。")
 
 
@@ -112,9 +142,12 @@ def stage_compare(args: argparse.Namespace) -> None:
     import mtk_converter
 
     parser = mtk_converter.TFLiteParser(str(args.tflite))
-    out_detail = parser.get_output_tensor_details()[0]
-    out_scale = out_detail["quantization"]["scales"][0]
-    out_zero = out_detail["quantization"]["zero_points"][0]
+    output_details = parser.get_output_tensor_details()
+    if len(output_details) != 1 or list(output_details[0]["shape"]) != [1, 1000]:
+        raise ValueError(f"TFLite 输出结构异常: {output_details}")
+    out_detail = output_details[0]
+    out_scale = float(out_detail["quantization"]["scales"][0])
+    out_zero = int(out_detail["quantization"]["zero_points"][0])
     out_size = int(np.prod(out_detail["shape"]))
     labels = load_labels(args.labels, args.count) if args.labels else None
 
@@ -127,13 +160,29 @@ def stage_compare(args: argparse.Namespace) -> None:
     fp32_top1_correct = 0
     npu_top5_correct = 0
     fp32_top5_correct = 0
+    manifest = [json.loads(line) for line in args.manifest.read_text(
+        encoding="utf-8").splitlines() if line.strip()]
+    if len(manifest) != args.count:
+        raise ValueError(
+            f"清单数量错误: 需要 {args.count}, 实际 {len(manifest)}")
+    expected_indices = list(range(args.count))
+    actual_indices = [record["index"] for record in manifest]
+    if actual_indices != expected_indices:
+        raise ValueError("清单图片序号不连续或顺序异常。")
+    output_count = len(list(args.npu_dir.glob("*_0.bin")))
+    if output_count != args.count:
+        raise ValueError(
+            f"NPU 输出数量错误: 需要 {args.count}, 实际 {output_count}")
     count = 0
-    for npy in sorted(args.logits_dir.glob("*.npy")):
-        stem = npy.name[:-len(".npy")]
+    for record in manifest:
+        stem = record["stem"]
+        ref_path = args.logits_dir / f"{stem}.f32"
         dla_out = args.npu_dir / f"{stem}_0.bin"
-        if not dla_out.exists():
-            continue
-        ref = npy.read_bytes()
+        if not ref_path.is_file() or ref_path.stat().st_size != out_size * 4:
+            raise ValueError(f"FP32 logits 缺失或大小错误: {ref_path}")
+        if not dla_out.is_file() or dla_out.stat().st_size == 0:
+            raise ValueError(f"NPU 输出缺失或为空: {dla_out}")
+        ref = ref_path.read_bytes()
         ref_logits = np.frombuffer(ref, dtype=np.float32)
         npu_logits = load_npu_logit(dla_out, out_size, out_scale, out_zero)
         ref_top = topk_from_logits(ref_logits, 5)
@@ -146,12 +195,11 @@ def stage_compare(args: argparse.Namespace) -> None:
         total_ref += float((ref_logits ** 2).sum())
         if labels is not None:
             index = int(stem.split("_")[0])
-            truth = labels.get(index)
-            if truth is not None:
-                npu_top1_correct += int(npu_top[0] == truth)
-                fp32_top1_correct += int(ref_top[0] == truth)
-                npu_top5_correct += int(truth in npu_top.tolist())
-                fp32_top5_correct += int(truth in ref_top.tolist())
+            truth = labels[index]
+            npu_top1_correct += int(npu_top[0] == truth)
+            fp32_top1_correct += int(ref_top[0] == truth)
+            npu_top5_correct += int(truth in npu_top.tolist())
+            fp32_top5_correct += int(truth in ref_top.tolist())
         count += 1
         if count % 500 == 0:
             print(f"  已对比 {count} 张 ...")
@@ -203,6 +251,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--logits-dir", type=Path, default=None)
     parser.add_argument("--npu-dir", type=Path, default=None)
     parser.add_argument("--summary", type=Path, default=None)
+    parser.add_argument("--manifest", type=Path, default=None)
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--count", type=int, default=1000)
     args = parser.parse_args()
@@ -210,6 +259,7 @@ def parse_args() -> argparse.Namespace:
     args.logits_dir = args.logits_dir or args.work_dir / "fp32_logits"
     args.npu_dir = args.npu_dir or args.work_dir / "npu_outputs"
     args.summary = args.summary or args.work_dir / "agreement_summary.json"
+    args.manifest = args.manifest or args.work_dir / "manifest.jsonl"
     return args
 
 

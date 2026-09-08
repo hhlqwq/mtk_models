@@ -31,10 +31,15 @@ def postprocess(args: argparse.Namespace) -> None:
     logits = (raw.astype(np.float32) - detail["zero_point"]) * detail["scale"]
     logits = logits.reshape(-1)
     top_indices = np.argsort(logits)[::-1][:args.topk]
+    names = None
+    if args.labels is not None and args.labels.exists():
+        names = args.labels.read_text(encoding="utf-8").splitlines()
     result = {
         "source_image": metadata["source_image"],
         "topk": [{
             "class_id": int(index),
+            "class_name": (names[index] if names and
+                           index < len(names) else ""),
             "logit": float(logits[index]),
         } for index in top_indices],
     }
@@ -42,7 +47,8 @@ def postprocess(args: argparse.Namespace) -> None:
     args.result.write_text(
         json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     for item in result["topk"]:
-        print(f"top{item['class_id']:>5} logit={item['logit']:.4f}")
+        print(f"top{item['class_id']:>5} {item['class_name']:<28} "
+              f"logit={item['logit']:.4f}")
     print(f"[OK] 结果: {args.result}")
 
 
@@ -53,6 +59,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--result", type=Path, required=True)
     parser.add_argument("--topk", type=int, default=5)
+    parser.add_argument("--labels", type=Path, default=None,
+                        help="可选类名表 (Qualcomm 归档内 labels.txt)。")
     return parser.parse_args()
 
 

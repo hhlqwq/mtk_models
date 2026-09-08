@@ -27,23 +27,18 @@ echo "[2/4] 预热 10 次 + 连续推理 100 次。"
     -c 100 -b 100 -r turbo -l performance --verbose \
     >"${OUTPUT_DIR}/benchmark.log" 2>&1
 
-echo "[3/4] 采样峰值内存 (VmHWM) 和单次端到端耗时。"
+echo "[3/4] 采样峰值内存 (VmHWM) 和单次进程端到端耗时。"
 peak=0
-idx=0
-while [ "${idx}" -lt 20 ]; do
-    "${NEURONRT}" -m hw -a "${DLA_FILE}" -i "${INPUT_FILE}" \
-        -o "${OUTPUT_DIR}/mem_0.bin" >/dev/null 2>&1 &
-    pid=$!
-    inner=0
-    while [ "${inner}" -lt 2000 ]; do
-        v=$(awk '/VmHWM/{print $2}' "/proc/${pid}/status" 2>/dev/null) || true
-        [ -z "${v}" ] && break
-        [ "${v}" -gt "${peak}" ] && peak=${v}
-        inner=$((inner + 1))
-    done
-    wait "${pid}" 2>/dev/null || true
-    idx=$((idx + 1))
-done >"${OUTPUT_DIR}/mem_run.log" 2>&1
+"${NEURONRT}" -m hw -a "${DLA_FILE}" -i "${INPUT_FILE}" \
+    -o "${OUTPUT_DIR}/mem_0.bin" -c 100 -b 100 -r turbo \
+    -l performance --verbose >"${OUTPUT_DIR}/mem_run.log" 2>&1 &
+pid=$!
+while kill -0 "${pid}" 2>/dev/null; do
+    v=$(awk '/VmHWM/{print $2}' "/proc/${pid}/status" 2>/dev/null) || true
+    [ -n "${v}" ] && [ "${v}" -gt "${peak}" ] && peak=${v}
+done
+wait "${pid}"
+[ "${peak}" -gt 0 ]
 echo "PeakRssKB=${peak}" > "${OUTPUT_DIR}/memory.txt"
 
 start=$(date +%s%N)
@@ -55,5 +50,19 @@ echo "OneShotProcessMs=$(( (end - start) / 1000000 ))" >> "${OUTPUT_DIR}/memory.
 echo "[4/4] 保存版本与校验信息。"
 "${NEURONRT}" -v >"${OUTPUT_DIR}/neuronrt_version.txt" 2>&1 || true
 uname -a >"${OUTPUT_DIR}/system.txt"
+{
+    echo "governors:"
+    for governor in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+        [ -f "${governor}" ] || continue
+        printf '%s=' "${governor}"
+        cat "${governor}"
+    done
+    echo "current_freq_khz:"
+    for frequency in /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq; do
+        [ -f "${frequency}" ] || continue
+        printf '%s=' "${frequency}"
+        cat "${frequency}"
+    done
+} >"${OUTPUT_DIR}/cpu_frequency.txt"
 sha256sum "${DLA_FILE}" "${INPUT_FILE}" >"${OUTPUT_DIR}/SHA256SUMS"
 echo "[OK] ViT 板端冒烟和性能测试完成。"

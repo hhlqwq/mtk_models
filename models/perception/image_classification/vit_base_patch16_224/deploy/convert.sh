@@ -16,9 +16,11 @@ echo "[1/2] 验证镜像内预装工具链。"
 bash /opt/mtk-build/setup_container.sh
 
 echo "[2/2] 使用 MTK ONNX Converter 执行 INT8 PTQ。"
+# --offset 1000: 校准取 val[1000:1100], 与精度评测子集 val[0:1000] 完全错开。
 python "${MODEL_ROOT}/deploy/convert_int8.py" \
     --onnx "${MODEL_ROOT}/models/model_fp32.onnx" \
     --calibration-dir "${CALIBRATION_DIR}" \
+    --offset 1000 \
     --output "${MODEL_ROOT}/models/model_int8.tflite"
 sha256sum "${MODEL_ROOT}/models/model_fp32.onnx" \
     "${MODEL_ROOT}/models/model_int8.tflite" \
