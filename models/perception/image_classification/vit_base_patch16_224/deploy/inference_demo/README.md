@@ -15,3 +15,7 @@
 第一张图片, 也可通过 `VIT_DEMO_IMAGE=/path/to/image.JPEG` 指定图片; 它会按当前
 TFLite 重新生成输入, 在 92 上完成冒烟、延迟和峰值 RSS 采样, 回传输出后生成
 `examples/output/top5.json`.
+
+板端连接使用 `BatchMode=yes` 并在首次连接时接受 92 的主机密钥; 后续连接由
+容器内 `known_hosts` 校验. 若 92 重刷系统导致主机密钥变化, 脚本会停止并要求人工核对,
+不会静默忽略密钥冲突.

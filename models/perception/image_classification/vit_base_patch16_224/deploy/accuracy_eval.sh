@@ -33,6 +33,7 @@ readonly WORK="${PROJECT_ROOT}/.eval/vit_base_patch16_224/runs/${EVAL_RUN_ID}"
 readonly WORK_C="/workspace/.eval/vit_base_patch16_224/runs/${EVAL_RUN_ID}"
 readonly BOARD_EVAL="${BOARD_ROOT}/vit_eval/runs/${EVAL_RUN_ID}"
 readonly RUN_CONFIG="${WORK}/run_inputs_sha256.txt"
+readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
 docker_run() {
     docker exec "${CONTAINER}" python "${EVAL_PY}" \
@@ -91,19 +92,24 @@ run_prepare() {
 run_board() {
     echo "[board] 推送 DLA、输入并批量推理。"
     test -f "${WORK}/prepare.done"
-    ssh "${BOARD_HOST}" "mkdir -p '${BOARD_EVAL}/inputs' '${BOARD_EVAL}/outputs'"
-    scp -q "${MODEL_DIR}/models/model_int8.dla" \
+    ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+        "mkdir -p '${BOARD_EVAL}/inputs' '${BOARD_EVAL}/outputs'"
+    scp "${SSH_OPTIONS[@]}" -q "${MODEL_DIR}/models/model_int8.dla" \
         "${BOARD_HOST}:${BOARD_EVAL}/model_int8.dla"
-    scp -q "${MODEL_DIR}/deploy/inference_demo/board_eval_loop.sh" \
+    scp "${SSH_OPTIONS[@]}" -q \
+        "${MODEL_DIR}/deploy/inference_demo/board_eval_loop.sh" \
         "${BOARD_HOST}:${BOARD_EVAL}/board_eval_loop.sh"
-    tar -C "${WORK}/npu_bins" -cf - . | ssh "${BOARD_HOST}" \
+    tar -C "${WORK}/npu_bins" -cf - . | \
+        ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "tar -C '${BOARD_EVAL}/inputs' -xf -"
-    ssh "${BOARD_HOST}" "sh '${BOARD_EVAL}/board_eval_loop.sh' \
+    ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+        "sh '${BOARD_EVAL}/board_eval_loop.sh' \
         '${BOARD_EVAL}/model_int8.dla' '${BOARD_EVAL}/inputs' \
         '${BOARD_EVAL}/outputs'"
     echo "[board] 回传输出，板端原始证据保留在 ${BOARD_EVAL}。"
     mkdir -p "${WORK}/npu_outputs"
-    ssh "${BOARD_HOST}" "tar -C '${BOARD_EVAL}/outputs' -cf - ." \
+    ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+        "tar -C '${BOARD_EVAL}/outputs' -cf - ." \
         | tar -C "${WORK}/npu_outputs" -xf -
     local output_count
     output_count="$(find "${WORK}/npu_outputs" -maxdepth 1 \

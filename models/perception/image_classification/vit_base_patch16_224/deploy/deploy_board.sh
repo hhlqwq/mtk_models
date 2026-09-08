@@ -10,6 +10,7 @@ readonly DEFAULT_IMAGE="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/
 readonly DEMO_IMAGE="${VIT_DEMO_IMAGE:-${DEFAULT_IMAGE}}"
 readonly INPUT_BIN="${MODEL_ROOT}/examples/input/input_int8.bin"
 readonly INPUT_METADATA="${MODEL_ROOT}/examples/input/input_metadata.json"
+readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
 test -f "${MODEL_ROOT}/models/model_int8.dla"
 test -f "${MODEL_ROOT}/models/model_int8.tflite"
@@ -23,17 +24,18 @@ python "${MODEL_ROOT}/deploy/inference_demo/prepare_input.py" \
     --metadata "${INPUT_METADATA}"
 
 echo "[2/4] 创建板端目录。"
-ssh "${BOARD_HOST}" "mkdir -p '${BOARD_DIR}'"
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DIR}'"
 echo "[3/4] 部署 DLA 和 Demo。"
-scp "${MODEL_ROOT}/models/model_int8.dla" \
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/models/model_int8.dla" \
     "${BOARD_HOST}:${BOARD_DIR}/model_int8.dla"
-scp "${INPUT_BIN}" \
+scp "${SSH_OPTIONS[@]}" "${INPUT_BIN}" \
     "${BOARD_HOST}:${BOARD_DIR}/input_int8.bin"
-scp "${MODEL_ROOT}/deploy/inference_demo/run_board.sh" \
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/deploy/inference_demo/run_board.sh" \
     "${BOARD_HOST}:${BOARD_DIR}/run_board.sh"
-ssh "${BOARD_HOST}" "chmod +x '${BOARD_DIR}/run_board.sh' && '${BOARD_DIR}/run_board.sh'"
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "chmod +x '${BOARD_DIR}/run_board.sh' && '${BOARD_DIR}/run_board.sh'"
 mkdir -p "${MODEL_ROOT}/examples/output"
-scp -r "${BOARD_HOST}:${BOARD_DIR}/output/." \
+scp "${SSH_OPTIONS[@]}" -r "${BOARD_HOST}:${BOARD_DIR}/output/." \
     "${MODEL_ROOT}/examples/output/"
 echo "[4/4] 反量化输出并生成 Top-5。"
 postprocess_args=(
