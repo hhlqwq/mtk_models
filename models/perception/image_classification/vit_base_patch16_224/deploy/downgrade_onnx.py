@@ -4,7 +4,7 @@ Qualcomm v0.61.0 导出为 IR v10 / opset 21, 且使用 opset 20 新增的 Gelu
 算子; mtk_converter (onnx 1.13.1) 要求 IR v3..v8 且 opset <= 18。
 本脚本做三项等价改写:
 
-1. Gelu 展开为基础算子 (Mul/Add/Pow/Erf 或 Tanh) 的官方定义等价子图;
+1. Gelu 展开为 TFLite 可导出的标准 tanh 近似子图;
 2. ai.onnx opset 21 -> 17 (LayerNormalization 所需的最低 opset,
    其余算子 schema 在 17..21 之间无变化);
 3. 删除常量 shape 且不含 0 的 Reshape allowzero=1 属性；
@@ -32,60 +32,39 @@ def scalar_initializer(name: str, value: float):
 
 
 def expand_gelu(node, index: int) -> tuple[list, list]:
-    """把单个 Gelu 节点展开为等价子图, 返回 (节点列表, initializer 列表)。"""
+    """把单个 Gelu 节点展开为标准 tanh 近似子图。"""
     x = node.input[0]
     y = node.output[0]
     prefix = f"gelu_{index}"
-    approximate = ""
-    for attr in node.attribute:
-        if attr.name == "approximate":
-            raw = attr.s
-            approximate = raw.decode("utf-8") if isinstance(raw, bytes) else str(raw)
     half = f"{prefix}_half"
     one = f"{prefix}_one"
     t2 = f"{prefix}_t2"
     t3 = f"{prefix}_t3"
-    inits = [scalar_initializer(half, 0.5), scalar_initializer(one, 1.0)]
-    if approximate == "tanh":
-        # 0.5*x*(1+tanh(sqrt(2/pi)*(x+0.044715*x^3)))
-        k0 = f"{prefix}_k0"
-        k1 = f"{prefix}_k1"
-        three = f"{prefix}_three"
-        x3 = f"{prefix}_x3"
-        t1 = f"{prefix}_t1"
-        inner = f"{prefix}_inner"
-        scaled = f"{prefix}_scaled"
-        tanh_out = f"{prefix}_tanh"
-        inits += [
-            scalar_initializer(k0, math.sqrt(2.0 / math.pi)),
-            scalar_initializer(k1, 0.044715),
-            scalar_initializer(three, 3.0),
-        ]
-        nodes = [
-            helper.make_node("Pow", [x, three], [x3], name=f"{prefix}_pow3"),
-            helper.make_node("Mul", [x3, k1], [t1], name=f"{prefix}_mul_k1"),
-            helper.make_node("Add", [x, t1], [inner], name=f"{prefix}_add_x"),
-            helper.make_node("Mul", [inner, k0], [scaled], name=f"{prefix}_mul_k0"),
-            helper.make_node("Tanh", [scaled], [tanh_out], name=f"{prefix}_tanh"),
-            helper.make_node("Add", [tanh_out, one], [t2], name=f"{prefix}_one_plus"),
-            helper.make_node("Mul", [x, t2], [t3], name=f"{prefix}_x_mul"),
-            helper.make_node("Mul", [t3, half], [y], name=f"{prefix}_final"),
-        ]
-    else:
-        # 精确 erf 定义: 0.5*x*(1+erf(x/sqrt(2)))
-        inv_sqrt2 = f"{prefix}_inv_sqrt2"
-        scaled = f"{prefix}_scaled"
-        erf_out = f"{prefix}_erf"
-        inits.append(scalar_initializer(inv_sqrt2, 1.0 / math.sqrt(2.0)))
-        nodes = [
-            helper.make_node("Mul", [x, inv_sqrt2], [scaled],
-                             name=f"{prefix}_mul_inv_sqrt2"),
-            helper.make_node("Erf", [scaled], [erf_out], name=f"{prefix}_erf"),
-            helper.make_node("Add", [erf_out, one], [t2],
-                             name=f"{prefix}_one_plus_erf"),
-            helper.make_node("Mul", [x, t2], [t3], name=f"{prefix}_x_mul"),
-            helper.make_node("Mul", [t3, half], [y], name=f"{prefix}_final"),
-        ]
+    k0 = f"{prefix}_k0"
+    k1 = f"{prefix}_k1"
+    three = f"{prefix}_three"
+    x3 = f"{prefix}_x3"
+    t1 = f"{prefix}_t1"
+    inner = f"{prefix}_inner"
+    scaled = f"{prefix}_scaled"
+    tanh_out = f"{prefix}_tanh"
+    inits = [
+        scalar_initializer(half, 0.5),
+        scalar_initializer(one, 1.0),
+        scalar_initializer(k0, math.sqrt(2.0 / math.pi)),
+        scalar_initializer(k1, 0.044715),
+        scalar_initializer(three, 3.0),
+    ]
+    nodes = [
+        helper.make_node("Pow", [x, three], [x3], name=f"{prefix}_pow3"),
+        helper.make_node("Mul", [x3, k1], [t1], name=f"{prefix}_mul_k1"),
+        helper.make_node("Add", [x, t1], [inner], name=f"{prefix}_add_x"),
+        helper.make_node("Mul", [inner, k0], [scaled], name=f"{prefix}_mul_k0"),
+        helper.make_node("Tanh", [scaled], [tanh_out], name=f"{prefix}_tanh"),
+        helper.make_node("Add", [tanh_out, one], [t2], name=f"{prefix}_one_plus"),
+        helper.make_node("Mul", [x, t2], [t3], name=f"{prefix}_x_mul"),
+        helper.make_node("Mul", [t3, half], [y], name=f"{prefix}_final"),
+    ]
     return nodes, inits
 
 

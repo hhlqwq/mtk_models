@@ -47,6 +47,7 @@ write_or_check_config() {
         echo "total=${TOTAL}"
         echo "images_dir=${IMAGES_DIR}"
         sha256sum "${MODEL_DIR}/models/model_fp32.onnx" \
+            "${MODEL_DIR}/models/model_mtk_compatible.onnx" \
             "${MODEL_DIR}/models/model_int8.tflite" \
             "${MODEL_DIR}/models/model_int8.dla" \
             "${PROJECT_ROOT}/tools/accuracy/vit_val_agreement.py" \

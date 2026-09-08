@@ -63,13 +63,16 @@ else:
     print(f"[INFO] 无外部权重, 直接复制: {source} -> {target}")
 PY
 
-# Qualcomm 导出为 IR v10 / opset 21 且含 Gelu 算子, 超出 mtk_converter
-# (onnx 1.13.1) 的 IR v3..v8 / opset <=18 支持范围, 需等价降级。
+# 保留原始 FP32 单文件作为精度基线, 另生成 MTK 兼容模型. Qualcomm 导出为
+# IR v10 / opset 21 且含 Gelu; MTK TFLite 导出器不支持 Erf, 因此兼容模型
+# 使用标准 GELU tanh 近似, 并通过固定输入限制近似误差与 Top-1 漂移.
+cp "${MODEL_ROOT}/models/model_fp32.onnx" \
+    "${MODEL_ROOT}/models/model_mtk_compatible.onnx"
 python "${MODEL_ROOT}/deploy/downgrade_onnx.py" \
-    --model "${MODEL_ROOT}/models/model_fp32.onnx"
+    --model "${MODEL_ROOT}/models/model_mtk_compatible.onnx"
 python "${MODEL_ROOT}/deploy/verify_onnx_equivalence.py" \
-    --reference "${ONNX_PATH}" \
-    --converted "${MODEL_ROOT}/models/model_fp32.onnx"
+    --reference "${MODEL_ROOT}/models/model_fp32.onnx" \
+    --converted "${MODEL_ROOT}/models/model_mtk_compatible.onnx"
 
 readonly LABELS_PATH="$(find "${MODEL_ROOT}/original/exported" \
     -type f -name 'labels.txt' | sort | head -n 1)"
@@ -79,5 +82,6 @@ fi
 
 echo "[3/3] 记录来源校验值。"
 sha256sum "${ARCHIVE}" "${MODEL_ROOT}/models/model_fp32.onnx" \
+    "${MODEL_ROOT}/models/model_mtk_compatible.onnx" \
     > "${MODEL_ROOT}/models/SHA256SUMS"
 echo "[OK] ViT FP32 ONNX 已准备: ${ONNX_PATH}"

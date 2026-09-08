@@ -40,9 +40,11 @@ cd /workspace/models/perception/image_classification/vit_base_patch16_224
 
 Qualcomm v0.61.0 归档中的 `vit.onnx` 使用外部权重文件, IR v10 / opset 21,
 并包含 `Gelu` 和 `Reshape allowzero=1`. `download_original.sh` 会先校验归档
-SHA-256, 合并外部权重, 再通过 `downgrade_onnx.py` 做 MTK Converter 可接受的
-等价展开与兼容降级, 最后用固定输入比较原始/降级 ONNX 数值. 遇到动态 shape、
-包含 0 的 `allowzero=1` 或数值不一致时脚本会拒绝转换, 不进行猜测式改写.
+SHA-256 并合并外部权重为原始 FP32 基线 `model_fp32.onnx`. 另生成
+`model_mtk_compatible.onnx`: 通过 `downgrade_onnx.py` 降级 IR/opset、清理安全的
+`allowzero` 属性, 并将 MTK TFLite 导出器不支持的精确 Gelu 改为标准 tanh 近似.
+脚本会用固定输入限制近似误差与 Top-1 漂移; 遇到动态 shape、包含 0 的
+`allowzero=1` 或超出误差阈值时立即停止. 精度基线始终使用未近似的原始 FP32 ONNX.
 
 Qualcomm ONNX 已在图内执行 mean/std 归一化, 外部输入固定为 NCHW RGB
 float32 `[0,1]`. `convert.sh` 默认使用排序后的 ImageNet val 第 1001~1100 张
