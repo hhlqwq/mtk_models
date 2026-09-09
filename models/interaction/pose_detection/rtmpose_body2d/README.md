@@ -25,8 +25,9 @@ cd /workspace/models/interaction/pose_detection/rtmpose_body2d
 ./deploy/deploy_board.sh
 ```
 
-`download_original.sh` 支持复用 `models/` 中已有的官方 ZIP,并保留 ONNX 外部权重
-`rtmpose_body2d.data`.`convert.sh` 默认使用 100 个 COCO person 框校准；`build.sh` 固定使用
+`download_original.sh` 支持复用 `models/` 中已有的官方 ZIP,保留 FP32 ONNX 外部权重,并
+生成 MTK Converter 可读取的单文件兼容副本.`convert.sh` 默认使用 100 个 COCO person 框
+校准；`build.sh` 固定使用
 Genio 720 所需的 `mdla5.3 + --suppress-output + --disallow-bridge`；部署脚本使用两张不同
 图片冒烟并采集 20 次预热、100 次连续推理、峰值内存及单次进程耗时.
 

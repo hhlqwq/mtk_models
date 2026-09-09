@@ -29,8 +29,12 @@ test -n "${ONNX_PATH}"
 test -n "${DATA_PATH}"
 cp "${ONNX_PATH}" "${MODEL_ROOT}/models/model_fp32.onnx"
 cp "${DATA_PATH}" "${MODEL_ROOT}/models/$(basename "${DATA_PATH}")"
+python "${MODEL_ROOT}/deploy/prepare_onnx.py" \
+    --source "${MODEL_ROOT}/models/model_fp32.onnx" \
+    --output "${MODEL_ROOT}/models/model_mtk_compatible.onnx"
 echo "[3/3] 记录来源校验值."
 sha256sum "${ARCHIVE_PATH}" "${MODEL_ROOT}/models/model_fp32.onnx" \
     "${MODEL_ROOT}/models/$(basename "${DATA_PATH}")" \
+    "${MODEL_ROOT}/models/model_mtk_compatible.onnx" \
     > "${MODEL_ROOT}/models/SHA256SUMS"
 echo "[OK] RTMPose FP32 ONNX 已准备."
