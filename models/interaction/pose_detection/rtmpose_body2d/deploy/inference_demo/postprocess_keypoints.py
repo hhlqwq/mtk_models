@@ -48,18 +48,27 @@ def map_to_source(keypoints: np.ndarray, sample: dict) -> np.ndarray:
     return homogeneous @ inverse.T
 
 
-def draw_result(image: np.ndarray, keypoints: np.ndarray,
-                scores: np.ndarray, threshold: float) -> np.ndarray:
+def draw_result(image: np.ndarray, keypoints: np.ndarray, scores: np.ndarray,
+                bbox: list[float], threshold: float) -> np.ndarray:
     """在原图上绘制身体骨架及所有有效 WholeBody 关键点."""
     result = image.copy()
+    height, width = image.shape[:2]
+    valid = ((scores >= threshold) &
+             (keypoints[:, 0] >= 0) & (keypoints[:, 0] < width) &
+             (keypoints[:, 1] >= 0) & (keypoints[:, 1] < height))
+    x, y, box_width, box_height = bbox
+    cv2.rectangle(
+        result, (round(x), round(y)),
+        (round(x + box_width), round(y + box_height)),
+        (0, 255, 0), 2, cv2.LINE_AA)
     for first, second in BODY_SKELETON:
-        if scores[first] < threshold or scores[second] < threshold:
+        if not valid[first] or not valid[second]:
             continue
         start = tuple(np.round(keypoints[first]).astype(int))
         end = tuple(np.round(keypoints[second]).astype(int))
         cv2.line(result, start, end, (255, 0, 255), 2, cv2.LINE_AA)
-    for point, score in zip(keypoints, scores):
-        if score < threshold:
+    for point, is_valid in zip(keypoints, valid):
+        if not is_valid:
             continue
         center = tuple(np.round(point).astype(int))
         cv2.circle(result, center, 2, (0, 255, 255), -1, cv2.LINE_AA)
@@ -88,7 +97,8 @@ def postprocess(args: argparse.Namespace) -> None:
         if image is None:
             raise ValueError(f"无法读取 Demo 原图: {sample['source_copy']}")
         visualization = draw_result(
-            image, source_keypoints, scores, args.score_threshold)
+            image, source_keypoints, scores, sample["bbox_xywh"],
+            args.score_threshold)
         output_image = args.result_dir / f"{stem}_keypoints.jpg"
         if not cv2.imwrite(str(output_image), visualization):
             raise ValueError(f"无法写入可视化: {output_image}")
@@ -121,7 +131,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--result-dir", type=Path, required=True)
-    parser.add_argument("--score-threshold", type=float, default=0.0)
+    parser.add_argument("--score-threshold", type=float, default=0.1)
     return parser.parse_args()
 
 

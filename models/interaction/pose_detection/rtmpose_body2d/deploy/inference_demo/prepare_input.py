@@ -17,8 +17,22 @@ from rtmpose_utils import load_person_samples, preprocess_image  # noqa: E402
 
 def find_demo_samples(annotations: Path, count: int) -> list[dict]:
     """选择来自不同图片且面积较大的人体框作为稳定冒烟样本."""
-    samples = sorted(load_person_samples(annotations),
-                     key=lambda item: (-item["area"], item["annotation_id"]))
+    samples = []
+    for sample in load_person_samples(annotations):
+        x, y, width, height = sample["bbox"]
+        image_width = sample["image_width"]
+        image_height = sample["image_height"]
+        area_ratio = sample["area"] / (image_width * image_height)
+        aspect_ratio = height / width
+        is_inside = (
+            x >= image_width * 0.01 and y >= image_height * 0.01 and
+            x + width <= image_width * 0.99 and
+            y + height <= image_height * 0.99)
+        if (is_inside and 0.05 <= area_ratio <= 0.50 and
+                1.4 <= aspect_ratio <= 4.0 and
+                width >= 64 and height >= 128):
+            samples.append(sample)
+    samples.sort(key=lambda item: (-item["area"], item["annotation_id"]))
     selected = []
     image_ids = set()
     for sample in samples:
@@ -99,6 +113,7 @@ def prepare_inputs(args: argparse.Namespace) -> None:
             "source_image": str(image_path),
             "source_copy": source_copy.name,
             "annotation_id": sample["annotation_id"],
+            "image_size": [sample["image_width"], sample["image_height"]],
             **geometry,
         })
         print(f"[PREPARE] {index + 1}/{len(samples)} {image_path.name}")

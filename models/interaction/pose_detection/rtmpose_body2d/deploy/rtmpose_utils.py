@@ -94,6 +94,8 @@ def load_person_samples(annotations_path: Path) -> list[dict]:
             "annotation_id": int(annotation["id"]),
             "image_id": int(annotation["image_id"]),
             "file_name": image["file_name"],
+            "image_width": int(image["width"]),
+            "image_height": int(image["height"]),
             "bbox": tuple(float(value) for value in bbox),
             "area": float(annotation.get("area", bbox[2] * bbox[3])),
         })
