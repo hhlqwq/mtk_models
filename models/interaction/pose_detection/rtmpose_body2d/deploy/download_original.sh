@@ -32,6 +32,9 @@ cp "${DATA_PATH}" "${MODEL_ROOT}/models/$(basename "${DATA_PATH}")"
 python "${MODEL_ROOT}/deploy/prepare_onnx.py" \
     --source "${MODEL_ROOT}/models/model_fp32.onnx" \
     --output "${MODEL_ROOT}/models/model_mtk_compatible.onnx"
+python "${MODEL_ROOT}/deploy/verify_onnx_equivalence.py" \
+    --reference "${MODEL_ROOT}/models/model_fp32.onnx" \
+    --converted "${MODEL_ROOT}/models/model_mtk_compatible.onnx"
 echo "[3/3] 记录来源校验值."
 sha256sum "${ARCHIVE_PATH}" "${MODEL_ROOT}/models/model_fp32.onnx" \
     "${MODEL_ROOT}/models/$(basename "${DATA_PATH}")" \

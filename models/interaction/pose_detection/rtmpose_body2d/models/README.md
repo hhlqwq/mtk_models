@@ -3,8 +3,8 @@
 本地生成产物不进入普通 Git:
 
 - `model_fp32.onnx` 与 `rtmpose_body2d.data`: Qualcomm v0.61.0 FP32 ONNX 及外部权重.
-- `model_mtk_compatible.onnx`: 合并外部权重并将 ONNX IR 限制到 8 的单文件兼容副本;
-  标准 opset 高于 18 时准备脚本会拒绝继续.
+- `model_mtk_compatible.onnx`: 合并外部权重,逐节点检查后将 opset 限制到 18、IR 限制
+  到 8 的单文件兼容副本;固定输入的双输出数值等价验证通过后才允许转换.
 - `model_int8.tflite`: MTK Converter 8.16.0 生成的 INT8 模型.
 - `model_int8.dla`: NCC 8.2.31 使用 `mdla5.3`、`--suppress-output` 和
   `--disallow-bridge` 生成的 Genio 720 模型.

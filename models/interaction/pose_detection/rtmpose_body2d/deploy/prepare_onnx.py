@@ -9,6 +9,24 @@ MAX_SUPPORTED_IR = 8
 MAX_SUPPORTED_OPSET = 18
 
 
+def validate_target_schemas(model: onnx.ModelProto) -> None:
+    """确认标准 ONNX 节点在 opset 18 中存在且属性受支持."""
+    for node in model.graph.node:
+        domain = node.domain or ""
+        if domain not in {"", "ai.onnx"}:
+            continue
+        schema = onnx.defs.get_schema(
+            node.op_type, MAX_SUPPORTED_OPSET, domain)
+        supported_attributes = set(schema.attributes)
+        unknown_attributes = sorted(
+            attribute.name for attribute in node.attribute
+            if attribute.name not in supported_attributes)
+        if unknown_attributes:
+            raise ValueError(
+                f"{node.name or node.op_type} 在 opset "
+                f"{MAX_SUPPORTED_OPSET} 不支持属性: {unknown_attributes}")
+
+
 def prepare_model(source: Path, output: Path) -> None:
     """合并外部权重并在语义不变时降低 ONNX IR 版本."""
     model = onnx.load(str(source), load_external_data=True)
@@ -17,9 +35,11 @@ def prepare_model(source: Path, output: Path) -> None:
     standard_opset = opsets.get("ai.onnx", 0)
     print(f"[INFO] Qualcomm RTMPose: IR={model.ir_version}, opset={opsets}")
     if standard_opset > MAX_SUPPORTED_OPSET:
-        raise ValueError(
-            f"ONNX opset {standard_opset} 超出 MTK 支持上限 "
-            f"{MAX_SUPPORTED_OPSET}, 不能只改版本号.")
+        validate_target_schemas(model)
+        for item in model.opset_import:
+            if (item.domain or "ai.onnx") == "ai.onnx":
+                item.version = MAX_SUPPORTED_OPSET
+        standard_opset = MAX_SUPPORTED_OPSET
     if model.ir_version > MAX_SUPPORTED_IR:
         model.ir_version = MAX_SUPPORTED_IR
     onnx.checker.check_model(model)
