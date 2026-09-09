@@ -11,9 +11,10 @@
 当前状态: 板端已验证
 ```
 
-RTMPose 是 top-down 姿态模型,只处理人体检测框.本项目使用 COCO person 标注框模拟上游
-检测器输出,执行仿射裁剪、INT8 量化、板端推理和 SimCC 解码.完整图片应用仍需额外的人体
-检测器；模型自身延迟和“检测器 + RTMPose"端到端延迟必须分别报告.
+RTMPose 是 top-down 姿态模型,只处理人体检测框.转换校准与板端 Demo 使用 COCO person
+标注框模拟上游检测器输出,执行仿射裁剪、INT8 量化、板端推理和 SimCC 解码.正式
+WholeBody 精度评测则固定使用 Faster R-CNN 检测框,具体协议见“正式评测数据”.完整图片应用
+仍需额外的人体检测器；模型自身延迟和“检测器 + RTMPose"端到端延迟必须分别报告.
 
 ## 执行流程
 
@@ -41,13 +42,39 @@ Genio 720 所需的 `mdla5.3 + --suppress-output + --disallow-bridge`；部署�
 | MTK INT8 TFLite | 已完成 | `b996d17...3b89b` |
 | DLA | 已完成 | `3d65b14...be5dc`，mdla5.3，无桥接 |
 | 板端 Demo | 已完成 | 双图、双输出、133 点解码 |
-| WholeBody AP | 等待确认数据集 | `docs/accuracy.md` |
+| WholeBody AP | 正式数据已就绪,等待执行 | `docs/accuracy.md` |
 | 板端性能 | 已完成 | 3.73232 ms/inf，262.3 FPS |
 
 版本化验证证据见 `docs/board_validation_20260909.json`.
 
+## 正式评测数据
+
+正式精度评测固定使用 COCO-WholeBody V1.0 验证集标注、COCO val2017 原图和 MMPose
+提供的 Faster R-CNN 人体检测框.不使用 `instances_val2017.json` 的 GT 人体框,也不替换为
+其他检测器生成的人体框,确保结果可以与 MMPose/RTMPose 基准直接比较.
+
+| 文件 | 下载来源 | NAS 路径 | SHA-256 |
+| --- | --- | --- | --- |
+| `coco_wholebody_val_v1.0.json` | [官方 Google Drive](https://drive.google.com/file/d/1N6VgwKnj8DeyGXCvp1eYgNbRmw6jdfrb/view?usp=sharing),[实际下载镜像](https://huggingface.co/datasets/msdkhairi/coco2017/resolve/main/coco_wholebody_val_v1.0.json?download=true) | `coco_val2017/annotations/` | `f8272e9c12f3a42457033ebc75da1167546edf1be5e2ffaf586d6ee97541ff6e` |
+| `COCO_val2017_detections_AP_H_56_person.json` | [MMPose 官方 Google Drive 目录](https://drive.google.com/drive/folders/1fRUDNUDxe9fjqcRZ2bnF_TKMlO0nB_dk?usp=sharing),[实际下载镜像](https://huggingface.co/datasets/msdkhairi/coco2017/resolve/main/COCO_val2017_detections_AP_H_56_person.json?download=true) | `coco_val2017/person_detection_results/` | `53ba0ad8d0fd461c5a000cd90797fa8c39cd8c38cd125125c0412626ff592d59` |
+
+NAS 数据集根目录为:
+
+```text
+\\192.168.0.68\Datasets\open_source\raw\coco\coco_val2017
+```
+
+89 服务器上的对应挂载目录为:
+
+```text
+/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017
+```
+
+当前文件检查结果:WholeBody 标注包含 5,000 张图和 11,004 个人标注；检测框文件包含
+104,125 个 `category_id=1` 的人体检测框.两份文件均已通过 JSON 解析检查.
+
 ## 验证边界
 
 - 双图板端冒烟用于确认 DLA 可运行、输出完整且不同输入不会得到完全相同的旧缓冲结果.
-- 当前 `instances_val2017.json` 只提供 person 框,不能产生正式 133 点 WholeBody AP.
-- 完整精度评测必须另行提供 COCO-WholeBody 标注并锁定人体框来源和评测协议.
+- `instances_val2017.json` 只用于转换校准和 Demo 框输入,不作为正式 WholeBody AP 的人体框来源.
+- 正式 133 点 WholeBody AP 的数据与人体框协议已经锁定,但完整板端评测尚未执行.
