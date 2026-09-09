@@ -1,4 +1,11 @@
-Hugging Face：https://huggingface.co/qualcomm/RTMPose-Body2d
-FP32 ONNX：https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/rtmpose_body2d/releases/v0.61.0/rtmpose_body2d-onnx-float.zip
-上游实现：https://github.com/qualcomm/ai-hub-models/tree/v0.61.0/src/qai_hub_models/models/rtmpose_body2d
+正式开源项目：https://github.com/open-mmlab/mmpose
+正式源码版本：待锁定
+正式配置：RTMPose-M COCO-WholeBody 256x192,准确路径待锁定
+正式权重地址：待锁定
+正式权重 SHA-256：待锁定
+正式许可证及第三方声明：待锁定
+
+交付形式参考：https://huggingface.co/qualcomm/RTMPose-Body2d
+历史 Qualcomm FP32 ONNX：https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/rtmpose_body2d/releases/v0.61.0/rtmpose_body2d-onnx-float.zip
+历史 Qualcomm 实现：https://github.com/qualcomm/ai-hub-models/tree/v0.61.0/src/qai_hub_models/models/rtmpose_body2d
 论文：https://arxiv.org/abs/2303.07399

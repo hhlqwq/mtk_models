@@ -5,7 +5,11 @@ category: object_detection
 source:
   provider: github
   repository: ultralytics/yolov5
-  reference: qualcomm/Yolo-v5
+  revision: 485da42273839d20ea6bdaf142fd02c1027aba61
+  weights: yolov5s-v7.0
+delivery_reference:
+  repository: qualcomm/Yolo-v5
+  purpose: packaging_and_reporting_only
 input:
   shape: [1, 3, 640, 640]
   layout: NCHW

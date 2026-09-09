@@ -8,9 +8,18 @@ Python 3.11.11 源码地址由 Docker 构建参数管理, 默认使用服务器�
 YOLOv5s 正式板端精度路径使用 C++ 完成 JPEG 预处理、Neuron Runtime 推理、YOLO 解码和
 NMS,直接在开发板生成 COCO 预测与耗时证据,不回传 5000 张原始 NPU 输出.
 
-本项目面向 MediaTek Genio 720（MT8189）和 Genio 5100,建立与
-[Qualcomm AI Hub Models](https://huggingface.co/qualcomm/models) 类似的模型交付仓库.
-每个模型都应形成“来源、转换、NPU 部署、Demo、性能/精度报告、文档"的完整闭环.
+本项目面向 MediaTek Genio 720（MT8189）和 Genio 5100,对开源模型进行兼容性修改、
+转换、量化、部署与板端验证.模型交付结构、文档完整度和结果展示方式参考
+[Qualcomm AI Hub Models](https://huggingface.co/qualcomm/models),但不使用 Qualcomm
+模型或其预导出产物作为 MTK 模型的移植源.每个模型都应形成“开源上游、原始框架、
+标准格式导出、MTK NPU 部署、Demo、性能/精度报告、文档"的完整闭环.
+
+## 模型来源原则
+
+- `source` 只记录模型作者或官方开源项目发布的实现与权重,必须锁定版本、许可证和 SHA-256.
+- `delivery_reference` 仅记录目录组织、文档和结果展示的参考页面,不得作为模型输入产物.
+- 禁止以 Qualcomm 预导出的 ONNX、QNN、DLC 或其他转换产物作为正式移植起点.
+- 历史 Qualcomm 衍生结果可以保留用于工程对照,但必须明确标记,不得计入当前交付状态.
 
 ## 首批模型范围
 
@@ -25,9 +34,9 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 
 | 模型 | 任务 | 标准输入 | 来源 | 当前状态 |
 | --- | --- | --- | --- | --- |
-| [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Qualcomm / Ultralytics | 完整交付 |
-| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | Qualcomm | 完整交付 |
-| [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | Qualcomm | 板端已验证 |
+| [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics | 完整交付 |
+| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | 待锁定官方开源上游 | 环境建设中 |
+| [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose（版本待锁定） | 环境建设中 |
 
 状态只能使用以下四类：
 
@@ -128,16 +137,16 @@ models/scenario_name/category_name/model_name/
 仓库通过 `registry/models.yaml` 维护模型索引,避免扫描上百个目录才能了解交付状态.
 
 大模型文件、转换产物、输入数据和输出数据默认不进入普通 Git 历史.正式发布模型文件时应使用
-Git LFS 或 Release,并在 `model_card.md` 中记录 SHA-256.ViT 官方归档的本地展开目录、标签副本
-和校验清单属于可再生资产,由 `.gitignore` 排除并保留在各自工作环境中.
+Git LFS 或 Release,并在 `model_card.md` 中记录 SHA-256.历史 ViT Qualcomm 归档的本地
+展开目录、标签副本和校验清单属于可再生对照资产,由 `.gitignore` 排除并保留在各自工作环境中.
 
 ## 验收原则
 
 每个模型必须同时满足以下条件才可标记为“完整交付"：
 
-1. 锁定 Hugging Face 来源、版本、许可证和 SHA-256.
-2. 原始模型推理成功并保存可复现命令.
-3. ONNX 推理结果与原始模型完成数值或任务指标对比.
+1. 锁定官方开源项目、源码版本、权重版本、许可证、下载地址和 SHA-256.
+2. 从开源上游权重运行原始框架推理并保存可复现命令.
+3. 自行导出 ONNX 或 TFLite,并与原始框架完成数值或任务指标对比.
 4. 通过 MTK Converter 和 Neuron Compiler 生成板端模型.
 5. 在 Genio 720 EVK 的 NPU 上完成 Demo 推理.
 6. 分别报告纯 NPU 延迟、端到端延迟和峰值内存.

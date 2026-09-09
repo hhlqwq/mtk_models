@@ -28,7 +28,8 @@
           "category": {"type": "string", "pattern": "^[a-z0-9_]+$"},
           "path": {"type": "string"},
           "source": {"type": "string"},
-          "reference": {"type": "string"},
+          "delivery_reference": {"type": "string"},
+          "legacy_source": {"type": "string"},
           "platforms": {
             "type": "object",
             "additionalProperties": {

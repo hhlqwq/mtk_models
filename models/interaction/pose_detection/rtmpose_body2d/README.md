@@ -8,18 +8,23 @@
 输入: 1×3×256×192 RGB
 输出: 133 个关节点的位置和置信度
 设备: MediaTek Genio 720 EVK
-当前状态: 板端已验证
+当前状态: 环境建设中（OpenMMLab 上游版本和权重待锁定）
 ```
+
+> 迁移说明：本目录现有模型产物和结果来自 Qualcomm v0.61.0 预导出 ONNX,仅保留为
+> 历史工程证据.正式交付将从 OpenMMLab MMPose 官方配置和权重自行导出 ONNX；固定
+> 版本和权重未核验前,旧结果不再计入当前交付状态.
 
 RTMPose 是 top-down 姿态模型,只处理人体检测框.转换校准与板端 Demo 使用 COCO person
 标注框模拟上游检测器输出,执行仿射裁剪、INT8 量化、板端推理和 SimCC 解码.正式
 WholeBody 精度评测则固定使用 Faster R-CNN 检测框,具体协议见“正式评测数据”.完整图片应用
 仍需额外的人体检测器；模型自身延迟和“检测器 + RTMPose"端到端延迟必须分别报告.
 
-## 执行流程
+## 目标执行流程
 
 ```bash
 cd /workspace/models/interaction/pose_detection/rtmpose_body2d
+# 先锁定 MMPose 固定版本、官方配置、权重、许可证和 SHA-256.
 ./deploy/download_original.sh
 ./deploy/convert.sh
 ./deploy/build.sh
@@ -28,9 +33,9 @@ cd /workspace/models/interaction/pose_detection/rtmpose_body2d
 ./deploy/accuracy_board_cpp.sh
 ```
 
-`download_original.sh` 支持复用 `models/` 中已有的官方 ZIP,保留 FP32 ONNX 外部权重,并
-生成 MTK Converter 可读取的单文件兼容副本.`convert.sh` 默认使用 100 个 COCO person 框
-校准；`build.sh` 固定使用
+历史 `download_original.sh` 曾复用 Qualcomm ONNX 归档,现已停用.新流程必须从锁定的
+MMPose 原始框架权重自行导出 ONNX,再根据实际计算图实现 MTK 兼容转换.`convert.sh`
+默认使用 100 个 COCO person 框校准；`build.sh` 固定使用
 Genio 720 所需的 `mdla5.3 + --suppress-output + --disallow-bridge`；部署脚本使用两张不同
 图片冒烟并采集 20 次预热、100 次连续推理、峰值内存及单次进程耗时.
 
@@ -38,16 +43,14 @@ Genio 720 所需的 `mdla5.3 + --suppress-output + --disallow-bridge`；部署�
 
 | 环节 | 状态 | 证据 |
 | --- | --- | --- |
-| Hugging Face 来源 | 已锁定 | `original/source_url.txt` |
-| Qualcomm FP32 ONNX | 已完成 | `f2f68ac...c7768d`，外部权重 `bfe2b8c...922b3` |
-| MTK 兼容 ONNX | 已验证等价 | 双输出 max/mean abs 均为 0 |
-| MTK INT8 TFLite | 已完成 | `9c83be2...6cb32` |
-| DLA | 已完成 | `0b440fb...99c1`，mdla5.3，无桥接 |
-| 板端 Demo | 已完成 | 双图、双输出、133 点解码 |
-| WholeBody AP | 已完成 | AP 0.4369，AR 0.5646，见 `docs/accuracy.md` |
-| 板端性能 | 已完成 | 微基准 3.76894 ms/inf，260 FPS |
+| OpenMMLab 官方上游 | 待锁定 | 固定版本、配置、权重、许可证和 SHA-256 均不得猜测 |
+| 原始框架基线 | 待执行 | 必须使用最终锁定的开源权重 |
+| 自行导出 ONNX | 待执行 | 不得复用 Qualcomm 预导出 ONNX |
+| MTK 兼容 ONNX | 待执行 | 需要根据新 ONNX 重新分析图结构 |
+| MTK INT8 TFLite / DLA | 待执行 | 旧产物仅作历史对照 |
+| 板端 Demo、WholeBody AP 和性能 | 待执行 | 新模型必须使用新的运行 ID 完整复测 |
 
-版本化验证证据见 `docs/board_validation_20260909.json`.
+历史版本化验证证据见 `docs/board_validation_20260909.json`.
 
 ## 正式评测数据
 
@@ -86,7 +89,8 @@ MMPose 默认的 `bbox_keypoint` 重评分、0.2 关键点阈值和 0.9 WholeBod
 平均预处理、NPU、后处理耗时分别为 2.7740 ms、3.8500 ms、1.0524 ms，峰值 RSS
 为 35,756 KB.完整分部指标和结果哈希见 `docs/accuracy.md`.
 
-模型输入保持原始 Qualcomm 图定义的像素量纲:BGR FP32 `[0,255]`,再由 INT8 输入量化参数
+以下输入约束只适用于历史 Qualcomm 图,不能直接套用于新的 MMPose 导出图.历史模型输入
+保持原图定义的像素量纲:BGR FP32 `[0,255]`,再由 INT8 输入量化参数
 转换为板端张量.不得在图外先除以 255；ONNX 图内的 ImageNet mean/std 常量同样采用
 `[0,255]` 量纲.
 

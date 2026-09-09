@@ -1,11 +1,14 @@
 # RTMPose Body2d 精度报告
 
-状态：Genio 720 板端 INT8 正式评测已完成.
+> 历史结果说明：本页结果来自 Qualcomm v0.61.0 预导出 FP32 ONNX 及其 MTK INT8
+> 衍生模型.它们保留用于工程对照,不属于待锁定的 OpenMMLab MMPose 上游正式交付结果.
+
+历史状态：Genio 720 板端 INT8 正式评测已完成.
 
 | 后端 | WholeBody AP | WholeBody AR | 验证配置 |
 | --- | ---: | ---: | --- |
-| 来源 PyTorch | 待测 | 待测 | 与下述协议相同，尚未执行 |
-| FP32 ONNX | 待测 | 待测 | 与下述协议相同，尚未执行 |
+| 历史来源 PyTorch | 未执行 | 未执行 | Qualcomm 预导出模型未提供此基线 |
+| 历史 FP32 ONNX | 未执行 | 未执行 | 历史流程未完成同协议全量评测 |
 | MTK NPU INT8 | 0.4369 | 0.5646 | `20260909_wholebody_int8_v2` |
 
 普通 COCO 17 点 person keypoints AP 与 133 点 COCO-WholeBody AP 不是同一指标,不得混写.

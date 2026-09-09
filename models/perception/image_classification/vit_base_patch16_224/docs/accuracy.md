@@ -1,10 +1,13 @@
 # ViT-Base 精度报告
 
-状态：已完成 50,000 张 FP32 ONNX / MTK NPU INT8 绝对精度及后端对齐评测.
+> 历史结果说明：本页结果来自 Qualcomm v0.61.0 预导出 FP32 ONNX 及其 MTK INT8
+> 衍生模型.它们保留用于工程对照,不属于待重新锁定的开源上游 ViT 正式交付结果.
+
+历史状态：已完成 50,000 张 FP32 ONNX / MTK NPU INT8 绝对精度及后端对齐评测.
 
 | 后端 | ImageNet Top-1 | ImageNet Top-5 | 验证集 |
 | --- | ---: | ---: | --- |
-| 来源 PyTorch | 不适用 | 不适用 | 交付源为 Qualcomm FP32 ONNX |
+| 历史来源 PyTorch | 不适用 | 不适用 | 历史交付源为 Qualcomm FP32 ONNX |
 | FP32 ONNX | **80.64%** | **95.11%** | ILSVRC2012 val 50,000 |
 | MTK NPU INT8 | **79.40%** | **94.64%** | ILSVRC2012 val 50,000 |
 

@@ -1,2 +1,6 @@
-Hugging Face：https://huggingface.co/owner/repository
-
+官方开源项目：https://github.com/owner/repository
+固定源码版本：commit_or_tag
+官方权重：official_weights_url
+官方权重 SHA-256：pending
+上游许可证：pending
+交付形式参考：optional_delivery_reference

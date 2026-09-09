@@ -3,8 +3,13 @@ name: MODEL_NAME
 scenario: scenario_name
 category: category_name
 source:
-  provider: huggingface
+  provider: github
   repository: owner/repository
+  revision: commit_or_tag
+  weights: official_weight_name
+delivery_reference:
+  repository: optional_reference_repository
+  purpose: packaging_and_reporting_only
 input:
   shape: []
   layout: NCHW

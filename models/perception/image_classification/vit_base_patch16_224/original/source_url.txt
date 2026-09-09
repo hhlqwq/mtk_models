@@ -1,3 +1,9 @@
-Hugging Face：https://huggingface.co/qualcomm/VIT
-FP32 ONNX：https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/vit/releases/v0.61.0/vit-onnx-float.zip
-上游实现：https://github.com/qualcomm/ai-hub-models/tree/v0.61.0/src/qai_hub_models/models/vit
+正式开源上游：待锁定
+正式源码版本：待锁定
+正式权重地址：待锁定
+正式权重 SHA-256：待锁定
+正式许可证：待锁定
+
+交付形式参考：https://huggingface.co/qualcomm/VIT
+历史 Qualcomm FP32 ONNX：https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/vit/releases/v0.61.0/vit-onnx-float.zip
+历史 Qualcomm 实现：https://github.com/qualcomm/ai-hub-models/tree/v0.61.0/src/qai_hub_models/models/vit

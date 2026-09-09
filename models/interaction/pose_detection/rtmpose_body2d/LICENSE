@@ -1,5 +1,8 @@
-模型来源页面标记为 Apache-2.0：
-https://huggingface.co/qualcomm/RTMPose-Body2d
+正式上游暂定为 OpenMMLab MMPose,但固定源码版本、模型权重及其第三方声明尚未核验完成.
+核验完成前不得用历史 Qualcomm 页面许可证替代正式上游许可证.
 
-正式分发模型文件时,应同时保留下载归档中携带的许可证和第三方声明.本仓库根目录许可证
-不替代模型来源许可证.
+MMPose 项目：https://github.com/open-mmlab/mmpose
+历史 Qualcomm 页面：https://huggingface.co/qualcomm/RTMPose-Body2d
+
+正式分发模型文件时,必须同时保留开源上游许可证、模型权重附带许可证和第三方声明.
+本仓库根目录许可证不替代模型来源许可证.

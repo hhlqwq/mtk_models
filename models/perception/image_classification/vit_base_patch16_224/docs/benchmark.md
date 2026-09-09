@@ -1,5 +1,8 @@
 # ViT-Base 性能报告
 
+> 历史结果说明：本页数据来自 Qualcomm v0.61.0 预导出 FP32 ONNX 的 MTK 衍生模型,
+> 不属于待重新锁定的开源上游 ViT 正式交付结果.
+
 ```text
 模型: ViT-Base Patch16 224
 输入: 224x224 RGB
@@ -27,4 +30,4 @@ CPU governor 为 8 核 `schedutil`; 采样时 cpu0~7 当前频率依次为
 `examples/output/{benchmark.log,memory.txt,cpu_frequency.txt,system.txt}` 和 92 的
 `/root/hailong.he/vit_base_patch16_224/output/`.
 
-当前已满足板端运行和性能取证, 但完整交付仍受 ImageNet 绝对精度标签映射阻塞.
+历史 Qualcomm 衍生模型已满足板端运行和性能取证；这些数据不计入新的开源上游交付状态.

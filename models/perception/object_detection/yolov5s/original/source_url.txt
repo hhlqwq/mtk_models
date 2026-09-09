@@ -1,4 +1,4 @@
-对标模型页面：https://huggingface.co/qualcomm/Yolo-v5
+交付形式参考：https://huggingface.co/qualcomm/Yolo-v5
 上游源码：https://github.com/ultralytics/yolov5.git
 固定源码提交：485da42273839d20ea6bdaf142fd02c1027aba61
 源码压缩包：https://github.com/ultralytics/yolov5/archive/485da42.zip

@@ -8,20 +8,26 @@
 输入: 1×3×224×224 RGB
 输出: 1×1000 classes
 设备: MediaTek Genio 720 EVK
-当前状态: 已完成
+当前状态: 环境建设中（开源上游待锁定）
 ```
 
-## 执行流程
+> 迁移说明：本目录现有模型产物和结果来自 Qualcomm v0.61.0 预导出 ONNX,仅保留为
+> 历史工程证据.按照当前项目规范,正式交付必须从模型作者或官方开源项目的原始权重
+> 自行导出,因此旧结果不再计入当前交付状态.
+
+## 目标执行流程
 
 ```bash
 cd /workspace/models/perception/image_classification/vit_base_patch16_224
+# 先锁定官方开源上游、版本、权重、许可证和 SHA-256.
 ./deploy/download_original.sh
 ./deploy/convert.sh
 ./deploy/build.sh
 ./deploy/deploy_board.sh
 ```
 
-正式 Top-1 使用 ImageNet ILSVRC2012 验证集及可靠标签映射. 当前已完成 50,000 张
+以下为历史 Qualcomm ONNX 衍生模型的验证记录.正式 Top-1 使用 ImageNet ILSVRC2012
+验证集及可靠标签映射.历史流程已完成 50,000 张
 FP32 ONNX / MTK NPU INT8 绝对精度评测, 并单独报告排除 100 张 PTQ 校准图片后的
 49,900 张独立指标. 完整结果和证据哈希见 `docs/accuracy.md` 与
 `docs/imagenet_accuracy_20260908.json`.
@@ -56,20 +62,17 @@ Qualcomm 显示名称与输出索引映射的差异数为 0. 可公开复核摘�
 
 | 环节 | 状态 | 证据 |
 | --- | --- | --- |
-| Hugging Face 来源 | 已锁定 | `original/source_url.txt` |
-| Qualcomm FP32 ONNX | 已完成 | `models/model_fp32.onnx`, SHA-256 已记录 |
-| MTK 兼容 ONNX | 已完成 | `models/model_mtk_compatible.onnx`, GELU tanh 近似偏差已校验 |
-| MTK INT8 TFLite | 已完成 | `models/model_int8.tflite` |
-| DLA | 已完成 | `models/model_int8.dla`, MDLA 5.3 |
-| 板端 Demo | 已完成 | `examples/output/top5.json`, Top-1 `sea snake` |
-| 1000 张对齐评测 | 已完成 | Top-1 agreement 92.3%, `docs/accuracy.md` |
-| ImageNet 标签映射 | 已完成 | 50,000 张、1000 类、每类 50 张, `docs/imagenet_label_mapping.json` |
-| ImageNet 绝对精度 | 已完成 | FP32 Top-1 80.64%, NPU Top-1 79.40%, `docs/accuracy.md` |
-| 板端性能 | 已完成 | 纯 NPU 53.3903 ms/inf, `docs/benchmark.md` |
+| 官方开源上游 | 待锁定 | 源码、权重、许可证和 SHA-256 均不得猜测 |
+| 原始框架基线 | 待执行 | 必须使用最终锁定的开源权重 |
+| 自行导出 ONNX | 待执行 | 不得复用 Qualcomm 预导出 ONNX |
+| MTK 兼容 ONNX | 待执行 | 需要根据新 ONNX 重新分析图结构 |
+| MTK INT8 TFLite / DLA | 待执行 | 旧产物仅作历史对照 |
+| 板端 Demo、精度和性能 | 待执行 | 新模型必须使用新的运行 ID 完整复测 |
 
 ## 转换兼容性与评测约束
 
-Qualcomm v0.61.0 归档中的 `vit.onnx` 使用外部权重文件, IR v10 / opset 21,
+以下约束只描述历史 Qualcomm v0.61.0 图,不能直接套用于新的开源上游模型.
+该归档中的 `vit.onnx` 使用外部权重文件, IR v10 / opset 21,
 并包含 `Gelu` 和 `Reshape allowzero=1`. `download_original.sh` 会先校验归档
 SHA-256 并合并外部权重为原始 FP32 基线 `model_fp32.onnx`. 另生成
 `model_mtk_compatible.onnx`: 通过 `downgrade_onnx.py` 降级 IR/opset、清理安全的

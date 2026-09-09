@@ -2,7 +2,7 @@
 
 ## 项目说明
 
-这是一个基于 MTK G720 and G5100 的 模型移植项目,直接对标https://huggingface.co/qualcomm/models.
+本项目面向 MTK Genio 720 和 G5100，对开源模型进行兼容性修改、转换、量化、部署与板端验证；模型交付结构、文档完整度和结果展示方式参考 Qualcomm Hugging Face Models，但不使用 Qualcomm 模型作为移植源。
 
 ## 开发环境
 
