@@ -36,9 +36,9 @@ constexpr int kSimccYLength = 512;
 constexpr float kScalePadding = 1.25F;
 constexpr float kInputScale = 1.0F;
 constexpr int kInputZeroPoint = -128;
-constexpr float kOutputXScale = 0.0020384122617542744F;
+constexpr float kOutputXScale = 0.006951121613383293F;
 constexpr int kOutputXZeroPoint = -24;
-constexpr float kOutputYScale = 0.0029528678860515356F;
+constexpr float kOutputYScale = 0.007011394016444683F;
 constexpr int kOutputYZeroPoint = -20;
 
 struct Options {
