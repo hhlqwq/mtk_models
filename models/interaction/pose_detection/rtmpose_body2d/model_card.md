@@ -10,8 +10,10 @@
 
 - 参数量：17.9M.
 - 输入分辨率：256×192.
-- 输入张量：`image [1,3,256,192]`,NCHW RGB float32 `[0,1]`;模型图内执行
+- 原始输入张量：`image [1,3,256,192]`,NCHW RGB float32 `[0,1]`;原始图内执行
   RGB 到 BGR 及 mean/std 归一化.
+- MTK 兼容输入：NCHW BGR float32 `[0,1]`;为规避 MDLA 不支持的通道 Gather,
+  预处理侧完成 RGB 到 BGR,数值等价验证覆盖两个 SimCC 输出.
 - 输出：`pred_x [1,133,384]`、`pred_y [1,133,512]`,SimCC split ratio 2.0.
 - 来源页面许可证：Apache-2.0.
 

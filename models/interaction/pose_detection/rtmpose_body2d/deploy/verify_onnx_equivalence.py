@@ -25,7 +25,9 @@ def verify(args: argparse.Namespace) -> None:
     input_data = np.random.default_rng(args.seed).random(
         (1, 3, 256, 192), dtype=np.float32)
     reference_outputs = run_model(args.reference, input_data)
-    converted_outputs = run_model(args.converted, input_data)
+    # 原始 Qualcomm 图内执行 RGB 到 BGR;兼容图移除不受 MDLA 支持的
+    # GatherND 前缀,因此这里为兼容图显式提供对应的 BGR 输入.
+    converted_outputs = run_model(args.converted, input_data[:, ::-1].copy())
     for index, (reference, converted) in enumerate(
             zip(reference_outputs, converted_outputs)):
         if reference.shape != converted.shape:

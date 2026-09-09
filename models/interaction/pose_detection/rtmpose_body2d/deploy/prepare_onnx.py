@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import onnx
-from onnx import helper, numpy_helper
+from onnx import numpy_helper
 
 MAX_SUPPORTED_IR = 8
 MAX_SUPPORTED_OPSET = 18
@@ -56,42 +56,44 @@ def remove_safe_reshape_allowzero(model: onnx.ModelProto) -> int:
     return removed
 
 
-def replace_channel_gather_nd(model: onnx.ModelProto) -> int:
-    """将严格匹配 RGB 到 BGR 通道重排的 GatherND 改写为 Gather."""
+def remove_rgb_to_bgr_prefix(model: onnx.ModelProto) -> int:
+    """移除严格匹配的 RGB 到 BGR 前缀,兼容模型改为直接接收 BGR."""
+    nodes = list(model.graph.node)
+    if len(nodes) < 4:
+        raise ValueError("RTMPose 图节点数量异常,无法识别通道重排前缀.")
+    first, channel_gather, second, consumer = nodes[:4]
+    if ([first.op_type, channel_gather.op_type, second.op_type] !=
+            ["Reshape", "GatherND", "Reshape"] or
+            first.input[0] != "image" or
+            channel_gather.input[0] != first.output[0] or
+            second.input[0] != channel_gather.output[0] or
+            second.output[0] not in consumer.input):
+        raise ValueError("RTMPose 前端不是预期的 Reshape/GatherND/Reshape.")
     initializers = {tensor.name: tensor for tensor in model.graph.initializer}
-    replaced = 0
+    indices_tensor = initializers.get(channel_gather.input[1])
+    if indices_tensor is None:
+        raise ValueError("RTMPose 通道重排索引不是常量.")
+    indices = numpy_helper.to_array(indices_tensor)
+    if indices.shape != (3, 1) or indices.reshape(-1).tolist() != [2, 1, 0]:
+        raise ValueError(
+            f"RTMPose 通道重排索引异常: {indices.reshape(-1).tolist()}")
+    replaced_input = second.output[0]
     for node in model.graph.node:
-        if node.op_type != "GatherND":
-            continue
-        attributes = {item.name: item for item in node.attribute}
-        batch_dims = attributes.get("batch_dims")
-        if batch_dims is not None and batch_dims.i != 0:
-            raise ValueError(
-                f"不支持 batch_dims 非零的 GatherND: {node.name}")
-        indices_tensor = initializers.get(node.input[1])
-        if indices_tensor is None:
-            raise ValueError(f"不改写动态 GatherND 索引: {node.name}")
-        indices = numpy_helper.to_array(indices_tensor)
-        if indices.shape != (3, 1) or indices.reshape(-1).tolist() != [2, 1, 0]:
-            raise ValueError(
-                f"GatherND 不是 RGB 到 BGR 通道重排: {node.name}, "
-                f"shape={indices.shape}, values={indices.reshape(-1).tolist()}")
-        replacement = numpy_helper.from_array(
-            indices.reshape(3).astype(indices.dtype), indices_tensor.name)
-        model.graph.initializer.remove(indices_tensor)
-        model.graph.initializer.append(replacement)
-        for collection in (model.graph.input, model.graph.value_info):
-            for value in collection:
-                if value.name != indices_tensor.name:
-                    continue
-                dimensions = value.type.tensor_type.shape.dim
-                del dimensions[:]
-                dimensions.add().dim_value = 3
-        node.op_type = "Gather"
-        del node.attribute[:]
-        node.attribute.append(helper.make_attribute("axis", 0))
-        replaced += 1
-    return replaced
+        for index, input_name in enumerate(node.input):
+            if input_name == replaced_input:
+                node.input[index] = "image"
+    removed_names = {
+        first.input[1], channel_gather.input[1], second.input[1],
+        first.output[0], channel_gather.output[0], second.output[0],
+    }
+    for tensor in list(model.graph.initializer):
+        if tensor.name in removed_names:
+            model.graph.initializer.remove(tensor)
+    for value in list(model.graph.value_info):
+        if value.name in removed_names:
+            model.graph.value_info.remove(value)
+    del model.graph.node[:3]
+    return 1
 
 
 def prepare_model(source: Path, output: Path) -> None:
@@ -110,7 +112,7 @@ def prepare_model(source: Path, output: Path) -> None:
     if model.ir_version > MAX_SUPPORTED_IR:
         model.ir_version = MAX_SUPPORTED_IR
     reshape_count = remove_safe_reshape_allowzero(model)
-    gather_count = replace_channel_gather_nd(model)
+    bgr_prefix_count = remove_rgb_to_bgr_prefix(model)
     onnx.checker.check_model(model)
     onnx.save(model, str(output), save_as_external_data=False)
     reloaded = onnx.load(str(output), load_external_data=False)
@@ -121,7 +123,8 @@ def prepare_model(source: Path, output: Path) -> None:
         raise RuntimeError(f"兼容模型仍包含 {external_count} 个外部权重引用.")
     print(f"[OK] MTK 兼容 ONNX: IR={model.ir_version}, "
           f"opset={standard_opset}, 移除 Reshape allowzero "
-          f"x{reshape_count}, 改写通道 GatherND x{gather_count}, {output}")
+          f"x{reshape_count}, 移除 RGB 到 BGR 前缀 "
+          f"x{bgr_prefix_count}, {output}")
 
 
 def parse_args() -> argparse.Namespace:
