@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import onnx
-from onnx import numpy_helper
+from onnx import helper, numpy_helper
 
 MAX_SUPPORTED_IR = 8
 MAX_SUPPORTED_OPSET = 18
@@ -56,6 +56,37 @@ def remove_safe_reshape_allowzero(model: onnx.ModelProto) -> int:
     return removed
 
 
+def replace_channel_gather_nd(model: onnx.ModelProto) -> int:
+    """将严格匹配 RGB 到 BGR 通道重排的 GatherND 改写为 Gather."""
+    initializers = {tensor.name: tensor for tensor in model.graph.initializer}
+    replaced = 0
+    for node in model.graph.node:
+        if node.op_type != "GatherND":
+            continue
+        attributes = {item.name: item for item in node.attribute}
+        batch_dims = attributes.get("batch_dims")
+        if batch_dims is not None and batch_dims.i != 0:
+            raise ValueError(
+                f"不支持 batch_dims 非零的 GatherND: {node.name}")
+        indices_tensor = initializers.get(node.input[1])
+        if indices_tensor is None:
+            raise ValueError(f"不改写动态 GatherND 索引: {node.name}")
+        indices = numpy_helper.to_array(indices_tensor)
+        if indices.shape != (3, 1) or indices.reshape(-1).tolist() != [2, 1, 0]:
+            raise ValueError(
+                f"GatherND 不是 RGB 到 BGR 通道重排: {node.name}, "
+                f"shape={indices.shape}, values={indices.reshape(-1).tolist()}")
+        replacement = numpy_helper.from_array(
+            indices.reshape(3).astype(indices.dtype), indices_tensor.name)
+        model.graph.initializer.remove(indices_tensor)
+        model.graph.initializer.append(replacement)
+        node.op_type = "Gather"
+        del node.attribute[:]
+        node.attribute.append(helper.make_attribute("axis", 0))
+        replaced += 1
+    return replaced
+
+
 def prepare_model(source: Path, output: Path) -> None:
     """合并外部权重并在语义不变时降低 ONNX IR 版本."""
     model = onnx.load(str(source), load_external_data=True)
@@ -72,6 +103,7 @@ def prepare_model(source: Path, output: Path) -> None:
     if model.ir_version > MAX_SUPPORTED_IR:
         model.ir_version = MAX_SUPPORTED_IR
     reshape_count = remove_safe_reshape_allowzero(model)
+    gather_count = replace_channel_gather_nd(model)
     onnx.checker.check_model(model)
     onnx.save(model, str(output), save_as_external_data=False)
     reloaded = onnx.load(str(output), load_external_data=False)
@@ -82,7 +114,7 @@ def prepare_model(source: Path, output: Path) -> None:
         raise RuntimeError(f"兼容模型仍包含 {external_count} 个外部权重引用.")
     print(f"[OK] MTK 兼容 ONNX: IR={model.ir_version}, "
           f"opset={standard_opset}, 移除 Reshape allowzero "
-          f"x{reshape_count}, {output}")
+          f"x{reshape_count}, 改写通道 GatherND x{gather_count}, {output}")
 
 
 def parse_args() -> argparse.Namespace:

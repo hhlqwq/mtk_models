@@ -4,7 +4,8 @@
 
 - `model_fp32.onnx` 与 `rtmpose_body2d.data`: Qualcomm v0.61.0 FP32 ONNX 及外部权重.
 - `model_mtk_compatible.onnx`: 合并外部权重,逐节点检查后将 opset 限制到 18、IR 限制
-  到 8 的单文件兼容副本;固定输入的双输出数值等价验证通过后才允许转换.
+  到 8,并将 RGB 到 BGR 的常量 `GatherND` 等价改写为 `Gather` 的单文件兼容副本;
+  固定输入的双输出数值等价验证通过后才允许转换.
 - `model_int8.tflite`: MTK Converter 8.16.0 生成的 INT8 模型.
 - `model_int8.dla`: NCC 8.2.31 使用 `mdla5.3`、`--suppress-output` 和
   `--disallow-bridge` 生成的 Genio 720 模型.
