@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import onnx
-from onnx import numpy_helper
+from onnx import helper, numpy_helper
 
 MAX_SUPPORTED_IR = 8
 MAX_SUPPORTED_OPSET = 18
@@ -96,6 +96,43 @@ def remove_rgb_to_bgr_prefix(model: onnx.ModelProto) -> int:
     return 1
 
 
+def expand_gau_mul_broadcast(model: onnx.ModelProto) -> int:
+    """将 NCC 不支持的 GAU 双轴广播改写为同形状逐元素乘法."""
+    initializers = {tensor.name: tensor for tensor in model.graph.initializer}
+    matches = [node for node in model.graph.node
+               if node.name == "node_mul_8" and node.op_type == "Mul"]
+    if len(matches) != 1:
+        raise ValueError(f"GAU 广播 Mul 数量异常: {len(matches)}")
+    node = matches[0]
+    constant = initializers.get(node.input[1])
+    if constant is None:
+        raise ValueError("GAU 广播 Mul 的第二输入不是常量.")
+    values = numpy_helper.to_array(constant)
+    if values.shape != (1, 1, 2, 128):
+        raise ValueError(f"GAU 广播常量 shape 异常: {values.shape}")
+    expanded_values = np.repeat(values, 133, axis=1)
+    replacement = numpy_helper.from_array(
+        expanded_values.astype(values.dtype), constant.name)
+    model.graph.initializer.remove(constant)
+    model.graph.initializer.append(replacement)
+    for value in list(model.graph.value_info):
+        if value.name == constant.name:
+            model.graph.value_info.remove(value)
+
+    dynamic_input = node.input[0]
+    expanded_input = f"{dynamic_input}_repeat_axis2"
+    concat = helper.make_node(
+        "Concat",
+        inputs=[dynamic_input, dynamic_input],
+        outputs=[expanded_input],
+        name="node_expand_gau_mul_input",
+        axis=2)
+    node_index = list(model.graph.node).index(node)
+    model.graph.node.insert(node_index, concat)
+    node.input[0] = expanded_input
+    return 1
+
+
 def prepare_model(source: Path, output: Path) -> None:
     """合并外部权重并在语义不变时降低 ONNX IR 版本."""
     model = onnx.load(str(source), load_external_data=True)
@@ -113,6 +150,7 @@ def prepare_model(source: Path, output: Path) -> None:
         model.ir_version = MAX_SUPPORTED_IR
     reshape_count = remove_safe_reshape_allowzero(model)
     bgr_prefix_count = remove_rgb_to_bgr_prefix(model)
+    gau_mul_count = expand_gau_mul_broadcast(model)
     onnx.checker.check_model(model)
     onnx.save(model, str(output), save_as_external_data=False)
     reloaded = onnx.load(str(output), load_external_data=False)
@@ -124,7 +162,8 @@ def prepare_model(source: Path, output: Path) -> None:
     print(f"[OK] MTK 兼容 ONNX: IR={model.ir_version}, "
           f"opset={standard_opset}, 移除 Reshape allowzero "
           f"x{reshape_count}, 移除 RGB 到 BGR 前缀 "
-          f"x{bgr_prefix_count}, {output}")
+          f"x{bgr_prefix_count}, 展开 GAU Mul 广播 x{gau_mul_count}, "
+          f"{output}")
 
 
 def parse_args() -> argparse.Namespace:
