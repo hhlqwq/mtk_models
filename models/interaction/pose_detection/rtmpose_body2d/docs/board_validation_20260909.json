@@ -21,8 +21,8 @@
     "model_fp32_onnx": "f2f68ac46c6b28d8c7a1b771e17023c6ad71568ccfef9a16903e7cca90c7768d",
     "rtmpose_body2d_data": "bfe2b8c7705ea837a0ab9939cd695a04a958a9fe4cf925312ca456858bc922b3",
     "model_mtk_compatible_onnx": "c1aa58f39c9142a54c1123395310cd71caab1fde4ac371a43c108ac119c87ba1",
-    "model_int8_tflite": "b996d173465fd2a587115b8cb576dfa9ec89d5ea8fded4c1d2e727c51823b89b",
-    "model_int8_dla": "3d65b14be989fb933a9e42db9ba7481b82613be29b6d08cb1ee067e11d3be5dc"
+    "model_int8_tflite": "9c83be2cf4cde756ea94e454e586361a33782745259474d22d854b7f4fd6cb32",
+    "model_int8_dla": "0b440fb98f7a39ee8c25b7251beb96651c2f54c177bf3d6ef80e81525fcb99c1"
   },
   "onnx_compatibility": {
     "source_ir": 10,
@@ -37,11 +37,11 @@
   "performance": {
     "warmup_iterations": 20,
     "measured_iterations": 100,
-    "total_inference_ms": 373.232,
-    "mean_inference_ms": 3.73232,
-    "fps": 262.3,
+    "total_inference_ms": 376.894,
+    "mean_inference_ms": 3.76894,
+    "fps": 260.0,
     "one_shot_process_ms": 91,
-    "peak_rss_kb": 27136
+    "peak_rss_kb": 27392
   },
   "smoke_test": {
     "different_images": 2,
@@ -50,27 +50,44 @@
     "sample_1": {
       "image": "000000209753.jpg",
       "annotation_id": 453126,
-      "output_0_sha256": "99c0bc24c911c6c36e7504f1359dbcc2ef244423e921944cc4c45e456c055bdb",
-      "output_1_sha256": "8333c2888b5c115a326adca231d55cb8d7c87809929cf1571577d8e4b3766da9",
-      "argmax_xy_match_ratio_all": 0.924812030075188,
-      "onnx_score_gte_0_2_count": 49,
-      "onnx_score_gte_0_2_argmax_xy_match_ratio": 1.0,
-      "onnx_score_gte_0_2_mean_distance_input_pixels": 0.0
+      "argmax_xy_match_ratio_all": 0.10526315789473684,
+      "onnx_score_gte_0_2_count": 125,
+      "onnx_score_gte_0_2_argmax_xy_match_ratio": 0.112,
+      "onnx_score_gte_0_2_mean_distance_input_pixels": 1.0232946872711182,
+      "onnx_score_gte_0_2_max_distance_input_pixels": 4.949747562408447
     },
     "sample_2": {
       "image": "000000491867.jpg",
       "annotation_id": 536213,
-      "output_0_sha256": "0a4f4dc0d26a00b4f2df499f586781992829c5c70909fd4b951fb748cdc643fc",
-      "output_1_sha256": "4b9d15349394aab4ef7c16bc1ab1677c5466437ef9ecdaf27b7311e734b4bde5",
-      "argmax_xy_match_ratio_all": 0.7593984962406015,
-      "onnx_score_gte_0_2_count": 41,
-      "onnx_score_gte_0_2_argmax_xy_match_ratio": 1.0,
-      "onnx_score_gte_0_2_mean_distance_input_pixels": 0.0
+      "argmax_xy_match_ratio_all": 0.15789473684210525,
+      "onnx_score_gte_0_2_count": 123,
+      "onnx_score_gte_0_2_argmax_xy_match_ratio": 0.17073170731707318,
+      "onnx_score_gte_0_2_mean_distance_input_pixels": 0.8267605900764465,
+      "onnx_score_gte_0_2_max_distance_input_pixels": 3.0
     }
   },
-  "accuracy_boundary": {
-    "coco_wholebody_ap": null,
-    "status": "not_evaluated",
-    "reason": "COCO-WholeBody 133-keypoint annotations and a locked detector-box protocol are not available."
+  "formal_accuracy": {
+    "run_id": "20260909_wholebody_int8_v2",
+    "git_commit": "afb892b4717be571215bce690414dd7fbbd603ee",
+    "processed_detections": 104125,
+    "detections_after_nms": 89565,
+    "evaluated_images": 3893,
+    "score_mode": "bbox_keypoint",
+    "keypoint_score_threshold": 0.2,
+    "nms_mode": "oks_nms",
+    "nms_threshold": 0.9,
+    "body_ap": 0.5987402079385615,
+    "foot_ap": 0.555776727726099,
+    "face_ap": 0.6533864884590552,
+    "left_hand_ap": 0.27530547467088345,
+    "right_hand_ap": 0.2726291615708965,
+    "wholebody_ap": 0.4369275557743193,
+    "wholebody_ar": 0.564625314861461,
+    "preprocess_mean_ms": 2.774012,
+    "npu_mean_ms": 3.849972,
+    "postprocess_mean_ms": 1.052351,
+    "peak_rss_kb": 35756,
+    "predictions_sha256": "19e8a8d6003050797a6cb3039cf7e884e6d41bb82fdfa027cadbdf19be2ac0ea",
+    "metrics_sha256": "a56ba932ca0828be0ebb26ed7646e4c30c82101a8ffbe38d257a2c61c393b1c2"
   }
 }

@@ -41,11 +41,11 @@ Genio 720 所需的 `mdla5.3 + --suppress-output + --disallow-bridge`；部署�
 | Hugging Face 来源 | 已锁定 | `original/source_url.txt` |
 | Qualcomm FP32 ONNX | 已完成 | `f2f68ac...c7768d`，外部权重 `bfe2b8c...922b3` |
 | MTK 兼容 ONNX | 已验证等价 | 双输出 max/mean abs 均为 0 |
-| MTK INT8 TFLite | 已完成 | `b996d17...3b89b` |
-| DLA | 已完成 | `3d65b14...be5dc`，mdla5.3，无桥接 |
+| MTK INT8 TFLite | 已完成 | `9c83be2...6cb32` |
+| DLA | 已完成 | `0b440fb...99c1`，mdla5.3，无桥接 |
 | 板端 Demo | 已完成 | 双图、双输出、133 点解码 |
-| WholeBody AP | 正式数据已就绪,等待执行 | `docs/accuracy.md` |
-| 板端性能 | 已完成 | 3.73232 ms/inf，262.3 FPS |
+| WholeBody AP | 已完成 | AP 0.4369，AR 0.5646，见 `docs/accuracy.md` |
+| 板端性能 | 已完成 | 微基准 3.76894 ms/inf，260 FPS |
 
 版本化验证证据见 `docs/board_validation_20260909.json`.
 
@@ -81,6 +81,11 @@ MMPose 默认的 `bbox_keypoint` 重评分、0.2 关键点阈值和 0.9 WholeBod
 最后通过 `xtcocotools` 分别计算 body、foot、face、left hand、right hand 和 wholebody
 的 AP/AR.逐框进度和可续跑的 `processed_ids.txt` 用于观察长时间评测状态.
 
+正式运行 `20260909_wholebody_int8_v2` 已在 Genio 720 完成全部 104,125 个框；OKS-NMS
+后保留 89,565 个结果，WholeBody AP 为 0.4369、AR 为 0.5646.板端常驻 C++ 流程的
+平均预处理、NPU、后处理耗时分别为 2.7740 ms、3.8500 ms、1.0524 ms，峰值 RSS
+为 35,756 KB.完整分部指标和结果哈希见 `docs/accuracy.md`.
+
 模型输入保持原始 Qualcomm 图定义的像素量纲:BGR FP32 `[0,255]`,再由 INT8 输入量化参数
 转换为板端张量.不得在图外先除以 255；ONNX 图内的 ImageNet mean/std 常量同样采用
 `[0,255]` 量纲.
@@ -89,4 +94,5 @@ MMPose 默认的 `bbox_keypoint` 重评分、0.2 关键点阈值和 0.9 WholeBod
 
 - 双图板端冒烟用于确认 DLA 可运行、输出完整且不同输入不会得到完全相同的旧缓冲结果.
 - `instances_val2017.json` 只用于转换校准和 Demo 框输入,不作为正式 WholeBody AP 的人体框来源.
-- 正式 133 点 WholeBody AP 的数据与人体框协议已经锁定,但完整板端评测尚未执行.
+- 正式 133 点 WholeBody AP 已按锁定数据和人体框协议在板端完整执行；PyTorch 与 FP32
+  ONNX 的同协议全量 AP 尚未单独执行，不与板端 INT8 指标混写.
