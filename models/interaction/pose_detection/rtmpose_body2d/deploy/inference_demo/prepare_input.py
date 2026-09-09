@@ -41,7 +41,7 @@ def quantize_input(input_tensor: np.ndarray, detail: dict) -> np.ndarray:
         raise ValueError(f"仅支持 per-tensor 输入量化: {detail['quantization']}")
     scale = float(scales[0])
     zero_point = int(zero_points[0])
-    dtype = np.dtype(detail["dtype"])
+    dtype = np.dtype(np.int8)
     limits = np.iinfo(dtype)
     return np.clip(np.round(input_tensor / scale) + zero_point,
                    limits.min, limits.max).astype(dtype)
@@ -67,7 +67,7 @@ def prepare_inputs(args: argparse.Namespace) -> None:
     metadata = {
         "input": {
             "shape": [int(value) for value in input_detail["shape"]],
-            "dtype": str(np.dtype(input_detail["dtype"])),
+            "dtype": "int8",
             "scale": float(input_detail["quantization"]["scales"][0]),
             "zero_point": int(
                 input_detail["quantization"]["zero_points"][0]),
@@ -76,7 +76,7 @@ def prepare_inputs(args: argparse.Namespace) -> None:
             "index": index,
             "name": detail["name"],
             "shape": [int(value) for value in detail["shape"]],
-            "dtype": str(np.dtype(detail["dtype"])),
+            "dtype": "int8",
             "scale": float(detail["quantization"]["scales"][0]),
             "zero_point": int(detail["quantization"]["zero_points"][0]),
         } for index, detail in enumerate(output_details)],
