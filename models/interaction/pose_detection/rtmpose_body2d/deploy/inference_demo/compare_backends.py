@@ -32,6 +32,26 @@ def compare_outputs(reference: np.ndarray,
     }
 
 
+def confidence_metrics(
+        distances: np.ndarray, matches: np.ndarray,
+        scores: np.ndarray) -> dict[str, dict[str, float | int | None]]:
+    """按 ONNX 置信度阈值统计关键点位置一致性."""
+    metrics = {}
+    for threshold in (0.1, 0.2):
+        valid = scores >= threshold
+        count = int(valid.sum())
+        metrics[f"onnx_score_gte_{threshold:.1f}"] = {
+            "count": count,
+            "mean_distance_input_pixels": (
+                float(distances[valid].mean()) if count else None),
+            "max_distance_input_pixels": (
+                float(distances[valid].max()) if count else None),
+            "argmax_xy_match_ratio": (
+                float(matches[valid].mean()) if count else None),
+        }
+    return metrics
+
+
 def compare(args: argparse.Namespace) -> None:
     """逐样本比较 ONNX 与 NPU 输出并写入 JSON 报告."""
     metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
@@ -72,6 +92,8 @@ def compare(args: argparse.Namespace) -> None:
                 "max_body_17": float(distances[:17].max()),
             },
             "argmax_xy_match_ratio": float(argmax_match.mean()),
+            "confidence_filtered": confidence_metrics(
+                distances, argmax_match, onnx_scores),
             "score_mean": {
                 "onnx": float(onnx_scores.mean()),
                 "npu": float(npu_scores.mean()),
