@@ -43,6 +43,7 @@ models/interaction/pose_detection/rtmpose_body2d/models/SHA256SUMS
 
 # 板端 C++ 交叉编译产物.
 models/perception/object_detection/yolov5s/deploy/inference_demo/yolov5s_board_eval
+models/interaction/pose_detection/rtmpose_body2d/deploy/inference_demo/rtmpose_board_eval
 
 
 # 离线展开的第三方源码和补丁；固定版本压缩包保留在 Git 中.

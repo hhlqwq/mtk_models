@@ -24,6 +24,8 @@ cd /workspace/models/interaction/pose_detection/rtmpose_body2d
 ./deploy/convert.sh
 ./deploy/build.sh
 ./deploy/deploy_board.sh
+# 正式 COCO-WholeBody 133 点精度评测.
+./deploy/accuracy_board_cpp.sh
 ```
 
 `download_original.sh` 支持复用 `models/` 中已有的官方 ZIP,保留 FP32 ONNX 外部权重,并
@@ -72,6 +74,12 @@ NAS 数据集根目录为:
 
 当前文件检查结果:WholeBody 标注包含 5,000 张图和 11,004 个人标注；检测框文件包含
 104,125 个 `category_id=1` 的人体检测框.两份文件均已通过 JSON 解析检查.
+
+`accuracy_board_cpp.sh` 会生成锁定顺序的检测框清单,交叉编译并部署常驻 Neuron Runtime
+C++ 推理器,先执行两个框的冒烟,再完成全部 104,125 个框的板端推理.指标阶段严格采用
+MMPose 默认的 `bbox_keypoint` 重评分、0.2 关键点阈值和 0.9 WholeBody OKS-NMS,
+最后通过 `xtcocotools` 分别计算 body、foot、face、left hand、right hand 和 wholebody
+的 AP/AR.逐框进度和可续跑的 `processed_ids.txt` 用于观察长时间评测状态.
 
 ## 验证边界
 
