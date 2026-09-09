@@ -36,6 +36,11 @@ models/perception/image_classification/vit_base_patch16_224/original/imagenet_ev
 models/perception/image_classification/vit_base_patch16_224/models/vit-onnx-float/
 models/perception/image_classification/vit_base_patch16_224/models/SHA256SUMS
 
+# RTMPose 官方外部权重、展开目录和本地校验产物.
+models/interaction/pose_detection/rtmpose_body2d/original/exported/
+models/interaction/pose_detection/rtmpose_body2d/models/rtmpose_body2d.data
+models/interaction/pose_detection/rtmpose_body2d/models/SHA256SUMS
+
 # 板端 C++ 交叉编译产物.
 models/perception/object_detection/yolov5s/deploy/inference_demo/yolov5s_board_eval
 

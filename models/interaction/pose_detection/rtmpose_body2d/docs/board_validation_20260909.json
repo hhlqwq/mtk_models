@@ -1,0 +1,76 @@
+{
+  "date": "2026-09-09",
+  "target": {
+    "device": "MediaTek Genio 720 EVK",
+    "kernel": "Linux 6.6.117-mtk",
+    "architecture": "aarch64",
+    "neuron_runtime": "8.2.16"
+  },
+  "build": {
+    "neuropilot_sdk": "8.0.11",
+    "mtk_converter": "8.16.0",
+    "ncc_tflite": "8.2.31",
+    "ncc_arguments": [
+      "--arch=mdla5.3",
+      "--suppress-output",
+      "--disallow-bridge"
+    ]
+  },
+  "sha256": {
+    "official_archive": "a08534f492d0064ba4a84cb801f6bfeefc3b4762320efe9576b25777bf32f052",
+    "model_fp32_onnx": "f2f68ac46c6b28d8c7a1b771e17023c6ad71568ccfef9a16903e7cca90c7768d",
+    "rtmpose_body2d_data": "bfe2b8c7705ea837a0ab9939cd695a04a958a9fe4cf925312ca456858bc922b3",
+    "model_mtk_compatible_onnx": "c1aa58f39c9142a54c1123395310cd71caab1fde4ac371a43c108ac119c87ba1",
+    "model_int8_tflite": "b996d173465fd2a587115b8cb576dfa9ec89d5ea8fded4c1d2e727c51823b89b",
+    "model_int8_dla": "3d65b14be989fb933a9e42db9ba7481b82613be29b6d08cb1ee067e11d3be5dc"
+  },
+  "onnx_compatibility": {
+    "source_ir": 10,
+    "source_opset": 21,
+    "target_ir": 8,
+    "target_opset": 18,
+    "pred_x_max_abs": 0.0,
+    "pred_x_mean_abs": 0.0,
+    "pred_y_max_abs": 0.0,
+    "pred_y_mean_abs": 0.0
+  },
+  "performance": {
+    "warmup_iterations": 20,
+    "measured_iterations": 100,
+    "total_inference_ms": 373.232,
+    "mean_inference_ms": 3.73232,
+    "fps": 262.3,
+    "one_shot_process_ms": 91,
+    "peak_rss_kb": 27136
+  },
+  "smoke_test": {
+    "different_images": 2,
+    "outputs_per_image": 2,
+    "decoded_keypoints_per_image": 133,
+    "sample_1": {
+      "image": "000000209753.jpg",
+      "annotation_id": 453126,
+      "output_0_sha256": "99c0bc24c911c6c36e7504f1359dbcc2ef244423e921944cc4c45e456c055bdb",
+      "output_1_sha256": "8333c2888b5c115a326adca231d55cb8d7c87809929cf1571577d8e4b3766da9",
+      "argmax_xy_match_ratio_all": 0.924812030075188,
+      "onnx_score_gte_0_2_count": 49,
+      "onnx_score_gte_0_2_argmax_xy_match_ratio": 1.0,
+      "onnx_score_gte_0_2_mean_distance_input_pixels": 0.0
+    },
+    "sample_2": {
+      "image": "000000491867.jpg",
+      "annotation_id": 536213,
+      "output_0_sha256": "0a4f4dc0d26a00b4f2df499f586781992829c5c70909fd4b951fb748cdc643fc",
+      "output_1_sha256": "4b9d15349394aab4ef7c16bc1ab1677c5466437ef9ecdaf27b7311e734b4bde5",
+      "argmax_xy_match_ratio_all": 0.7593984962406015,
+      "onnx_score_gte_0_2_count": 41,
+      "onnx_score_gte_0_2_argmax_xy_match_ratio": 1.0,
+      "onnx_score_gte_0_2_mean_distance_input_pixels": 0.0
+    }
+  },
+  "accuracy_boundary": {
+    "coco_wholebody_ap": null,
+    "status": "not_evaluated",
+    "reason": "COCO-WholeBody 133-keypoint annotations and a locked detector-box protocol are not available."
+  }
+}
