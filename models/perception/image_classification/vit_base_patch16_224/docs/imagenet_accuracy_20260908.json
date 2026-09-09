@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "run_id": "20260908_imagenet50000_absolute_v1",
+  "completed_at": "2026-09-08",
+  "dataset": "ILSVRC2012 val",
+  "platform": {
+    "soc": "MT8189 / Genio 720",
+    "accelerator": "MDLA 5.3",
+    "neuron_runtime": "8.2.16",
+    "fp32_provider": "ONNX Runtime 1.18 CPUExecutionProvider"
+  },
+  "completeness": {
+    "manifest": 50000,
+    "npu_inputs": 50000,
+    "fp32_logits": 50000,
+    "returned_nonempty_npu_outputs": 50000,
+    "board_log_completed": 50000
+  },
+  "metrics": {
+    "samples": 50000,
+    "fp32_top1": 0.8064,
+    "fp32_top5": 0.9511,
+    "npu_top1": 0.794,
+    "npu_top5": 0.9464,
+    "top1_agreement": 0.9168,
+    "top5_overlap": 0.7823,
+    "logit_max_abs_err": 5.8413,
+    "logit_rmse": 0.3407,
+    "logit_relative_frobenius": 0.5384
+  },
+  "calibration_excluded_metrics": {
+    "excluded_start_0based": 1000,
+    "excluded_count": 100,
+    "samples": 49900,
+    "fp32_top1": 0.8063,
+    "fp32_top5": 0.951,
+    "npu_top1": 0.7938,
+    "npu_top5": 0.9463
+  },
+  "input_sha256": {
+    "model_fp32_onnx": "e611b7797dcd835af914e69e732c931c3fab6102e781ea61afcc1a6bf1f86138",
+    "model_mtk_compatible_onnx": "dcae9ec010cc61b794da0299826f986cd0f34531cf4275fbc23461e2fd23c6e8",
+    "model_int8_tflite": "829f15a1891604e1fdf632ce6bf4d8f55abd0bc8d07942ee4169e5240d82aca1",
+    "model_int8_dla": "f0b14052868d571d4a5fce13935802815bd4ebb5e0d7c9a97c7eddb4d0d1611a",
+    "evaluator": "23cdd9a389a48e8c65c0085dda27e2aecb37a849418c8edb2604c89202996d54",
+    "board_loop": "3e5f719c8eb1a64e1874391910b4cf7f2f0aa6f2cb7735249fe87a0d86fa1bfe",
+    "mapped_labels": "098d797749a19d2c76f3243494b4d38079446eab41f3b8775212a33e4558a35f"
+  },
+  "evidence_sha256": {
+    "agreement_summary_json": "d51bea3d1fa4f2f037bd87cff511660b85e83cf86954b849ad43a749d3127c56",
+    "manifest_jsonl": "b9a675139572259d09f9d37735f926c37acbe005c6c4e7c9bbfdd1d6f5d7ddcc",
+    "run_inputs_sha256_txt": "bea68faff65285de04456ebfa8de1db21034af6ed0e0e8b2fbbfe9f1d02d786d",
+    "driver_log": "541fb3299edfb29f7987bf804bd36fd492aaa1377837585e326fb29f0c2e206f"
+  }
+}

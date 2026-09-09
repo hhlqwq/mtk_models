@@ -8,7 +8,7 @@
 输入: 1×3×224×224 RGB
 输出: 1×1000 classes
 设备: MediaTek Genio 720 EVK
-当前状态: 板端已验证
+当前状态: 已完成
 ```
 
 ## 执行流程
@@ -21,9 +21,10 @@ cd /workspace/models/perception/image_classification/vit_base_patch16_224
 ./deploy/deploy_board.sh
 ```
 
-正式 Top-1 需要 ImageNet ILSVRC2012 验证集及可靠标签映射. 当前 89 已有 50,000 张
-验证图片, 官方 ground-truth 到模型输出类序映射已完成并通过完整性校验. 尚未执行
-50,000 张绝对精度评测, 因此不填写最终 Top-1.
+正式 Top-1 使用 ImageNet ILSVRC2012 验证集及可靠标签映射. 当前已完成 50,000 张
+FP32 ONNX / MTK NPU INT8 绝对精度评测, 并单独报告排除 100 张 PTQ 校准图片后的
+49,900 张独立指标. 完整结果和证据哈希见 `docs/accuracy.md` 与
+`docs/imagenet_accuracy_20260908.json`.
 
 官方标签映射使用以下两个小型资源, 不需要重新下载验证图片:
 
@@ -63,7 +64,7 @@ Qualcomm 显示名称与输出索引映射的差异数为 0. 可公开复核摘�
 | 板端 Demo | 已完成 | `examples/output/top5.json`, Top-1 `sea snake` |
 | 1000 张对齐评测 | 已完成 | Top-1 agreement 92.3%, `docs/accuracy.md` |
 | ImageNet 标签映射 | 已完成 | 50,000 张、1000 类、每类 50 张, `docs/imagenet_label_mapping.json` |
-| ImageNet 绝对 Top-1 | 待评测 | 官方标签映射已就绪, 尚未运行 50,000 张推理 |
+| ImageNet 绝对精度 | 已完成 | FP32 Top-1 80.64%, NPU Top-1 79.40%, `docs/accuracy.md` |
 | 板端性能 | 已完成 | 纯 NPU 53.3903 ms/inf, `docs/benchmark.md` |
 
 ## 转换兼容性与评测约束
@@ -80,8 +81,8 @@ Top-1 漂移时立即停止. 精度基线始终使用未近似的原始 FP32 ONN
 Qualcomm ONNX 已在图内执行 mean/std 归一化, 外部输入固定为 NCHW RGB
 float32 `[0,1]`. `convert.sh` 默认使用排序后的 ImageNet val 第 1001~1100 张
 校准, 与默认前 1000 张对齐评测子集错开. 已生成映射到模型输出顺序的 50,000 条
-0-based 标签. 正式绝对精度报告仍需执行 50,000 张评测, 并明确披露其中 100 张曾
-参与 PTQ 校准; 默认 1000 张结果仅用于 FP32/INT8 后端一致性分析.
+0-based 标签. 正式绝对精度报告已同时披露完整 50,000 张指标, 以及排除其中 100 张
+PTQ 校准图片后的 49,900 张独立指标; 默认 1000 张结果保留为早期后端一致性证据.
 
 评测采用独立运行目录 `.eval/vit_base_patch16_224/runs/<run_id>/`. `all` 自动
 创建运行 ID; 分阶段执行必须为 `prepare`、`board`、`compare` 设置相同的

@@ -26,7 +26,7 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 | 模型 | 任务 | 标准输入 | 来源 | 当前状态 |
 | --- | --- | --- | --- | --- |
 | [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Qualcomm / Ultralytics | 完整交付 |
-| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | Qualcomm | 板端已验证（绝对 Top-1 待标签） |
+| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | Qualcomm | 完整交付 |
 | [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | Qualcomm | 环境建设中 |
 
 状态只能使用以下四类：

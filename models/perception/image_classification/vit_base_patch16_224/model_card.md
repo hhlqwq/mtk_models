@@ -26,3 +26,12 @@ Genio 720 实测结果.
 | `model_mtk_compatible.onnx` | 347,417,235 | `dcae9ec010cc61b794da0299826f986cd0f34531cf4275fbc23461e2fd23c6e8` |
 | `model_int8.tflite` | 90,430,376 | `829f15a1891604e1fdf632ce6bf4d8f55abd0bc8d07942ee4169e5240d82aca1` |
 | `model_int8.dla` | 87,979,244 | `f0b14052868d571d4a5fce13935802815bd4ebb5e0d7c9a97c7eddb4d0d1611a` |
+
+## Genio 720 验证结果
+
+ILSVRC2012 val 全部 50,000 张图片的 FP32 ONNX Top-1/Top-5 为
+80.64%/95.11%, MTK NPU INT8 Top-1/Top-5 为 79.40%/94.64%. 排除 100 张
+PTQ 校准图片后的 49,900 张独立结果为 FP32 80.63%/95.10%、NPU INT8
+79.38%/94.63%. 完整运行 ID、样本完整性和证据哈希见
+[`docs/accuracy.md`](docs/accuracy.md) 与
+[`docs/imagenet_accuracy_20260908.json`](docs/imagenet_accuracy_20260908.json).

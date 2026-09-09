@@ -19,7 +19,7 @@ models:
     path: models/perception/image_classification/vit_base_patch16_224
     source: qualcomm/VIT
     platforms:
-      genio_720: board_verified
+      genio_720: complete
       genio_5100: not_started
   - id: rtmpose_body2d
     batch: first_batch
