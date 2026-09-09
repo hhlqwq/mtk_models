@@ -1,7 +1,7 @@
 # RTMPose 板端 Demo
 
 Demo 使用 COCO `instances_val2017.json` 的 person 框模拟上游检测器输出,按 1.25 倍边距和
-192:256 输入比例执行仿射裁剪.兼容模型输入为 NCHW BGR `[0,1]`,再按 TFLite 参数量化.
+192:256 输入比例执行仿射裁剪.兼容模型输入为 NCHW BGR `[0,255]`,再按 TFLite 参数量化.
 
 板端 `run_board.sh` 使用两张不同图片完成冒烟推理,随后执行 20 次预热和 100 次性能采样.
 `postprocess_keypoints.py` 反量化 `pred_x`/`pred_y`,按 SimCC split ratio 2.0 解码 133 点并

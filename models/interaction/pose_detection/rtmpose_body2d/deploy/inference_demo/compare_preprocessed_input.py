@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from rtmpose_utils import preprocess_image
 
 INPUT_SHAPE = (1, 3, 256, 192)
-INPUT_SCALE = 0.003921568859368563
+INPUT_SCALE = 1.0
 INPUT_ZERO_POINT = -128
 
 

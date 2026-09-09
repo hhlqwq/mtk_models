@@ -52,7 +52,7 @@ def build_affine_transform(center: np.ndarray,
 def preprocess_image(
         image: np.ndarray,
         bbox: tuple[float, float, float, float]) -> tuple[np.ndarray, dict]:
-    """裁剪人体框并返回 NCHW BGR FP32 [0,1] 输入和映射元数据."""
+    """裁剪人体框并返回 NCHW BGR FP32 [0,255] 输入和映射元数据."""
     center, scale = compute_center_scale(bbox)
     transform = build_affine_transform(center, scale)
     crop = cv2.warpAffine(
@@ -63,7 +63,7 @@ def preprocess_image(
         borderMode=cv2.BORDER_CONSTANT,
         borderValue=(0, 0, 0))
     # MTK 兼容模型已移除原图中的 RGB 到 BGR GatherND 前缀.
-    nchw = crop.transpose(2, 0, 1).astype(np.float32) / 255.0
+    nchw = crop.transpose(2, 0, 1).astype(np.float32)
     metadata = {
         "bbox_xywh": [float(value) for value in bbox],
         "center": center.tolist(),

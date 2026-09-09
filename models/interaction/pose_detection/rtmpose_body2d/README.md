@@ -81,6 +81,10 @@ MMPose 默认的 `bbox_keypoint` 重评分、0.2 关键点阈值和 0.9 WholeBod
 最后通过 `xtcocotools` 分别计算 body、foot、face、left hand、right hand 和 wholebody
 的 AP/AR.逐框进度和可续跑的 `processed_ids.txt` 用于观察长时间评测状态.
 
+模型输入保持原始 Qualcomm 图定义的像素量纲:BGR FP32 `[0,255]`,再由 INT8 输入量化参数
+转换为板端张量.不得在图外先除以 255；ONNX 图内的 ImageNet mean/std 常量同样采用
+`[0,255]` 量纲.
+
 ## 验证边界
 
 - 双图板端冒烟用于确认 DLA 可运行、输出完整且不同输入不会得到完全相同的旧缓冲结果.

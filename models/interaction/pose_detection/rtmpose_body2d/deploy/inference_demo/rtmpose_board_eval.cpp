@@ -34,6 +34,7 @@ constexpr int kKeypointCount = 133;
 constexpr int kSimccXLength = 384;
 constexpr int kSimccYLength = 512;
 constexpr float kScalePadding = 1.25F;
+constexpr float kInputScale = 1.0F;
 constexpr int kInputZeroPoint = -128;
 constexpr float kOutputXScale = 0.0020384122617542744F;
 constexpr int kOutputXZeroPoint = -24;
@@ -230,9 +231,11 @@ std::pair<std::vector<int8_t>, Geometry> Preprocess(
     const auto* pixels = crop.ptr<cv::Vec3b>(row);
     for (int column = 0; column < kInputWidth; ++column) {
       for (int channel = 0; channel < kInputChannels; ++channel) {
+        const int quantized = static_cast<int>(std::nearbyint(
+                                  pixels[column][channel] / kInputScale)) +
+                              kInputZeroPoint;
         output[channel * plane_size + row * kInputWidth + column] =
-            static_cast<int8_t>(static_cast<int>(pixels[column][channel]) +
-                                kInputZeroPoint);
+            static_cast<int8_t>(std::clamp(quantized, -128, 127));
       }
     }
   }
