@@ -386,6 +386,16 @@ void AppendPrediction(std::ofstream* output, const DetectionInput& detection,
   *output << "]}\n";
 }
 
+// 写出首个样本的原生输入输出,用于跨后端诊断.
+void DumpBuffer(const fs::path& path, const void* data, size_t size) {
+  std::ofstream output(path, std::ios::binary);
+  output.write(static_cast<const char*>(data),
+               static_cast<std::streamsize>(size));
+  if (!output) {
+    throw std::runtime_error("无法写入诊断缓冲区: " + path.string());
+  }
+}
+
 // 从完成清单中读取已处理的 detection_id.
 std::unordered_set<int64_t> LoadCompleted(const fs::path& path) {
   std::unordered_set<int64_t> completed;
@@ -472,6 +482,14 @@ void Run(const Options& options) {
     auto [input, geometry] = Preprocess(current_image, detection);
     const auto preprocess_end = std::chrono::steady_clock::now();
     const double npu_ms = model.Infer(input);
+    if (timings.empty()) {
+      DumpBuffer(options.output_dir / "first_input.bin", input.data(),
+                 input.size());
+      DumpBuffer(options.output_dir / "first_output_0.bin",
+                 model.output(0).data(), model.output(0).size());
+      DumpBuffer(options.output_dir / "first_output_1.bin",
+                 model.output(1).data(), model.output(1).size());
+    }
     const auto postprocess_start = std::chrono::steady_clock::now();
     AppendPrediction(&predictions, detection, geometry, model);
     const auto postprocess_end = std::chrono::steady_clock::now();
