@@ -80,6 +80,13 @@ def replace_channel_gather_nd(model: onnx.ModelProto) -> int:
             indices.reshape(3).astype(indices.dtype), indices_tensor.name)
         model.graph.initializer.remove(indices_tensor)
         model.graph.initializer.append(replacement)
+        for collection in (model.graph.input, model.graph.value_info):
+            for value in collection:
+                if value.name != indices_tensor.name:
+                    continue
+                dimensions = value.type.tensor_type.shape.dim
+                del dimensions[:]
+                dimensions.add().dim_value = 3
         node.op_type = "Gather"
         del node.attribute[:]
         node.attribute.append(helper.make_attribute("axis", 0))
