@@ -3,7 +3,9 @@
 import argparse
 from pathlib import Path
 
+import numpy as np
 import onnx
+from onnx import numpy_helper
 
 MAX_SUPPORTED_IR = 8
 MAX_SUPPORTED_OPSET = 18
@@ -27,6 +29,33 @@ def validate_target_schemas(model: onnx.ModelProto) -> None:
                 f"{MAX_SUPPORTED_OPSET} 不支持属性: {unknown_attributes}")
 
 
+def remove_safe_reshape_allowzero(model: onnx.ModelProto) -> int:
+    """移除不改变当前模型语义但 MTK 导入器不支持的 allowzero 属性."""
+    initializers = {tensor.name: tensor for tensor in model.graph.initializer}
+    removed = 0
+    for node in model.graph.node:
+        if node.op_type != "Reshape":
+            continue
+        allowzero = next(
+            (item for item in node.attribute if item.name == "allowzero"),
+            None)
+        if allowzero is None:
+            continue
+        if allowzero.i == 1:
+            shape_tensor = initializers.get(node.input[1])
+            if shape_tensor is None:
+                raise ValueError(
+                    f"无法安全移除动态 Reshape allowzero=1: {node.name}")
+            shape = numpy_helper.to_array(shape_tensor)
+            if np.any(shape == 0):
+                raise ValueError(
+                    f"无法安全移除含 0 shape 的 Reshape allowzero=1: "
+                    f"{node.name}, shape={shape.tolist()}")
+        node.attribute.remove(allowzero)
+        removed += 1
+    return removed
+
+
 def prepare_model(source: Path, output: Path) -> None:
     """合并外部权重并在语义不变时降低 ONNX IR 版本."""
     model = onnx.load(str(source), load_external_data=True)
@@ -42,6 +71,7 @@ def prepare_model(source: Path, output: Path) -> None:
         standard_opset = MAX_SUPPORTED_OPSET
     if model.ir_version > MAX_SUPPORTED_IR:
         model.ir_version = MAX_SUPPORTED_IR
+    reshape_count = remove_safe_reshape_allowzero(model)
     onnx.checker.check_model(model)
     onnx.save(model, str(output), save_as_external_data=False)
     reloaded = onnx.load(str(output), load_external_data=False)
@@ -51,7 +81,8 @@ def prepare_model(source: Path, output: Path) -> None:
     if external_count:
         raise RuntimeError(f"兼容模型仍包含 {external_count} 个外部权重引用.")
     print(f"[OK] MTK 兼容 ONNX: IR={model.ir_version}, "
-          f"opset={standard_opset}, {output}")
+          f"opset={standard_opset}, 移除 Reshape allowzero "
+          f"x{reshape_count}, {output}")
 
 
 def parse_args() -> argparse.Namespace:
