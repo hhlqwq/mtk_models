@@ -3,10 +3,11 @@ name: ViT-Base Patch16 224
 scenario: perception
 category: image_classification
 source:
-  provider: pending
-  repository: pending_open_source_upstream
-  revision: pending
-  weights: pending
+  provider: github
+  repository: pytorch/vision
+  revision: v0.15.1
+  weights: ViT_B_16_Weights.IMAGENET1K_V1
+  weights_sha256: c867db91d3e12c6cbadabb610d73c24a546bf82d8c03a9fea34f43a712ddb0e9
 delivery_reference:
   repository: qualcomm/VIT
   purpose: packaging_and_reporting_only

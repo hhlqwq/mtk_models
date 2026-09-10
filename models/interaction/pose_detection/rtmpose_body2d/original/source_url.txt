@@ -1,9 +1,14 @@
 正式开源项目：https://github.com/open-mmlab/mmpose
-正式源码版本：待锁定
-正式配置：RTMPose-M COCO-WholeBody 256x192,准确路径待锁定
-正式权重地址：待锁定
-正式权重 SHA-256：待锁定
-正式许可证及第三方声明：待锁定
+正式源码版本：v1.3.2
+源码压缩包：https://github.com/open-mmlab/mmpose/archive/refs/tags/v1.3.2.zip
+正式配置：https://github.com/open-mmlab/mmpose/blob/v1.3.2/configs/wholebody_2d_keypoint/rtmpose/coco-wholebody/rtmpose-m_8xb64-270e_coco-wholebody-256x192.py
+正式权重：https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192-cd5e845c_20230123.pth
+权重文件名：rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192-cd5e845c_20230123.pth
+权重大小：72010049 bytes
+权重 SHA-256：3da02694cd6479d3b333ff42ebd0723f96bfa06adac1db1e2e815ed2e9e1b02d
+权重 MD5：f9e98931f38c2ef2acff811f479197a2
+官方服务器 ETag：f9e98931f38c2ef2acff811f479197a2
+正式许可证：https://github.com/open-mmlab/mmpose/blob/v1.3.2/LICENSE
 
 交付形式参考：https://huggingface.co/qualcomm/RTMPose-Body2d
 历史 Qualcomm FP32 ONNX：https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/rtmpose_body2d/releases/v0.61.0/rtmpose_body2d-onnx-float.zip

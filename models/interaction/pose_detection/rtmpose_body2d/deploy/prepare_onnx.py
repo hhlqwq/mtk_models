@@ -1,4 +1,4 @@
-"""生成 mtk_converter 8.16.0 可读取的 RTMPose 单文件 ONNX."""
+"""生成 mtk_converter 8.16.0 可读取的 OpenMMLab RTMPose ONNX."""
 
 import argparse
 from pathlib import Path
@@ -56,57 +56,33 @@ def remove_safe_reshape_allowzero(model: onnx.ModelProto) -> int:
     return removed
 
 
-def remove_rgb_to_bgr_prefix(model: onnx.ModelProto) -> int:
-    """移除严格匹配的 RGB 到 BGR 前缀,兼容模型改为直接接收 BGR."""
-    nodes = list(model.graph.node)
-    if len(nodes) < 4:
-        raise ValueError("RTMPose 图节点数量异常,无法识别通道重排前缀.")
-    first, channel_gather, second, consumer = nodes[:4]
-    if ([first.op_type, channel_gather.op_type, second.op_type] !=
-            ["Reshape", "GatherND", "Reshape"] or
-            first.input[0] != "image" or
-            channel_gather.input[0] != first.output[0] or
-            second.input[0] != channel_gather.output[0] or
-            second.output[0] not in consumer.input):
-        raise ValueError("RTMPose 前端不是预期的 Reshape/GatherND/Reshape.")
-    initializers = {tensor.name: tensor for tensor in model.graph.initializer}
-    indices_tensor = initializers.get(channel_gather.input[1])
-    if indices_tensor is None:
-        raise ValueError("RTMPose 通道重排索引不是常量.")
-    indices = numpy_helper.to_array(indices_tensor)
-    if indices.shape != (3, 1) or indices.reshape(-1).tolist() != [2, 1, 0]:
-        raise ValueError(
-            f"RTMPose 通道重排索引异常: {indices.reshape(-1).tolist()}")
-    replaced_input = second.output[0]
-    for node in model.graph.node:
-        for index, input_name in enumerate(node.input):
-            if input_name == replaced_input:
-                node.input[index] = "image"
-    removed_names = {
-        first.input[1], channel_gather.input[1], second.input[1],
-        first.output[0], channel_gather.output[0], second.output[0],
-    }
-    for tensor in list(model.graph.initializer):
-        if tensor.name in removed_names:
-            model.graph.initializer.remove(tensor)
-    for value in list(model.graph.value_info):
-        if value.name in removed_names:
-            model.graph.value_info.remove(value)
-    del model.graph.node[:3]
-    return 1
-
-
 def expand_gau_mul_broadcast(model: onnx.ModelProto) -> int:
-    """将 NCC 不支持的 GAU 双轴广播改写为同形状逐元素乘法."""
+    """将 NCC 不支持的 GAU 双轴广播改写为同形状逐元素乘法.
+
+    新导出图不依赖第三方节点名称,通过唯一常量形状 `(1,1,2,128)` 定位目标 Mul.
+    如果图结构变化或出现多个候选,立即停止而不是猜测.
+    """
     initializers = {tensor.name: tensor for tensor in model.graph.initializer}
-    matches = [node for node in model.graph.node
-               if node.name == "node_mul_8" and node.op_type == "Mul"]
+    matches = []
+    for node in model.graph.node:
+        if node.op_type != "Mul":
+            continue
+        constant_inputs = [initializers.get(name) for name in node.input]
+        shapes = [tuple(numpy_helper.to_array(tensor).shape)
+                  for tensor in constant_inputs if tensor is not None]
+        if (1, 1, 2, 128) in shapes:
+            matches.append(node)
     if len(matches) != 1:
         raise ValueError(f"GAU 广播 Mul 数量异常: {len(matches)}")
     node = matches[0]
-    constant = initializers.get(node.input[1])
+    constant = next(
+        (initializers.get(name) for name in node.input
+         if initializers.get(name) is not None and
+         tuple(numpy_helper.to_array(initializers[name]).shape) ==
+         (1, 1, 2, 128)),
+        None)
     if constant is None:
-        raise ValueError("GAU 广播 Mul 的第二输入不是常量.")
+        raise ValueError("GAU 广播 Mul 缺少预期常量输入.")
     values = numpy_helper.to_array(constant)
     if values.shape != (1, 1, 2, 128):
         raise ValueError(f"GAU 广播常量 shape 异常: {values.shape}")
@@ -119,7 +95,7 @@ def expand_gau_mul_broadcast(model: onnx.ModelProto) -> int:
         if value.name == constant.name:
             model.graph.value_info.remove(value)
 
-    dynamic_input = node.input[0]
+    dynamic_input = next(name for name in node.input if name != constant.name)
     expanded_input = f"{dynamic_input}_repeat_axis2"
     concat = helper.make_node(
         "Concat",
@@ -129,7 +105,8 @@ def expand_gau_mul_broadcast(model: onnx.ModelProto) -> int:
         axis=2)
     node_index = list(model.graph.node).index(node)
     model.graph.node.insert(node_index, concat)
-    node.input[0] = expanded_input
+    dynamic_index = list(node.input).index(dynamic_input)
+    node.input[dynamic_index] = expanded_input
     return 1
 
 
@@ -139,7 +116,7 @@ def prepare_model(source: Path, output: Path) -> None:
     opsets = {(item.domain or "ai.onnx"): item.version
               for item in model.opset_import}
     standard_opset = opsets.get("ai.onnx", 0)
-    print(f"[INFO] Qualcomm RTMPose: IR={model.ir_version}, opset={opsets}")
+    print(f"[INFO] OpenMMLab RTMPose: IR={model.ir_version}, opset={opsets}")
     if standard_opset > MAX_SUPPORTED_OPSET:
         validate_target_schemas(model)
         for item in model.opset_import:
@@ -149,7 +126,6 @@ def prepare_model(source: Path, output: Path) -> None:
     if model.ir_version > MAX_SUPPORTED_IR:
         model.ir_version = MAX_SUPPORTED_IR
     reshape_count = remove_safe_reshape_allowzero(model)
-    bgr_prefix_count = remove_rgb_to_bgr_prefix(model)
     gau_mul_count = expand_gau_mul_broadcast(model)
     onnx.checker.check_model(model)
     onnx.save(model, str(output), save_as_external_data=False)
@@ -161,8 +137,7 @@ def prepare_model(source: Path, output: Path) -> None:
         raise RuntimeError(f"兼容模型仍包含 {external_count} 个外部权重引用.")
     print(f"[OK] MTK 兼容 ONNX: IR={model.ir_version}, "
           f"opset={standard_opset}, 移除 Reshape allowzero "
-          f"x{reshape_count}, 移除 RGB 到 BGR 前缀 "
-          f"x{bgr_prefix_count}, 展开 GAU Mul 广播 x{gau_mul_count}, "
+          f"x{reshape_count}, 展开 GAU Mul 广播 x{gau_mul_count}, "
           f"{output}")
 
 

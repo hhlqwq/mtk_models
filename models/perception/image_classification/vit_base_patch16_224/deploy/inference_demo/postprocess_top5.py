@@ -60,7 +60,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--result", type=Path, required=True)
     parser.add_argument("--topk", type=int, default=5)
     parser.add_argument("--labels", type=Path, default=None,
-                        help="可选类名表 (Qualcomm 归档内 labels.txt).")
+                        help="可选 ImageNet 类别名称表.")
     return parser.parse_args()
 
 

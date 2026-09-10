@@ -1,12 +1,18 @@
 # ViT-Base Patch16 224 模型卡
 
-## 当前开源上游状态
+## 正式开源上游
 
-正式开源上游实现、固定源码版本和官方权重尚未锁定.锁定前不得生成新的正式 MTK 产物,
-也不得将下述历史 Qualcomm ONNX 结果计入当前交付状态.
+- 官方项目：<https://github.com/pytorch/vision>
+- 固定版本：`v0.15.1`,与项目既有 Torch 2.0.0 / TorchVision 0.15.1 环境一致.
+- 模型构造器：`torchvision.models.vit_b_16`.
+- 权重枚举：`ViT_B_16_Weights.IMAGENET1K_V1`.
+- 官方权重：<https://download.pytorch.org/models/vit_b_16-c867db91.pth>
+- 文件大小：346,328,529 bytes.
+- SHA-256：`c867db91d3e12c6cbadabb610d73c24a546bf82d8c03a9fea34f43a712ddb0e9`.
+- 许可证：TorchVision BSD-3-Clause.
 
-候选上游必须由模型作者或官方开源项目发布,允许修改和交付,可从原始框架自行导出
-ONNX,并能完成原始框架、ONNX、MTK NPU 三端精度对比.
+`deploy/export_onnx.py` 从本地官方 `.pth` 自行生成精确 GELU 基线 ONNX 和 tanh GELU
+MTK 兼容候选 ONNX,不使用任何第三方预导出模型.
 
 ## 历史 Qualcomm 衍生基线
 
@@ -15,18 +21,18 @@ ONNX,并能完成原始框架、ONNX、MTK NPU 三端精度对比.
 - 历史模型：Qualcomm AI Hub Models v0.61.0 预导出 FP32 ONNX.
 - 历史归档 SHA-256：`72b7d02dd5c3d1e09c59196ba14364549aac9e8ed1f8212ea5f5c78f7424632f`.
 
-## 历史模型规格
+## 正式模型规格
 
-- 参数量：86.6M.
 - 输入：224×224 RGB.
 - 输出：ImageNet-1K 1000 类 logits.
-- 输入数值：NCHW RGB float32 `[0,1]`,mean/std 归一化位于 ONNX 图内.
-- 历史来源页面标记的许可证：BSD-3-Clause；新上游许可证仍待锁定.
+- 输入数值：NCHW RGB float32 `[0,1]`,TorchVision ImageNet mean/std 归一化位于导出图内.
+- 官方基准：ImageNet-1K Top-1 81.072%、Top-5 95.318%.
+- 参数量：86,567,656.
 
 历史归档文件和解压后 ONNX 的 SHA-256 已记录.Qualcomm 设备性能仅作交付形式参考,
 不能作为 Genio 720 实测结果.
 
-## 历史交付产物
+## 历史 Qualcomm 交付产物
 
 | 产物 | 大小 (bytes) | SHA-256 |
 | --- | ---: | --- |

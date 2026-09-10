@@ -1,4 +1,4 @@
-"""验证 Qualcomm 原始 ONNX 与 MTK 兼容模型的数值偏差."""
+"""验证自行导出的精确 GELU ONNX 与 MTK 兼容候选的数值偏差."""
 
 import argparse
 from pathlib import Path

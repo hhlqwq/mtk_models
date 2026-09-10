@@ -17,7 +17,7 @@ models:
     scenario: perception
     category: image_classification
     path: models/perception/image_classification/vit_base_patch16_224
-    source: pending_open_source_upstream
+    source: pytorch/vision
     legacy_source: qualcomm/VIT
     delivery_reference: qualcomm/VIT
     platforms:

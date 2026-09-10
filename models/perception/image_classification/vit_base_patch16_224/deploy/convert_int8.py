@@ -14,9 +14,8 @@ def preprocess_image(image_path: Path, crop_size: int = 224,
                      resize_size: int = 256) -> np.ndarray:
     """按 ImageNet 标准评估预处理生成 NCHW FP32 输入.
 
-    Qualcomm v0.61.0 导出的 ONNX 图前两个节点为 Sub/Div, mean/std
-    归一化已内置 (metadata.json value_range [0,1]), 外部只允许输入
-    rgb/255 的 [0,1] 数据, 再叠加归一化会双重缩放导致精度劣化.
+    当前 ONNX 由 PyTorch Vision 官方权重自行导出,mean/std 归一化位于
+    图内.外部只输入 rgb/255 的 `[0,1]` 数据,不得重复归一化.
     """
     image = cv2.imread(str(image_path))
     if image is None:

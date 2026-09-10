@@ -1,4 +1,4 @@
-"""将 Qualcomm ViT FP32 ONNX 降级为 mtk_converter 8.16.0 可接受的版本.
+"""历史工具：将 Qualcomm ViT ONNX 降级为旧 MTK Converter 可接受的版本.
 
 Qualcomm v0.61.0 导出为 IR v10 / opset 21, 且使用 opset 20 新增的 Gelu
 算子; mtk_converter (onnx 1.13.1) 要求 IR v3..v8 且 opset <= 18.

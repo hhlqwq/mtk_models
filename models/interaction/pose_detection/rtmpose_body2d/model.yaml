@@ -5,9 +5,10 @@ category: pose_detection
 source:
   provider: github
   repository: open-mmlab/mmpose
-  revision: pending
-  config: rtmpose_m_coco_wholebody_256x192_pending
-  weights: pending
+  revision: v1.3.2
+  config: configs/wholebody_2d_keypoint/rtmpose/coco-wholebody/rtmpose-m_8xb64-270e_coco-wholebody-256x192.py
+  weights: rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192-cd5e845c_20230123.pth
+  weights_sha256: 3da02694cd6479d3b333ff42ebd0723f96bfa06adac1db1e2e815ed2e9e1b02d
 delivery_reference:
   repository: qualcomm/RTMPose-Body2d
   purpose: packaging_and_reporting_only

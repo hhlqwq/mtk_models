@@ -1,7 +1,7 @@
 # RTMPose Body2d 精度报告
 
 > 历史结果说明：本页结果来自 Qualcomm v0.61.0 预导出 FP32 ONNX 及其 MTK INT8
-> 衍生模型.它们保留用于工程对照,不属于待锁定的 OpenMMLab MMPose 上游正式交付结果.
+> 衍生模型.它们保留用于工程对照,不属于当前已锁定的 OpenMMLab MMPose 上游正式交付链路.
 
 历史状态：Genio 720 板端 INT8 正式评测已完成.
 

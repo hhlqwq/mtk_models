@@ -1,8 +1,11 @@
-正式开源上游：待锁定
-正式源码版本：待锁定
-正式权重地址：待锁定
-正式权重 SHA-256：待锁定
-正式许可证：待锁定
+正式开源上游：https://github.com/pytorch/vision
+正式源码版本：v0.15.1
+源码压缩包：https://github.com/pytorch/vision/archive/refs/tags/v0.15.1.zip
+官方权重：https://download.pytorch.org/models/vit_b_16-c867db91.pth
+权重文件名：vit_b_16-c867db91.pth
+权重大小：346328529 bytes
+权重 SHA-256：c867db91d3e12c6cbadabb610d73c24a546bf82d8c03a9fea34f43a712ddb0e9
+正式许可证：https://github.com/pytorch/vision/blob/v0.15.1/LICENSE
 
 交付形式参考：https://huggingface.co/qualcomm/VIT
 历史 Qualcomm FP32 ONNX：https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/vit/releases/v0.61.0/vit-onnx-float.zip

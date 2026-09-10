@@ -13,8 +13,8 @@ def preprocess(image: np.ndarray, crop_size: int = 224,
                resize_size: int = 256) -> np.ndarray:
     """ImageNet 标准评估几何预处理, 返回 NCHW FP32 [0,1].
 
-    Qualcomm 导出的 ONNX 已在图内完成 mean/std 归一化 (首节点 Sub/Div),
-    外部输入必须是 rgb/255 的 [0,1] 范围, 不允许再次归一化.
+    PyTorch Vision 官方权重的自行导出 ONNX 已在图内完成 mean/std
+    归一化,外部输入必须是 rgb/255 的 `[0,1]` 范围.
     """
     height, width = image.shape[:2]
     scale = resize_size / min(height, width)

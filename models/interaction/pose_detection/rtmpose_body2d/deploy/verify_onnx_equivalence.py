@@ -23,11 +23,9 @@ def run_model(model_path: Path, input_data: np.ndarray) -> list[np.ndarray]:
 def verify(args: argparse.Namespace) -> None:
     """使用固定随机输入逐输出比较降级前后数值."""
     input_data = np.random.default_rng(args.seed).random(
-        (1, 3, 256, 192), dtype=np.float32)
+        (1, 3, 256, 192), dtype=np.float32) * 255.0
     reference_outputs = run_model(args.reference, input_data)
-    # 原始 Qualcomm 图内执行 RGB 到 BGR;兼容图移除不受 MDLA 支持的
-    # GatherND 前缀,因此这里为兼容图显式提供对应的 BGR 输入.
-    converted_outputs = run_model(args.converted, input_data[:, ::-1].copy())
+    converted_outputs = run_model(args.converted, input_data)
     for index, (reference, converted) in enumerate(
             zip(reference_outputs, converted_outputs)):
         if reference.shape != converted.shape:

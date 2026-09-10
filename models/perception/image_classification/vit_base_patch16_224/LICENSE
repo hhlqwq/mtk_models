@@ -1,8 +1,10 @@
-正式开源上游尚未锁定.在确定源码和权重前,不得把历史 Qualcomm 来源页面的许可证
-作为新模型的许可证.
+正式开源上游为 PyTorch Vision v0.15.1,采用 BSD-3-Clause 许可证：
+https://github.com/pytorch/vision/blob/v0.15.1/LICENSE
+
+正式权重为 `ViT_B_16_Weights.IMAGENET1K_V1`,交付时必须保留 PyTorch Vision
+许可证和必要的第三方声明.
 
 历史 Qualcomm VIT 页面标记为 BSD-3-Clause：
 https://huggingface.co/qualcomm/VIT
 
-正式分发新模型时,必须保留开源上游许可证和第三方声明.本仓库根目录许可证不替代
-模型源码及权重的许可证.
+本仓库根目录许可证不替代模型源码及权重的许可证.

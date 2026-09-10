@@ -201,7 +201,7 @@ Geometry ComputeGeometry(const DetectionInput& detection) {
   return geometry;
 }
 
-// 将原图中的人体框仿射裁剪为 NCHW BGR INT8 输入.
+// 将原图中的人体框仿射裁剪为 NCHW RGB INT8 输入.
 std::pair<std::vector<int8_t>, Geometry> Preprocess(
     const cv::Mat& image, const DetectionInput& detection) {
   const Geometry geometry = ComputeGeometry(detection);
@@ -231,8 +231,10 @@ std::pair<std::vector<int8_t>, Geometry> Preprocess(
     const auto* pixels = crop.ptr<cv::Vec3b>(row);
     for (int column = 0; column < kInputWidth; ++column) {
       for (int channel = 0; channel < kInputChannels; ++channel) {
+        const int source_channel = kInputChannels - 1 - channel;
         const int quantized = static_cast<int>(std::nearbyint(
-                                  pixels[column][channel] / kInputScale)) +
+                                  pixels[column][source_channel] /
+                                  kInputScale)) +
                               kInputZeroPoint;
         output[channel * plane_size + row * kInputWidth + column] =
             static_cast<int8_t>(std::clamp(quantized, -128, 127));

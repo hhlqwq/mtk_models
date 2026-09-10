@@ -35,8 +35,8 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 | 模型 | 任务 | 标准输入 | 来源 | 当前状态 |
 | --- | --- | --- | --- | --- |
 | [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics | 完整交付 |
-| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | 待锁定官方开源上游 | 环境建设中 |
-| [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose（版本待锁定） | 环境建设中 |
+| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 环境建设中 |
+| [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | 环境建设中 |
 
 状态只能使用以下四类：
 
@@ -137,8 +137,8 @@ models/scenario_name/category_name/model_name/
 仓库通过 `registry/models.yaml` 维护模型索引,避免扫描上百个目录才能了解交付状态.
 
 大模型文件、转换产物、输入数据和输出数据默认不进入普通 Git 历史.正式发布模型文件时应使用
-Git LFS 或 Release,并在 `model_card.md` 中记录 SHA-256.历史 ViT Qualcomm 归档的本地
-展开目录、标签副本和校验清单属于可再生对照资产,由 `.gitignore` 排除并保留在各自工作环境中.
+Git LFS 或 Release,并在 `model_card.md` 中记录 SHA-256.用户放置的官方开源权重、历史
+Qualcomm 对照资产、标签副本和校验清单由 `.gitignore` 排除并保留在各自工作环境中.
 
 ## 验收原则
 

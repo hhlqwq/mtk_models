@@ -8,12 +8,12 @@
 输入: 1×3×256×192 RGB
 输出: 133 个关节点的位置和置信度
 设备: MediaTek Genio 720 EVK
-当前状态: 环境建设中（OpenMMLab 上游版本和权重待锁定）
+当前状态: 环境建设中（官方权重已锁定,新 ONNX 尚未导出）
 ```
 
-> 迁移说明：本目录现有模型产物和结果来自 Qualcomm v0.61.0 预导出 ONNX,仅保留为
-> 历史工程证据.正式交付将从 OpenMMLab MMPose 官方配置和权重自行导出 ONNX；固定
-> 版本和权重未核验前,旧结果不再计入当前交付状态.
+> 迁移说明：正式上游已改为 OpenMMLab MMPose v1.3.2 的 RTMPose-M
+> COCO-WholeBody 256×192 官方配置和权重.本目录旧 Qualcomm v0.61.0 ONNX 产物和
+> 结果仅保留为历史工程证据,不计入当前交付状态.
 
 RTMPose 是 top-down 姿态模型,只处理人体检测框.转换校准与板端 Demo 使用 COCO person
 标注框模拟上游检测器输出,执行仿射裁剪、INT8 量化、板端推理和 SimCC 解码.正式
@@ -24,7 +24,7 @@ WholeBody 精度评测则固定使用 Faster R-CNN 检测框,具体协议见“�
 
 ```bash
 cd /workspace/models/interaction/pose_detection/rtmpose_body2d
-# 先锁定 MMPose 固定版本、官方配置、权重、许可证和 SHA-256.
+# 使用本地官方 .pth 权重离线校验并自行导出 ONNX.
 ./deploy/download_original.sh
 ./deploy/convert.sh
 ./deploy/build.sh
@@ -43,12 +43,14 @@ Genio 720 所需的 `mdla5.3 + --suppress-output + --disallow-bridge`；部署�
 
 | 环节 | 状态 | 证据 |
 | --- | --- | --- |
-| OpenMMLab 官方上游 | 待锁定 | 固定版本、配置、权重、许可证和 SHA-256 均不得猜测 |
+| OpenMMLab 官方上游 | 已锁定 | MMPose v1.3.2、官方配置、完整 SHA-256 和 MD5 已记录 |
 | 原始框架基线 | 待执行 | 必须使用最终锁定的开源权重 |
 | 自行导出 ONNX | 待执行 | 不得复用 Qualcomm 预导出 ONNX |
 | MTK 兼容 ONNX | 待执行 | 需要根据新 ONNX 重新分析图结构 |
 | MTK INT8 TFLite / DLA | 待执行 | 旧产物仅作历史对照 |
 | 板端 Demo、WholeBody AP 和性能 | 待执行 | 新模型必须使用新的运行 ID 完整复测 |
+
+## 历史 Qualcomm 衍生验证记录
 
 历史版本化验证证据见 `docs/board_validation_20260909.json`.
 
@@ -84,7 +86,7 @@ MMPose 默认的 `bbox_keypoint` 重评分、0.2 关键点阈值和 0.9 WholeBod
 最后通过 `xtcocotools` 分别计算 body、foot、face、left hand、right hand 和 wholebody
 的 AP/AR.逐框进度和可续跑的 `processed_ids.txt` 用于观察长时间评测状态.
 
-正式运行 `20260909_wholebody_int8_v2` 已在 Genio 720 完成全部 104,125 个框；OKS-NMS
+历史完整运行 `20260909_wholebody_int8_v2` 已在 Genio 720 完成全部 104,125 个框；OKS-NMS
 后保留 89,565 个结果，WholeBody AP 为 0.4369、AR 为 0.5646.板端常驻 C++ 流程的
 平均预处理、NPU、后处理耗时分别为 2.7740 ms、3.8500 ms、1.0524 ms，峰值 RSS
 为 35,756 KB.完整分部指标和结果哈希见 `docs/accuracy.md`.

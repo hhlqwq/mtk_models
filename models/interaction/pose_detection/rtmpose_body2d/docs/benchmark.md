@@ -1,7 +1,7 @@
 # RTMPose Body2d 性能报告
 
 > 历史结果说明：本页数据来自 Qualcomm v0.61.0 预导出 FP32 ONNX 的 MTK 衍生模型,
-> 不属于待锁定的 OpenMMLab MMPose 上游正式交付结果.
+> 不属于当前已锁定的 OpenMMLab MMPose 上游正式交付链路.
 
 | 项目 | 数值 |
 | --- | --- |

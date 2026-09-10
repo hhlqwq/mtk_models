@@ -8,18 +8,18 @@
 输入: 1×3×224×224 RGB
 输出: 1×1000 classes
 设备: MediaTek Genio 720 EVK
-当前状态: 环境建设中（开源上游待锁定）
+当前状态: 环境建设中（官方权重已锁定,新 ONNX 尚未导出）
 ```
 
-> 迁移说明：本目录现有模型产物和结果来自 Qualcomm v0.61.0 预导出 ONNX,仅保留为
-> 历史工程证据.按照当前项目规范,正式交付必须从模型作者或官方开源项目的原始权重
-> 自行导出,因此旧结果不再计入当前交付状态.
+> 迁移说明：正式上游已改为 PyTorch Vision v0.15.1 的
+> `ViT_B_16_Weights.IMAGENET1K_V1`.本目录旧 Qualcomm v0.61.0 ONNX 产物和结果仅
+> 保留为历史工程证据,不计入当前交付状态.
 
 ## 目标执行流程
 
 ```bash
 cd /workspace/models/perception/image_classification/vit_base_patch16_224
-# 先锁定官方开源上游、版本、权重、许可证和 SHA-256.
+# 使用本地官方 .pth 权重离线校验并自行导出 ONNX.
 ./deploy/download_original.sh
 ./deploy/convert.sh
 ./deploy/build.sh
@@ -62,7 +62,7 @@ Qualcomm 显示名称与输出索引映射的差异数为 0. 可公开复核摘�
 
 | 环节 | 状态 | 证据 |
 | --- | --- | --- |
-| 官方开源上游 | 待锁定 | 源码、权重、许可证和 SHA-256 均不得猜测 |
+| 官方开源上游 | 已锁定 | PyTorch Vision v0.15.1、完整 SHA-256 已记录 |
 | 原始框架基线 | 待执行 | 必须使用最终锁定的开源权重 |
 | 自行导出 ONNX | 待执行 | 不得复用 Qualcomm 预导出 ONNX |
 | MTK 兼容 ONNX | 待执行 | 需要根据新 ONNX 重新分析图结构 |
@@ -71,17 +71,13 @@ Qualcomm 显示名称与输出索引映射的差异数为 0. 可公开复核摘�
 
 ## 转换兼容性与评测约束
 
-以下约束只描述历史 Qualcomm v0.61.0 图,不能直接套用于新的开源上游模型.
-该归档中的 `vit.onnx` 使用外部权重文件, IR v10 / opset 21,
-并包含 `Gelu` 和 `Reshape allowzero=1`. `download_original.sh` 会先校验归档
-SHA-256 并合并外部权重为原始 FP32 基线 `model_fp32.onnx`. 另生成
-`model_mtk_compatible.onnx`: 通过 `downgrade_onnx.py` 降级 IR/opset、清理安全的
-`allowzero` 属性, 并将 MTK TFLite 导出器不支持的精确 Gelu 改为标准 tanh 近似.
-脚本会用固定输入限制近似误差与 Top-1 漂移; 遇到动态 shape、包含 0 的
-`allowzero=1`、最大绝对 logit 偏差超过 0.025、平均绝对偏差超过 0.005 或
-Top-1 漂移时立即停止. 精度基线始终使用未近似的原始 FP32 ONNX.
+`download_original.sh` 只读取用户放置的官方 `.pth` 文件,校验完整 SHA-256 后通过
+TorchVision v0.15.1 自行导出两个 opset 17 模型：精确 GELU 的 `model_fp32.onnx`
+作为 FP32 基线,标准 tanh GELU 的 `model_mtk_compatible.onnx` 作为 MTK 转换候选.
+脚本使用固定随机输入限制最大绝对 logit 偏差、平均绝对偏差和 Top-1 漂移；任何一项
+超限都会停止.是否仍需其他 MTK 图改写,必须在 89 上实际导出后根据新图确认.
 
-Qualcomm ONNX 已在图内执行 mean/std 归一化, 外部输入固定为 NCHW RGB
+新导出 ONNX 在图内执行 TorchVision ImageNet mean/std 归一化,外部输入固定为 NCHW RGB
 float32 `[0,1]`. `convert.sh` 默认使用排序后的 ImageNet val 第 1001~1100 张
 校准, 与默认前 1000 张对齐评测子集错开. 已生成映射到模型输出顺序的 50,000 条
 0-based 标签. 正式绝对精度报告已同时披露完整 50,000 张指标, 以及排除其中 100 张
@@ -96,6 +92,6 @@ PTQ 校准图片后的 49,900 张独立指标; 默认 1000 张结果保留为早
 独立指标. 排除区间可通过 `ACCURACY_EXCLUDE_START` 和
 `ACCURACY_EXCLUDE_COUNT` 显式调整.
 
-原始 FP32 ONNX 的 opset 21 `Squeeze` 在当前 ONNX Runtime 1.18 CUDA Provider
-中没有匹配内核, 因此评测脚本默认显式使用 CPU Provider, 不允许静默回退.
-如后续环境已验证 CUDA 支持, 可设置 `FP32_PROVIDER=cuda` 并使用新的运行 ID.
+历史 Qualcomm v0.61.0 图的 IR/opset 降级、外部权重合并和 CUDA Provider 限制只保留
+为旧工程证据,不适用于新的 PyTorch Vision 导出模型.新模型需要使用新的运行 ID 重新
+完成 ONNX Runtime、MTK Converter、NCC 和板端验证.
