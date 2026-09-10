@@ -36,10 +36,10 @@ constexpr int kSimccYLength = 512;
 constexpr float kScalePadding = 1.25F;
 constexpr float kInputScale = 1.0F;
 constexpr int kInputZeroPoint = -128;
-constexpr float kOutputXScale = 0.006951121613383293F;
-constexpr int kOutputXZeroPoint = -24;
-constexpr float kOutputYScale = 0.007011394016444683F;
-constexpr int kOutputYZeroPoint = -20;
+constexpr float kOutputXScale = 0.007186536211520433F;
+constexpr int kOutputXZeroPoint = -22;
+constexpr float kOutputYScale = 0.007497822400182486F;
+constexpr int kOutputYZeroPoint = -14;
 
 struct Options {
   fs::path model;

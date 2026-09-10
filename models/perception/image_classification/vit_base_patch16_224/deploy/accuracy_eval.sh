@@ -8,7 +8,7 @@
 set -euo pipefail
 
 readonly PROJECT_ROOT="/data/users/hailong.he/github/mtk_models"
-readonly CONTAINER="hhl_g720_311"
+readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_311}"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
 readonly BOARD_ROOT="${MTK_BOARD_ROOT:-/root/hailong.he}"
 readonly MODEL_DIR="${PROJECT_ROOT}/models/perception/image_classification/vit_base_patch16_224"

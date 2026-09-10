@@ -8,7 +8,7 @@
 输入: 1×3×256×192 RGB
 输出: 133 个关节点的位置和置信度
 设备: MediaTek Genio 720 EVK
-当前状态: 环境建设中（官方权重已锁定,新 ONNX 尚未导出）
+当前状态: 转换与板端双图验证完成,正式 WholeBody 评测进行中
 ```
 
 > 迁移说明：正式上游已改为 OpenMMLab MMPose v1.3.2 的 RTMPose-M
@@ -45,10 +45,10 @@ Genio 720 所需的 `mdla5.3 + --suppress-output + --disallow-bridge`；部署�
 | --- | --- | --- |
 | OpenMMLab 官方上游 | 已锁定 | MMPose v1.3.2、官方配置、完整 SHA-256 和 MD5 已记录 |
 | 原始框架基线 | 待执行 | 必须使用最终锁定的开源权重 |
-| 自行导出 ONNX | 待执行 | 不得复用 Qualcomm 预导出 ONNX |
-| MTK 兼容 ONNX | 待执行 | 需要根据新 ONNX 重新分析图结构 |
-| MTK INT8 TFLite / DLA | 待执行 | 旧产物仅作历史对照 |
-| 板端 Demo、WholeBody AP 和性能 | 待执行 | 新模型必须使用新的运行 ID 完整复测 |
+| 自行导出 ONNX | 已完成 | 官方 `.pth` 经 MMPose v1.3.2 离线加载与导出 |
+| MTK 兼容 ONNX | 已完成 | 已清理 `allowzero` 并展开 GAU 广播,ONNX 输出逐元素一致 |
+| MTK INT8 TFLite / DLA | 已完成 | 100 个 COCO person 框校准并通过 `mdla5.3` 编译 |
+| 板端 Demo、WholeBody AP 和性能 | 部分完成 | 双图冒烟与 ONNX/NPU 对比完成,正式全量评测待固化 |
 
 ## 历史 Qualcomm 衍生验证记录
 
