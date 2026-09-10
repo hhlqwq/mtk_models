@@ -38,7 +38,9 @@ def prepare_mmcv_lite_import() -> None:
     try:
         __import__("mmcv._ext")
     except ModuleNotFoundError:
-        sys.modules["mmcv._ext"] = MissingMmcvOps("mmcv._ext")
+        stub = MissingMmcvOps("mmcv._ext")
+        stub.__file__ = "/virtual/mmcv/_ext.py"
+        sys.modules["mmcv._ext"] = stub
 
 
 prepare_mmcv_lite_import()
