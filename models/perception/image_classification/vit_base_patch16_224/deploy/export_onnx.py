@@ -9,7 +9,7 @@ import torch
 from torch import nn
 import torchvision
 from torch.onnx import register_custom_op_symbolic
-from torch.onnx.symbolic_helper import _get_tensor_sizes, parse_args
+from torch.onnx.symbolic_helper import _get_tensor_sizes, _is_none, parse_args
 from torchvision.models import vit_b_16
 
 
@@ -53,9 +53,59 @@ def export_unflatten(graph, tensor, dimension, sizes):
     return graph.op("Reshape", tensor, shape_tensor)
 
 
+@parse_args("v", "v", "v", "v", "f", "b")
+def export_scaled_dot_product_attention(
+        graph, query, key, value, attention_mask, dropout_probability,
+        is_causal):
+    """导出 ViT 评估模式使用的无掩码缩放点积注意力.
+
+    Args:
+        graph: Torch ONNX 导出计算图.
+        query: Query 张量.
+        key: Key 张量.
+        value: Value 张量.
+        attention_mask: 注意力掩码,当前模型必须为空.
+        dropout_probability: Dropout 概率,评估模式必须为 0.
+        is_causal: 是否使用 causal mask,当前模型必须为 False.
+
+    Returns:
+        由标准 ONNX 节点组成的注意力输出.
+
+    Raises:
+        RuntimeError: 导出参数不符合当前固定 ViT 推理图约束.
+    """
+    if not _is_none(attention_mask):
+        raise RuntimeError("ViT ONNX 导出暂不接受 attention mask.")
+    if dropout_probability != 0.0:
+        raise RuntimeError(
+            f"ViT ONNX 导出要求 dropout=0: {dropout_probability}")
+    if is_causal:
+        raise RuntimeError("ViT ONNX 导出不接受 causal attention.")
+    query_shape = _get_tensor_sizes(query)
+    key_shape = _get_tensor_sizes(key)
+    if (query_shape is None or key_shape is None or
+            query_shape[-1] is None or len(key_shape) < 2):
+        raise RuntimeError("ViT Attention 维度必须在导出阶段固定.")
+    key_rank = len(key_shape)
+    permutation = list(range(key_rank))
+    permutation[-2], permutation[-1] = permutation[-1], permutation[-2]
+    transposed_key = graph.op("Transpose", key, perm_i=permutation)
+    scores = graph.op("MatMul", query, transposed_key)
+    scale = float(query_shape[-1]) ** -0.5
+    scale_tensor = graph.op(
+        "Constant", value_t=torch.tensor(scale, dtype=torch.float32))
+    scaled_scores = graph.op("Mul", scores, scale_tensor)
+    probabilities = graph.op("Softmax", scaled_scores, axis_i=-1)
+    return graph.op("MatMul", probabilities, value)
+
+
 def register_export_symbolics() -> None:
     """注册 Torch 2.0.0 缺失且 ViT 导出所需的 ONNX 规则."""
     register_custom_op_symbolic("aten::unflatten", export_unflatten, 17)
+    register_custom_op_symbolic(
+        "aten::scaled_dot_product_attention",
+        export_scaled_dot_product_attention,
+        17)
 
 
 class NormalizedViT(nn.Module):
