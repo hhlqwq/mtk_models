@@ -7,9 +7,8 @@ from pathlib import Path
 import onnx
 import torch
 from torch import nn
+from torch.nn import functional as functional
 import torchvision
-from torch.onnx import register_custom_op_symbolic
-from torch.onnx.symbolic_helper import _get_tensor_sizes, _is_none, parse_args
 from torchvision.models import vit_b_16
 
 
@@ -17,95 +16,93 @@ EXPECTED_TORCHVISION_VERSION = "0.15.1"
 EXPECTED_WEIGHTS_SHA256 = (
     "c867db91d3e12c6cbadabb610d73c24a546bf82d8c03a9fea34f43a712ddb0e9")
 IMAGE_SIZE = 224
+PATCH_SIZE = 16
+TOKEN_COUNT = (IMAGE_SIZE // PATCH_SIZE) ** 2 + 1
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 
 
-@parse_args("v", "i", "is")
-def export_unflatten(graph, tensor, dimension, sizes):
-    """将 Torch 2.0 缺失的固定形状 Unflatten 导出为 ONNX Reshape.
+class ExportableSelfAttention(nn.Module):
+    """使用最高四维张量实现固定输入 ViT 自注意力."""
 
-    Args:
-        graph: Torch ONNX 导出计算图.
-        tensor: 待展开的输入张量.
-        dimension: 需要展开的维度.
-        sizes: 展开后的固定维度列表.
+    def __init__(self, attention: nn.MultiheadAttention) -> None:
+        """复用官方 MultiheadAttention 的全部投影参数.
 
-    Returns:
-        等价的 ONNX Reshape 节点输出.
+        Args:
+            attention: TorchVision ViT 中的原始自注意力层.
 
-    Raises:
-        RuntimeError: 输入形状或目标尺寸在导出阶段不可确定.
-    """
-    input_shape = _get_tensor_sizes(tensor)
-    if input_shape is None or any(value is None for value in input_shape):
-        raise RuntimeError("ViT Unflatten 输入形状必须在导出阶段固定.")
-    rank = len(input_shape)
-    normalized_dimension = dimension if dimension >= 0 else rank + dimension
-    if normalized_dimension < 0 or normalized_dimension >= rank:
-        raise RuntimeError(f"ViT Unflatten 维度越界: {dimension}")
-    if not sizes or any(not isinstance(value, int) for value in sizes):
-        raise RuntimeError(f"ViT Unflatten 目标尺寸必须为固定整数: {sizes}")
-    output_shape = list(input_shape)
-    output_shape[normalized_dimension:normalized_dimension + 1] = sizes
-    shape_tensor = graph.op(
-        "Constant", value_t=torch.tensor(output_shape, dtype=torch.int64))
-    return graph.op("Reshape", tensor, shape_tensor)
+        Raises:
+            ValueError: 注意力配置不符合当前固定 ViT-B/16 图.
+        """
+        super().__init__()
+        if not attention.batch_first or attention.in_proj_weight is None:
+            raise ValueError("ViT 自注意力必须使用 batch_first 和合并 QKV 权重.")
+        if attention.embed_dim % attention.num_heads:
+            raise ValueError("ViT embed_dim 必须能够整除 num_heads.")
+        self.embed_dim = attention.embed_dim
+        self.num_heads = attention.num_heads
+        self.head_dim = attention.embed_dim // attention.num_heads
+        self.in_proj_weight = attention.in_proj_weight
+        self.in_proj_bias = attention.in_proj_bias
+        self.out_proj = attention.out_proj
 
+    def forward(
+            self,
+            query: torch.Tensor,
+            key: torch.Tensor,
+            value: torch.Tensor,
+            key_padding_mask=None,
+            need_weights: bool = False,
+            attn_mask=None,
+            average_attn_weights: bool = True,
+            is_causal: bool = False) -> tuple[torch.Tensor, None]:
+        """执行固定 batch、token 数且无掩码的多头自注意力.
 
-@parse_args("v", "v", "v", "v", "f", "b")
-def export_scaled_dot_product_attention(
-        graph, query, key, value, attention_mask, dropout_probability,
-        is_causal):
-    """导出 ViT 评估模式使用的无掩码缩放点积注意力.
+        Args:
+            query: `[1,197,768]` 的输入张量.
+            key: 自注意力 Key,必须与 Query 相同.
+            value: 自注意力 Value,必须与 Query 相同.
+            key_padding_mask: 必须为空.
+            need_weights: 当前编码器必须不请求注意力权重.
+            attn_mask: 必须为空.
+            average_attn_weights: 保留接口兼容性,当前不使用.
+            is_causal: 必须为 False.
 
-    Args:
-        graph: Torch ONNX 导出计算图.
-        query: Query 张量.
-        key: Key 张量.
-        value: Value 张量.
-        attention_mask: 注意力掩码,当前模型必须为空.
-        dropout_probability: Dropout 概率,评估模式必须为 0.
-        is_causal: 是否使用 causal mask,当前模型必须为 False.
+        Returns:
+            注意力输出和空权重.
 
-    Returns:
-        由标准 ONNX 节点组成的注意力输出.
-
-    Raises:
-        RuntimeError: 导出参数不符合当前固定 ViT 推理图约束.
-    """
-    if not _is_none(attention_mask):
-        raise RuntimeError("ViT ONNX 导出暂不接受 attention mask.")
-    if dropout_probability != 0.0:
-        raise RuntimeError(
-            f"ViT ONNX 导出要求 dropout=0: {dropout_probability}")
-    if is_causal:
-        raise RuntimeError("ViT ONNX 导出不接受 causal attention.")
-    query_shape = _get_tensor_sizes(query)
-    key_shape = _get_tensor_sizes(key)
-    if (query_shape is None or key_shape is None or
-            query_shape[-1] is None or len(key_shape) < 2):
-        raise RuntimeError("ViT Attention 维度必须在导出阶段固定.")
-    key_rank = len(key_shape)
-    permutation = list(range(key_rank))
-    permutation[-2], permutation[-1] = permutation[-1], permutation[-2]
-    transposed_key = graph.op("Transpose", key, perm_i=permutation)
-    scores = graph.op("MatMul", query, transposed_key)
-    scale = float(query_shape[-1]) ** -0.5
-    scale_tensor = graph.op(
-        "Constant", value_t=torch.tensor(scale, dtype=torch.float32))
-    scaled_scores = graph.op("Mul", scores, scale_tensor)
-    probabilities = graph.op("Softmax", scaled_scores, axis_i=-1)
-    return graph.op("MatMul", probabilities, value)
+        Raises:
+            ValueError: 调用参数不符合固定推理图约束.
+        """
+        del key, value, average_attn_weights
+        if key_padding_mask is not None or attn_mask is not None:
+            raise ValueError("ViT 固定推理图不接受 attention mask.")
+        if need_weights or is_causal:
+            raise ValueError("ViT 固定推理图不输出权重且不使用 causal mask.")
+        projected = functional.linear(
+            query, self.in_proj_weight, self.in_proj_bias)
+        query_projection, key_projection, value_projection = projected.chunk(
+            3, dim=-1)
+        query_heads = query_projection.reshape(
+            1, TOKEN_COUNT, self.num_heads, self.head_dim).transpose(1, 2)
+        key_heads = key_projection.reshape(
+            1, TOKEN_COUNT, self.num_heads, self.head_dim).transpose(1, 2)
+        value_heads = value_projection.reshape(
+            1, TOKEN_COUNT, self.num_heads, self.head_dim).transpose(1, 2)
+        scores = torch.matmul(
+            query_heads, key_heads.transpose(-2, -1)) * self.head_dim ** -0.5
+        probabilities = torch.softmax(scores, dim=-1)
+        attended = torch.matmul(probabilities, value_heads)
+        merged = attended.transpose(1, 2).reshape(
+            1, TOKEN_COUNT, self.embed_dim)
+        return self.out_proj(merged), None
 
 
-def register_export_symbolics() -> None:
-    """注册 Torch 2.0.0 缺失且 ViT 导出所需的 ONNX 规则."""
-    register_custom_op_symbolic("aten::unflatten", export_unflatten, 17)
-    register_custom_op_symbolic(
-        "aten::scaled_dot_product_attention",
-        export_scaled_dot_product_attention,
-        17)
+def replace_self_attention(model: nn.Module) -> None:
+    """将 12 层原始注意力替换为 MTK 支持的四维等价实现."""
+    for layer in model.encoder.layers:
+        layer.self_attention = ExportableSelfAttention(
+            layer.self_attention)
 
 
 class NormalizedViT(nn.Module):
@@ -174,6 +171,19 @@ def load_model(weights_path: Path, approximate_gelu: bool) -> nn.Module:
             if isinstance(module, nn.GELU):
                 module.approximate = "tanh"
     model.eval()
+    generator = torch.Generator().manual_seed(20260910)
+    validation_input = torch.rand(
+        1, 3, IMAGE_SIZE, IMAGE_SIZE, generator=generator)
+    with torch.inference_mode():
+        reference_output = model(validation_input)
+    replace_self_attention(model)
+    with torch.inference_mode():
+        rewritten_output = model(validation_input)
+    max_abs = float((reference_output - rewritten_output).abs().max())
+    if max_abs > 1e-4:
+        raise ValueError(
+            f"ViT 四维注意力改写偏差超限: max_abs={max_abs:.8g}")
+    print(f"[VERIFY] ViT 四维注意力改写: max_abs={max_abs:.8g}")
     return NormalizedViT(model).eval()
 
 
@@ -222,7 +232,6 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     """依次导出精确基线和 MTK 兼容候选模型."""
     args = parse_args()
-    register_export_symbolics()
     print("[1/2] 导出官方精确 GELU 基线 ONNX.")
     export_model(args.weights, args.reference_output, False)
     print("[2/2] 导出 tanh GELU 的 MTK 兼容候选 ONNX.")
