@@ -3,11 +3,46 @@
 import argparse
 import hashlib
 from pathlib import Path
+import sys
+import types
 
 import mmpose
 import onnx
 import torch
 from torch import nn
+
+
+class MissingMmcvOps(types.ModuleType):
+    """为未使用的 MMCV 扩展符号提供失败即停的导入占位."""
+
+    def __getattr__(self, name: str):
+        """返回一旦调用就明确失败的扩展函数.
+
+        Args:
+            name: MMCV 扩展函数名称.
+
+        Returns:
+            不可调用的占位函数.
+        """
+        def unavailable(*args, **kwargs):
+            """阻止 RTMPose 导出静默调用未安装的 MMCV 扩展."""
+            del args, kwargs
+            raise RuntimeError(
+                f"RTMPose 导出意外调用未安装的 MMCV 扩展: {name}")
+
+        return unavailable
+
+
+def prepare_mmcv_lite_import() -> None:
+    """允许 MMPose 注册无关模型,但禁止实际调用缺失的 MMCV 扩展."""
+    try:
+        __import__("mmcv._ext")
+    except ModuleNotFoundError:
+        sys.modules["mmcv._ext"] = MissingMmcvOps("mmcv._ext")
+
+
+prepare_mmcv_lite_import()
+
 from mmpose.apis import init_model
 
 
