@@ -8,6 +8,8 @@ import onnx
 import torch
 from torch import nn
 import torchvision
+from torch.onnx import register_custom_op_symbolic
+from torch.onnx.symbolic_helper import _get_tensor_sizes, parse_args
 from torchvision.models import vit_b_16
 
 
@@ -17,6 +19,43 @@ EXPECTED_WEIGHTS_SHA256 = (
 IMAGE_SIZE = 224
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
+
+
+@parse_args("v", "i", "is")
+def export_unflatten(graph, tensor, dimension, sizes):
+    """将 Torch 2.0 缺失的固定形状 Unflatten 导出为 ONNX Reshape.
+
+    Args:
+        graph: Torch ONNX 导出计算图.
+        tensor: 待展开的输入张量.
+        dimension: 需要展开的维度.
+        sizes: 展开后的固定维度列表.
+
+    Returns:
+        等价的 ONNX Reshape 节点输出.
+
+    Raises:
+        RuntimeError: 输入形状或目标尺寸在导出阶段不可确定.
+    """
+    input_shape = _get_tensor_sizes(tensor)
+    if input_shape is None or any(value is None for value in input_shape):
+        raise RuntimeError("ViT Unflatten 输入形状必须在导出阶段固定.")
+    rank = len(input_shape)
+    normalized_dimension = dimension if dimension >= 0 else rank + dimension
+    if normalized_dimension < 0 or normalized_dimension >= rank:
+        raise RuntimeError(f"ViT Unflatten 维度越界: {dimension}")
+    if not sizes or any(not isinstance(value, int) for value in sizes):
+        raise RuntimeError(f"ViT Unflatten 目标尺寸必须为固定整数: {sizes}")
+    output_shape = list(input_shape)
+    output_shape[normalized_dimension:normalized_dimension + 1] = sizes
+    shape_tensor = graph.op(
+        "Constant", value_t=torch.tensor(output_shape, dtype=torch.int64))
+    return graph.op("Reshape", tensor, shape_tensor)
+
+
+def register_export_symbolics() -> None:
+    """注册 Torch 2.0.0 缺失且 ViT 导出所需的 ONNX 规则."""
+    register_custom_op_symbolic("aten::unflatten", export_unflatten, 17)
 
 
 class NormalizedViT(nn.Module):
@@ -133,6 +172,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     """依次导出精确基线和 MTK 兼容候选模型."""
     args = parse_args()
+    register_export_symbolics()
     print("[1/2] 导出官方精确 GELU 基线 ONNX.")
     export_model(args.weights, args.reference_output, False)
     print("[2/2] 导出 tanh GELU 的 MTK 兼容候选 ONNX.")
