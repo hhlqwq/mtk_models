@@ -10,6 +10,7 @@ readonly BOARD_ROOT="${MTK_BOARD_ROOT:-/root/hailong.he}"
 readonly BOARD_MODEL_DIR="${BOARD_ROOT}/rtmpose_body2d_cpp"
 readonly BOARD_DATASET="${BOARD_ROOT}/datasets/coco/val2017"
 readonly COCO_ROOT="${COCO_ROOT:-/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017}"
+readonly CONTAINER_COCO_ROOT="${CONTAINER_COCO_ROOT:-/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017}"
 readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)}"
 readonly BOARD_OUTPUT="${BOARD_MODEL_DIR}/runs/${RUN_ID}"
 readonly BOARD_SMOKE="${BOARD_MODEL_DIR}/runs/${RUN_ID}_smoke"
@@ -18,6 +19,7 @@ readonly WORK_DIR="${MODEL_ROOT}/.eval/rtmpose_body2d"
 readonly MANIFEST="${WORK_DIR}/person_detections.tsv"
 readonly BINARY="${SCRIPT_DIR}/inference_demo/rtmpose_board_eval"
 readonly ANNOTATIONS="${COCO_ROOT}/annotations/coco_wholebody_val_v1.0.json"
+readonly CONTAINER_ANNOTATIONS="${CONTAINER_COCO_ROOT}/annotations/coco_wholebody_val_v1.0.json"
 readonly DETECTIONS="${COCO_ROOT}/person_detection_results/COCO_val2017_detections_AP_H_56_person.json"
 readonly EVALUATOR="${SCRIPT_DIR}/inference_demo/evaluate_coco_wholebody.py"
 readonly CONTAINER_NAME="${MTK_G720_CONTAINER:-hhl_g720_311}"
@@ -97,7 +99,7 @@ echo "[8/9] 在固定 G720 容器中计算 COCO-WholeBody AP/AR."
 docker exec "${CONTAINER_NAME}" python3 -c "import xtcocotools"
 docker exec -w /workspace "${CONTAINER_NAME}" python3 \
     "${CONTAINER_MODEL_ROOT}/deploy/inference_demo/evaluate_coco_wholebody.py" \
-    --annotations "${ANNOTATIONS}" \
+    --annotations "${CONTAINER_ANNOTATIONS}" \
     --predictions "${CONTAINER_MODEL_ROOT}/examples/output/board_cpp_accuracy/${RUN_ID}/predictions.jsonl" \
     --formatted "${CONTAINER_MODEL_ROOT}/examples/output/board_cpp_accuracy/${RUN_ID}/wholebody_predictions.json" \
     --metrics "${CONTAINER_MODEL_ROOT}/examples/output/board_cpp_accuracy/${RUN_ID}/coco_wholebody_metrics.json" \
