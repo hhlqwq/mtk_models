@@ -2,6 +2,7 @@
 
 import argparse
 import hashlib
+import importlib.machinery
 from pathlib import Path
 import sys
 import types
@@ -40,6 +41,8 @@ def prepare_mmcv_lite_import() -> None:
     except ModuleNotFoundError:
         stub = MissingMmcvOps("mmcv._ext")
         stub.__file__ = "/virtual/mmcv/_ext.py"
+        stub.__spec__ = importlib.machinery.ModuleSpec(
+            "mmcv._ext", loader=None)
         sys.modules["mmcv._ext"] = stub
 
 
