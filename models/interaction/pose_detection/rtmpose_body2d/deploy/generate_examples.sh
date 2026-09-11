@@ -16,27 +16,18 @@ readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 test "$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 3
 test -f "${INPUT_DIR}/annotations.json"
 docker exec "${CONTAINER}" sh -c \
-    "rm -rf \
-      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated' \
-      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/board_raw' \
-      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/public' && \
-     mkdir -p \
-      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated' \
-      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/board_raw' \
-      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/public' && \
-     chmod 0777 \
-      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated' \
-      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/board_raw' \
-      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/public'"
+    "rm -rf '${WORK_DIR}' '${RAW_DIR}' '${OUTPUT_DIR}' && \
+     mkdir -p '${WORK_DIR}' '${RAW_DIR}' '${OUTPUT_DIR}' && \
+     chmod 0777 '${WORK_DIR}' '${RAW_DIR}' '${OUTPUT_DIR}'"
 
 echo "[1/6] 使用公开人体框生成三份 INT8 输入."
 docker exec "${CONTAINER}" python3 \
-    "/workspace/models/interaction/pose_detection/rtmpose_body2d/deploy/inference_demo/prepare_input.py" \
-    --image-dir "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/public" \
-    --annotations "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/public/annotations.json" \
-    --tflite "/workspace/models/interaction/pose_detection/rtmpose_body2d/models/model_int8.tflite" \
-    --output-dir "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated" \
-    --metadata "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated/metadata.json" \
+    "${MODEL_ROOT}/deploy/inference_demo/prepare_input.py" \
+    --image-dir "${INPUT_DIR}" \
+    --annotations "${INPUT_DIR}/annotations.json" \
+    --tflite "${MODEL_ROOT}/models/model_int8.tflite" \
+    --output-dir "${WORK_DIR}" \
+    --metadata "${WORK_DIR}/metadata.json" \
     --selection-mode all --count 3
 echo "[2/6] 创建干净的板端三图运行目录."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
@@ -53,17 +44,17 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
 scp "${SSH_OPTIONS[@]}" "${BOARD_HOST}:${BOARD_DIR}/output/*.bin" "${RAW_DIR}/"
 echo "[5/6] 反量化 SimCC 输出并生成 133 点结果."
 docker exec "${CONTAINER}" python3 \
-    "/workspace/models/interaction/pose_detection/rtmpose_body2d/deploy/inference_demo/postprocess_keypoints.py" \
-    --metadata "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated/metadata.json" \
-    --input-dir "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated" \
-    --output-dir "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/board_raw" \
-    --result-dir "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/public"
+    "${MODEL_ROOT}/deploy/inference_demo/postprocess_keypoints.py" \
+    --metadata "${WORK_DIR}/metadata.json" \
+    --input-dir "${WORK_DIR}" \
+    --output-dir "${RAW_DIR}" \
+    --result-dir "${OUTPUT_DIR}"
 echo "[6/6] 比较 FP32 ONNX 与板端 NPU 输出."
 docker exec "${CONTAINER}" python3 \
-    "/workspace/models/interaction/pose_detection/rtmpose_body2d/deploy/inference_demo/compare_backends.py" \
-    --onnx "/workspace/models/interaction/pose_detection/rtmpose_body2d/models/model_mtk_compatible.onnx" \
-    --metadata "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated/metadata.json" \
-    --input-dir "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated" \
-    --output-dir "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/board_raw" \
-    --result "/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/public/backend_comparison.json"
+    "${MODEL_ROOT}/deploy/inference_demo/compare_backends.py" \
+    --onnx "${MODEL_ROOT}/models/model_mtk_compatible.onnx" \
+    --metadata "${WORK_DIR}/metadata.json" \
+    --input-dir "${WORK_DIR}" \
+    --output-dir "${RAW_DIR}" \
+    --result "${OUTPUT_DIR}/backend_comparison.json"
 echo "[OK] RTMPose 三张公开图片已在 Genio 720 完成测试: ${OUTPUT_DIR}"

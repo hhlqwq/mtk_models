@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-readonly MODEL_ROOT="/workspace/models/perception/image_classification/vit_base_patch16_224"
+readonly MODEL_ROOT="/data/users/hailong.he/github/mtk_models/models/perception/image_classification/vit_base_patch16_224"
 # NAS 原始目录内离线解包的 ImageNet val 图片.
 readonly CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ILSVRC2012/val"
 

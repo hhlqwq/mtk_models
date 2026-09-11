@@ -48,13 +48,13 @@ D:\code\github\mtk_models\models\perception\object_detection\yolov5s\models\yolo
 
 ```bash
 cd /data/users/hailong.he/github/mtk_models
-docker exec -it hhl_g720_311 bash
+docker exec -it hhl_g720_8011 bash
 ```
 
-宿主机仓库以可写方式映射到 Docker 内的 `/workspace`.进入容器后执行：
+宿主机仓库以完全相同的绝对路径映射到 Docker.进入容器后执行：
 
 ```bash
-cd /workspace/models/perception/object_detection/yolov5s
+cd /data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s
 bash ./deploy/download_original.sh
 bash ./deploy/convert.sh
 bash ./deploy/build.sh
@@ -161,7 +161,7 @@ Genio 720 的转换、Demo、板端性能、三后端正式精度和文档证据
 
 YOLOv5s 只有同时完成以下项目才视为交付完成：
 
-1. 在 `hhl_g720_311` 中生成 TorchScript、FP32 ONNX、INT8 TFLite 和 DLA.
+1. 在 `hhl_g720_8011` 中生成 TorchScript、FP32 ONNX、INT8 TFLite 和 DLA.
 2. 在 92 的 Genio 720 EVK 上加载 DLA 并完成真实图片推理和检测框后处理.
 3. 报告预处理、纯 NPU、后处理及端到端延迟,并记录峰值内存.
 4. 使用同一 COCO val2017 评测集分别测量 PyTorch、ONNX 和 MTK NPU 的 mAP.

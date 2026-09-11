@@ -23,7 +23,7 @@ WholeBody 精度评测则固定使用 Faster R-CNN 检测框,具体协议见“�
 ## 目标执行流程
 
 ```bash
-cd /workspace/models/interaction/pose_detection/rtmpose_body2d
+cd /data/users/hailong.he/github/mtk_models/models/interaction/pose_detection/rtmpose_body2d
 # 使用本地官方 .pth 权重离线校验并自行导出 ONNX.
 ./deploy/download_original.sh
 ./deploy/convert.sh

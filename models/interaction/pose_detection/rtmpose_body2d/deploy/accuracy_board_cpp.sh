@@ -23,7 +23,7 @@ readonly CONTAINER_ANNOTATIONS="${CONTAINER_COCO_ROOT}/annotations/coco_wholebod
 readonly DETECTIONS="${COCO_ROOT}/person_detection_results/COCO_val2017_detections_AP_H_56_person.json"
 readonly EVALUATOR="${SCRIPT_DIR}/inference_demo/evaluate_coco_wholebody.py"
 readonly CONTAINER_NAME="${MTK_G720_CONTAINER:-hhl_g720_8011}"
-readonly CONTAINER_MODEL_ROOT="/workspace/models/interaction/pose_detection/rtmpose_body2d"
+readonly CONTAINER_MODEL_ROOT="${MODEL_ROOT}"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
 if [[ ! "${RUN_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
@@ -97,7 +97,7 @@ scp "${SSH_OPTIONS[@]}" \
 
 echo "[8/9] 在固定 G720 容器中计算 COCO-WholeBody AP/AR."
 docker exec "${CONTAINER_NAME}" python3 -c "import xtcocotools"
-docker exec -w /workspace "${CONTAINER_NAME}" python3 \
+docker exec -w "${REPO_ROOT}" "${CONTAINER_NAME}" python3 \
     "${CONTAINER_MODEL_ROOT}/deploy/inference_demo/evaluate_coco_wholebody.py" \
     --annotations "${CONTAINER_ANNOTATIONS}" \
     --predictions "${CONTAINER_MODEL_ROOT}/examples/output/board_cpp_accuracy/${RUN_ID}/predictions.jsonl" \

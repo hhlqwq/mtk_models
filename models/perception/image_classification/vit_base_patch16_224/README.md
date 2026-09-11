@@ -18,7 +18,7 @@
 ## 目标执行流程
 
 ```bash
-cd /workspace/models/perception/image_classification/vit_base_patch16_224
+cd /data/users/hailong.he/github/mtk_models/models/perception/image_classification/vit_base_patch16_224
 # 使用本地官方 .pth 权重离线校验并自行导出 ONNX.
 ./deploy/download_original.sh
 ./deploy/convert.sh
@@ -42,7 +42,7 @@ FP32 ONNX / MTK NPU INT8 绝对精度评测, 并单独报告排除 100 张 PTQ �
 将文件放入 `original/imagenet_eval/`, 在 89 容器中执行:
 
 ```bash
-python /workspace/tools/accuracy/imagenet_val_labels.py \
+python /data/users/hailong.he/github/mtk_models/tools/accuracy/imagenet_val_labels.py \
     --devkit original/imagenet_eval/ILSVRC2012_devkit_t12.tar.gz \
     --class-index original/imagenet_eval/imagenet_class_index.json \
     --qualcomm-labels original/labels.txt \

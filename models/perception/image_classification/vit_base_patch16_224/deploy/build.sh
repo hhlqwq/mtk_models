@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-readonly MODEL_ROOT="${MODEL_ROOT:-/workspace/models/perception/image_classification/vit_base_patch16_224}"
+readonly MODEL_ROOT="${MODEL_ROOT:-/data/users/hailong.he/github/mtk_models/models/perception/image_classification/vit_base_patch16_224}"
 readonly NP_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211"
 readonly NCC_BIN="${NP_ROOT}/neuron_sdk/host/bin/ncc-tflite"
 # MT8189 (Genio 720) 的 NPU 为 MDLA 5.3 且无 EDPA 硬件, 与 YOLOv5s 相同的

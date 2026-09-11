@@ -14,9 +14,8 @@ readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
 test "$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 3
 docker exec "${CONTAINER}" sh -c \
-    "rm -rf '/workspace/models/perception/object_detection/yolov5s/examples/output/public' && \
-     mkdir -p '/workspace/models/perception/object_detection/yolov5s/examples/output/public' && \
-     chmod 0777 '/workspace/models/perception/object_detection/yolov5s/examples/output/public'"
+    "rm -rf '${OUTPUT_DIR}' && mkdir -p '${OUTPUT_DIR}' && \
+     chmod 0777 '${OUTPUT_DIR}'"
 
 echo "[1/6] 交叉编译 Genio 720 推理器."
 bash "${SCRIPT_DIR}/build_board_cpp.sh"
@@ -40,9 +39,9 @@ scp "${SSH_OPTIONS[@]}" "${BOARD_HOST}:${BOARD_DIR}/output/predictions.jsonl" \
     "${OUTPUT_DIR}/"
 echo "[6/6] 生成检测框图片和单图 JSON."
 docker exec "${CONTAINER}" python3 \
-    "/workspace/models/perception/object_detection/yolov5s/deploy/inference_demo/render_examples.py" \
-    --input-dir "/workspace/models/perception/object_detection/yolov5s/examples/input/public" \
-    --predictions "/workspace/models/perception/object_detection/yolov5s/examples/output/public/predictions.jsonl" \
-    --output-dir "/workspace/models/perception/object_detection/yolov5s/examples/output/public" \
+    "${MODEL_ROOT}/deploy/inference_demo/render_examples.py" \
+    --input-dir "${INPUT_DIR}" \
+    --predictions "${OUTPUT_DIR}/predictions.jsonl" \
+    --output-dir "${OUTPUT_DIR}" \
     --count 3
 echo "[OK] YOLOv5s 三张公开图片已在 Genio 720 完成测试: ${OUTPUT_DIR}"

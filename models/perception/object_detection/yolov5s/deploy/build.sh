@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-readonly MODEL_ROOT="${MODEL_ROOT:-/workspace/models/perception/object_detection/yolov5s}"
+readonly MODEL_ROOT="${MODEL_ROOT:-/data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s}"
 readonly NCC_BIN="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/bin/ncc-tflite"
 readonly NCC_LIB="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/lib"
 # MT8189 (Genio 720) 的 NPU 为 MDLA 5.3, 板端 neuronrt 8.2.16 不支持 mdla3.0.

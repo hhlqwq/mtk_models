@@ -7,4 +7,5 @@ cd "${PROJECT_ROOT}"
 echo "[BUILD] 构建 Ubuntu 预装镜像, MTK SDK 使用服务器本地文件."
 docker buildx build --load --progress=plain --network host \
     --build-context "sdk=${SDK_DIR}" \
-    --tag hhl_g720_311:ubuntu22.04-np8.0.11 --file docker/Dockerfile docker
+    --tag openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11 \
+    --file docker/Dockerfile docker

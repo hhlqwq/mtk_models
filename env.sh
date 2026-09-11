@@ -9,7 +9,7 @@ export MTK_NCC_BIN="${MTK_NP_ROOT}/neuron_sdk/host/bin"
 export MTK_NCC_LIB="${MTK_NP_ROOT}/neuron_sdk/host/lib"
 export MTK_BOARD_HOST="root@192.168.0.92"
 export MTK_BOARD_ROOT="/root/hailong.he"
-export MTK_CONTAINER_NAME="hhl_g720_311"
+export MTK_CONTAINER_NAME="hhl_g720_8011"
 
 export PATH="${MTK_NCC_BIN}:${PATH}"
 export LD_LIBRARY_PATH="${MTK_NCC_LIB}:${LD_LIBRARY_PATH:-}"

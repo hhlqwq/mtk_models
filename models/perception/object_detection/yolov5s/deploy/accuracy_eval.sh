@@ -6,15 +6,15 @@
 set -euo pipefail
 
 readonly PROJECT_ROOT="/data/users/hailong.he/github/mtk_models"
-readonly CONTAINER="hhl_g720_311"
+readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
 readonly BOARD_ROOT="${MTK_BOARD_ROOT:-/root/hailong.he}"
 readonly MODEL_DIR="${PROJECT_ROOT}/models/perception/object_detection/yolov5s"
 readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
 readonly WORK_BASE="${PROJECT_ROOT}/.eval/yolov5s/runs"
 readonly WORK="${WORK_BASE}/${RUN_ID}"
-readonly WORK_C="/workspace/.eval/yolov5s/runs/${RUN_ID}"
-readonly EVAL_PY="/workspace/tools/accuracy/yolov5s_val_coco.py"
+readonly WORK_C="${WORK}"
+readonly EVAL_PY="${PROJECT_ROOT}/tools/accuracy/yolov5s_val_coco.py"
 readonly TOTAL="${TOTAL:-5000}"
 readonly CHUNK="${CHUNK:-500}"
 readonly STAGE="${1:-all}"

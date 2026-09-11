@@ -12,7 +12,7 @@ readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
 readonly BOARD_ROOT="${MTK_BOARD_ROOT:-/root/hailong.he}"
 readonly MODEL_DIR="${PROJECT_ROOT}/models/perception/image_classification/vit_base_patch16_224"
-readonly EVAL_PY="/workspace/tools/accuracy/vit_val_agreement.py"
+readonly EVAL_PY="${PROJECT_ROOT}/tools/accuracy/vit_val_agreement.py"
 readonly START="${START:-0}"
 readonly TOTAL="${TOTAL:-1000}"
 readonly CHUNK="${CHUNK:-500}"
@@ -35,7 +35,7 @@ if [[ ! "${EVAL_RUN_ID}" =~ ^[A-Za-z0-9._-]+$ ]]; then
 fi
 readonly EVAL_RUN_ID
 readonly WORK="${PROJECT_ROOT}/.eval/vit_base_patch16_224/runs/${EVAL_RUN_ID}"
-readonly WORK_C="/workspace/.eval/vit_base_patch16_224/runs/${EVAL_RUN_ID}"
+readonly WORK_C="${WORK}"
 readonly BOARD_EVAL="${BOARD_ROOT}/vit_eval/runs/${EVAL_RUN_ID}"
 readonly RUN_CONFIG="${WORK}/run_inputs_sha256.txt"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
@@ -136,7 +136,7 @@ run_compare() {
         docker_run --stage compare --start "${START}" --count "${TOTAL}" \
             --exclude-accuracy-start "${ACCURACY_EXCLUDE_START}" \
             --exclude-accuracy-count "${ACCURACY_EXCLUDE_COUNT}" \
-            --labels "${IMAGENET_LABELS/#${PROJECT_ROOT}/\/workspace}"
+            --labels "${IMAGENET_LABELS}"
     else
         docker_run --stage compare --start "${START}" --count "${TOTAL}"
     fi

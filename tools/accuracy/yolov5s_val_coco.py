@@ -20,6 +20,8 @@ import torch
 import tqdm
 from torchvision.ops import batched_nms
 
+PROJECT_ROOT = Path("/data/users/hailong.he/github/mtk_models")
+
 COCO_91_CLASSES = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     22, 23, 24, 25, 27, 28, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,
@@ -400,22 +402,19 @@ def parse_args() -> argparse.Namespace:
                                      "open_source/raw/coco/coco_val2017/"
                                      "annotations/instances_val2017.json"))
     parser.add_argument("--tflite", type=Path,
-                        default=Path("/workspace/models/perception/"
-                                     "object_detection/yolov5s/models/"
-                                     "model_int8.tflite"))
+                        default=PROJECT_ROOT / "models/perception/"
+                        "object_detection/yolov5s/models/model_int8.tflite")
     parser.add_argument("--onnx", type=Path,
-                        default=Path("/workspace/models/perception/"
-                                     "object_detection/yolov5s/models/"
-                                     "model_fp32.onnx"))
+                        default=PROJECT_ROOT / "models/perception/"
+                        "object_detection/yolov5s/models/model_fp32.onnx")
     parser.add_argument("--weights", type=Path,
-                        default=Path("/workspace/models/perception/"
-                                     "object_detection/yolov5s/models/"
-                                     "yolov5s.pt"))
+                        default=PROJECT_ROOT / "models/perception/"
+                        "object_detection/yolov5s/models/yolov5s.pt")
     parser.add_argument("--source-dir", type=Path,
-                        default=Path("/workspace/models/perception/"
-                                     "object_detection/yolov5s/original/yolov5"))
+                        default=PROJECT_ROOT / "models/perception/"
+                        "object_detection/yolov5s/original/yolov5")
     parser.add_argument("--work-dir", type=Path,
-                        default=Path("/workspace/.eval/yolov5s"))
+                        default=PROJECT_ROOT / ".eval/yolov5s")
     parser.add_argument("--bins-dir", type=Path, default=None)
     parser.add_argument("--manifest", type=Path, default=None)
     parser.add_argument("--result", type=Path, default=None)

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-readonly MODEL_ROOT="/workspace/models/perception/object_detection/yolov5s"
+readonly MODEL_ROOT="/data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s"
 readonly CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images"
 readonly SOURCE_DIR="${MODEL_ROOT}/original/yolov5"
 readonly CONSTRAINTS_FILE="${MODEL_ROOT}/deploy/constraints-py311.txt"

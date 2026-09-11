@@ -16,6 +16,8 @@ import cv2
 import numpy as np
 import tqdm
 
+PROJECT_ROOT = Path("/data/users/hailong.he/github/mtk_models")
+
 
 def preprocess(image: np.ndarray, crop_size: int = 224,
                resize_size: int = 256) -> np.ndarray:
@@ -303,20 +305,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--stage", required=True,
                         choices=["prepare", "compare"])
     parser.add_argument("--work-dir", type=Path,
-                        default=Path("/workspace/.eval/vit_base_patch16_224"))
+                        default=PROJECT_ROOT / ".eval/vit_base_patch16_224")
     parser.add_argument("--images-dir", type=Path,
                         default=Path("/data/users/hailong.he/nas_smb/Datasets/"
                                      "open_source/raw/ILSVRC2012/val"))
     parser.add_argument("--tflite", type=Path,
-                        default=Path("/workspace/models/perception/"
-                                     "image_classification/"
-                                     "vit_base_patch16_224/models/"
-                                     "model_int8.tflite"))
+                        default=PROJECT_ROOT / "models/perception/"
+                        "image_classification/vit_base_patch16_224/models/"
+                        "model_int8.tflite")
     parser.add_argument("--onnx", type=Path,
-                        default=Path("/workspace/models/perception/"
-                                     "image_classification/"
-                                     "vit_base_patch16_224/models/"
-                                     "model_fp32.onnx"))
+                        default=PROJECT_ROOT / "models/perception/"
+                        "image_classification/vit_base_patch16_224/models/"
+                        "model_fp32.onnx")
     parser.add_argument("--onnx-provider", choices=["cpu", "cuda"],
                         default="cuda")
     parser.add_argument("--labels", type=Path, default=None)

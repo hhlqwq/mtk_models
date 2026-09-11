@@ -67,6 +67,9 @@ ImageNet 或 COCO 原图的情况下直接展示“已经完成测试”.公开�
 | 板端系统 | Rity Demo 26.0-dev / Scarthgap / Linux 6.6.117 |
 | 板端 Neuron Runtime | 8.2.16 |
 
+89 宿主机和 G720 Docker 容器内的项目目录均固定为
+`/data/users/hailong.he/github/mtk_models`,路径完全一致.
+
 详细说明见 [环境文档](docs/environment.md)、[Genio 720 板端规范](docs/genio_720.md) 和
 [2026-09-07 官网与实际环境核对记录](docs/genio_720_environment_audit_20260907.md).
 

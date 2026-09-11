@@ -27,8 +27,8 @@
 
 ```text
 89 宿主: Ubuntu 24.04.4 LTS / Linux 6.8.0-136-generic
-当前镜像: hhl_g720_311:ubuntu22.04-np8.0.11 (006a427a61fd)
-当前容器: hhl_g720_311
+当前镜像: openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11 (9ac9238a70ec)
+当前容器: hhl_g720_8011
 当前容器系统: Ubuntu 22.04.5 LTS
 当前容器 GCC/G++: 11.4.0
 ```
@@ -52,7 +52,8 @@ Torch 2.0.0 位于普通 PyTorch Converter 的 `>=1.3,<2.6` 范围,但不在官�
 
 ## Docker 网络与镜像
 
-当前镜像为 `hhl_g720_311:ubuntu22.04-np8.0.11`.官网 Neuron SDK 页面推荐的主机系统只列出
+当前镜像为 `openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11`.官网 Neuron SDK
+页面推荐的主机系统只列出
 Ubuntu 14.04/16.04/18.04,因此 Ubuntu 22.04 应描述为“项目验证基线",不能描述为
 “官网明确支持".Ubuntu 22.04.5 容器已经完成工具版本、NCC、Torch CUDA 和 ONNX Runtime
 CUDA 运行验证.
@@ -68,6 +69,18 @@ NCC 8.2.31 需要 SDK 自带的 `libc++.so.1`.容器只在 `/usr/local/lib` 建�
 89 的 Docker 容器通过 `--gpus all` 使用 NVIDIA GPU.GPU 用于 PyTorch/ONNX 导出及基线
 精度评测；MTK Converter 8.16.0 的 INT8 PTQ 和 NCC 编译没有 CUDA 执行接口,仍使用 CPU.
 最终部署性能只统计 92 的 Genio 720 NPU,不能用 89 的 GPU 性能替代板端结果.
+
+## 项目目录映射
+
+G720 工具链容器与宿主机使用完全一致的项目绝对路径:
+
+```text
+宿主机: /data/users/hailong.he/github/mtk_models
+容器内: /data/users/hailong.he/github/mtk_models
+```
+
+容器创建脚本同时将该路径设置为默认工作目录.模型脚本、精度工具和文档不再使用
+`/workspace` 项目别名.
 
 Torch 2.0 CUDA 11.8 wheel 内的 NVRTC 动态库采用哈希文件名.模型转换脚本会在 wheel 自带
 库目录建立 `libnvrtc.so` 标准名软链接,并执行一次 CUDA `Conv2d`,防止只检查设备可见但

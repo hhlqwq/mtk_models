@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-readonly MODEL_ROOT="/workspace/models/perception/object_detection/yolov5s"
+readonly MODEL_ROOT="/data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s"
 readonly SOURCE_DIR="${MODEL_ROOT}/original/yolov5"
 readonly SOURCE_ARCHIVE="${MODEL_ROOT}/original/yolov5-485da42.zip"
 readonly SOURCE_ARCHIVE_ROOT="yolov5-485da42273839d20ea6bdaf142fd02c1027aba61"
