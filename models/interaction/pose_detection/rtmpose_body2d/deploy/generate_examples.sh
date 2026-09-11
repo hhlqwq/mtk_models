@@ -13,7 +13,7 @@ readonly RAW_DIR="${MODEL_ROOT}/examples/output/board_raw"
 readonly OUTPUT_DIR="${MODEL_ROOT}/examples/output/public"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
-test "$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 3
+test "$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 3
 test -f "${INPUT_DIR}/annotations.json"
 docker exec "${CONTAINER}" sh -c \
     "rm -rf \

@@ -12,13 +12,13 @@ readonly OUTPUT_DIR="${MODEL_ROOT}/examples/output/public"
 readonly BINARY="${SCRIPT_DIR}/inference_demo/yolov5s_board_eval"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
-test "$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 3
+test "$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 3
 docker exec "${CONTAINER}" sh -c \
     "rm -rf '/workspace/models/perception/object_detection/yolov5s/examples/output/public' && \
      mkdir -p '/workspace/models/perception/object_detection/yolov5s/examples/output/public' && \
      chmod 0777 '/workspace/models/perception/object_detection/yolov5s/examples/output/public'"
 
-echo "[1/6] 交叉编译支持 PNG 的 Genio 720 推理器."
+echo "[1/6] 交叉编译 Genio 720 推理器."
 bash "${SCRIPT_DIR}/build_board_cpp.sh"
 echo "[2/6] 创建干净的板端三图运行目录."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
@@ -26,7 +26,7 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
 echo "[3/6] 部署 DLA、C++ 推理器和三张公开图片."
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/models/model_int8.dla" "${BINARY}" \
     "${BOARD_HOST}:${BOARD_DIR}/"
-scp "${SSH_OPTIONS[@]}" "${INPUT_DIR}"/*.png \
+scp "${SSH_OPTIONS[@]}" "${INPUT_DIR}"/*.jpg \
     "${BOARD_HOST}:${BOARD_DIR}/images/"
 echo "[4/6] 在 Genio 720 执行三张图片推理."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \

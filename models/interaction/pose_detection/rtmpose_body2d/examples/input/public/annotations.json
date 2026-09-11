@@ -1,13 +1,13 @@
 {
   "images": [
-    {"id": 1, "file_name": "01_front_arms_extended.png", "width": 1024, "height": 1536},
-    {"id": 2, "file_name": "02_side_lunge.png", "width": 1024, "height": 1536},
-    {"id": 3, "file_name": "03_running_stride.png", "width": 1024, "height": 1536}
+    {"id": 1, "file_name": "01_front_arms_extended.jpg", "width": 853, "height": 1280},
+    {"id": 2, "file_name": "02_side_lunge.jpg", "width": 853, "height": 1280},
+    {"id": 3, "file_name": "03_running_stride.jpg", "width": 853, "height": 1280}
   ],
   "annotations": [
-    {"id": 1, "image_id": 1, "category_id": 1, "bbox": [28, 205, 965, 1000], "area": 965000, "iscrowd": 0},
-    {"id": 2, "image_id": 2, "category_id": 1, "bbox": [80, 70, 885, 1210], "area": 1070850, "iscrowd": 0},
-    {"id": 3, "image_id": 3, "category_id": 1, "bbox": [88, 55, 785, 1395], "area": 1095075, "iscrowd": 0}
+    {"id": 1, "image_id": 1, "category_id": 1, "bbox": [23, 171, 804, 833], "area": 669732, "iscrowd": 0},
+    {"id": 2, "image_id": 2, "category_id": 1, "bbox": [67, 58, 737, 1008], "area": 742896, "iscrowd": 0},
+    {"id": 3, "image_id": 3, "category_id": 1, "bbox": [73, 46, 654, 1163], "area": 760602, "iscrowd": 0}
   ],
   "categories": [
     {"id": 1, "name": "person", "supercategory": "person"}

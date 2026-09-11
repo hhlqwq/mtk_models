@@ -4,8 +4,9 @@
 
 | 文件 | 生成提示词摘要 |
 | --- | --- |
-| `01_front_arms_extended.png` | 单人正面站立并水平伸展双臂,全身无遮挡,纯色背景. |
-| `02_side_lunge.png` | 单人侧弓步并抬起一只手臂,全身无遮挡,纯色背景. |
-| `03_running_stride.png` | 单人自然跑步跨步姿态,全身无遮挡,纯色背景. |
+| `01_front_arms_extended.jpg` | 单人正面站立并水平伸展双臂,全身无遮挡,纯色背景. |
+| `02_side_lunge.jpg` | 单人侧弓步并抬起一只手臂,全身无遮挡,纯色背景. |
+| `03_running_stride.jpg` | 单人自然跑步跨步姿态,全身无遮挡,纯色背景. |
 
 `annotations.json` 记录三张图的人体框,用于 top-down RTMPose 输入裁剪.
+仓库版本统一缩放到长边 1280 像素并保存为质量 88 的 JPEG.

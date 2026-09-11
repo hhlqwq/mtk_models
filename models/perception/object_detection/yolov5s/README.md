@@ -144,7 +144,7 @@ Genio 720 的转换、Demo、板端性能、三后端正式精度和文档证据
 ## 公开三图示例
 
 `examples/input/public/` 提供室外交通、室内家具和公园人物三张项目生成的 CC0-1.0
-图片.执行 `bash deploy/generate_examples.sh` 会交叉编译支持 PNG 的板端 C++ 推理器,
+图片.执行 `bash deploy/generate_examples.sh` 会交叉编译板端 C++ 推理器,
 在 Genio 720 完成预处理、NPU 推理、解码和 NMS,并把检测框图片及 JSON 写入
 `examples/output/public/`.运行过程显示 1/3 至 3/3 的逐图进度.这些图片只用于结果展示,
 不替代完整 COCO val2017 mAP.
