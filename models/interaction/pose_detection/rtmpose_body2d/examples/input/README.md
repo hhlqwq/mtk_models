@@ -1,6 +1,5 @@
 # 输入样例
 
-放置公开授权的人体姿态图片和对应人体框信息,并记录来源.
-
-`DEMO_COUNT=5 bash deploy/deploy_board.sh` 默认从 COCO val2017 选择五个独立 person
-框,复制原图并生成量化输入到 `generated/`.原图默认不提交 Git.
+`public/` 固定保存三张项目生成的 CC0-1.0 单人全身图片和 `annotations.json` 人体框.
+执行 `bash deploy/generate_examples.sh` 会生成量化输入,并把三张图逐张送到 Genio 720
+NPU.公开原图和人体框纳入 Git;`generated/` 中间文件不提交.

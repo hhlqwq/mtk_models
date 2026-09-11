@@ -1,4 +1,4 @@
-"""将 YOLOv5s 板端 C++ 预测绘制到五张 COCO 图片."""
+"""将 YOLOv5s 板端 C++ 预测绘制到三张公开样例图片."""
 
 import argparse
 import json
@@ -42,9 +42,12 @@ def load_predictions(path: Path) -> dict[int, list[dict]]:
 
 
 def render(args: argparse.Namespace) -> None:
-    """生成五张检测可视化、单图 JSON 和汇总结果."""
+    """生成检测可视化、单图 JSON 和汇总结果."""
     predictions = load_predictions(args.predictions)
-    images = sorted(args.input_dir.glob("*.jpg"))[:args.count]
+    images = sorted(
+        path for path in args.input_dir.iterdir()
+        if path.suffix.lower() in {".jpg", ".jpeg", ".png"}
+    )[:args.count]
     args.output_dir.mkdir(parents=True, exist_ok=True)
     summary = []
     for position, image_path in enumerate(images, start=1):
@@ -77,7 +80,7 @@ def render(args: argparse.Namespace) -> None:
     (args.output_dir / "results.json").write_text(
         json.dumps({"samples": summary}, ensure_ascii=False, indent=2),
         encoding="utf-8")
-    print(f"[OK] YOLOv5s 五图示例: {args.output_dir}")
+    print(f"[OK] YOLOv5s 三图示例: {args.output_dir}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -86,7 +89,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input-dir", type=Path, required=True)
     parser.add_argument("--predictions", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--count", type=int, default=5)
+    parser.add_argument("--count", type=int, default=3)
     return parser.parse_args()
 
 

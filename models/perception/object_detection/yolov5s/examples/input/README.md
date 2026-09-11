@@ -1,6 +1,5 @@
 # 输入样例
 
-放置用于 Demo 的公开授权图片,并在模型卡记录来源与许可证.
-
-`bash deploy/generate_examples.sh` 默认从现有 COCO val2017 选择排序后的前五张图片,
-复制到 `generated/` 后在 Genio 720 推理.原图默认不提交 Git.
+`public/` 固定保存三张项目生成的 CC0-1.0 图片,覆盖室外交通、室内家具和公园人物场景.
+执行 `bash deploy/generate_examples.sh` 会交叉编译推理器,再把三张图送到 Genio 720,
+逐张显示推理进度.图片纳入 Git,不再复制 COCO val2017 原图.

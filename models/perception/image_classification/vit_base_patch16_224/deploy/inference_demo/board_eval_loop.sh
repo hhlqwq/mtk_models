@@ -6,6 +6,7 @@ set -eu
 DLA="$1"
 INPUTS="$2"
 OUTPUTS="$3"
+PROGRESS_INTERVAL="${4:-100}"
 NEURONRT=/usr/sbin/neuronrt
 
 mkdir -p "${OUTPUTS}"
@@ -26,8 +27,8 @@ for bin in "${INPUTS}"/*.bin; do
         exit 1
     fi
     count=$((count + 1))
-    if [ $((count % 100)) -eq 0 ]; then
-        echo "[board] ${count}/${total} done"
+    if [ $((count % PROGRESS_INTERVAL)) -eq 0 ] || [ "${count}" -eq "${total}" ]; then
+        echo "[BOARD] ${count}/${total} ${stem}"
     fi
 done
 [ "${count}" -eq "${total}" ]

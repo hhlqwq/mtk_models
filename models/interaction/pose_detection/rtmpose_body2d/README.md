@@ -54,6 +54,14 @@ Genio 720 所需的 `mdla5.3 + --suppress-output + --disallow-bridge`；部署�
 0.6569,NPU 平均耗时 3.8527 ms/框.详细分部指标、协议和边界见
 `docs/accuracy.md`、`docs/benchmark.md` 和 `docs/board_validation_20260911.json`.
 
+## 公开三图示例
+
+`examples/input/public/` 提供双臂平伸、侧弓步和跑步跨步三张项目生成的 CC0-1.0
+单人全身图片,并用 `annotations.json` 明确 top-down 输入人体框.执行
+`bash deploy/generate_examples.sh` 会在 Genio 720 NPU 逐张推理,把 133 点 JSON、关键点
+可视化和 FP32 ONNX 对比写入 `examples/output/public/`.运行过程显示 1/3 至 3/3 的逐图
+进度.这些图片仅用于直观展示,不替代正式 COCO-WholeBody AP/AR.
+
 ## 历史 Qualcomm 衍生验证记录
 
 历史版本化验证证据见 `docs/board_validation_20260909.json`.

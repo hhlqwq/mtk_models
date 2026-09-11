@@ -74,6 +74,13 @@ Qualcomm 显示名称与输出索引映射的差异数为 0. 可公开复核摘�
 49,900 张独立集的 NPU Top-1/Top-5 为 79.36%/94.68%.详细证据见
 `docs/accuracy.md` 和 `docs/imagenet_accuracy_20260911.json`.
 
+## 公开三图示例
+
+`examples/input/public/` 提供金毛犬、校车和浓缩咖啡三张项目生成的 CC0-1.0 图片.
+执行 `bash deploy/generate_examples.sh` 会在 Docker 内完成输入量化,在 Genio 720 NPU
+逐张推理,并把真实板端 Top-5 结果写入 `examples/output/public/`.运行过程显示 1/3 至
+3/3 的逐图进度.这些图片仅用于直观证明部署测试已完成,不计入 ImageNet 正式精度.
+
 ## 转换兼容性与评测约束
 
 `download_original.sh` 只读取用户放置的官方 `.pth` 文件,校验完整 SHA-256 后通过

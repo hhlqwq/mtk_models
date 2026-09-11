@@ -56,6 +56,10 @@ datasets/
 **/examples/output/*
 !**/examples/input/README.md
 !**/examples/output/README.md
+!**/examples/input/public/
+!**/examples/input/public/**
+!**/examples/output/public/
+!**/examples/output/public/**
 
 # 保留空模型目录说明.
 !**/models/README.md

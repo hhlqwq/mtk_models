@@ -1,7 +1,6 @@
 # 输出样例
 
-保存板端 `top5.json`、原始输出、性能日志、Runtime/系统信息、CPU 频率、峰值 RSS
-和输入/DLA 哈希. 生成文件默认不提交 Git, 验证结果摘要写入 `docs/`.
+`public/` 保存三份板端 Top-5 JSON、三张带 Top-5 面板的图片和汇总 `results.json`,
+作为 Genio 720 已完成真实图片推理的公开展示证据,这些文件纳入 Git.
 
-`generated/` 包含五份 `sample_*_top5.json`、五张带 Top-5 面板的
-`sample_*_top5.jpg` 和汇总 `results.json`.
+`board_raw/` 保存板端原始输出,仅用于结果再现且不提交 Git.正式精度证据仍见 `docs/`.

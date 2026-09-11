@@ -15,8 +15,9 @@ sys.path.insert(0, str(DEPLOY_DIR))
 from rtmpose_utils import load_person_samples, preprocess_image  # noqa: E402
 
 
-def find_demo_samples(annotations: Path, count: int) -> list[dict]:
-    """选择来自不同图片且面积较大的人体框作为稳定冒烟样本."""
+def find_demo_samples(annotations: Path, count: int,
+                      selection_mode: str) -> list[dict]:
+    """选择来自不同图片的人体框作为稳定冒烟样本."""
     samples = []
     for sample in load_person_samples(annotations):
         x, y, width, height = sample["bbox"]
@@ -28,11 +29,15 @@ def find_demo_samples(annotations: Path, count: int) -> list[dict]:
             x >= image_width * 0.01 and y >= image_height * 0.01 and
             x + width <= image_width * 0.99 and
             y + height <= image_height * 0.99)
-        if (is_inside and 0.05 <= area_ratio <= 0.50 and
-                1.4 <= aspect_ratio <= 4.0 and
-                width >= 64 and height >= 128):
+        is_stable = (is_inside and 0.05 <= area_ratio <= 0.50 and
+                     1.4 <= aspect_ratio <= 4.0 and
+                     width >= 64 and height >= 128)
+        if selection_mode == "all" or is_stable:
             samples.append(sample)
-    samples.sort(key=lambda item: (-item["area"], item["annotation_id"]))
+    if selection_mode == "stable":
+        samples.sort(key=lambda item: (-item["area"], item["annotation_id"]))
+    else:
+        samples.sort(key=lambda item: item["annotation_id"])
     selected = []
     image_ids = set()
     for sample in samples:
@@ -76,7 +81,8 @@ def prepare_inputs(args: argparse.Namespace) -> None:
     if len(output_details) != 2 or actual_shapes != expected_shapes:
         raise ValueError(f"TFLite 输出结构异常: {output_details}")
 
-    samples = find_demo_samples(args.annotations, args.count)
+    samples = find_demo_samples(
+        args.annotations, args.count, args.selection_mode)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     metadata = {
         "input": {
@@ -131,6 +137,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--metadata", type=Path, required=True)
     parser.add_argument("--count", type=int, default=2)
+    parser.add_argument(
+        "--selection-mode", choices=("stable", "all"), default="stable",
+        help="stable 使用 COCO 稳定框筛选,all 按标注顺序使用全部有效框.")
     return parser.parse_args()
 
 

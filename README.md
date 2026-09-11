@@ -30,6 +30,9 @@ Gen AI、Audio、SLAM、PointCloud 和 3D 八个 Scenario.完整机器可读清�
 YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打通目录、转换、MTK NPU
 部署、Demo、精度和性能报告闭环.
 
+三个先行模型各提供三张 CC0-1.0 典型图片及其 Genio 720 板端结果,便于在不分发
+ImageNet 或 COCO 原图的情况下直接展示“已经完成测试”.公开样例不替代正式数据集精度.
+
 ## 先行实现模型
 
 | 模型 | 任务 | 标准输入 | 来源 | 当前状态 |
@@ -37,6 +40,8 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 | [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics | 完整交付 |
 | [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 完整交付 |
 | [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | 完整交付 |
+
+公开三图结果分别位于各模型的 `examples/output/public/`,可通过模型 README 直接查看.
 
 状态只能使用以下四类：
 

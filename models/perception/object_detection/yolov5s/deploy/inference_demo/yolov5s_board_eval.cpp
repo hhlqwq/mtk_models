@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <filesystem>
@@ -204,11 +205,15 @@ int64_t GetPeakRssKb() {
     return options;
   }
 
-  // 返回目录中的 COCO JPEG 文件,并按文件名排序.
+  // 返回目录中的 JPEG 或 PNG 图片,并按文件名排序.
   std::vector<fs::path> ListImages(const fs::path& directory, int limit) {
     std::vector<fs::path> images;
     for (const auto& entry : fs::directory_iterator(directory)) {
-      if (entry.is_regular_file() && entry.path().extension() == ".jpg") {
+      std::string extension = entry.path().extension().string();
+      std::transform(extension.begin(), extension.end(), extension.begin(),
+        [](unsigned char value) { return std::tolower(value); });
+      if (entry.is_regular_file() &&
+        (extension == ".jpg" || extension == ".jpeg" || extension == ".png")) {
         images.push_back(entry.path());
       }
     }
@@ -217,7 +222,7 @@ int64_t GetPeakRssKb() {
       images.resize(limit);
     }
     if (images.empty()) {
-      throw std::runtime_error("没有找到 JPEG 图片: " + directory.string());
+      throw std::runtime_error("没有找到 JPEG 或 PNG 图片: " + directory.string());
     }
     return images;
   }
