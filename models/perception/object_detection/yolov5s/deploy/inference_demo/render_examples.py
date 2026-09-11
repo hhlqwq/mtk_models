@@ -21,6 +21,13 @@ COCO_NAMES = (
     "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave",
     "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase",
     "scissors", "teddy bear", "hair drier", "toothbrush")
+COCO_CATEGORY_IDS = (
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19,
+    20, 21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+    40, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+    58, 59, 60, 61, 62, 63, 64, 65, 67, 70, 72, 73, 74, 75, 76, 77, 78,
+    79, 80, 81, 82, 84, 85, 86, 87, 88, 89, 90)
+COCO_CATEGORY_NAMES = dict(zip(COCO_CATEGORY_IDS, COCO_NAMES))
 
 
 def load_predictions(path: Path) -> dict[int, list[dict]]:
@@ -48,12 +55,12 @@ def render(args: argparse.Namespace) -> None:
             raise ValueError(f"无法读取图片: {image_path}")
         for detection in detections:
             x, y, width, height = detection["bbox"]
-            class_id = int(detection["category_id"]) - 1
+            category_id = int(detection["category_id"])
             score = float(detection["score"])
             cv2.rectangle(image, (round(x), round(y)),
                           (round(x + width), round(y + height)),
                           (0, 255, 0), 2, cv2.LINE_AA)
-            label = f"{COCO_NAMES[class_id]} {score:.2f}"
+            label = f"{COCO_CATEGORY_NAMES[category_id]} {score:.2f}"
             cv2.putText(image, label, (round(x), max(20, round(y) - 5)),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2,
                         cv2.LINE_AA)
