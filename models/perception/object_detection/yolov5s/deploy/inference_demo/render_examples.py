@@ -1,0 +1,87 @@
+"""将 YOLOv5s 板端 C++ 预测绘制到五张 COCO 图片."""
+
+import argparse
+import json
+from collections import defaultdict
+from pathlib import Path
+
+import cv2
+
+COCO_NAMES = (
+    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train",
+    "truck", "boat", "traffic light", "fire hydrant", "stop sign",
+    "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep",
+    "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
+    "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard",
+    "sports ball", "kite", "baseball bat", "baseball glove", "skateboard",
+    "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork",
+    "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange",
+    "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair",
+    "couch", "potted plant", "bed", "dining table", "toilet", "tv",
+    "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave",
+    "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase",
+    "scissors", "teddy bear", "hair drier", "toothbrush")
+
+
+def load_predictions(path: Path) -> dict[int, list[dict]]:
+    """按 image_id 汇总板端 JSONL 检测结果."""
+    grouped = defaultdict(list)
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        item = json.loads(line)
+        grouped[int(item["image_id"])].append(item)
+    return grouped
+
+
+def render(args: argparse.Namespace) -> None:
+    """生成五张检测可视化、单图 JSON 和汇总结果."""
+    predictions = load_predictions(args.predictions)
+    images = sorted(args.input_dir.glob("*.jpg"))[:args.count]
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    summary = []
+    for position, image_path in enumerate(images, start=1):
+        image_id = int(image_path.stem)
+        detections = predictions.get(image_id, [])
+        image = cv2.imread(str(image_path))
+        if image is None:
+            raise ValueError(f"无法读取图片: {image_path}")
+        for detection in detections:
+            x, y, width, height = detection["bbox"]
+            class_id = int(detection["category_id"]) - 1
+            score = float(detection["score"])
+            cv2.rectangle(image, (round(x), round(y)),
+                          (round(x + width), round(y + height)),
+                          (0, 255, 0), 2, cv2.LINE_AA)
+            label = f"{COCO_NAMES[class_id]} {score:.2f}"
+            cv2.putText(image, label, (round(x), max(20, round(y) - 5)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2,
+                        cv2.LINE_AA)
+        record = {"sample": position, "image_id": image_id,
+                  "image": image_path.name, "detections": detections}
+        (args.output_dir / f"sample_{position}_detections.json").write_text(
+            json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+        visual = args.output_dir / f"sample_{position}_detections.jpg"
+        if not cv2.imwrite(str(visual), image):
+            raise ValueError(f"无法写入图片: {visual}")
+        summary.append(record)
+        print(f"[EXAMPLE] {position}/{len(images)} {image_path.name}, "
+              f"检测 {len(detections)} 个目标")
+    (args.output_dir / "results.json").write_text(
+        json.dumps({"samples": summary}, ensure_ascii=False, indent=2),
+        encoding="utf-8")
+    print(f"[OK] YOLOv5s 五图示例: {args.output_dir}")
+
+
+def parse_args() -> argparse.Namespace:
+    """解析命令行参数."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input-dir", type=Path, required=True)
+    parser.add_argument("--predictions", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--count", type=int, default=5)
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    render(parse_args())

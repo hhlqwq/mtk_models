@@ -12,7 +12,9 @@ mkdir -p "${OUTPUT_DIR}"
 test -x "${NEURONRT}"
 test -f "${DLA_FILE}"
 
-echo "[1/4] 对两张独立人体裁剪输入执行板端冒烟推理."
+total=$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.bin' | wc -l)
+test "${total}" -gt 0
+echo "[1/4] 对 ${total} 张独立人体裁剪输入执行板端推理."
 count=0
 for input_file in "${INPUT_DIR}"/*.bin; do
     stem=$(basename "${input_file}" .bin)
@@ -23,9 +25,9 @@ for input_file in "${INPUT_DIR}"/*.bin; do
     test -s "${OUTPUT_DIR}/${stem}_0.bin"
     test -s "${OUTPUT_DIR}/${stem}_1.bin"
     count=$((count + 1))
-    echo "[BOARD] ${count}/2 ${stem}"
+    echo "[BOARD] ${count}/${total} ${stem}"
 done
-test "${count}" -eq 2
+test "${count}" -eq "${total}"
 
 echo "[2/4] 预热 20 次并连续推理 100 次."
 first_input=$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.bin' | sort | head -n 1)

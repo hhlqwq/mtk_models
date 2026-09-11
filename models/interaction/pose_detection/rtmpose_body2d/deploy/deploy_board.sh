@@ -10,6 +10,7 @@ readonly COCO_ROOT="${COCO_ROOT:-/data/users/hailong.he/nas_smb/Datasets/open_so
 readonly INPUT_DIR="${MODEL_ROOT}/examples/input/generated"
 readonly OUTPUT_DIR="${MODEL_ROOT}/examples/output"
 readonly METADATA="${INPUT_DIR}/metadata.json"
+readonly DEMO_COUNT="${DEMO_COUNT:-5}"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
 test -f "${MODEL_ROOT}/models/model_int8.dla"
@@ -17,7 +18,7 @@ test -f "${MODEL_ROOT}/models/model_int8.tflite"
 test -d "${COCO_ROOT}/images"
 test -f "${COCO_ROOT}/annotations/instances_val2017.json"
 
-echo "[1/6] 从两个独立 COCO person 框生成量化输入."
+echo "[1/6] 从 ${DEMO_COUNT} 个独立 COCO person 框生成量化输入."
 rm -rf "${INPUT_DIR}"
 mkdir -p "${INPUT_DIR}"
 python "${MODEL_ROOT}/deploy/inference_demo/prepare_input.py" \
@@ -26,7 +27,7 @@ python "${MODEL_ROOT}/deploy/inference_demo/prepare_input.py" \
     --tflite "${MODEL_ROOT}/models/model_int8.tflite" \
     --output-dir "${INPUT_DIR}" \
     --metadata "${METADATA}" \
-    --count 2
+    --count "${DEMO_COUNT}"
 
 echo "[2/6] 创建干净的板端运行目录."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
