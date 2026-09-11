@@ -17,8 +17,19 @@ readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 mapfile -t images < <(find "${INPUT_DIR}" -maxdepth 1 -type f \
     \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \) | sort)
 test "${#images[@]}" -eq 3
-rm -rf "${WORK_DIR}" "${RAW_DIR}" "${OUTPUT_DIR}"
-mkdir -p "${WORK_DIR}" "${RAW_DIR}" "${OUTPUT_DIR}"
+docker exec "${CONTAINER}" sh -c \
+    "rm -rf \
+      '/workspace/models/perception/image_classification/vit_base_patch16_224/examples/input/generated' \
+      '/workspace/models/perception/image_classification/vit_base_patch16_224/examples/output/board_raw' \
+      '/workspace/models/perception/image_classification/vit_base_patch16_224/examples/output/public' && \
+     mkdir -p \
+      '/workspace/models/perception/image_classification/vit_base_patch16_224/examples/input/generated' \
+      '/workspace/models/perception/image_classification/vit_base_patch16_224/examples/output/board_raw' \
+      '/workspace/models/perception/image_classification/vit_base_patch16_224/examples/output/public' && \
+     chmod 0777 \
+      '/workspace/models/perception/image_classification/vit_base_patch16_224/examples/input/generated' \
+      '/workspace/models/perception/image_classification/vit_base_patch16_224/examples/output/board_raw' \
+      '/workspace/models/perception/image_classification/vit_base_patch16_224/examples/output/public'"
 
 echo "[1/5] 为三张公开图片生成 INT8 输入."
 index=0

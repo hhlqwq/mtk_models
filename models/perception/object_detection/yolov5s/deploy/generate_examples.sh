@@ -13,8 +13,10 @@ readonly BINARY="${SCRIPT_DIR}/inference_demo/yolov5s_board_eval"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
 test "$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 3
-rm -rf "${OUTPUT_DIR}"
-mkdir -p "${OUTPUT_DIR}"
+docker exec "${CONTAINER}" sh -c \
+    "rm -rf '/workspace/models/perception/object_detection/yolov5s/examples/output/public' && \
+     mkdir -p '/workspace/models/perception/object_detection/yolov5s/examples/output/public' && \
+     chmod 0777 '/workspace/models/perception/object_detection/yolov5s/examples/output/public'"
 
 echo "[1/6] 交叉编译支持 PNG 的 Genio 720 推理器."
 bash "${SCRIPT_DIR}/build_board_cpp.sh"

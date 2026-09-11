@@ -15,8 +15,19 @@ readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
 test "$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.png' | wc -l)" -eq 3
 test -f "${INPUT_DIR}/annotations.json"
-rm -rf "${WORK_DIR}" "${RAW_DIR}" "${OUTPUT_DIR}"
-mkdir -p "${WORK_DIR}" "${RAW_DIR}" "${OUTPUT_DIR}"
+docker exec "${CONTAINER}" sh -c \
+    "rm -rf \
+      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated' \
+      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/board_raw' \
+      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/public' && \
+     mkdir -p \
+      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated' \
+      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/board_raw' \
+      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/public' && \
+     chmod 0777 \
+      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/input/generated' \
+      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/board_raw' \
+      '/workspace/models/interaction/pose_detection/rtmpose_body2d/examples/output/public'"
 
 echo "[1/6] 使用公开人体框生成三份 INT8 输入."
 docker exec "${CONTAINER}" python3 \
