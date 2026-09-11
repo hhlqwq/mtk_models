@@ -16,9 +16,11 @@ readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 echo "[1/5] 选择五张 COCO 验证图片."
 rm -rf "${INPUT_DIR}" "${OUTPUT_DIR}"
 mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}"
-find "${COCO_ROOT}/images" -maxdepth 1 -type f -name '*.jpg' -print0 \
-    | sort -z | head -z -n 5 \
-    | xargs -0 -I {} cp "{}" "${INPUT_DIR}/"
+find "${COCO_ROOT}/images" -maxdepth 1 -type f -name '*.jpg' -print \
+    | sort | sed -n '1,5p' \
+    | while IFS= read -r image_path; do
+        cp "${image_path}" "${INPUT_DIR}/"
+    done
 test "$(find "${INPUT_DIR}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 5
 
 echo "[2/5] 创建板端五图示例目录."
