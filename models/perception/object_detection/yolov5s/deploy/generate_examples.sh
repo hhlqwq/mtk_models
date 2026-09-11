@@ -37,7 +37,8 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
       --images '${BOARD_DIR}/images' --output-dir '${BOARD_DIR}/output' \
       --limit 5 --warmup 2 --progress-interval 1"
 scp "${SSH_OPTIONS[@]}" "${BOARD_HOST}:${BOARD_DIR}/output/predictions.jsonl" \
-    "${BOARD_HOST}:${BOARD_DIR}/output/timing_summary.json" "${OUTPUT_DIR}/"
+    "${BOARD_HOST}:${BOARD_DIR}/output/timing_summary_current_run.json" \
+    "${OUTPUT_DIR}/"
 echo "[5/5] 生成检测框图片和单图 JSON."
 docker exec "${CONTAINER}" python3 \
     "/workspace/models/perception/object_detection/yolov5s/deploy/inference_demo/render_examples.py" \
