@@ -9,6 +9,7 @@ readonly BOARD_DIR="${MTK_BOARD_ROOT:-/root/hailong.he}/rtmpose_body2d"
 readonly COCO_ROOT="${COCO_ROOT:-/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017}"
 readonly INPUT_DIR="${MODEL_ROOT}/examples/input/generated"
 readonly OUTPUT_DIR="${MODEL_ROOT}/examples/output"
+readonly EXAMPLE_OUTPUT_DIR="${OUTPUT_DIR}/generated"
 readonly METADATA="${INPUT_DIR}/metadata.json"
 readonly DEMO_COUNT="${DEMO_COUNT:-5}"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
@@ -54,16 +55,17 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     | tar -C "${OUTPUT_DIR}/board_raw" -xf -
 
 echo "[5/6] 反量化 SimCC 输出并生成 133 点结果."
+rm -rf "${EXAMPLE_OUTPUT_DIR}"
 python "${MODEL_ROOT}/deploy/inference_demo/postprocess_keypoints.py" \
     --metadata "${METADATA}" \
     --input-dir "${INPUT_DIR}" \
     --output-dir "${OUTPUT_DIR}/board_raw" \
-    --result-dir "${OUTPUT_DIR}"
+    --result-dir "${EXAMPLE_OUTPUT_DIR}"
 echo "[6/6] 比较 FP32 ONNX 与板端 NPU 输出."
 python "${MODEL_ROOT}/deploy/inference_demo/compare_backends.py" \
     --onnx "${MODEL_ROOT}/models/model_mtk_compatible.onnx" \
     --metadata "${METADATA}" \
     --input-dir "${INPUT_DIR}" \
     --output-dir "${OUTPUT_DIR}/board_raw" \
-    --result "${OUTPUT_DIR}/backend_comparison.json"
+    --result "${EXAMPLE_OUTPUT_DIR}/backend_comparison.json"
 echo "[OK] RTMPose 已部署并验证: ${BOARD_HOST}:${BOARD_DIR}."
