@@ -8,7 +8,7 @@
 输入: 1×3×224×224 RGB
 输出: 1×1000 classes
 设备: MediaTek Genio 720 EVK
-当前状态: 转换与板端 Demo 完成,正式 ImageNet 评测进行中
+当前状态: Genio 720 INT8 转换、部署和 ImageNet 全量评测已完成
 ```
 
 > 迁移说明：正式上游已改为 PyTorch Vision v0.15.1 的
@@ -63,11 +63,16 @@ Qualcomm 显示名称与输出索引映射的差异数为 0. 可公开复核摘�
 | 环节 | 状态 | 证据 |
 | --- | --- | --- |
 | 官方开源上游 | 已锁定 | PyTorch Vision v0.15.1、完整 SHA-256 已记录 |
-| 原始框架基线 | 待执行 | 必须使用最终锁定的开源权重 |
+| 原始框架基线 | 已锁定 | 官方发布 Top-1/Top-5 为 81.072%/95.318%,导出前完成数值一致性检查 |
 | 自行导出 ONNX | 已完成 | 官方 `.pth` 经 TorchVision v0.15.1 离线加载与导出 |
 | MTK 兼容 ONNX | 已完成 | 注意力已改写为 MTK 支持的固定四维计算并完成输出一致性检查 |
 | MTK INT8 TFLite / DLA | 已完成 | 100 张独立 ImageNet 图片校准并通过 `mdla5.3` 编译 |
-| 板端 Demo、精度和性能 | 部分完成 | 单图推理与 Top-5 后处理完成,正式全量评测待固化 |
+| 板端 Demo、精度和性能 | 已完成 | `20260910_vit_torchvision_v2`,ImageNet val 50,000 张 |
+
+正式开源模型的 50,000 张结果为 FP32 ONNX Top-1/Top-5
+80.64%/95.10%、Genio 720 NPU INT8 79.38%/94.69%.排除 100 张 PTQ 校准图片后,
+49,900 张独立集的 NPU Top-1/Top-5 为 79.36%/94.68%.详细证据见
+`docs/accuracy.md` 和 `docs/imagenet_accuracy_20260911.json`.
 
 ## 转换兼容性与评测约束
 

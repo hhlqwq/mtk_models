@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "run_id": "20260910_mmpose_official_v1",
+  "source": "open-mmlab/mmpose@v1.3.2:rtmpose-m-coco-wholebody-256x192",
+  "device": "MediaTek Genio 720 EVK",
+  "detections": 104125,
+  "detections_after_nms": 87016,
+  "evaluated_images": 3893,
+  "metrics": {
+    "body_ap": 0.6568610867,
+    "foot_ap": 0.5844707154,
+    "face_ap": 0.7271351660,
+    "left_hand_ap": 0.4139162549,
+    "right_hand_ap": 0.3965664660,
+    "wholebody_ap": 0.5323935112,
+    "wholebody_ar": 0.6412940806
+  },
+  "timing_ms_per_detection": {
+    "preprocess": 2.765770,
+    "npu": 3.852652,
+    "postprocess": 1.047261
+  },
+  "peak_rss_kb": 36732,
+  "hashes": {
+    "fp32_onnx": "0b4a8d276efc93b95da46b3f05c30a253ce19b83aa51e4b9c46d6f957d448684",
+    "mtk_onnx": "ff148b50ae3dd610bc5f4a5c22d547ad621e031cb66090c6ef2c29ed882873d3",
+    "int8_tflite": "28e96c3e0c18d127d9216d55a43fcf3300738553b52df0137910684e45e41c10",
+    "metrics": "706b1f3119c14958fc969d2df0f0d5d943f3d22cf81afa3ec78867eb8a6c3b67",
+    "timing": "75e987711576deb7b9fa3e657348d6ec1eae625cc35ff3d2a964528373f53817",
+    "dla": "a5851c2e9602a17f703dbcaa2a80fd01e13bd99c11d7b2437a1e286374ed1461"
+  },
+  "validation_boundary": "PyTorch and FP32 ONNX full-protocol AP were not executed separately."
+}

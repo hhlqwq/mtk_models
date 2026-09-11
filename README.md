@@ -35,8 +35,8 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 | 模型 | 任务 | 标准输入 | 来源 | 当前状态 |
 | --- | --- | --- | --- | --- |
 | [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics | 完整交付 |
-| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 环境建设中 |
-| [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | 环境建设中 |
+| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 完整交付 |
+| [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | 完整交付 |
 
 状态只能使用以下四类：
 
@@ -51,8 +51,8 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 | --- | --- |
 | Ubuntu 编译服务器 | `ssh ubuntu89`；宿主 Ubuntu 24.04.4 LTS |
 | 服务器工作目录 | `/data/users/hailong.he/github/mtk_models` |
-| Docker 镜像 | `hhl_g720_311:ubuntu22.04-np8.0.11`；镜像 ID `006a427a61fd` |
-| 当前 Docker 容器 | `hhl_g720_311`；Ubuntu 22.04.5 LTS,已完成迁移与运行验证 |
+| Docker 镜像 | `openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11`；镜像 ID `9ac9238a70ec` |
+| 当前 Docker 容器 | `hhl_g720_8011`；已完成 ViT 与 RTMPose 转换和板端验证 |
 | Python | 当前容器 3.11.11 |
 | NeuroPilot SDK | 8.0.11 |
 | MTK Converter | 8.16.0 |

@@ -21,7 +21,7 @@ models:
     legacy_source: qualcomm/VIT
     delivery_reference: qualcomm/VIT
     platforms:
-      genio_720: environment_ready
+      genio_720: complete
       genio_5100: not_started
   - id: rtmpose_body2d
     batch: first_batch
@@ -33,5 +33,5 @@ models:
     legacy_source: qualcomm/RTMPose-Body2d
     delivery_reference: qualcomm/RTMPose-Body2d
     platforms:
-      genio_720: environment_ready
+      genio_720: complete
       genio_5100: not_started

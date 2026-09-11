@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "run_id": "20260910_vit_torchvision_v2",
+  "source": "pytorch/vision@v0.15.1:ViT_B_16_Weights.IMAGENET1K_V1",
+  "device": "MediaTek Genio 720 EVK",
+  "samples": 50000,
+  "fp32_onnx": {"top1": 0.8064, "top5": 0.9510},
+  "mtk_npu_int8": {"top1": 0.7938, "top5": 0.9469},
+  "agreement": {
+    "top1": 0.9168,
+    "top5_overlap": 0.7829,
+    "logit_max_abs_err": 5.6219,
+    "logit_rmse": 0.3386,
+    "logit_relative_frobenius": 0.5351
+  },
+  "holdout": {
+    "samples": 49900,
+    "excluded_start_0based": 1000,
+    "excluded_count": 100,
+    "fp32_top1": 0.8063,
+    "fp32_top5": 0.9510,
+    "npu_top1": 0.7936,
+    "npu_top5": 0.9468
+  },
+  "evidence": {
+    "manifest_count": 50000,
+    "prepare_done": true,
+    "board_done": true,
+    "summary_sha256": "12950eaeae320efad417661920e1b6555c2bc4c4fc359bc8f5f7e588ce327a86",
+    "run_inputs_sha256": "a3624e774bc94796c2582c8f625d40dada2d0c0c47df34aaea362e7d1df8cc99",
+    "fp32_onnx_sha256": "5cf7159b106ef651b0800c0b75b04629ebf173c44e18b9a018a4e38d1d89ce7c",
+    "mtk_onnx_sha256": "df15d9dad8e9952a865ff64e431e24baa4f64884d2006a1a0e4d7db3a0899692",
+    "int8_tflite_sha256": "74976e225c06ffb1e82d878360e70ad267eba17b819a4e793ff5ced0afa330c1",
+    "dla_sha256": "2aec455949fa25420611645eb97617433046b6d488d87e66edf26e8246b85d67"
+  }
+}

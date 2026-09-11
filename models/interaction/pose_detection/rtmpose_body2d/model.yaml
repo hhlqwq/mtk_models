@@ -28,8 +28,8 @@ metrics:
   performance: latency_ms
 targets:
   genio_720:
-    status: environment_ready
-    precisions: []
+    status: complete
+    precisions: [int8]
   genio_5100:
     status: not_started
     precisions: []

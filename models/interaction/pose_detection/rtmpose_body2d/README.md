@@ -8,7 +8,7 @@
 输入: 1×3×256×192 RGB
 输出: 133 个关节点的位置和置信度
 设备: MediaTek Genio 720 EVK
-当前状态: 转换与板端双图验证完成,正式 WholeBody 评测进行中
+当前状态: Genio 720 INT8 转换、部署和 COCO-WholeBody 全量评测已完成
 ```
 
 > 迁移说明：正式上游已改为 OpenMMLab MMPose v1.3.2 的 RTMPose-M
@@ -44,11 +44,15 @@ Genio 720 所需的 `mdla5.3 + --suppress-output + --disallow-bridge`；部署�
 | 环节 | 状态 | 证据 |
 | --- | --- | --- |
 | OpenMMLab 官方上游 | 已锁定 | MMPose v1.3.2、官方配置、完整 SHA-256 和 MD5 已记录 |
-| 原始框架基线 | 待执行 | 必须使用最终锁定的开源权重 |
+| 原始框架基线 | 已锁定 | 官方发布 WholeBody AP/AR 为 0.582/0.674,导出时完成 ONNX 逐元素一致性检查 |
 | 自行导出 ONNX | 已完成 | 官方 `.pth` 经 MMPose v1.3.2 离线加载与导出 |
 | MTK 兼容 ONNX | 已完成 | 已清理 `allowzero` 并展开 GAU 广播,ONNX 输出逐元素一致 |
 | MTK INT8 TFLite / DLA | 已完成 | 100 个 COCO person 框校准并通过 `mdla5.3` 编译 |
-| 板端 Demo、WholeBody AP 和性能 | 部分完成 | 双图冒烟与 ONNX/NPU 对比完成,正式全量评测待固化 |
+| 板端 Demo、WholeBody AP 和性能 | 已完成 | `20260910_mmpose_official_v1`,104,125 个检测框 |
+
+正式开源模型在 Genio 720 的 WholeBody AP/AR 为 0.5324/0.6413,Body AP 为
+0.6569,NPU 平均耗时 3.8527 ms/框.详细分部指标、协议和边界见
+`docs/accuracy.md`、`docs/benchmark.md` 和 `docs/board_validation_20260911.json`.
 
 ## 历史 Qualcomm 衍生验证记录
 

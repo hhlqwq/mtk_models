@@ -1,5 +1,32 @@
 # RTMPose Body2d 精度报告
 
+## 正式开源模型结果
+
+2026-09-10 使用 OpenMMLab MMPose v1.3.2 官方 RTMPose-M COCO-WholeBody 权重完成
+Genio 720 INT8 正式评测.运行 ID `20260910_mmpose_official_v1` 共处理 104,125 个
+MMPose Faster R-CNN 人体检测框,WholeBody OKS-NMS 后保留 87,016 个结果,覆盖
+3,893 张存在检测框的图片.
+
+| 部位 | AP | AP50 | AP75 | AR |
+| --- | ---: | ---: | ---: | ---: |
+| body | 0.6569 | 0.8658 | 0.7277 | 0.7377 |
+| foot | 0.5845 | 0.7898 | 0.6385 | 0.7250 |
+| face | 0.7271 | 0.9472 | 0.8389 | 0.8189 |
+| left hand | 0.4139 | 0.7442 | 0.4209 | 0.5458 |
+| right hand | 0.3966 | 0.7427 | 0.3827 | 0.5249 |
+| wholebody | 0.5324 | 0.8366 | 0.5903 | 0.6413 |
+
+评测协议为 `bbox_keypoint` 重评分、关键点阈值 0.2、WholeBody OKS-NMS 阈值
+0.9.官方发布的 PyTorch WholeBody AP/AR 为 0.582/0.674；本项目未单独执行 PyTorch
+和 FP32 ONNX 的同协议全量 AP,因此它们与板端结果不混写.
+
+89 原始证据位于
+`models/interaction/pose_detection/rtmpose_body2d/examples/output/board_cpp_accuracy/20260910_mmpose_official_v1/`.
+指标 JSON SHA-256 为
+`706b1f3119c14958fc969d2df0f0d5d943f3d22cf81afa3ec78867eb8a6c3b67`.
+当前 DLA SHA-256 为
+`a5851c2e9602a17f703dbcaa2a80fd01e13bd99c11d7b2437a1e286374ed1461`.
+
 > 历史结果说明：本页结果来自 Qualcomm v0.61.0 预导出 FP32 ONNX 及其 MTK INT8
 > 衍生模型.它们保留用于工程对照,不属于当前已锁定的 OpenMMLab MMPose 上游正式交付链路.
 

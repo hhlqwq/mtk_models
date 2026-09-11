@@ -22,7 +22,7 @@ readonly ANNOTATIONS="${COCO_ROOT}/annotations/coco_wholebody_val_v1.0.json"
 readonly CONTAINER_ANNOTATIONS="${CONTAINER_COCO_ROOT}/annotations/coco_wholebody_val_v1.0.json"
 readonly DETECTIONS="${COCO_ROOT}/person_detection_results/COCO_val2017_detections_AP_H_56_person.json"
 readonly EVALUATOR="${SCRIPT_DIR}/inference_demo/evaluate_coco_wholebody.py"
-readonly CONTAINER_NAME="${MTK_G720_CONTAINER:-hhl_g720_311}"
+readonly CONTAINER_NAME="${MTK_G720_CONTAINER:-hhl_g720_8011}"
 readonly CONTAINER_MODEL_ROOT="/workspace/models/interaction/pose_detection/rtmpose_body2d"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 

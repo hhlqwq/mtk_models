@@ -32,6 +32,19 @@ MTK 兼容候选 ONNX,不使用任何第三方预导出模型.
 历史归档文件和解压后 ONNX 的 SHA-256 已记录.Qualcomm 设备性能仅作交付形式参考,
 不能作为 Genio 720 实测结果.
 
+## 正式 Genio 720 交付结果
+
+| 产物 | 大小 (bytes) | SHA-256 |
+| --- | ---: | --- |
+| `model_fp32.onnx` | 346,443,880 | `5cf7159b106ef651b0800c0b75b04629ebf173c44e18b9a018a4e38d1d89ce7c` |
+| `model_mtk_compatible.onnx` | 346,458,248 | `df15d9dad8e9952a865ff64e431e24baa4f64884d2006a1a0e4d7db3a0899692` |
+| `model_int8.tflite` | 90,450,160 | `74976e225c06ffb1e82d878360e70ad267eba17b819a4e793ff5ced0afa330c1` |
+| `model_int8.dla` | 88,003,676 | `2aec455949fa25420611645eb97617433046b6d488d87e66edf26e8246b85d67` |
+
+ImageNet val 50,000 张正式结果：FP32 ONNX Top-1/Top-5 为 80.64%/95.10%,
+Genio 720 NPU INT8 为 79.38%/94.69%.纯 NPU 平均延迟为 51.7129 ms,
+完整结果见 `docs/imagenet_accuracy_20260911.json`.
+
 ## 历史 Qualcomm 交付产物
 
 | 产物 | 大小 (bytes) | SHA-256 |

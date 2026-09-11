@@ -1,5 +1,35 @@
 # ViT-Base 精度报告
 
+## 正式开源模型结果
+
+2026-09-11 完成 TorchVision v0.15.1 `ViT_B_16_Weights.IMAGENET1K_V1`
+自产 ONNX 和 Genio 720 INT8 DLA 的 ILSVRC2012 val 50,000 张全量评测.运行 ID 为
+`20260910_vit_torchvision_v2`,FP32 基线使用 ONNX Runtime CUDA Provider,板端使用
+Neuron Runtime 8.2.16.
+
+| 指标 | FP32 ONNX | MTK NPU INT8 | INT8 差值 |
+| --- | ---: | ---: | ---: |
+| Top-1 | 80.64% | 79.38% | -1.26 个百分点 |
+| Top-5 | 95.10% | 94.69% | -0.41 个百分点 |
+| 排除校准集 Top-1 | 80.63% | 79.36% | -1.27 个百分点 |
+| 排除校准集 Top-5 | 95.10% | 94.68% | -0.42 个百分点 |
+
+后端 Top-1 一致率为 91.68%,Top-5 集合平均重合度为 78.29%,logit 最大绝对误差
+5.6219、RMSE 0.3386、相对 Frobenius 误差 0.5351.排除校准集指标使用 49,900
+张图片,排除 `convert.sh` 使用的第 1001~1100 张图片.
+
+完整性标记 `prepare.done`、`board.done` 和 `agreement_summary.json` 均存在,
+Manifest 为 50,000/50,000.89 证据位于
+`.eval/vit_base_patch16_224/runs/20260910_vit_torchvision_v2/`,板端原始输出位于
+`/root/hailong.he/vit_eval/runs/20260910_vit_torchvision_v2/`.机器可读摘要见
+`imagenet_accuracy_20260911.json`.
+
+当前正式模型产物 SHA-256：FP32 ONNX
+`5cf7159b106ef651b0800c0b75b04629ebf173c44e18b9a018a4e38d1d89ce7c`,MTK
+兼容 ONNX `df15d9dad8e9952a865ff64e431e24baa4f64884d2006a1a0e4d7db3a0899692`,
+INT8 TFLite `74976e225c06ffb1e82d878360e70ad267eba17b819a4e793ff5ced0afa330c1`,
+DLA `2aec455949fa25420611645eb97617433046b6d488d87e66edf26e8246b85d67`.
+
 > 历史结果说明：本页结果来自 Qualcomm v0.61.0 预导出 FP32 ONNX 及其 MTK INT8
 > 衍生模型.它们保留用于工程对照,不属于待重新锁定的开源上游 ViT 正式交付结果.
 
