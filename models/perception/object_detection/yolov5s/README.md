@@ -149,6 +149,14 @@ Genio 720 的转换、Demo、板端性能、三后端正式精度和文档证据
 `examples/output/public/`.运行过程显示 1/3 至 3/3 的逐图进度.这些图片只用于结果展示,
 不替代完整 COCO val2017 mAP.
 
+| 典型输入 | 检测数量 | 板端结果 |
+| --- | ---: | --- |
+| 城市路口 | 9 | [![城市路口检测](examples/output/public/sample_1_detections.jpg)](examples/output/public/sample_1_detections.jpg) |
+| 室内餐厅 | 14 | [![室内餐厅检测](examples/output/public/sample_2_detections.jpg)](examples/output/public/sample_2_detections.jpg) |
+| 公园人物 | 4 | [![公园人物检测](examples/output/public/sample_3_detections.jpg)](examples/output/public/sample_3_detections.jpg) |
+
+完整机器可读结果见 [`examples/output/public/results.json`](examples/output/public/results.json).
+
 ## 全流程验收边界
 
 YOLOv5s 只有同时完成以下项目才视为交付完成：

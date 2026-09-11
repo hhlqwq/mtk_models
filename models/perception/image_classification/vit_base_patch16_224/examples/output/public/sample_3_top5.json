@@ -1,0 +1,32 @@
+{
+  "sample": 3,
+  "source_image": "03_espresso.jpg",
+  "board_output": "sample_3_0.bin",
+  "top5": [
+    {
+      "class_id": 967,
+      "class_name": "espresso",
+      "logit": 8.802887916564941
+    },
+    {
+      "class_id": 968,
+      "class_name": "cup",
+      "logit": 6.017793655395508
+    },
+    {
+      "class_id": 504,
+      "class_name": "coffee mug",
+      "logit": 3.1332314014434814
+    },
+    {
+      "class_id": 969,
+      "class_name": "eggnog",
+      "logit": 2.735360860824585
+    },
+    {
+      "class_id": 550,
+      "class_name": "espresso maker",
+      "logit": 1.641216516494751
+    }
+  ]
+}

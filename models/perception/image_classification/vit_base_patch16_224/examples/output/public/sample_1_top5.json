@@ -1,0 +1,32 @@
+{
+  "sample": 1,
+  "source_image": "01_golden_retriever.jpg",
+  "board_output": "sample_1_0.bin",
+  "top5": [
+    {
+      "class_id": 207,
+      "class_name": "golden retriever",
+      "logit": 9.051557540893555
+    },
+    {
+      "class_id": 208,
+      "class_name": "Labrador retriever",
+      "logit": 5.172318458557129
+    },
+    {
+      "class_id": 220,
+      "class_name": "Sussex spaniel",
+      "logit": 3.48136830329895
+    },
+    {
+      "class_id": 238,
+      "class_name": "Greater Swiss Mountain dog",
+      "logit": 3.1829652786254883
+    },
+    {
+      "class_id": 159,
+      "class_name": "Rhodesian ridgeback",
+      "logit": 2.8348283767700195
+    }
+  ]
+}

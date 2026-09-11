@@ -62,6 +62,16 @@ Genio 720 所需的 `mdla5.3 + --suppress-output + --disallow-bridge`；部署�
 可视化和 FP32 ONNX 对比写入 `examples/output/public/`.运行过程显示 1/3 至 3/3 的逐图
 进度.这些图片仅用于直观展示,不替代正式 COCO-WholeBody AP/AR.
 
+| 典型输入 | NPU/ONNX Body-17 平均坐标差 | 板端结果 |
+| --- | ---: | --- |
+| 双臂平伸 | 1.067 px | [![双臂平伸关键点](examples/output/public/sample_1_keypoints.jpg)](examples/output/public/sample_1_keypoints.jpg) |
+| 侧弓步 | 1.433 px | [![侧弓步关键点](examples/output/public/sample_2_keypoints.jpg)](examples/output/public/sample_2_keypoints.jpg) |
+| 跑步跨步 | 0.606 px | [![跑步跨步关键点](examples/output/public/sample_3_keypoints.jpg)](examples/output/public/sample_3_keypoints.jpg) |
+
+完整关键点和后端对比分别见
+[`examples/output/public/keypoints.json`](examples/output/public/keypoints.json) 和
+[`examples/output/public/backend_comparison.json`](examples/output/public/backend_comparison.json).
+
 ## 历史 Qualcomm 衍生验证记录
 
 历史版本化验证证据见 `docs/board_validation_20260909.json`.

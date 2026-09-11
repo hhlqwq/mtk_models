@@ -1,0 +1,112 @@
+{
+  "samples": [
+    {
+      "stem": "sample_1",
+      "pred_x": {
+        "mean_abs": 0.03951698498407429,
+        "max_abs": 0.400323286652565
+      },
+      "pred_y": {
+        "mean_abs": 0.03541660940243691,
+        "max_abs": 0.4010566584765911
+      },
+      "keypoint_distance_input_pixels": {
+        "mean_all_133": 1.1232925653457642,
+        "max_all_133": 4.123105525970459,
+        "mean_body_17": 1.0666559934616089,
+        "max_body_17": 2.5
+      },
+      "argmax_xy_match_ratio": 0.05263157894736842,
+      "confidence_filtered": {
+        "onnx_score_gte_0.1": {
+          "count": 133,
+          "mean_distance_input_pixels": 1.1232925653457642,
+          "max_distance_input_pixels": 4.123105525970459,
+          "argmax_xy_match_ratio": 0.05263157894736842
+        },
+        "onnx_score_gte_0.2": {
+          "count": 133,
+          "mean_distance_input_pixels": 1.1232925653457642,
+          "max_distance_input_pixels": 4.123105525970459,
+          "argmax_xy_match_ratio": 0.05263157894736842
+        }
+      },
+      "score_mean": {
+        "onnx": 0.9173380732536316,
+        "npu": 0.901628315448761
+      }
+    },
+    {
+      "stem": "sample_2",
+      "pred_x": {
+        "mean_abs": 0.05104644597974736,
+        "max_abs": 0.462778776884079
+      },
+      "pred_y": {
+        "mean_abs": 0.04740890773351627,
+        "max_abs": 0.4696733057498932
+      },
+      "keypoint_distance_input_pixels": {
+        "mean_all_133": 1.5241235494613647,
+        "max_all_133": 5.0,
+        "mean_body_17": 1.4334776401519775,
+        "max_body_17": 2.5
+      },
+      "argmax_xy_match_ratio": 0.007518796992481203,
+      "confidence_filtered": {
+        "onnx_score_gte_0.1": {
+          "count": 133,
+          "mean_distance_input_pixels": 1.5241235494613647,
+          "max_distance_input_pixels": 5.0,
+          "argmax_xy_match_ratio": 0.007518796992481203
+        },
+        "onnx_score_gte_0.2": {
+          "count": 133,
+          "mean_distance_input_pixels": 1.5241235494613647,
+          "max_distance_input_pixels": 5.0,
+          "argmax_xy_match_ratio": 0.007518796992481203
+        }
+      },
+      "score_mean": {
+        "onnx": 0.910014808177948,
+        "npu": 0.8998466730117798
+      }
+    },
+    {
+      "stem": "sample_3",
+      "pred_x": {
+        "mean_abs": 0.03944791308758689,
+        "max_abs": 0.2534146010875702
+      },
+      "pred_y": {
+        "mean_abs": 0.03954230440210261,
+        "max_abs": 0.2830725647509098
+      },
+      "keypoint_distance_input_pixels": {
+        "mean_all_133": 0.5367663502693176,
+        "max_all_133": 3.640054941177368,
+        "mean_body_17": 0.6061088442802429,
+        "max_body_17": 1.4142135381698608
+      },
+      "argmax_xy_match_ratio": 0.3308270676691729,
+      "confidence_filtered": {
+        "onnx_score_gte_0.1": {
+          "count": 133,
+          "mean_distance_input_pixels": 0.5367663502693176,
+          "max_distance_input_pixels": 3.640054941177368,
+          "argmax_xy_match_ratio": 0.3308270676691729
+        },
+        "onnx_score_gte_0.2": {
+          "count": 133,
+          "mean_distance_input_pixels": 0.5367663502693176,
+          "max_distance_input_pixels": 3.640054941177368,
+          "argmax_xy_match_ratio": 0.3308270676691729
+        }
+      },
+      "score_mean": {
+        "onnx": 0.9257588982582092,
+        "npu": 0.899422824382782
+      }
+    }
+  ]
+}

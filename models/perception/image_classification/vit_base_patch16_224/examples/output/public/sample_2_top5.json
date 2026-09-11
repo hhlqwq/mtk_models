@@ -1,0 +1,32 @@
+{
+  "sample": 2,
+  "source_image": "02_school_bus.jpg",
+  "board_output": "sample_2_0.bin",
+  "top5": [
+    {
+      "class_id": 779,
+      "class_name": "school bus",
+      "logit": 9.051557540893555
+    },
+    {
+      "class_id": 920,
+      "class_name": "traffic light",
+      "logit": 1.342813491821289
+    },
+    {
+      "class_id": 339,
+      "class_name": "sorrel",
+      "logit": 1.243345856666565
+    },
+    {
+      "class_id": 465,
+      "class_name": "bulletproof vest",
+      "logit": 1.0444104671478271
+    },
+    {
+      "class_id": 757,
+      "class_name": "recreational vehicle",
+      "logit": 0.8454751372337341
+    }
+  ]
+}

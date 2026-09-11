@@ -1,0 +1,100 @@
+{
+  "samples": [
+    {
+      "sample": 1,
+      "source_image": "01_golden_retriever.jpg",
+      "board_output": "sample_1_0.bin",
+      "top5": [
+        {
+          "class_id": 207,
+          "class_name": "golden retriever",
+          "logit": 9.051557540893555
+        },
+        {
+          "class_id": 208,
+          "class_name": "Labrador retriever",
+          "logit": 5.172318458557129
+        },
+        {
+          "class_id": 220,
+          "class_name": "Sussex spaniel",
+          "logit": 3.48136830329895
+        },
+        {
+          "class_id": 238,
+          "class_name": "Greater Swiss Mountain dog",
+          "logit": 3.1829652786254883
+        },
+        {
+          "class_id": 159,
+          "class_name": "Rhodesian ridgeback",
+          "logit": 2.8348283767700195
+        }
+      ]
+    },
+    {
+      "sample": 2,
+      "source_image": "02_school_bus.jpg",
+      "board_output": "sample_2_0.bin",
+      "top5": [
+        {
+          "class_id": 779,
+          "class_name": "school bus",
+          "logit": 9.051557540893555
+        },
+        {
+          "class_id": 920,
+          "class_name": "traffic light",
+          "logit": 1.342813491821289
+        },
+        {
+          "class_id": 339,
+          "class_name": "sorrel",
+          "logit": 1.243345856666565
+        },
+        {
+          "class_id": 465,
+          "class_name": "bulletproof vest",
+          "logit": 1.0444104671478271
+        },
+        {
+          "class_id": 757,
+          "class_name": "recreational vehicle",
+          "logit": 0.8454751372337341
+        }
+      ]
+    },
+    {
+      "sample": 3,
+      "source_image": "03_espresso.jpg",
+      "board_output": "sample_3_0.bin",
+      "top5": [
+        {
+          "class_id": 967,
+          "class_name": "espresso",
+          "logit": 8.802887916564941
+        },
+        {
+          "class_id": 968,
+          "class_name": "cup",
+          "logit": 6.017793655395508
+        },
+        {
+          "class_id": 504,
+          "class_name": "coffee mug",
+          "logit": 3.1332314014434814
+        },
+        {
+          "class_id": 969,
+          "class_name": "eggnog",
+          "logit": 2.735360860824585
+        },
+        {
+          "class_id": 550,
+          "class_name": "espresso maker",
+          "logit": 1.641216516494751
+        }
+      ]
+    }
+  ]
+}

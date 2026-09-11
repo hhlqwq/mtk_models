@@ -81,6 +81,14 @@ Qualcomm 显示名称与输出索引映射的差异数为 0. 可公开复核摘�
 逐张推理,并把真实板端 Top-5 结果写入 `examples/output/public/`.运行过程显示 1/3 至
 3/3 的逐图进度.这些图片仅用于直观证明部署测试已完成,不计入 ImageNet 正式精度.
 
+| 典型输入 | Genio 720 NPU Top-1 | 板端结果 |
+| --- | --- | --- |
+| 金毛犬 | `golden retriever` | [![金毛犬 Top-5](examples/output/public/sample_1_top5.jpg)](examples/output/public/sample_1_top5.jpg) |
+| 校车 | `school bus` | [![校车 Top-5](examples/output/public/sample_2_top5.jpg)](examples/output/public/sample_2_top5.jpg) |
+| 浓缩咖啡 | `espresso` | [![浓缩咖啡 Top-5](examples/output/public/sample_3_top5.jpg)](examples/output/public/sample_3_top5.jpg) |
+
+完整机器可读结果见 [`examples/output/public/results.json`](examples/output/public/results.json).
+
 ## 转换兼容性与评测约束
 
 `download_original.sh` 只读取用户放置的官方 `.pth` 文件,校验完整 SHA-256 后通过
