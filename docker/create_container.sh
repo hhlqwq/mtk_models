@@ -47,5 +47,7 @@ else
 fi
 
 echo "[4/4] 验证镜像内工具, 不执行安装."
+docker exec "${CONTAINER_NAME}" git config --global --add safe.directory \
+    "${PROJECT_ROOT}"
 docker exec "${CONTAINER_NAME}" bash /opt/mtk-build/setup_container.sh
 echo "[OK] 容器 ${CONTAINER_NAME} 已就绪."

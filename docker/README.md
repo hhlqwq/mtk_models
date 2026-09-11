@@ -41,6 +41,8 @@ Python 3.11.11 源码默认从可达的阿里云镜像获取, 可通过 `PYTHON_
 项目目录在宿主机和容器内使用完全一致的绝对路径:
 `/data/users/hailong.he/github/mtk_models`.数据集同样以原绝对路径只读挂载:
 `/data/users/hailong.he/nas_smb/Datasets/open_source/raw`.不再使用 `/workspace` 别名.
+创建脚本会把项目挂载目录加入容器 root 的 Git `safe.directory`,避免宿主机用户与容器
+root 所有权不同导致 Git 拒绝访问.
 容器支持 GPU, 启动校验执行 Torch Conv2d 和 ONNX Runtime CUDA 运算.
 实际依赖版本保存在镜像 /opt/mtk-build/installed-requirements.txt.
 
