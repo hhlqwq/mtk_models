@@ -35,7 +35,8 @@ echo "[4/5] 在 Genio 720 执行五张图片推理."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "'${BOARD_DIR}/yolov5s_board_eval' --model '${BOARD_DIR}/model_int8.dla' \
       --images '${BOARD_DIR}/images' --output-dir '${BOARD_DIR}/output' \
-      --limit 5 --warmup 2 --progress-interval 1"
+      --limit 5 --warmup 2 --progress-interval 1 --confidence 0.25 \
+      --iou 0.45 --max-det 100"
 scp "${SSH_OPTIONS[@]}" "${BOARD_HOST}:${BOARD_DIR}/output/predictions.jsonl" \
     "${BOARD_HOST}:${BOARD_DIR}/output/timing_summary_current_run.json" \
     "${OUTPUT_DIR}/"
