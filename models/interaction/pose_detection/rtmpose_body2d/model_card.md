@@ -44,4 +44,6 @@ SimCC 解码配置.
 | `model_int8.dla` | 19,144,561 | `a5851c2e9602a17f703dbcaa2a80fd01e13bd99c11d7b2437a1e286374ed1461` |
 
 COCO-WholeBody 正式板端结果为 WholeBody AP/AR 0.5324/0.6413,平均 NPU 延迟
-3.8527 ms/框.完整结果见 `docs/board_validation_20260911.json`.
+3.8527 ms/框.同协议 PyTorch FP32、ONNX FP32 和 MTK NPU INT8 的 WholeBody AP
+分别为 0.5702、0.5703 和 0.5324；NPU 相对 ONNX 下降 0.0380.完整结果见
+`docs/accuracy_comparison_20260914.json` 和 `docs/board_validation_20260911.json`.

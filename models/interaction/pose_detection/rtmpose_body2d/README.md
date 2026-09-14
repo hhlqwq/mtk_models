@@ -49,15 +49,17 @@ Genio 720 所需的 `mdla5.3 + --suppress-output + --disallow-bridge`；部署�
 | 环节 | 状态 | 证据 |
 | --- | --- | --- |
 | OpenMMLab 官方上游 | 已锁定 | MMPose v1.3.2、官方配置、完整 SHA-256 和 MD5 已记录 |
-| 原始框架基线 | 已锁定 | 官方发布 WholeBody AP/AR 为 0.582/0.674,导出时完成 ONNX 逐元素一致性检查 |
-| 自行导出 ONNX | 已完成 | 官方 `.pth` 经 MMPose v1.3.2 离线加载与导出 |
+| 原始框架基线 | 已完成 | 同协议 PyTorch WholeBody AP/AR 为 0.5702/0.6654；官方发布值 0.582/0.674 仅作参考 |
+| 自行导出 ONNX | 已完成 | 同协议 FP32 ONNX WholeBody AP/AR 为 0.5703/0.6656 |
 | MTK 兼容 ONNX | 已完成 | 已清理 `allowzero` 并展开 GAU 广播,ONNX 输出逐元素一致 |
 | MTK INT8 TFLite / DLA | 已完成 | 100 个 COCO person 框校准并通过 `mdla5.3` 编译 |
 | 板端 Demo、WholeBody AP 和性能 | 已完成 | `20260910_mmpose_official_v1`,104,125 个检测框 |
 
 正式开源模型在 Genio 720 的 WholeBody AP/AR 为 0.5324/0.6413,Body AP 为
-0.6569,NPU 平均耗时 3.8527 ms/框.详细分部指标、协议和边界见
-`docs/accuracy.md`、`docs/benchmark.md` 和 `docs/board_validation_20260911.json`.
+0.6569,NPU 平均耗时 3.8527 ms/框.NPU WholeBody AP 相对同协议 FP32 ONNX 下降
+0.0380,即 3.80 个百分点；PyTorch 与 ONNX 的 AP 差为 0.0002.详细分部指标、协议和
+边界见 `docs/accuracy.md`、`docs/benchmark.md`、
+`docs/accuracy_comparison_20260914.json` 和 `docs/board_validation_20260911.json`.
 
 ## 公开三图示例
 
@@ -128,7 +130,6 @@ MMPose 默认的 `bbox_keypoint` 重评分、0.2 关键点阈值和 0.9 WholeBod
 - 双图板端冒烟用于确认 DLA 可运行、输出完整且不同输入不会得到完全相同的旧缓冲结果.
 - `instances_val2017.json` 只用于转换校准和 Demo 框输入,不作为正式 WholeBody AP 的人体框来源.
 - 正式 133 点 WholeBody AP 已按锁定数据和人体框协议在板端完整执行；PyTorch 与 FP32
-  ONNX 的同协议全量 AP 通过 `deploy/accuracy_eval.sh` 补跑.脚本按
+  ONNX 的同协议全量 AP 已通过 `deploy/accuracy_eval.sh` 完成补跑.脚本按
   `prepare/pytorch/onnx/evaluate/compare` 分阶段执行,中断后使用相同
-  `EVAL_RUN_ID` 可继续,并实时显示已处理检测框、速度和预计剩余时间.在全量结果生成前,
-  不与板端 INT8 指标混写.
+  `EVAL_RUN_ID` 可继续,并实时显示已处理检测框、速度和预计剩余时间.

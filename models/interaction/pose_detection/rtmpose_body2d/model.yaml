@@ -29,7 +29,7 @@ metrics:
 targets:
   genio_720:
     status: complete
-    precisions: [int8]
+    precisions: [fp32, int8]
   genio_5100:
     status: not_started
     precisions: []

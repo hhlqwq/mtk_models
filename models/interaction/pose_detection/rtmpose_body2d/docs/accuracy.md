@@ -1,28 +1,48 @@
 # RTMPose Body2d 精度报告
 
-## 正式开源模型结果
+## 正式开源模型三后端结果
 
-2026-09-10 使用 OpenMMLab MMPose v1.3.2 官方 RTMPose-M COCO-WholeBody 权重完成
-Genio 720 INT8 正式评测.运行 ID `20260910_mmpose_official_v1` 共处理 104,125 个
-MMPose Faster R-CNN 人体检测框,WholeBody OKS-NMS 后保留 87,016 个结果,覆盖
-3,893 张存在检测框的图片.
+2026-09-14 完成 OpenMMLab MMPose v1.3.2 官方 RTMPose-M 的 PyTorch FP32、
+自行导出 ONNX FP32 和 Genio 720 MTK NPU INT8 三后端同协议对比.PyTorch/ONNX
+运行 ID 为 `20260914_rtmpose_three_backend_v1`,板端运行 ID 为
+`20260910_mmpose_official_v1`.三个后端均使用同一份 MMPose Faster R-CNN 的
+104,125 个人体检测框、同一套 192×256 RGB 仿射预处理、SimCC 解码、
+`bbox_keypoint` 重评分、0.2 关键点阈值和 0.9 WholeBody OKS-NMS.
 
-| 部位 | AP | AP50 | AP75 | AR |
+| 后端 | WholeBody AP | AP50 | AP75 | AR | AP 相对 PyTorch |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| PyTorch FP32 | 0.5702 | 0.8422 | 0.6382 | 0.6654 | +0.0000 |
+| ONNX FP32 | 0.5703 | 0.8422 | 0.6381 | 0.6656 | +0.0002 |
+| MTK NPU INT8 | 0.5324 | 0.8366 | 0.5903 | 0.6413 | -0.0378 |
+
+PyTorch 与 ONNX 的 WholeBody AP 仅相差 0.0002,说明自行导出 ONNX 未产生可见的
+任务指标回退.NPU INT8 相对 ONNX FP32 的 WholeBody AP 下降 0.0380,即 3.80 个
+百分点；AP50 下降 0.0056,AP75 下降 0.0478.因此本次量化损失主要体现在更严格的
+关键点定位精度,而不是宽松阈值下是否检测到关键点.
+
+| 部位 | PyTorch AP | ONNX AP | NPU INT8 AP | NPU 相对 ONNX |
 | --- | ---: | ---: | ---: | ---: |
-| body | 0.6569 | 0.8658 | 0.7277 | 0.7377 |
-| foot | 0.5845 | 0.7898 | 0.6385 | 0.7250 |
-| face | 0.7271 | 0.9472 | 0.8389 | 0.8189 |
-| left hand | 0.4139 | 0.7442 | 0.4209 | 0.5458 |
-| right hand | 0.3966 | 0.7427 | 0.3827 | 0.5249 |
-| wholebody | 0.5324 | 0.8366 | 0.5903 | 0.6413 |
+| body | 0.6659 | 0.6661 | 0.6569 | -0.0092 |
+| foot | 0.6020 | 0.6018 | 0.5845 | -0.0174 |
+| face | 0.8127 | 0.8129 | 0.7271 | -0.0858 |
+| left hand | 0.4629 | 0.4627 | 0.4139 | -0.0487 |
+| right hand | 0.4452 | 0.4447 | 0.3966 | -0.0481 |
+| wholebody | 0.5702 | 0.5703 | 0.5324 | -0.0380 |
 
-评测协议为 `bbox_keypoint` 重评分、关键点阈值 0.2、WholeBody OKS-NMS 阈值
-0.9.官方发布的 PyTorch WholeBody AP/AR 为 0.582/0.674；本项目未单独执行 PyTorch
-和 FP32 ONNX 的同协议全量 AP,因此它们与板端结果不混写.
+分部结果显示 face 和双手对 INT8 量化最敏感.这是基于本次指标差异得到的结论,
+后续若优化量化策略,应优先检查小尺度脸部和手部 SimCC 峰值保持情况.
 
-同协议补跑入口为 `deploy/accuracy_eval.sh`.该流程沿用 YOLO/ViT 的固定 `run_id`、
-分阶段、输入输出哈希、断点续跑和实时进度机制.正式全量任务必须由用户在 Ubuntu 89
-前台手动执行；在 `backend_accuracy_comparison.json` 生成前,本节仍保持“未执行”状态.
+官方模型页公布的 PyTorch WholeBody AP/AR 为 0.582/0.674.本项目同协议实测为
+0.5702/0.6654,分别低 0.0118 和 0.0086.由于正式转换损失必须排除评测实现与运行环境
+差异,本项目以同一评测程序得到的 PyTorch 0.5702 作为 ONNX 和 INT8 的直接基线,
+官方公布值只作为外部参考.
+
+完整运行共覆盖 3,893 张存在检测框的图片.PyTorch、ONNX 和 NPU 在 OKS-NMS 后分别
+保留 84,709、84,704 和 87,016 个结果.输入、预测、指标和汇总文件 SHA-256 全部
+校验通过.紧凑证据见 `accuracy_comparison_20260914.json`.
+
+PyTorch/ONNX 耗时来自宿主机 RTX 4090 D,NPU 耗时来自 Genio 720,只能分别说明各自
+运行环境中的执行情况,不能作为同设备性能对比.
 
 89 原始证据位于
 `models/interaction/pose_detection/rtmpose_body2d/examples/output/board_cpp_accuracy/20260910_mmpose_official_v1/`.
@@ -30,6 +50,12 @@ MMPose Faster R-CNN 人体检测框,WholeBody OKS-NMS 后保留 87,016 个结果
 `706b1f3119c14958fc969d2df0f0d5d943f3d22cf81afa3ec78867eb8a6c3b67`.
 当前 DLA SHA-256 为
 `a5851c2e9602a17f703dbcaa2a80fd01e13bd99c11d7b2437a1e286374ed1461`.
+
+PyTorch/ONNX 全量原始证据保存在 89 服务器：
+
+```text
+/data/users/hailong.he/github/mtk_models/.eval/rtmpose_body2d/runs/20260914_rtmpose_three_backend_v1
+```
 
 > 历史结果说明：本页结果来自 Qualcomm v0.61.0 预导出 FP32 ONNX 及其 MTK INT8
 > 衍生模型.它们保留用于工程对照,不属于当前已锁定的 OpenMMLab MMPose 上游正式交付链路.

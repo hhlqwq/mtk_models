@@ -29,5 +29,5 @@
     "timing": "75e987711576deb7b9fa3e657348d6ec1eae625cc35ff3d2a964528373f53817",
     "dla": "a5851c2e9602a17f703dbcaa2a80fd01e13bd99c11d7b2437a1e286374ed1461"
   },
-  "validation_boundary": "PyTorch and FP32 ONNX full-protocol AP were not executed separately."
+  "validation_boundary": "This file records the NPU run only. The completed PyTorch/ONNX comparison is recorded in accuracy_comparison_20260914.json."
 }

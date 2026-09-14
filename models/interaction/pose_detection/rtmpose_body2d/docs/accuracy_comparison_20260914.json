@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "run_id": "20260914_rtmpose_three_backend_v1",
+  "source_commit": "02bbfe1",
+  "source": "open-mmlab/mmpose@v1.3.2:rtmpose-m-coco-wholebody-256x192",
+  "npu_run_id": "20260910_mmpose_official_v1",
+  "protocol": {
+    "dataset": "COCO-WholeBody V1.0 val2017",
+    "detections": 104125,
+    "evaluated_images": 3893,
+    "input": "NCHW RGB FP32 [0,255], 1x3x256x192",
+    "score_mode": "bbox_keypoint",
+    "keypoint_score_threshold": 0.2,
+    "nms_mode": "oks_nms",
+    "nms_threshold": 0.9
+  },
+  "environment": {
+    "gpu": "NVIDIA GeForce RTX 4090 D",
+    "nvidia_driver": "595.84",
+    "pytorch": "2.0.0+cu118",
+    "onnxruntime": "1.18.0",
+    "mmpose": "1.3.2",
+    "opencv": "4.11.0",
+    "pytorch_device": "cuda:0",
+    "onnx_provider": "CUDAExecutionProvider",
+    "npu_device": "MediaTek Genio 720 EVK"
+  },
+  "backends": {
+    "pytorch_fp32": {
+      "detections_after_nms": 84709,
+      "body_ap": 0.6659261494,
+      "foot_ap": 0.6019860608,
+      "face_ap": 0.8127497523,
+      "left_hand_ap": 0.4629370784,
+      "right_hand_ap": 0.4452199318,
+      "wholebody_ap": 0.5701798801,
+      "wholebody_ap50": 0.8421864708,
+      "wholebody_ap75": 0.6382231407,
+      "wholebody_ar": 0.6654439547
+    },
+    "onnx_fp32": {
+      "detections_after_nms": 84704,
+      "body_ap": 0.6660820511,
+      "foot_ap": 0.6018460642,
+      "face_ap": 0.8129172836,
+      "left_hand_ap": 0.4626572154,
+      "right_hand_ap": 0.4446634742,
+      "wholebody_ap": 0.5703452624,
+      "wholebody_ap50": 0.8421926240,
+      "wholebody_ap75": 0.6381392119,
+      "wholebody_ar": 0.6655698992
+    },
+    "mtk_npu_int8": {
+      "detections_after_nms": 87016,
+      "body_ap": 0.6568610867,
+      "foot_ap": 0.5844707154,
+      "face_ap": 0.7271351660,
+      "left_hand_ap": 0.4139162549,
+      "right_hand_ap": 0.3965664660,
+      "wholebody_ap": 0.5323935112,
+      "wholebody_ap50": 0.8366246661,
+      "wholebody_ap75": 0.5902986660,
+      "wholebody_ar": 0.6412940806
+    }
+  },
+  "deltas": {
+    "onnx_minus_pytorch": {
+      "wholebody_ap": 0.0001653824,
+      "wholebody_ap50": 0.0000061532,
+      "wholebody_ap75": -0.0000839288,
+      "wholebody_ar": 0.0001259446
+    },
+    "npu_minus_onnx": {
+      "wholebody_ap": -0.0379517513,
+      "wholebody_ap50": -0.0055679579,
+      "wholebody_ap75": -0.0478405460,
+      "wholebody_ar": -0.0242758186
+    }
+  },
+  "timing_mean_ms_per_detection": {
+    "pytorch_fp32": {
+      "preprocess": 0.839504,
+      "inference": 13.790602,
+      "postprocess": 0.257523
+    },
+    "onnx_fp32": {
+      "preprocess": 0.852461,
+      "inference": 4.581383,
+      "postprocess": 0.231727
+    },
+    "mtk_npu_int8": {
+      "preprocess": 2.765770,
+      "inference": 3.852652,
+      "postprocess": 1.047261
+    }
+  },
+  "timing_scope": "PyTorch and ONNX run on the host RTX 4090 D, while INT8 runs on Genio 720. Timing values are diagnostic and must not be treated as same-device performance comparisons.",
+  "hashes": {
+    "weights": "3da02694cd6479d3b333ff42ebd0723f96bfa06adac1db1e2e815ed2e9e1b02d",
+    "fp32_onnx": "0b4a8d276efc93b95da46b3f05c30a253ce19b83aa51e4b9c46d6f957d448684",
+    "annotations": "f8272e9c12f3a42457033ebc75da1167546edf1be5e2ffaf586d6ee97541ff6e",
+    "detections": "53ba0ad8d0fd461c5a000cd90797fa8c39cd8c38cd125125c0412626ff592d59",
+    "pytorch_predictions": "f449b72eb7bddff0bad6a27007470a2f80e47f059eccade8fb0b94a9af25c849",
+    "onnx_predictions": "ff5119396816c29ddccf3a097541a9017bb56d98ee637d8ba62f334a2b6e2bbf",
+    "pytorch_metrics": "5f7c770d4828a24842d87118271e69e06a33b2af4bf6eaddb7f5ae7d601f5660",
+    "onnx_metrics": "24d4d3c70356b5c5570aab403532b5a91ae093216aeeca28837e781375ccec71",
+    "npu_metrics": "706b1f3119c14958fc969d2df0f0d5d943f3d22cf81afa3ec78867eb8a6c3b67",
+    "generated_comparison": "988354208dbbb9ec5e7f656ec0dbc598ee15b7d9faa3f94776d9612833a4cbe5"
+  },
+  "validation": {
+    "pytorch_predictions": "104125/104125",
+    "onnx_predictions": "104125/104125",
+    "input_hashes": "verified",
+    "output_hashes": "verified",
+    "logs": "completed"
+  }
+}
