@@ -21,7 +21,7 @@ Neuron Runtime 8.2.16.
 完整性标记 `prepare.done`、`board.done` 和 `agreement_summary.json` 均存在,
 Manifest 为 50,000/50,000.89 证据位于
 `.eval/vit_base_patch16_224/runs/20260910_vit_torchvision_v2/`,板端原始输出位于
-`/root/hailong.he/vit_eval/runs/20260910_vit_torchvision_v2/`.机器可读摘要见
+`/root/hailong.he/vit_base_patch16_224/eval/20260910_vit_torchvision_v2/`.机器可读摘要见
 `imagenet_accuracy_20260911.json`.
 
 当前正式模型产物 SHA-256：FP32 ONNX
@@ -75,7 +75,7 @@ MT8189 / MDLA 5.3 INT8 DLA, 由板端 Neuron Runtime 8.2.16 执行.
 
 89 证据位于
 `.eval/vit_base_patch16_224/runs/20260908_imagenet50000_absolute_v1/`, 92 原始 NPU
-输出保留在 `/root/hailong.he/vit_eval/runs/20260908_imagenet50000_absolute_v1/`.
+输出保留在 `/root/hailong.he/vit_base_patch16_224/eval/20260908_imagenet50000_absolute_v1/`.
 运行配置锁定模型、DLA、评测脚本、标签、样本数和 Provider 哈希. 可公开的机器可读
 摘要见 `imagenet_accuracy_20260908.json`; `.eval`、数据集及标签正文不进入 Git.
 
@@ -97,7 +97,7 @@ INT8 DLA, 由板端 neuronrt 8.2.16 执行.
 
 运行 ID 为 `20260908_agreement1000`. 89 证据位于
 `.eval/vit_base_patch16_224/runs/20260908_agreement1000/`, 92 原始 NPU 输出位于
-`/root/hailong.he/vit_eval/runs/20260908_agreement1000/`. 运行目录绑定模型、脚本、
+`/root/hailong.he/vit_base_patch16_224/eval/20260908_agreement1000/`. 运行目录绑定模型、脚本、
 样本数和 Provider 哈希, 且逐项校验 1000 个 FP32 logits 与 NPU 输出均存在且大小正确.
 
 该结果说明 INT8 PTQ 存在 7.7% 的 Top-1 预测漂移. Agreement 不能直接换算成

@@ -63,7 +63,7 @@ ImageNet 或 COCO 原图的情况下直接展示“已经完成测试”.公开�
 | MTK Converter | 8.16.0 |
 | Neuron Compiler | 8.2.31 |
 | Genio 720 EVK | `root@192.168.0.92`,无密码 |
-| 板端目录 | `/root/hailong.he` |
+| 板端目录 | `/root/hailong.he/<model>/{model,demo,eval}`；共享数据位于 `/root/hailong.he/datasets` |
 | 板端系统 | Rity Demo 26.0-dev / Scarthgap / Linux 6.6.117 |
 | 板端 Neuron Runtime | 8.2.16 |
 

@@ -45,6 +45,6 @@ Peak RSS: 94,604 KB
 CPU governor 为 8 核 `schedutil`; 采样时 cpu0~7 当前频率依次为
 1250/1250/1250/1350/1350/1350/1750/1650 MHz. 原始日志保存在 89 的
 `examples/output/{benchmark.log,memory.txt,cpu_frequency.txt,system.txt}` 和 92 的
-`/root/hailong.he/vit_base_patch16_224/output/`.
+`/root/hailong.he/vit_base_patch16_224/demo/smoke/output/`.
 
 历史 Qualcomm 衍生模型已满足板端运行和性能取证；这些数据不计入新的开源上游交付状态.

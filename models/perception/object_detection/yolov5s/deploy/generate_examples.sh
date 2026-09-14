@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
-readonly BOARD_DIR="${MTK_BOARD_ROOT:-/root/hailong.he}/yolov5s_public_examples"
+readonly BOARD_DIR="${MTK_BOARD_ROOT:-/root/hailong.he}/yolov5s/demo/public"
 readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
 readonly INPUT_DIR="${MODEL_ROOT}/examples/input/public"
 readonly OUTPUT_DIR="${MODEL_ROOT}/examples/output/public"

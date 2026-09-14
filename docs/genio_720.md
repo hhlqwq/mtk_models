@@ -61,6 +61,31 @@ OS OTA/A-B 更新组件,不能从 SSH 会话安全地原地覆盖整块 eMMC.刷
 
 延迟测试必须使用真实输入并至少进行预热.MTK 官网数据只能作为参考,不能写入“本项目实测".
 
+## 板端目录规范
+
+板端根目录只保留共享目录和按模型划分的工作目录：
+
+```text
+/root/hailong.he/
+├── datasets/                  # 共享评测数据集.
+├── wheels/                    # 共享离线 wheel.
+├── archive/<date>/            # 历史探针与旧目录,不参与当前运行.
+└── <model>/
+    ├── model/                 # DLA、板端二进制与固定运行辅助文件.
+    ├── demo/
+    │   ├── smoke/             # 少量输入的冒烟/性能验证.
+    │   └── public/            # 纳入仓库的公开三图示例.
+    └── eval/<run_id>/         # 独立正式评测运行及其证据.
+```
+
+禁止在 `/root/hailong.he` 根目录直接放置 DLA、输入 bin、探针输出或模型专属运行目录.
+脚本必须以 `demo/smoke`、`demo/public` 或 `eval/<run_id>` 三类目录之一作为输出位置；
+每个新的正式运行必须使用新的 `run_id`,不得覆盖既有证据.
+
+历史板端目录可在确认没有 `neuronrt` 进程后,于板端执行
+`tools/board/normalize_genio720_layout.sh` 进行一次性整理.脚本逐项显示移动进度,
+旧文件统一移入 `archive/<date>/layout_normalization/legacy`,不直接删除.
+
 ## 精度口径
 
 同一份验证集、同一份预处理和同一套后处理分别评测：

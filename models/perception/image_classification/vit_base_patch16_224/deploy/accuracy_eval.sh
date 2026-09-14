@@ -36,7 +36,7 @@ fi
 readonly EVAL_RUN_ID
 readonly WORK="${PROJECT_ROOT}/.eval/vit_base_patch16_224/runs/${EVAL_RUN_ID}"
 readonly WORK_C="${WORK}"
-readonly BOARD_EVAL="${BOARD_ROOT}/vit_eval/runs/${EVAL_RUN_ID}"
+readonly BOARD_EVAL="${BOARD_ROOT}/vit_base_patch16_224/eval/${EVAL_RUN_ID}"
 readonly RUN_CONFIG="${WORK}/run_inputs_sha256.txt"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 

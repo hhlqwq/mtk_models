@@ -18,7 +18,7 @@ readonly EVAL_PY="${PROJECT_ROOT}/tools/accuracy/yolov5s_val_coco.py"
 readonly TOTAL="${TOTAL:-5000}"
 readonly CHUNK="${CHUNK:-500}"
 readonly STAGE="${1:-all}"
-readonly BOARD_EVAL="${BOARD_ROOT}/eval/yolov5s/${RUN_ID}"
+readonly BOARD_EVAL="${BOARD_ROOT}/yolov5s/eval/raw_${RUN_ID}"
 readonly HASH_FILE="${WORK}/run_inputs_sha256.txt"
 readonly CONFIG_FILE="${WORK}/run_config.txt"
 

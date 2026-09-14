@@ -5,7 +5,7 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
-readonly BOARD_DIR="${MTK_BOARD_ROOT:-/root/hailong.he}/vit_base_patch16_224"
+readonly BOARD_DIR="${MTK_BOARD_ROOT:-/root/hailong.he}/vit_base_patch16_224/demo/smoke"
 readonly DEFAULT_IMAGE="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ILSVRC2012/val/ILSVRC2012_val_00000001.JPEG"
 readonly DEMO_IMAGE="${VIT_DEMO_IMAGE:-${DEFAULT_IMAGE}}"
 readonly INPUT_BIN="${MODEL_ROOT}/examples/input/input_int8.bin"

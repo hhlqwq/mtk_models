@@ -45,7 +45,7 @@ PyTorch 基线 0.3708 与上游公布的 0.374 接近；是否接受 INT8 精度
 - 样本数：5000/5000 图片；NPU、PyTorch、ONNX 分别为 718,881、709,477、709,518 条检测结果.
 - 最终交付运行 ID：`20260908_cpp_delivery_v3`；5000/5000 图片,718,891 条检测结果.
 - 板端原始证据：
-  `/root/hailong.he/yolov5s_cpp/runs/20260908_cpp_delivery_v3/`；89 回传的完整证据：
+  `/root/hailong.he/yolov5s/eval/20260908_cpp_delivery_v3/`；89 回传的完整证据：
   `examples/output/board_cpp_accuracy/20260908_cpp_delivery_v3/`.逐图 NPU 原始输出未回传.
 - 输入清单绑定 Git 提交 `1dcadbe4a5dec82b2e95efd3e0ffea90354a6bfc`、源码、板端二进制、
   DLA、评测器、COCO 标注和 5000 张图片哈希清单；输出清单记录正式结果文件 SHA-256.
