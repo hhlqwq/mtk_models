@@ -20,6 +20,10 @@ MMPose Faster R-CNN 人体检测框,WholeBody OKS-NMS 后保留 87,016 个结果
 0.9.官方发布的 PyTorch WholeBody AP/AR 为 0.582/0.674；本项目未单独执行 PyTorch
 和 FP32 ONNX 的同协议全量 AP,因此它们与板端结果不混写.
 
+同协议补跑入口为 `deploy/accuracy_eval.sh`.该流程沿用 YOLO/ViT 的固定 `run_id`、
+分阶段、输入输出哈希、断点续跑和实时进度机制.正式全量任务必须由用户在 Ubuntu 89
+前台手动执行；在 `backend_accuracy_comparison.json` 生成前,本节仍保持“未执行”状态.
+
 89 原始证据位于
 `models/interaction/pose_detection/rtmpose_body2d/examples/output/board_cpp_accuracy/20260910_mmpose_official_v1/`.
 指标 JSON SHA-256 为

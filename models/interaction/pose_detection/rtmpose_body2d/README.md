@@ -31,6 +31,11 @@ cd /data/users/hailong.he/github/mtk_models/models/interaction/pose_detection/rt
 ./deploy/deploy_board.sh
 # 正式 COCO-WholeBody 133 点精度评测.
 ./deploy/accuracy_board_cpp.sh
+
+# PyTorch、FP32 ONNX 与既有板端 INT8 的同协议全量精度对比.
+# 这是长时间任务,由用户在 Ubuntu 89 前台手动执行.
+EVAL_RUN_ID=rtmpose_official_three_backend_v1 \
+  ./deploy/accuracy_eval.sh all
 ```
 
 历史 `download_original.sh` 曾复用 Qualcomm ONNX 归档,现已停用.新流程必须从锁定的
@@ -123,4 +128,7 @@ MMPose 默认的 `bbox_keypoint` 重评分、0.2 关键点阈值和 0.9 WholeBod
 - 双图板端冒烟用于确认 DLA 可运行、输出完整且不同输入不会得到完全相同的旧缓冲结果.
 - `instances_val2017.json` 只用于转换校准和 Demo 框输入,不作为正式 WholeBody AP 的人体框来源.
 - 正式 133 点 WholeBody AP 已按锁定数据和人体框协议在板端完整执行；PyTorch 与 FP32
-  ONNX 的同协议全量 AP 尚未单独执行，不与板端 INT8 指标混写.
+  ONNX 的同协议全量 AP 通过 `deploy/accuracy_eval.sh` 补跑.脚本按
+  `prepare/pytorch/onnx/evaluate/compare` 分阶段执行,中断后使用相同
+  `EVAL_RUN_ID` 可继续,并实时显示已处理检测框、速度和预计剩余时间.在全量结果生成前,
+  不与板端 INT8 指标混写.
