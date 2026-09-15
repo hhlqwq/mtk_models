@@ -32,8 +32,9 @@ scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}"/examples/input/public/*.jpg \
 
 echo "[4/4] 核对板端模型哈希。"
 readonly LOCAL_SHA256="$(sha256sum "${MODEL_PATH}" | awk '{print $1}')"
-readonly BOARD_SHA256="$(ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "sha256sum '${BOARD_MODEL_DIR}/model_fp32_opset13.onnx' | awk '{print \\$1}'")"
+readonly BOARD_SHA256_LINE="$(ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "sha256sum '${BOARD_MODEL_DIR}/model_fp32_opset13.onnx'")"
+readonly BOARD_SHA256="${BOARD_SHA256_LINE%% *}"
 if [[ "${LOCAL_SHA256}" != "${BOARD_SHA256}" ]]; then
     echo "[ERROR] 板端模型 SHA-256 不匹配。" >&2
     exit 1
