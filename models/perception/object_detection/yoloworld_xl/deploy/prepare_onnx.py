@@ -6,6 +6,7 @@ import hashlib
 from pathlib import Path
 
 import onnx
+from onnx import version_converter
 
 
 EXPECTED_INPUT_SHAPE = [1, 3, 640, 640]
@@ -75,7 +76,7 @@ def main() -> None:
     validate_source_model(model)
 
     print("[2/4] 使用 ONNX version converter 转换到 opset 13。")
-    converted = onnx.version_converter.convert_version(model, 13)
+    converted = version_converter.convert_version(model, 13)
 
     print("[3/4] 执行 ONNX checker。")
     onnx.checker.check_model(converted, full_check=True)
