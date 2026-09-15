@@ -44,3 +44,6 @@ models/
 - `perception/image_classification/vit_base_patch16_224`
 - `interaction/pose_detection/rtmpose_body2d`
 
+当前 MediaTek ONNX Runtime Model Zoo 接入：
+
+- `perception/object_detection/yoloworld_xl`

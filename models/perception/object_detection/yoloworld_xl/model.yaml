@@ -1,0 +1,30 @@
+id: yoloworld_xl
+name: YOLO-World XL
+scenario: perception
+category: object_detection
+source:
+  provider: github
+  repository: AILab-CVC/YOLO-World
+  revision: 4f70adbaacf5685bd9ec5bea85f1f91057f6fc0b
+  weights: mediatek-model-zoo-yoloworld_xl
+delivery_reference:
+  repository: mediatek/iot-ai-hub-model-zoo
+  purpose: official_onnxruntime_deployment_asset
+input:
+  shape: [1, 3, 640, 640]
+  layout: NCHW
+  color: RGB
+output:
+  type: raw_yolov8_detection_heads
+  classes: 80
+  strides: [8, 16, 32]
+metrics:
+  accuracy: coco_bbox_map
+  performance: latency_ms
+targets:
+  genio_720:
+    status: environment_ready
+    precisions: [fp32_as_fp16]
+  genio_5100:
+    status: not_started
+    precisions: []
