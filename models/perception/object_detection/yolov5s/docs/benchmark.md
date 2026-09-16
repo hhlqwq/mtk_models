@@ -3,10 +3,10 @@
 状态：已完成板端 C++ 稳态端到端、峰值内存和 CPU 调频状态实测（2026-09-08）.
 
 2026-09-07 实跑记录: 旧 MDLA 3.0 DLA 被板端 Runtime 拒绝; MDLA 5.3 直编译因
-NCC 将 “MDLA → Output 数据转换桥" 派发到 EDPA_1_2 且 MT8189 无 EDPA 硬件而加载失败.
+NCC 将 "MDLA → Output 数据转换桥" 派发到 EDPA_1_2 且 MT8189 无 EDPA 硬件而加载失败.
 改用 `--arch=mdla5.3 --suppress-output --disallow-bridge` 后板端推理成功,
 输出为 MDLA 原生 NCHW INT8 (行 stride 16 对齐),由后处理还原布局.
-详见模型 README “MT8189 编译约束".
+详见模型 README "MT8189 编译约束".
 
 | 项目 | 数值 |
 | --- | --- |
@@ -35,7 +35,7 @@ RGB 转换和 INT8 量化,后处理包含输出还原、解码、NMS 和坐标�
 
 板端 RTC 未同步,`system_before.txt` 和 `system_after.txt` 内的采集时间错误显示为
 2025-08-01；运行日期以 89 发起日期和运行 ID 为准.CPU governor、频率范围、内核和系统版本
-均直接来自这两个原始快照,不依赖板端墙钟.当前交付状态为“完整交付".
+均直接来自这两个原始快照,不依赖板端墙钟.当前交付状态为"完整交付".
 
 ## 验收规则
 

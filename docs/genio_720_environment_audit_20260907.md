@@ -142,7 +142,7 @@ daemon 模式仍依赖目标板与刷机主机之间的 USB/fastboot 链路.因�
 
 1. 当前同名容器已绑定目标镜像；后续重建仍应由 `docker/create_container.sh` 检测镜像 ID,不得静默覆盖容器.
 2. 旧容器的 inspect、pip 清单和可写层 diff 仅用于追溯；恢复时应优先从 Git 和显式挂载数据重建.
-3. NCC 与 Runtime 必须在每个 benchmark 中分别记录,不能只写“NeuroPilot 8".
+3. NCC 与 Runtime 必须在每个 benchmark 中分别记录,不能只写"NeuroPilot 8".
 4. 每个新模型必须在 92 上验证 DLA 加载和真实 NPU 推理；YOLOv5s 的成功不能外推为所有模型兼容.
 5. 对 MT8189 编译时使用 MDLA 5.3.需要桥接或特殊输出格式的模型应先检查板端 Runtime 8.2.16 的支持情况.
 6. 板端升级已获得明确授权；但当前网络连接不能替代官方 USB 下载模式.需要将开发板 USB

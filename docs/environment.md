@@ -17,7 +17,7 @@
 | neuronrt | 板端 8.2.16 | DLA NPU 推理 |
 
 主机编译器与板端运行时版本不同.每份 benchmark 都必须同时记录二者,避免只写模糊的
-“NeuroPilot SDK 8".
+"NeuroPilot SDK 8".
 
 官网 G720 当前链接到 NeuroPilot 8.0.11 basic,89 上 SDK 包目录与官网下载包
 `neuropilot-sdk-basic-8.0.11-build20260211.tar.gz` 完全对应.官网没有声明 NCC 8.2.31
@@ -54,8 +54,8 @@ Torch 2.0.0 位于普通 PyTorch Converter 的 `>=1.3,<2.6` 范围,但不在官�
 
 当前镜像为 `openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11`.官网 Neuron SDK
 页面推荐的主机系统只列出
-Ubuntu 14.04/16.04/18.04,因此 Ubuntu 22.04 应描述为“项目验证基线",不能描述为
-“官网明确支持".Ubuntu 22.04.5 容器已经完成工具版本、NCC、Torch CUDA 和 ONNX Runtime
+Ubuntu 14.04/16.04/18.04,因此 Ubuntu 22.04 应描述为"项目验证基线",不能描述为
+"官网明确支持".Ubuntu 22.04.5 容器已经完成工具版本、NCC、Torch CUDA 和 ONNX Runtime
 CUDA 运行验证.
 
 89 服务器构建 Docker 镜像时使用 host 网络.基础镜像内部的 Ubuntu 官方软件源和容器全局

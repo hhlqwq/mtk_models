@@ -17,11 +17,11 @@ readonly ANNOTATIONS="${BOARD_DATASET}/annotations/instances_val2017.json"
 readonly SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
 if [[ ! "${RUN_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
-    echo "[ERROR] EVAL_RUN_ID 只能包含字母、数字、点、下划线和连字符。" >&2
+    echo "[ERROR] EVAL_RUN_ID 只能包含字母、数字、点、下划线和连字符." >&2
     exit 1
 fi
 if [[ -e "${LOCAL_OUTPUT}" ]]; then
-    echo "[ERROR] 本地运行目录已存在，请使用新的 EVAL_RUN_ID: ${LOCAL_OUTPUT}" >&2
+    echo "[ERROR] 本地运行目录已存在,请使用新的 EVAL_RUN_ID: ${LOCAL_OUTPUT}" >&2
     exit 1
 fi
 
@@ -58,26 +58,26 @@ readonly output_path="$1"
 BOARD_STATE
 }
 
-echo "[1/8] 交叉编译板端 C++ 评测程序。"
+echo "[1/8] 交叉编译板端 C++ 评测程序."
 bash "${SCRIPT_DIR}/build_board_cpp.sh"
 
-echo "[2/8] 检查板端数据集及全新运行目录。"
+echo "[2/8] 检查板端数据集及全新运行目录."
 image_count="$(ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "find '${BOARD_DATASET}/images' -maxdepth 1 -type f -name '*.jpg' | wc -l")"
 test "${image_count}" -eq 5000
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "test -f '${ANNOTATIONS}'"
 if ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "test -e '${BOARD_OUTPUT}'"; then
-    echo "[ERROR] 板端运行目录已存在，请使用新的 EVAL_RUN_ID: ${BOARD_OUTPUT}" >&2
+    echo "[ERROR] 板端运行目录已存在,请使用新的 EVAL_RUN_ID: ${BOARD_OUTPUT}" >&2
     exit 1
 fi
 
-echo "[3/8] 部署 C++ 程序、DLA 和板端指标脚本。"
+echo "[3/8] 部署 C++ 程序、DLA 和板端指标脚本."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_MODEL_DIR}' '${BOARD_OUTPUT}'"
 scp "${SSH_OPTIONS[@]}" "${BINARY}" "${MODEL_ROOT}/models/model_int8.dla" \
     "${EVALUATOR}" "${BOARD_HOST}:${BOARD_MODEL_DIR}/"
 
-echo "[4/8] 固化运行输入、数据集和板端环境证据。"
+echo "[4/8] 固化运行输入、数据集和板端环境证据."
 readonly GIT_COMMIT="$(git -C "${MODEL_ROOT}" rev-parse HEAD)"
 readonly SOURCE_SHA256="$(sha256sum \
     "${SCRIPT_DIR}/inference_demo/yolov5s_board_eval.cpp" | awk '{print $1}')"
@@ -113,7 +113,7 @@ find "${dataset_dir}/images" -maxdepth 1 -type f -name '*.jpg' -print0 \
 BOARD_MANIFEST
 capture_board_state "${BOARD_OUTPUT}/system_before.txt"
 
-echo "[5/8] 在板端执行 5000 张 C++ 预处理、NPU 推理和后处理。"
+echo "[5/8] 在板端执行 5000 张 C++ 预处理、NPU 推理和后处理."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "'${BOARD_MODEL_DIR}/yolov5s_board_eval' \
         --model '${BOARD_MODEL_DIR}/model_int8.dla' \
@@ -122,7 +122,7 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         --warmup 20 --progress-interval 50 \
         2>&1 | tee '${BOARD_OUTPUT}/board_eval.log'"
 
-echo "[6/8] 在板端使用 pycocotools 计算 COCO bbox 指标。"
+echo "[6/8] 在板端使用 pycocotools 计算 COCO bbox 指标."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "python3 '${BOARD_MODEL_DIR}/evaluate_coco.py' \
         --annotations '${ANNOTATIONS}' \
@@ -132,7 +132,7 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         --summary-log '${BOARD_OUTPUT}/coco_summary.log' \
         2>&1 | tee '${BOARD_OUTPUT}/cocoeval.log'"
 
-echo "[7/8] 固化输出哈希和运行后系统状态。"
+echo "[7/8] 固化输出哈希和运行后系统状态."
 capture_board_state "${BOARD_OUTPUT}/system_after.txt"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "cd '${BOARD_OUTPUT}' && sha256sum predictions.json processed_ids.txt \
@@ -141,7 +141,7 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         system_after.txt run_inputs_manifest.txt dataset_images_sha256.txt \
         > run_outputs_sha256.txt"
 
-echo "[8/8] 回传完整的交付证据,不回传逐图预测和原生输出。"
+echo "[8/8] 回传完整的交付证据,不回传逐图预测和原生输出."
 mkdir -p "${LOCAL_OUTPUT}"
 scp "${SSH_OPTIONS[@]}" "${BOARD_HOST}:${BOARD_OUTPUT}/coco_metrics.json" \
     "${BOARD_HOST}:${BOARD_OUTPUT}/coco_summary.log" \

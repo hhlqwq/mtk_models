@@ -41,14 +41,14 @@ C++ 全量运行.
 ## 测试配置
 
 - 日期：2026-09-09.
-- 设备：Genio 720 EVK，Linux 6.6.117-mtk，aarch64.
+- 设备：Genio 720 EVK,Linux 6.6.117-mtk,aarch64.
 - DLA SHA-256：`0b440fb98f7a39ee8c25b7251beb96651c2f54c177bf3d6ef80e81525fcb99c1`.
 - 编译参数：`--arch=mdla5.3 --suppress-output --disallow-bridge`.
-- 性能方法：先独立预热 20 次，再由 `neuronrt -c 100 -b 100 -r turbo` 连续推理
+- 性能方法：先独立预热 20 次,再由 `neuronrt -c 100 -b 100 -r turbo` 连续推理
   100 次；总推理时间 376.894 ms.
-- 单次进程耗时包含 neuronrt 进程启动、模型加载、一次推理和退出，不含上游人体检测器.
+- 单次进程耗时包含 neuronrt 进程启动、模型加载、一次推理和退出,不含上游人体检测器.
 - 峰值 RSS 来自 100 次连续推理期间采样 `/proc/<pid>/status` 的 `VmHWM`.
-- 正式 C++ 流程来自 104,125 个检测框的完整运行，平均预处理 2.77401 ms、NPU
+- 正式 C++ 流程来自 104,125 个检测框的完整运行,平均预处理 2.77401 ms、NPU
   3.84997 ms、后处理 1.05235 ms；不包含上游人体检测器和图片检测耗时.
 
 完整机器可读证据见 `board_validation_20260909.json`.

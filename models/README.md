@@ -1,6 +1,6 @@
 # 模型目录
 
-模型使用“Scenario → Category → Model"三级目录,与首批 Target AI Models 清单一致：
+模型使用"Scenario → Category → Model"三级目录,与首批 Target AI Models 清单一致：
 
 ```text
 models/

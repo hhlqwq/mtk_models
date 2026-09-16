@@ -80,7 +80,7 @@ ONNX 基线精度评测也使用 GPU.MTK Converter 8.16.0 的公开接口没有 
 ## MT8189 编译约束（重要）
 
 MT8189 (Genio 720) 的 NPU 是 MDLA 5.3,且**没有 EDPA 硬件**（板端不存在
-`libcmdl.so`）；NCC 8.2.31 对 INT8 图输出的 “MDLA → Output 数据转换桥" 默认派发到
+`libcmdl.so`）；NCC 8.2.31 对 INT8 图输出的 "MDLA → Output 数据转换桥" 默认派发到
 EDPA_1_2,导致板端 neuronrt 8.2.16 加载失败（`Found an unsupported target: EDPA_1_2`）.
 旧 `--arch=mdla3.0` 产物同样被板端拒绝（`unsupported target: MDLA_3_0`）.
 
@@ -139,7 +139,7 @@ C++ 路径不再回传这些原生输出.两条路径在评测前都会检查清
 | 正式性能 | 已完成 | `docs/benchmark.md`（板端 C++ 稳态端到端平均 33.66ms、P95 38.01ms；峰值 RSS 33,224 KiB） |
 
 Genio 720 的转换、Demo、板端性能、三后端正式精度和文档证据均已完成,当前状态为
-“完整交付".Genio 5100 仍为未开始,不属于本次状态结论.
+"完整交付".Genio 5100 仍为未开始,不属于本次状态结论.
 
 ## 公开三图示例
 

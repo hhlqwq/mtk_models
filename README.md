@@ -11,7 +11,7 @@ NMS,直接在开发板生成 COCO 预测与耗时证据,不回传 5000 张原始
 本项目面向 MediaTek Genio 720（MT8189）和 Genio 5100,对开源模型进行兼容性修改、
 转换、量化、部署与板端验证.模型交付结构、文档完整度和结果展示方式参考
 [Qualcomm AI Hub Models](https://huggingface.co/qualcomm/models),但不使用 Qualcomm
-模型或其预导出产物作为 MTK 模型的移植源.每个模型都应形成“开源上游、原始框架、
+模型或其预导出产物作为 MTK 模型的移植源.每个模型都应形成"开源上游、原始框架、
 标准格式导出、MTK NPU 部署、Demo、性能/精度报告、文档"的完整闭环.
 
 ## 模型来源原则
@@ -23,7 +23,7 @@ NMS,直接在开发板生成 COCO 预测与耗时证据,不回传 5000 张原始
 
 ## 首批模型范围
 
-首批范围是图片“Target AI models"列出的全部模型,覆盖 Perception、Interaction、Navigation、
+首批范围是图片"Target AI models"列出的全部模型,覆盖 Perception、Interaction、Navigation、
 Gen AI、Audio、SLAM、PointCloud 和 3D 八个 Scenario.完整机器可读清单见
 [target_models.yaml](registry/target_models.yaml).
 
@@ -35,7 +35,7 @@ YOLO-World XL.该模型使用板端 ONNX Runtime + Neuron Execution Provider 在
 不经过离线 TFLite/DLA 编译,其状态和性能口径与三个先行离线模型分开维护.
 
 三个先行模型各提供三张 CC0-1.0 典型图片及其 Genio 720 板端结果,便于在不分发
-ImageNet 或 COCO 原图的情况下直接展示“已经完成测试”.公开样例不替代正式数据集精度.
+ImageNet 或 COCO 原图的情况下直接展示"已经完成测试".公开样例不替代正式数据集精度.
 
 ## 先行实现模型
 
@@ -156,7 +156,7 @@ Qualcomm 对照资产、标签副本和校验清单由 `.gitignore` 排除并保
 
 ## 验收原则
 
-每个模型必须同时满足以下条件才可标记为“完整交付"：
+每个模型必须同时满足以下条件才可标记为"完整交付"：
 
 1. 锁定官方开源项目、源码版本、权重版本、许可证、下载地址和 SHA-256.
 2. 从开源上游权重运行原始框架推理并保存可复现命令.

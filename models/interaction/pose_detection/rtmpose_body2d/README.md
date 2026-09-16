@@ -17,8 +17,8 @@
 
 RTMPose 是 top-down 姿态模型,只处理人体检测框.转换校准与板端 Demo 使用 COCO person
 标注框模拟上游检测器输出,执行仿射裁剪、INT8 量化、板端推理和 SimCC 解码.正式
-WholeBody 精度评测则固定使用 Faster R-CNN 检测框,具体协议见“正式评测数据”.完整图片应用
-仍需额外的人体检测器；模型自身延迟和“检测器 + RTMPose"端到端延迟必须分别报告.
+WholeBody 精度评测则固定使用 Faster R-CNN 检测框,具体协议见"正式评测数据".完整图片应用
+仍需额外的人体检测器；模型自身延迟和"检测器 + RTMPose"端到端延迟必须分别报告.
 
 ## 目标执行流程
 
@@ -116,8 +116,8 @@ MMPose 默认的 `bbox_keypoint` 重评分、0.2 关键点阈值和 0.9 WholeBod
 的 AP/AR.逐框进度和可续跑的 `processed_ids.txt` 用于观察长时间评测状态.
 
 历史完整运行 `20260909_wholebody_int8_v2` 已在 Genio 720 完成全部 104,125 个框；OKS-NMS
-后保留 89,565 个结果，WholeBody AP 为 0.4369、AR 为 0.5646.板端常驻 C++ 流程的
-平均预处理、NPU、后处理耗时分别为 2.7740 ms、3.8500 ms、1.0524 ms，峰值 RSS
+后保留 89,565 个结果,WholeBody AP 为 0.4369、AR 为 0.5646.板端常驻 C++ 流程的
+平均预处理、NPU、后处理耗时分别为 2.7740 ms、3.8500 ms、1.0524 ms,峰值 RSS
 为 35,756 KB.完整分部指标和结果哈希见 `docs/accuracy.md`.
 
 以下输入约束只适用于历史 Qualcomm 图,不能直接套用于新的 MMPose 导出图.历史模型输入
