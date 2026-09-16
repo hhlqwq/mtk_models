@@ -10,6 +10,7 @@
 - 输出：中文或英文转写文本,使用 Greedy Search.
 - 图拆分：`encoder_fp32.onnx` 与 `decoder_step_fp32.onnx`.
 - Decoder：单 Token 自回归,固定 200 Token KV Cache；缓存、位置权重和注意力掩码均为静态 Shape.
+- 导出时关闭 Torch SDPA,使用 OpenAI 官方 MatMul/Softmax 注意力分支,兼容 Torch 2.0 ONNX.
 - 首版不包含流式麦克风、长音频滑窗、时间戳、翻译和说话人分离.
 
 ## 来源边界

@@ -170,7 +170,11 @@ def load_model(weights: Path) -> Any:
         CPU FP32 Eval 模式 Whisper 模型.
     """
     import whisper
+    from whisper.model import MultiHeadAttention
 
+    # Torch 2.0 ONNX 不支持 aten::scaled_dot_product_attention,强制使用
+    # OpenAI 官方的 MatMul/Softmax 等价分支,数值由后续三方对齐验证.
+    MultiHeadAttention.use_sdpa = False
     model = whisper.load_model(str(weights), device="cpu")
     return model.float().eval()
 
