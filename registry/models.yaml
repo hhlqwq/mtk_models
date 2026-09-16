@@ -35,6 +35,17 @@ models:
     platforms:
       genio_720: complete
       genio_5100: not_started
+  - id: yoloworld_xl
+    batch: mediatek_model_zoo
+    pilot: false
+    scenario: perception
+    category: object_detection
+    path: models/perception/object_detection/yoloworld_xl
+    source: AILab-CVC/YOLO-World
+    delivery_reference: mediatek/iot-ai-hub-model-zoo
+    platforms:
+      genio_720: board_verified
+      genio_5100: not_started
   - id: whisper_tiny
     batch: first_batch
     pilot: false

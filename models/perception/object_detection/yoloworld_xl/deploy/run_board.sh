@@ -6,8 +6,9 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
 readonly BOARD_ROOT="${MTK_BOARD_ROOT:-/root/hailong.he}"
+readonly BOARD_NEURON_RUNTIME_DIR="${MTK_NEURON_RUNTIME_DIR:-}"
 readonly RUN_ID="${RUN_ID:-$(date +%Y%m%d_%H%M%S)}"
-readonly BOARD_MODEL="${BOARD_ROOT}/yoloworld_xl/model/model_fp32_raw.onnx"
+readonly BOARD_MODEL="${BOARD_ROOT}/yoloworld_xl/model/model_fp32_opset13.onnx"
 readonly BOARD_IMAGES="${BOARD_ROOT}/yoloworld_xl/demo/public/images"
 readonly BOARD_OUTPUT="${BOARD_ROOT}/yoloworld_xl/demo/public/${RUN_ID}"
 readonly LOCAL_OUTPUT="${MODEL_ROOT}/examples/output/board/${RUN_ID}"
@@ -21,23 +22,39 @@ if [[ -e "${LOCAL_OUTPUT}" ]]; then
     echo "[ERROR] 本地输出目录已存在: ${LOCAL_OUTPUT}." >&2
     exit 1
 fi
+if [[ -n "${BOARD_NEURON_RUNTIME_DIR}" ]] &&
+   [[ ! "${BOARD_NEURON_RUNTIME_DIR}" =~ ^/[A-Za-z0-9._/-]+$ ]]; then
+    echo "[ERROR] MTK_NEURON_RUNTIME_DIR 必须是无空格的板端绝对路径." >&2
+    exit 1
+fi
 
-echo "[1/7] 部署模型、脚本和公开样例."
+neuron_env=()
+if [[ -n "${BOARD_NEURON_RUNTIME_DIR}" ]]; then
+    echo "[INFO] 使用隔离 Neuron 运行库: ${BOARD_NEURON_RUNTIME_DIR}."
+    ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+        "test -f '${BOARD_NEURON_RUNTIME_DIR}/libneuronusdk_adapter.mtk.so' && \
+         test -f '${BOARD_NEURON_RUNTIME_DIR}/libneuronusdk_runtime.mtk.so'"
+    neuron_env=(env "LD_LIBRARY_PATH=${BOARD_NEURON_RUNTIME_DIR}:/usr/lib")
+fi
+
+echo "[1/8] 部署模型、脚本和公开样例."
 bash "${SCRIPT_DIR}/deploy_board.sh"
 
-echo "[2/7] 检查板端运行目录没有旧结果."
+echo "[2/8] 检查板端运行目录没有旧结果."
 if ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "test -e '${BOARD_OUTPUT}'"; then
     echo "[ERROR] 板端输出目录已存在: ${BOARD_OUTPUT}." >&2
     exit 1
 fi
 
-echo "[3/7] 保存板端环境和输入哈希."
+echo "[3/8] 保存板端环境和输入哈希."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" bash -s -- \
-    "${BOARD_OUTPUT}" "${BOARD_MODEL}" "${BOARD_IMAGES}" <<'BOARD_PREPARE'
+    "${BOARD_OUTPUT}" "${BOARD_MODEL}" "${BOARD_IMAGES}" \
+    "${BOARD_NEURON_RUNTIME_DIR}" <<'BOARD_PREPARE'
 set -euo pipefail
 readonly output_dir="$1"
 readonly model_path="$2"
 readonly images_dir="$3"
+readonly neuron_runtime_dir="$4"
 mkdir -p "${output_dir}"
 {
     echo "captured_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -48,9 +65,15 @@ mkdir -p "${output_dir}"
 sha256sum "${model_path}" > "${output_dir}/model_sha256.txt"
 find "${images_dir}" -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum \
     > "${output_dir}/images_sha256.txt"
+if [[ -n "${neuron_runtime_dir}" ]]; then
+    sha256sum \
+        "${neuron_runtime_dir}/libneuronusdk_adapter.mtk.so.8.2.16" \
+        "${neuron_runtime_dir}/libneuronusdk_runtime.mtk.so.8.2.16" \
+        > "${output_dir}/neuron_runtime_sha256.txt"
+fi
 BOARD_PREPARE
 
-echo "[4/7] 执行 CPU EP 三图基线,每张图运行 1 次."
+echo "[4/8] 执行 CPU EP 三图基线,每张图运行 1 次."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "cd '${BOARD_ROOT}/yoloworld_xl/model' && \
      python3 run_board.py \
@@ -62,10 +85,10 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "test -s '${BOARD_OUTPUT}/cpu/results.json'"
 
-echo "[5/7] 执行 Neuron EP 三图验证,每张图预热后运行 10 次."
+echo "[5/8] 执行混合 Neuron EP 三图验证,每张图预热后运行 10 次."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "cd '${BOARD_ROOT}/yoloworld_xl/model' && \
-     python3 run_board.py \
+     ${neuron_env[*]} python3 run_board.py \
         --model '${BOARD_MODEL}' \
         --images '${BOARD_IMAGES}' \
         --output-dir '${BOARD_OUTPUT}/neuron' \
@@ -74,12 +97,20 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "test -s '${BOARD_OUTPUT}/neuron/results.json'"
 
-echo "[6/7] 固化板端输出哈希."
+echo "[6/8] 比较 CPU 与 Neuron 检测结果."
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "cd '${BOARD_ROOT}/yoloworld_xl/model' && \
+     python3 compare_results.py \
+        --cpu '${BOARD_OUTPUT}/cpu/results.json' \
+        --neuron '${BOARD_OUTPUT}/neuron/results.json' \
+        --output '${BOARD_OUTPUT}/parity.json'"
+
+echo "[7/8] 固化板端输出哈希."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "cd '${BOARD_OUTPUT}' && find . -type f ! -name outputs_sha256.txt \
         -print0 | sort -z | xargs -0 sha256sum > outputs_sha256.txt"
 
-echo "[7/7] 回传三图结果和运行证据."
+echo "[8/8] 回传三图结果和运行证据."
 mkdir -p "${LOCAL_OUTPUT}"
 scp "${SSH_OPTIONS[@]}" -r "${BOARD_HOST}:${BOARD_OUTPUT}/." "${LOCAL_OUTPUT}/"
 echo "[OK] YOLO-World XL 板端运行完成: ${LOCAL_OUTPUT}."

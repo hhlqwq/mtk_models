@@ -9,7 +9,7 @@
 输出: 三尺度类别 logits 与四方向框距离
 设备: MediaTek Genio 720 EVK
 部署格式: ONNX Runtime + Neuron Execution Provider
-当前状态: 环境建设中
+当前状态: 板端 Neuron EP 小样本已验证,正式 COCO mAP 待执行
 ```
 
 本交付实现用户指定的 MediaTek IoT AI Hub 官方 Model Zoo ONNX,而不是把其他平台的
@@ -67,20 +67,50 @@ NCC,也不生成 DLA.
 
 ## 板端运行
 
+### 当前板端运行库差异
+
+当前板端 `/usr/lib` 的 Neuron `8.2.16` 与官方 Rity v26.0 镜像中的同版本二进制并不
+相同.系统 adapter Build ID 为 `5b1e4ff9083d05ce2da479aa0dfd21b51ce1d7b1`,会让
+YOLO-World 以及系统自带 `squeezenet_quant.onnx` 都以 `unregistered target: NEON`
+退出；因此该错误不能归因于 YOLO-World 图.
+
+官方 v26.0 rootfs 内的 adapter Build ID 为
+`4799fa69bc82519b5ed3e0392ae566cc28ed9f42`.本项目不覆盖系统库,而是把官方镜像内的
+adapter/runtime 提取到模型专用目录.在 89 上执行：
+
+```bash
+bash deploy/stage_neuron_runtime.sh \
+  /tmp/hailongcodex/20260916/rootfs/9.rootfs.img
+```
+
+脚本只接受已经从 MediaTek 官方 v26.0 镜像解出的 ext4 rootfs,并校验以下哈希：
+
+| 文件 | SHA-256 |
+| --- | --- |
+| `9.rootfs.img` | `ce857239c548dd66c65cfef49f809582c107405c597c6773f64115fa03650c9d` |
+| `libneuronusdk_adapter.mtk.so.8.2.16` | `225f70c7fc5fb6fefa1ef8b662df7036ed36431b57252379ce0dd4b9e2210bcb` |
+| `libneuronusdk_runtime.mtk.so.8.2.16` | `38d74829a50f802eba0539d9c37273e7743e60d692b2af3fb6054805d08a85de` |
+
+这些专有运行库不进入 Git.正式刷入官方 v26.0 镜像后可不设置隔离目录,但仍需先用系统
+自带 SqueezeNet 对照确认 Neuron EP 可用.
+
 退出容器,在 89 宿主机执行：
 
 ```bash
 cd /data/users/hailong.he/github/mtk_models/models/perception/object_detection/yoloworld_xl
-RUN_ID=20260915_public_v1 bash deploy/run_board.sh
+RUN_ID=20260916_v26isolated_v2 \
+MTK_NEURON_RUNTIME_DIR=/root/hailong.he/yoloworld_xl/runtime_v26 \
+bash deploy/run_board.sh
 ```
 
 脚本会：
 
 1. 部署兼容 ONNX、Python Demo 和三张公开图片.
 2. 运行 CPU EP 三图基线.
-3. 使用 `NEURON_FLAG_USE_FP16=1` 运行 Neuron EP.
-4. 保存 ORT profiling,区分 Neuron 节点和 CPU fallback 节点.
-5. 回传检测框图片、JSON、延迟、峰值 RSS、环境及哈希证据.
+3. 使用 `NEURON_FLAG_USE_FP16=1` 和正确性优先的 `MIN_GROUP_SIZE=100` 运行混合 Neuron EP.
+4. 自动比较 CPU/Neuron 的检测数量、类别、分数和框坐标,超阈值即失败.
+5. 保存 ORT profiling,区分 Neuron 节点和 CPU fallback 节点.
+6. 回传检测框图片、JSON、延迟、峰值 RSS、环境及哈希证据.
 
 板端目录固定为 `/root/hailong.he/yoloworld_xl/{model,demo,eval}`.每次运行必须使用新的
 `RUN_ID`,不得覆盖旧证据.
@@ -103,5 +133,6 @@ Sigmoid、距离框解码、逐类别 NMS 和原图坐标恢复.
 
 MediaTek 官网的 Genio 720 Neuron EP `403.15 ms` 和 CPU EP `11214.33 ms` 是官方
 `onnxruntime_perf_test` 纯模型参考值,不是本项目实测,也不包含前后处理.本项目只有在
-profiling 出现 Neuron EP 节点、真实图片输出合理并形成可复现耗时证据后,才更新为
-"板端已验证".正式 COCO mAP 完成前不会标记为"完整交付".
+隔离官方运行库已完成真实图片 NPU 小样本推理；当前实测与边界见 `docs/benchmark.md` 和
+`docs/accuracy.md`.当前标记为"板端已验证",正式 COCO mAP 完成前不会标记为
+"完整交付".

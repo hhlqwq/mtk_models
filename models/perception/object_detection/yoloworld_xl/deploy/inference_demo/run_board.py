@@ -34,6 +34,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--score-threshold", type=float, default=0.25)
     parser.add_argument("--iou-threshold", type=float, default=0.65)
     parser.add_argument("--max-detections", type=int, default=300)
+    parser.add_argument(
+        "--neuron-min-group-size",
+        type=int,
+        default=100,
+        help="Neuron EP 最小子图节点数.",
+    )
     parser.add_argument("--profile", action="store_true", help="保存 ORT profiling.")
     return parser.parse_args()
 
@@ -64,6 +70,7 @@ def create_session(
     provider: str,
     profile: bool,
     output_dir: Path,
+    neuron_min_group_size: int,
 ) -> ort.InferenceSession:
     """创建 CPU 或 Neuron EP 会话."""
     options = ort.SessionOptions()
@@ -79,7 +86,11 @@ def create_session(
         provider_options = [
             {
                 "NEURON_FLAG_USE_FP16": "1",
-                "NEURON_FLAG_MIN_GROUP_SIZE": "1",
+                "NEURON_FLAG_MIN_GROUP_SIZE": str(neuron_min_group_size),
+                "NEURON_FLAG_OPTIMIZATION_STRING": (
+                    "--opt=3 --num-mdla=1 --reshape-to-4d "
+                    "--interval-coloring-converage=1.0"
+                ),
             },
             {},
         ]
@@ -115,6 +126,25 @@ def summarize_profile(profile_path: Path) -> dict[str, object]:
     }
 
 
+def summarize_outputs(outputs: list[np.ndarray]) -> list[dict[str, object]]:
+    """记录输出范围,用于比较 CPU 与 Neuron EP 数值行为."""
+    summaries = []
+    for index, value in enumerate(outputs):
+        finite = np.isfinite(value)
+        summaries.append(
+            {
+                "index": index,
+                "shape": list(value.shape),
+                "dtype": str(value.dtype),
+                "min": float(np.min(value)),
+                "max": float(np.max(value)),
+                "mean": float(np.mean(value, dtype=np.float64)),
+                "finite_ratio": float(np.mean(finite)),
+            }
+        )
+    return summaries
+
+
 def main() -> None:
     """执行图片推理、后处理、可视化和性能统计."""
     args = parse_args()
@@ -122,7 +152,13 @@ def main() -> None:
     images = collect_images(args.images)
     print(f"[1/4] 创建 {args.provider} 会话,模型首次建图可能耗时较长.")
     session_start = time.perf_counter()
-    session = create_session(args.model, args.provider, args.profile, args.output_dir)
+    session = create_session(
+        args.model,
+        args.provider,
+        args.profile,
+        args.output_dir,
+        args.neuron_min_group_size,
+    )
     session_creation_ms = (time.perf_counter() - session_start) * 1000.0
 
     first_image = cv2.imread(str(images[0]), cv2.IMREAD_COLOR)
@@ -175,6 +211,7 @@ def main() -> None:
                 "preprocess_ms": preprocess_ms,
                 "inference_ms": image_inference_ms,
                 "postprocess_ms": postprocess_ms,
+                "output_summaries": summarize_outputs(outputs),
                 "detection_count": len(detections),
                 "detections": detections,
                 "rendered_image": output_image.name,
@@ -216,6 +253,7 @@ def main() -> None:
         "session_creation_ms": session_creation_ms,
         "warmup": args.warmup,
         "repeat": args.repeat,
+        "neuron_min_group_size": args.neuron_min_group_size,
         "score_threshold": args.score_threshold,
         "iou_threshold": args.iou_threshold,
         "peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,

@@ -30,6 +30,10 @@ Gen AI、Audio、SLAM、PointCloud 和 3D 八个 Scenario.完整机器可读清�
 YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打通目录、转换、MTK NPU
 部署、Demo、精度和性能报告闭环.
 
+2026-09-15 开始接入 MediaTek IoT AI Hub 官方 ONNX Runtime Model Zoo 中的
+YOLO-World XL.该模型使用板端 ONNX Runtime + Neuron Execution Provider 在线推理,
+不经过离线 TFLite/DLA 编译,其状态和性能口径与三个先行离线模型分开维护.
+
 三个先行模型各提供三张 CC0-1.0 典型图片及其 Genio 720 板端结果,便于在不分发
 ImageNet 或 COCO 原图的情况下直接展示“已经完成测试”.公开样例不替代正式数据集精度.
 
@@ -40,6 +44,7 @@ ImageNet 或 COCO 原图的情况下直接展示“已经完成测试”.公开�
 | [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics | 完整交付 |
 | [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 完整交付 |
 | [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | 完整交付 |
+| [YOLO-World XL](models/perception/object_detection/yoloworld_xl/README.md) | Perception / Object detection | 640×640 RGB | AILab-CVC / MediaTek Model Zoo ONNX | 板端已验证；正式 COCO mAP 待补 |
 | [Whisper-Tiny](models/audio/stt/whisper_tiny/README.md) | Audio / STT | 16 kHz 单声道、最长 30 秒 | OpenAI Whisper v20250625 | 板端已验证；正式 WER/CER 待补 |
 
 公开三图结果分别位于各模型的 `examples/output/public/`,可通过模型 README 直接查看.
