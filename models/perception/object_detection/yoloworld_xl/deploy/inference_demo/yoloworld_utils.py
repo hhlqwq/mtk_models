@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""YOLO-World XL 图像预处理、检测头解码和 NMS 工具。"""
+"""YOLO-World XL 图像预处理、检测头解码和 NMS 工具."""
 
 from dataclasses import dataclass
 
@@ -27,7 +27,7 @@ STRIDES = (8, 16, 32)
 
 @dataclass(frozen=True)
 class ImageTransform:
-    """保存方形填充和缩放参数。"""
+    """保存方形填充和缩放参数."""
 
     scale: float
     pad_x: int
@@ -37,7 +37,7 @@ class ImageTransform:
 
 
 def preprocess_image(image_bgr: np.ndarray) -> tuple[np.ndarray, ImageTransform]:
-    """按上游导出 Demo 的黑边方形填充方式生成 NCHW RGB 输入。"""
+    """按上游导出 Demo 的黑边方形填充方式生成 NCHW RGB 输入."""
     height, width = image_bgr.shape[:2]
     square_size = max(height, width)
     pad_y = (square_size - height) // 2
@@ -58,7 +58,7 @@ def preprocess_image(image_bgr: np.ndarray) -> tuple[np.ndarray, ImageTransform]
 
 
 def sigmoid(values: np.ndarray) -> np.ndarray:
-    """稳定计算 Sigmoid。"""
+    """稳定计算 Sigmoid."""
     return 1.0 / (1.0 + np.exp(-np.clip(values, -30.0, 30.0)))
 
 
@@ -67,12 +67,16 @@ def decode_level(
     distances: np.ndarray,
     stride: int,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """把单尺度 YOLOv8 风格距离预测解码为输入图坐标框。"""
+    """把单尺度 YOLOv8 风格距离预测解码为输入图坐标框."""
     _, class_count, height, width = class_logits.shape
-    if class_count != len(COCO_CLASSES) or distances.shape != (1, 4, height, width):
+    if class_count != len(COCO_CLASSES):
         raise ValueError(
-            f"检测头形状异常: cls={class_logits.shape}, box={distances.shape}。"
+            f"检测头形状异常: cls={class_logits.shape}, box={distances.shape}."
         )
+    if distances.shape == (1, 64, height, width):
+        distances = decode_dfl(distances)
+    elif distances.shape != (1, 4, height, width):
+        raise ValueError(f"框检测头形状异常: {distances.shape}.")
     scores = sigmoid(class_logits[0].transpose(1, 2, 0).reshape(-1, class_count))
     box_distances = distances[0].transpose(1, 2, 0).reshape(-1, 4)
     grid_x, grid_y = np.meshgrid(
@@ -86,8 +90,23 @@ def decode_level(
     return scores, boxes
 
 
+def decode_dfl(raw_bbox: np.ndarray) -> np.ndarray:
+    """在 CPU 上把 64 通道 DFL logits 解码为四方向距离."""
+    batch, channels, height, width = raw_bbox.shape
+    if batch != 1 or channels != 64:
+        raise ValueError(f"DFL 输入形状异常: {raw_bbox.shape}.")
+    logits = raw_bbox.reshape(batch, 4, 16, height * width)
+    logits = logits.transpose(0, 3, 1, 2)
+    logits = logits - logits.max(axis=-1, keepdims=True)
+    probabilities = np.exp(logits)
+    probabilities /= probabilities.sum(axis=-1, keepdims=True)
+    bins = np.arange(16, dtype=np.float32)
+    distances = (probabilities * bins).sum(axis=-1)
+    return distances.transpose(0, 2, 1).reshape(batch, 4, height, width)
+
+
 def box_iou(one_box: np.ndarray, boxes: np.ndarray) -> np.ndarray:
-    """计算一个框与一组框的 IoU。"""
+    """计算一个框与一组框的 IoU."""
     top_left = np.maximum(one_box[:2], boxes[:, :2])
     bottom_right = np.minimum(one_box[2:], boxes[:, 2:])
     intersection = np.prod(np.clip(bottom_right - top_left, 0.0, None), axis=1)
@@ -102,7 +121,7 @@ def class_aware_nms(
     labels: np.ndarray,
     iou_threshold: float,
 ) -> np.ndarray:
-    """执行逐类别 NMS 并返回保留索引。"""
+    """执行逐类别 NMS 并返回保留索引."""
     kept: list[int] = []
     for class_id in np.unique(labels):
         class_indices = np.flatnonzero(labels == class_id)
@@ -124,9 +143,9 @@ def decode_outputs(
     iou_threshold: float,
     max_detections: int,
 ) -> list[dict[str, object]]:
-    """解码三尺度输出、执行 NMS 并映射回原图。"""
+    """解码三尺度输出、执行 NMS 并映射回原图."""
     if len(outputs) != 6:
-        raise ValueError(f"期望 6 个输出，实际为 {len(outputs)}。")
+        raise ValueError(f"期望 6 个输出,实际为 {len(outputs)}.")
 
     all_scores = []
     all_boxes = []
@@ -180,7 +199,7 @@ def render_detections(
     image_bgr: np.ndarray,
     detections: list[dict[str, object]],
 ) -> np.ndarray:
-    """在图像上绘制检测框、类别和置信度。"""
+    """在图像上绘制检测框、类别和置信度."""
     rendered = image_bgr.copy()
     for detection in detections:
         x1, y1, x2, y2 = [int(round(value)) for value in detection["bbox_xyxy"]]

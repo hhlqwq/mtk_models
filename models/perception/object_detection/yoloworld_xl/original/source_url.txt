@@ -9,7 +9,7 @@ MediaTek 官方 ONNX：https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aio
 官方 ONNX 文件大小：419032016 bytes
 官方 ONNX SHA-256：6d5b231425200f0426b73967c33a69ce5af83e993426d4fc64dc1709571d6174
 官方 ONNX Last-Modified：2026-01-17T08:37:58Z
-官方 S3 ETag：532696e4dcbb6bbe8589e1f8bd4e7d23-25（分段上传标识，不能作为 MD5）
+官方 S3 ETag：532696e4dcbb6bbe8589e1f8bd4e7d23-25（分段上传标识,不能作为 MD5）
 
 上游论文：https://arxiv.org/abs/2401.17270
 上游部署说明：https://github.com/AILab-CVC/YOLO-World/blob/4f70adbaacf5685bd9ec5bea85f1f91057f6fc0b/docs/deploy.md
