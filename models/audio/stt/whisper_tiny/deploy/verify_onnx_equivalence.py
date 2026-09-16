@@ -11,17 +11,42 @@ from export_onnx import DecoderStepWrapper, EncoderWrapper, MASK_NEGATIVE
 from export_onnx import load_model
 
 
-def maximum_error(reference: np.ndarray, actual: np.ndarray) -> float:
-    """计算两个数组的最大绝对误差.
+def error_statistics(reference: np.ndarray,
+                     actual: np.ndarray) -> dict[str, float]:
+    """计算两个数组的绝对误差和余弦相似度.
 
     Args:
         reference: 参考数组.
         actual: 被比较数组.
 
     Returns:
-        最大绝对误差.
+        最大值、均值、P99 绝对误差和余弦相似度.
     """
-    return float(np.max(np.abs(reference.astype(np.float64) - actual)))
+    reference_fp64 = reference.astype(np.float64).reshape(-1)
+    actual_fp64 = actual.astype(np.float64).reshape(-1)
+    absolute = np.abs(reference_fp64 - actual_fp64)
+    denominator = np.linalg.norm(reference_fp64) * np.linalg.norm(actual_fp64)
+    cosine = float(np.dot(reference_fp64, actual_fp64) / denominator)
+    return {
+        "max": float(np.max(absolute)),
+        "mean": float(np.mean(absolute)),
+        "p99": float(np.percentile(absolute, 99)),
+        "cosine": cosine,
+    }
+
+
+def format_statistics(statistics: dict[str, float]) -> str:
+    """格式化数值对齐统计.
+
+    Args:
+        statistics: `error_statistics()` 返回值.
+
+    Returns:
+        单行可读摘要.
+    """
+    return (
+        f"max={statistics['max']:.8g}, mean={statistics['mean']:.8g}, "
+        f"p99={statistics['p99']:.8g}, cosine={statistics['cosine']:.10f}")
 
 
 def run_verification(args: argparse.Namespace) -> None:
@@ -41,10 +66,11 @@ def run_verification(args: argparse.Namespace) -> None:
     encoder_session = ort.InferenceSession(
         str(args.encoder), providers=["CPUExecutionProvider"])
     encoder_onnx = encoder_session.run(None, {"mel": mel.numpy()})[0]
-    encoder_error = maximum_error(encoder_reference, encoder_onnx)
-    print(f"[CHECK] Encoder 最大绝对误差: {encoder_error:.8g}")
-    if not np.allclose(encoder_reference, encoder_onnx,
-                       atol=args.atol, rtol=args.rtol):
+    encoder_statistics = error_statistics(encoder_reference, encoder_onnx)
+    print(f"[CHECK] Encoder: {format_statistics(encoder_statistics)}")
+    if (encoder_statistics["max"] > args.encoder_max_error or
+            encoder_statistics["mean"] > args.encoder_mean_error or
+            encoder_statistics["cosine"] < args.encoder_min_cosine):
         raise ValueError("Encoder ONNX 数值不一致.")
 
     decoder_session = ort.InferenceSession(
@@ -82,19 +108,21 @@ def run_verification(args: argparse.Namespace) -> None:
             "cache_update_mask": cache_update,
             "attention_mask": attention_mask,
         })
-        original_error = maximum_error(original_logits, step_logits.numpy())
-        onnx_error = maximum_error(step_logits.numpy(), onnx_logits)
-        cache_error = maximum_error(step_cache.numpy(), onnx_cache)
+        original_statistics = error_statistics(
+            original_logits, step_logits.numpy())
+        onnx_statistics = error_statistics(step_logits.numpy(), onnx_logits)
+        cache_statistics = error_statistics(step_cache.numpy(), onnx_cache)
         print(
             f"[CHECK] Decoder {position + 1}/{len(token_ids)}: "
-            f"原始/改写={original_error:.8g}, "
-            f"改写/ONNX={onnx_error:.8g}, Cache={cache_error:.8g}")
-        if not np.allclose(original_logits, step_logits.numpy(),
-                           atol=args.atol, rtol=args.rtol):
+            f"原始/改写 {format_statistics(original_statistics)}; "
+            f"改写/ONNX {format_statistics(onnx_statistics)}; "
+            f"Cache {format_statistics(cache_statistics)}")
+        if original_statistics["max"] > args.decoder_max_error:
             raise ValueError(f"Decoder-Step 第 {position} 步与原始模型不一致.")
-        if not np.allclose(step_logits.numpy(), onnx_logits,
-                           atol=args.atol, rtol=args.rtol):
+        if onnx_statistics["max"] > args.decoder_max_error:
             raise ValueError(f"Decoder-Step 第 {position} 步 ONNX 不一致.")
+        if cache_statistics["max"] > args.cache_max_error:
+            raise ValueError(f"Decoder-Step 第 {position} 步 Cache 不一致.")
         cache = onnx_cache
     print("[OK] OpenAI、Decoder-Step 与 ONNX Runtime 数值一致.")
 
@@ -110,8 +138,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--encoder", type=Path, required=True)
     parser.add_argument("--decoder", type=Path, required=True)
     parser.add_argument("--max-tokens", type=int, default=200)
-    parser.add_argument("--atol", type=float, default=2e-4)
-    parser.add_argument("--rtol", type=float, default=2e-4)
+    parser.add_argument("--encoder-max-error", type=float, default=5e-3)
+    parser.add_argument("--encoder-mean-error", type=float, default=2e-4)
+    parser.add_argument("--encoder-min-cosine", type=float, default=0.99999)
+    parser.add_argument("--decoder-max-error", type=float, default=2e-4)
+    parser.add_argument("--cache-max-error", type=float, default=2e-5)
     return parser.parse_args()
 
 
