@@ -1,8 +1,8 @@
 # Whisper-Tiny
 
 本目录用于将 OpenAI 多语言 Whisper-Tiny 部署到 MT8189 / Genio 720.当前状态为
-`环境建设中`：来源、目录、离线导出和转换入口已经建立,但尚未生成 ONNX/TFLite/DLA,
-也尚未取得板端推理、WER/CER 或性能结果.
+`板端已验证`：双 DLA 已在 Neuron Runtime 8.2.16 完成英文与静音 Smoke Test,
+Token 和文本均与 OpenAI FP32 Greedy Search 基线完全一致.正式 WER/CER 与完整性能评测待补.
 
 ## 首版范围
 
@@ -52,18 +52,21 @@ bash models/audio/stt/whisper_tiny/deploy/build.sh
 NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 ```
 
-严格编译同时使用 `--suppress-input --suppress-output --disallow-bridge`，板端程序必须按
-TFLite 声明的 FP32 Shape 直接填写输入并读取输出，避免编译器插入外部布局转换桥接。
+严格编译同时使用 `--suppress-input --suppress-output --disallow-bridge`，避免编译器插入
+外部布局转换桥接.板端 Runtime 探针确认原生 I/O 为 FP16；程序按 Runtime 返回的 padded
+字节数和布局填充缓冲区,不能把 TFLite 的 FP32 字节数直接传给 DLA.
 `deploy/build_board_cpp.sh` 会交叉编译板端 I/O 探针，用于在真实 Runtime 上核对每个
-输入输出的硬件对齐字节数和四维布局。
-首次运行应保留 Converter/NCC 完整日志并检查执行计划.只有 Encoder 与 Decoder 循环都在
-92 板端生成正确文本,才可升级为"板端已验证".完整交付还要求 LibriSpeech WER、
-AISHELL-1 CER、RTF、Token 延迟、峰值 RSS、文件哈希和运行 ID.
+输入输出的硬件对齐字节数和四维布局，并生成 `whisper_board_decode` 双 DLA 解码程序。
+`deploy/prepare_board_inputs.py` 在 89 上生成 FP16 Mel、OpenAI FP32 基线和固定解码规则；
+`deploy/decode_board_tokens.py` 将板端 Token 解码为文本并执行精确对比。
+2026-09-16 的板端证据见 `docs/board_smoke_20260916.json`、`docs/accuracy.md` 和
+`docs/benchmark.md`.完整交付还要求 LibriSpeech WER、AISHELL-1 CER、分组延迟/RTF、
+峰值 RSS 和中文/噪声样例.
 
-## 当前未验证项
+## 验证边界
 
-- OpenAI FP32 与 ONNX 的 Mel、Encoder、逐 Token logits、Token 序列和文本一致性.
-- MTK Converter 8.16.0 对 Decoder 固定 KV Cache 图的兼容性.
-- NCC 8.2.31 的 MDLA 5.3 全图执行计划.
-- Genio 720 Neuron Runtime 8.2.16 完整解码和性能.
-- 正式中英文 WER/CER.
+- 已验证：OpenAI FP32/改写图/ONNX 数值对齐、MTK Converter 8.16.0 转换、NCC 8.2.31
+  双图单一 MDLA 5.3 执行步、禁止 bridge 编译、Genio 720 双 DLA 完整解码.
+- 已验证样例：OpenAI `jfk.flac` 的 23 个 Token 和文本逐项一致；生成的 5 秒静音样例
+  输出 1 个 Token `291`（文本 `you`）,与 OpenAI FP32 基线一致且不同于 JFK 输出.
+- 未验证：LibriSpeech WER、AISHELL-1 CER、中文/噪声样例、正式重复性能统计、RTF 和峰值 RSS.

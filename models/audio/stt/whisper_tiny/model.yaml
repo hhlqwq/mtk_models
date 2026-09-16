@@ -26,8 +26,8 @@ metrics:
   performance: [encoder_latency_ms, decoder_token_latency_ms, rtf, peak_rss_kb]
 targets:
   genio_720:
-    status: environment_ready
-    precisions: []
+    status: board_validated
+    precisions: [fp16]
   genio_5100:
     status: not_started
     precisions: []

@@ -1,0 +1,100 @@
+{
+  "date": "2026-09-16",
+  "status": "board_validated_smoke",
+  "host": {
+    "address": "192.168.0.89",
+    "container": "hhl_g720_8011",
+    "converter": "8.16.0",
+    "ncc": "8.2.31",
+    "ncc_arch": "mdla5.3",
+    "ncc_flags": [
+      "--suppress-input",
+      "--suppress-output",
+      "--disallow-bridge"
+    ]
+  },
+  "board": {
+    "address": "192.168.0.92",
+    "soc": "MT8189 / Genio 720",
+    "kernel": "6.6.117-mtk+ge93786e7114b-gbdfdf5b7370c",
+    "neuron_runtime": "8.2.16",
+    "deploy_root": "/root/hailong.he/whisper_tiny"
+  },
+  "artifacts": {
+    "encoder_fp32.onnx": {
+      "bytes": 32872992,
+      "sha256": "2f87bdaffec3d1e27518c0e97e38c88a026d4f2de9bfddc894ef1f564d77cb2a"
+    },
+    "decoder_step_fp32.onnx": {
+      "bytes": 197917478,
+      "sha256": "2235036831dce7d510f42bf05bdd95c74c0d8c4737286397dc4e56f9209c4748"
+    },
+    "encoder_fp32.tflite": {
+      "bytes": 32857956,
+      "sha256": "92b4962262b21c9fc8d5d8fff735abc5dc2aa0bf359456d58ddb78a6864cdd1c"
+    },
+    "decoder_step_fp32.tflite": {
+      "bytes": 198115696,
+      "sha256": "a32b81a0cb8ac1853f92e3520a4715f5ec6b42dd1ce48d34a82c19c3dabe7347"
+    },
+    "encoder_fp32.dla": {
+      "bytes": 16596290,
+      "sha256": "6d7dbe0a1e657a018f1505dc3aed173a143290f54d5a6e3e4b9d3a653fa6045a"
+    },
+    "decoder_step_fp32.dla": {
+      "bytes": 99430419,
+      "sha256": "7c8f49cd6ca710e10deeefdd76a8ce948b208df612de1df9c30b32f7b9756b9b"
+    },
+    "whisper_board_decode": {
+      "sha256": "12cca52998ce34cf54a9ce04915740bdaa9b4a286d97a68745a1067fd3c7d1de"
+    }
+  },
+  "native_io": {
+    "dtype": "float16",
+    "encoder_input_bytes": 480000,
+    "encoder_output_bytes": 1152000,
+    "decoder_inputs": 13,
+    "decoder_outputs": 9,
+    "decoder_token_input_padded_elements": 51872,
+    "decoder_logits_elements": 51865,
+    "cache_shape": [6, 1, 64, 200],
+    "cache_bytes_each": 153600
+  },
+  "runs": [
+    {
+      "run_id": "20260916_jfk_fp32_v1",
+      "source_url": "https://raw.githubusercontent.com/openai/whisper/v20250625/tests/jfk.flac",
+      "source_sha256": "63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715",
+      "pcm_wav_sha256": "80f71fdab049ca195115a63a738c7aeea50b2e09bc3513f85e627a28dbc5f40e",
+      "token_exact_match": true,
+      "text_exact_match": true,
+      "generated_tokens": 23,
+      "encoder_ms": 81.6923,
+      "decoder_calls": 27,
+      "decoder_total_ms": 277.451,
+      "decoder_mean_ms": 10.2759,
+      "text": "And so my fellow Americans ask not what your country can do for you ask what you can do for your country."
+    },
+    {
+      "run_id": "20260916_silence_fp32_v1",
+      "source": "ffmpeg anullsrc, 16000 Hz mono, 5 seconds, PCM s16le",
+      "pcm_wav_sha256": "1586be3b68ea58210469753e00972fa3614e0938963be5b41a37c7c7df6e1d4f",
+      "token_exact_match": true,
+      "text_exact_match": true,
+      "generated_tokens": 1,
+      "encoder_ms": 81.7182,
+      "decoder_calls": 5,
+      "decoder_total_ms": 48.6433,
+      "decoder_mean_ms": 9.72866,
+      "text": "you",
+      "note": "用于排除 JFK Stale Buffer,不代表静音拒识能力."
+    }
+  ],
+  "known_warning": "libcmdl.so 缺失会打印可选 CMDL 探针警告,但双 DLA APUSYS 硬件推理实际成功.",
+  "pending": [
+    "LibriSpeech test-clean WER",
+    "AISHELL-1 test CER",
+    "中文与噪声样例",
+    "正式重复性能、RTF 与峰值 RSS"
+  ]
+}

@@ -44,5 +44,5 @@ models:
     source: openai/whisper
     delivery_reference: qualcomm/Whisper-Tiny
     platforms:
-      genio_720: environment_ready
+      genio_720: board_validated
       genio_5100: not_started
