@@ -76,19 +76,27 @@ def run_verification(args: argparse.Namespace) -> None:
     decoder_session = ort.InferenceSession(
         str(args.decoder), providers=["CPUExecutionProvider"])
     head_dim = dimensions.n_text_state // dimensions.n_text_head
-    cache = np.zeros((
-        dimensions.n_text_layer, 2, 1, dimensions.n_text_head,
-        args.max_tokens, head_dim), dtype=np.float32)
+    kv_caches = []
+    for _ in range(dimensions.n_text_layer):
+        kv_caches.extend((
+            np.zeros((dimensions.n_text_head, 1, head_dim, args.max_tokens),
+                     dtype=np.float32),
+            np.zeros((dimensions.n_text_head, 1, args.max_tokens, head_dim),
+                     dtype=np.float32),
+        ))
     token_ids = [50258, 50259, 50359, 50363]
     history: list[int] = []
     for position, token_id in enumerate(token_ids):
         history.append(token_id)
-        token = np.asarray([[token_id]], dtype=np.int64)
+        token_onehot = np.zeros((1, dimensions.n_vocab), dtype=np.float32)
+        token_onehot[0, token_id] = 1.0
         position_weights = np.zeros(
             (1, dimensions.n_text_ctx), dtype=np.float32)
         position_weights[0, position] = 1.0
-        cache_update = np.zeros((1, args.max_tokens), dtype=np.float32)
-        cache_update[0, position] = 1.0
+        key_update = np.zeros((1, 1, 1, args.max_tokens), dtype=np.float32)
+        key_update[..., position] = 1.0
+        value_update = np.zeros((1, 1, args.max_tokens, 1), dtype=np.float32)
+        value_update[..., position, :] = 1.0
         attention_mask = np.full(
             (1, 1, 1, args.max_tokens), MASK_NEGATIVE, dtype=np.float32)
         attention_mask[..., :position + 1] = 0.0
@@ -96,34 +104,46 @@ def run_verification(args: argparse.Namespace) -> None:
             original_logits = model.decoder(
                 torch.tensor([history]),
                 torch.from_numpy(encoder_reference))[:, -1, :].float().numpy()
-            step_logits, step_cache = decoder(
-                torch.from_numpy(token), torch.from_numpy(encoder_reference),
-                torch.from_numpy(cache), torch.from_numpy(position_weights),
-                torch.from_numpy(cache_update), torch.from_numpy(attention_mask))
-        onnx_logits, onnx_cache = decoder_session.run(None, {
-            "token": token,
+            step_outputs = decoder(
+                torch.from_numpy(token_onehot),
+                torch.from_numpy(encoder_reference),
+                torch.from_numpy(position_weights), torch.from_numpy(key_update),
+                torch.from_numpy(value_update), torch.from_numpy(attention_mask),
+                *[torch.from_numpy(cache) for cache in kv_caches])
+        onnx_inputs = {
+            "token_onehot": token_onehot,
             "audio_features": encoder_onnx,
-            "kv_cache": cache,
             "position_weights": position_weights,
-            "cache_update_mask": cache_update,
+            "key_update_mask": key_update,
+            "value_update_mask": value_update,
             "attention_mask": attention_mask,
-        })
+        }
+        for layer in range(dimensions.n_text_layer):
+            onnx_inputs[f"key_cache_{layer}_in"] = kv_caches[layer * 2]
+            onnx_inputs[f"value_cache_{layer}_in"] = kv_caches[layer * 2 + 1]
+        onnx_outputs = decoder_session.run(None, onnx_inputs)
+        step_logits = step_outputs[0]
+        step_caches = step_outputs[1:]
+        onnx_logits = onnx_outputs[0]
+        onnx_caches = onnx_outputs[1:]
         original_statistics = error_statistics(
             original_logits, step_logits.numpy())
         onnx_statistics = error_statistics(step_logits.numpy(), onnx_logits)
-        cache_statistics = error_statistics(step_cache.numpy(), onnx_cache)
+        cache_max = max(
+            error_statistics(reference.numpy(), actual)["max"]
+            for reference, actual in zip(step_caches, onnx_caches))
         print(
             f"[CHECK] Decoder {position + 1}/{len(token_ids)}: "
             f"原始/改写 {format_statistics(original_statistics)}; "
             f"改写/ONNX {format_statistics(onnx_statistics)}; "
-            f"Cache {format_statistics(cache_statistics)}")
+            f"Cache max={cache_max:.8g}")
         if original_statistics["max"] > args.decoder_max_error:
             raise ValueError(f"Decoder-Step 第 {position} 步与原始模型不一致.")
         if onnx_statistics["max"] > args.decoder_max_error:
             raise ValueError(f"Decoder-Step 第 {position} 步 ONNX 不一致.")
-        if cache_statistics["max"] > args.cache_max_error:
+        if cache_max > args.cache_max_error:
             raise ValueError(f"Decoder-Step 第 {position} 步 Cache 不一致.")
-        cache = onnx_cache
+        kv_caches = list(onnx_caches)
     print("[OK] OpenAI、Decoder-Step 与 ONNX Runtime 数值一致.")
 
 

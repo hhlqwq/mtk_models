@@ -68,7 +68,8 @@ class DecoderStepWrapper(nn.Module):
     def _self_attention(
             self, attention: nn.Module, hidden: torch.Tensor,
             past_key: torch.Tensor, past_value: torch.Tensor,
-            cache_update_mask: torch.Tensor,
+            key_update_mask: torch.Tensor,
+            value_update_mask: torch.Tensor,
             attention_mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor,
                                                    torch.Tensor]:
         """执行带固定长度 KV Cache 的自注意力.
@@ -78,25 +79,29 @@ class DecoderStepWrapper(nn.Module):
             hidden: 当前 Token 隐状态.
             past_key: 固定长度历史 Key Cache.
             past_value: 固定长度历史 Value Cache.
-            cache_update_mask: 当前写入位置的 One-Hot Mask.
+            key_update_mask: Key Cache 当前写入位置的 One-Hot Mask.
+            value_update_mask: Value Cache 当前写入位置的 One-Hot Mask.
             attention_mask: 屏蔽未写入 Cache 的加法 Mask.
 
         Returns:
             注意力输出、更新后的 Key Cache 和 Value Cache.
         """
         heads = attention.n_head
-        query = self._project_heads(attention.query(hidden), heads)
-        key_new = self._project_heads(attention.key(hidden), heads)
-        value_new = self._project_heads(attention.value(hidden), heads)
-        update = cache_update_mask.reshape(1, 1, self.max_tokens, 1)
-        key = past_key * (1.0 - update) + key_new * update
-        value = past_value * (1.0 - update) + value_new * update
+        query = self._project_heads(
+            attention.query(hidden), heads).permute(1, 0, 2, 3)
+        key_new = self._project_heads(
+            attention.key(hidden), heads).permute(1, 0, 3, 2)
+        value_new = self._project_heads(
+            attention.value(hidden), heads).permute(1, 0, 2, 3)
+        key = past_key * (1.0 - key_update_mask) + key_new * key_update_mask
+        value = (past_value * (1.0 - value_update_mask) +
+                 value_new * value_update_mask)
         scale = (query.shape[-1]) ** -0.25
-        scores = (query * scale) @ (key * scale).transpose(-1, -2)
+        scores = (query * scale) @ (key * scale)
         scores = scores + attention_mask
         probabilities = torch.softmax(scores.float(), dim=-1).to(query.dtype)
         context = probabilities @ value
-        context = context.permute(0, 2, 1, 3).flatten(start_dim=2)
+        context = context.permute(1, 2, 0, 3).flatten(start_dim=2)
         return attention.out(context), key, value
 
     def _cross_attention(
@@ -124,40 +129,44 @@ class DecoderStepWrapper(nn.Module):
         return attention.out(context)
 
     def forward(
-            self, token: torch.Tensor, audio_features: torch.Tensor,
-            kv_cache: torch.Tensor, position_weights: torch.Tensor,
-            cache_update_mask: torch.Tensor,
-            attention_mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+            self, token_onehot: torch.Tensor, audio_features: torch.Tensor,
+            position_weights: torch.Tensor, key_update_mask: torch.Tensor,
+            value_update_mask: torch.Tensor, attention_mask: torch.Tensor,
+            *kv_caches: torch.Tensor) -> tuple[torch.Tensor, ...]:
         """运行一个 Decoder Token 并返回 Logits 和完整新 Cache.
 
         Args:
-            token: `[1, 1]` INT64 Token.
+            token_onehot: `[1, vocab]` FP32 Token One-Hot.
             audio_features: `[1, 1500, n_audio_state]` Encoder 输出.
-            kv_cache: `[L, 2, 1, H, M, D]` 固定 Cache.
             position_weights: `[1, n_text_ctx]` 位置 One-Hot 权重.
-            cache_update_mask: `[1, M]` Cache 写入 One-Hot Mask.
+            key_update_mask: `[1, 1, 1, M]` Key Cache 写入 Mask.
+            value_update_mask: `[1, 1, M, 1]` Value Cache 写入 Mask.
             attention_mask: `[1, 1, 1, M]` 加法注意力 Mask.
+            *kv_caches: 每层一对 `[H, 1, D, M]` Key 与
+                `[H, 1, M, D]` Value Cache.
 
         Returns:
-            `[1, vocab]` Logits 与更新后的固定 KV Cache.
+            `[1, vocab]` Logits 与逐层更新后的固定 KV Cache.
         """
         position = position_weights @ self.decoder.positional_embedding
-        hidden = self.decoder.token_embedding(token) + position.unsqueeze(1)
-        next_layers = []
+        token_embedding = token_onehot @ self.decoder.token_embedding.weight
+        hidden = token_embedding.unsqueeze(1) + position.unsqueeze(1)
+        next_caches = []
         for index, block in enumerate(self.decoder.blocks):
             residual = hidden
             attention_output, key, value = self._self_attention(
-                block.attn, block.attn_ln(hidden), kv_cache[index, 0],
-                kv_cache[index, 1], cache_update_mask, attention_mask)
+                block.attn, block.attn_ln(hidden), kv_caches[index * 2],
+                kv_caches[index * 2 + 1], key_update_mask,
+                value_update_mask, attention_mask)
             hidden = residual + attention_output
             residual = hidden
             hidden = residual + self._cross_attention(
                 block.cross_attn, block.cross_attn_ln(hidden), audio_features)
             hidden = hidden + block.mlp(block.mlp_ln(hidden))
-            next_layers.append(torch.stack((key, value), dim=0))
+            next_caches.extend((key, value))
         hidden = self.decoder.ln(hidden)
         logits = hidden @ self.decoder.token_embedding.weight.transpose(0, 1)
-        return logits[:, 0, :].float(), torch.stack(next_layers, dim=0)
+        return (logits[:, 0, :].float(), *next_caches)
 
 
 def load_model(weights: Path) -> Any:
@@ -209,29 +218,47 @@ def export_models(weights: Path, output_dir: Path,
     with torch.no_grad():
         audio_features = encoder(mel)
     head_dim = dimensions.n_text_state // dimensions.n_text_head
-    cache = torch.zeros(
-        dimensions.n_text_layer, 2, 1, dimensions.n_text_head, max_tokens,
-        head_dim, dtype=torch.float32)
-    token = torch.zeros(1, 1, dtype=torch.int64)
+    kv_caches = []
+    for _ in range(dimensions.n_text_layer):
+        kv_caches.extend((
+            torch.zeros(dimensions.n_text_head, 1, head_dim, max_tokens),
+            torch.zeros(dimensions.n_text_head, 1, max_tokens, head_dim),
+        ))
+    token_onehot = torch.zeros(1, dimensions.n_vocab, dtype=torch.float32)
+    token_onehot[0, 0] = 1.0
     position_weights = torch.zeros(
         1, dimensions.n_text_ctx, dtype=torch.float32)
     position_weights[0, 0] = 1.0
-    cache_update_mask = torch.zeros(1, max_tokens, dtype=torch.float32)
-    cache_update_mask[0, 0] = 1.0
+    key_update_mask = torch.zeros(1, 1, 1, max_tokens)
+    key_update_mask[..., 0] = 1.0
+    value_update_mask = torch.zeros(1, 1, max_tokens, 1)
+    value_update_mask[..., 0, :] = 1.0
     attention_mask = torch.full(
         (1, 1, 1, max_tokens), MASK_NEGATIVE, dtype=torch.float32)
     attention_mask[..., 0] = 0.0
     decoder_path = output_dir / "decoder_step_fp32.onnx"
     torch.onnx.export(
         decoder,
-        (token, audio_features, cache, position_weights, cache_update_mask,
-         attention_mask),
+        (token_onehot, audio_features, position_weights, key_update_mask,
+         value_update_mask, attention_mask, *kv_caches),
         str(decoder_path),
         input_names=[
-            "token", "audio_features", "kv_cache", "position_weights",
-            "cache_update_mask", "attention_mask"
+            "token_onehot", "audio_features", "position_weights",
+            "key_update_mask", "value_update_mask", "attention_mask",
+            *[
+                f"{cache_type}_cache_{layer}_in"
+                for layer in range(dimensions.n_text_layer)
+                for cache_type in ("key", "value")
+            ],
         ],
-        output_names=["logits", "kv_cache_out"],
+        output_names=[
+            "logits",
+            *[
+                f"{cache_type}_cache_{layer}_out"
+                for layer in range(dimensions.n_text_layer)
+                for cache_type in ("key", "value")
+            ],
+        ],
         opset_version=17,
         do_constant_folding=True)
     print(f"[OK] Encoder: {encoder_path}")
