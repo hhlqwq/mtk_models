@@ -1,0 +1,5 @@
+source_repository=https://github.com/openai/whisper
+source_revision=v20250625
+source_weights=https://openaipublic.azureedge.net/main/whisper/models/65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9/tiny.pt
+source_weights_sha256=65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9
+delivery_reference=https://github.com/qualcomm/ai-hub-models/tree/main/src/qai_hub_models/models/whisper_tiny

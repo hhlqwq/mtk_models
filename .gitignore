@@ -41,6 +41,12 @@ models/interaction/pose_detection/rtmpose_body2d/original/exported/
 models/interaction/pose_detection/rtmpose_body2d/models/rtmpose_body2d.data
 models/interaction/pose_detection/rtmpose_body2d/models/SHA256SUMS
 
+# Whisper-Tiny 官方权重、导出模型与运行证据.
+models/audio/stt/whisper_tiny/original/tiny.pt
+models/audio/stt/whisper_tiny/models/SHA256SUMS
+models/audio/stt/whisper_tiny/models/onnx_manifest.json
+models/audio/stt/whisper_tiny/examples/output/runs/
+
 # 板端 C++ 交叉编译产物.
 models/perception/object_detection/yolov5s/deploy/inference_demo/yolov5s_board_eval
 models/interaction/pose_detection/rtmpose_body2d/deploy/inference_demo/rtmpose_board_eval

@@ -1,0 +1,33 @@
+id: whisper_tiny
+name: Whisper-Tiny
+scenario: audio
+category: stt
+source:
+  provider: github
+  repository: openai/whisper
+  revision: v20250625
+  weights: tiny.pt
+  weights_url: https://openaipublic.azureedge.net/main/whisper/models/65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9/tiny.pt
+  weights_sha256: 65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9
+delivery_reference:
+  repository: qualcomm/Whisper-Tiny
+  purpose: packaging_and_graph_partition_reference_only
+input:
+  sample_rate_hz: 16000
+  channels: 1
+  max_duration_seconds: 30
+  mel_shape: [1, 80, 3000]
+output:
+  type: multilingual_transcription_text
+  decoding: greedy
+  max_decode_tokens: 200
+metrics:
+  accuracy: [librispeech_test_clean_wer, aishell1_test_cer]
+  performance: [encoder_latency_ms, decoder_token_latency_ms, rtf, peak_rss_kb]
+targets:
+  genio_720:
+    status: environment_ready
+    precisions: []
+  genio_5100:
+    status: not_started
+    precisions: []

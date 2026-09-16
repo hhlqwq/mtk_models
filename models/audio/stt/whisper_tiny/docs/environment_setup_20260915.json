@@ -1,0 +1,25 @@
+{
+  "run_id": "20260915_whisper_tiny_environment_v1",
+  "host": "ubuntu89",
+  "container": "hhl_g720_8011",
+  "installation_mode": "windows_download_then_offline_install",
+  "packages": {
+    "openai-whisper": "20250625",
+    "tiktoken": "0.11.0",
+    "regex": "2025.9.18",
+    "numba": "0.61.2",
+    "llvmlite": "0.44.0",
+    "more-itertools": "10.7.0",
+    "torch": "2.0.0+cu118",
+    "onnx": "1.13.1",
+    "onnxruntime-gpu": "1.18.0"
+  },
+  "verification": {
+    "whisper_cli_help": "passed",
+    "pip_check": "No broken requirements found."
+  },
+  "model_weight_present": false,
+  "onnx_exported": false,
+  "mtk_converted": false,
+  "board_tested": false
+}

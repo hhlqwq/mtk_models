@@ -35,3 +35,14 @@ models:
     platforms:
       genio_720: complete
       genio_5100: not_started
+  - id: whisper_tiny
+    batch: first_batch
+    pilot: false
+    scenario: audio
+    category: stt
+    path: models/audio/stt/whisper_tiny
+    source: openai/whisper
+    delivery_reference: qualcomm/Whisper-Tiny
+    platforms:
+      genio_720: environment_ready
+      genio_5100: not_started
