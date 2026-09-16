@@ -134,5 +134,5 @@ Sigmoid、距离框解码、逐类别 NMS 和原图坐标恢复.
 MediaTek 官网的 Genio 720 Neuron EP `403.15 ms` 和 CPU EP `11214.33 ms` 是官方
 `onnxruntime_perf_test` 纯模型参考值,不是本项目实测,也不包含前后处理.本项目只有在
 隔离官方运行库已完成真实图片 NPU 小样本推理；当前实测与边界见 `docs/benchmark.md` 和
-`docs/accuracy.md`.当前标记为"板端已验证",正式 COCO mAP 完成前不会标记为
-"完整交付".
+`docs/accuracy.md`,正式运行摘要见 `docs/board_validation_20260916.json`.当前标记为
+"板端已验证",正式 COCO mAP 完成前不会标记为"完整交付".

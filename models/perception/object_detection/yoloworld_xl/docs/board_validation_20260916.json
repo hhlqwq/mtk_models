@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "run_id": "20260916_group100_final_v1",
+  "captured_at_utc": "2026-09-16T08:42:51Z",
+  "git_commit": "ec33f91007c7358707d78752588c1b652c217822",
+  "platform": {
+    "board": "Genio 720 EVK",
+    "os": "Rity Demo 26.0-dev (scarthgap)",
+    "kernel": "6.6.117-mtk+ge93786e7114b-gbdfdf5b7370c",
+    "architecture": "aarch64",
+    "onnxruntime": "1.20.2"
+  },
+  "model": {
+    "file": "model_fp32_opset13.onnx",
+    "sha256": "76aae089a9bec2d1b920de0814a6981d4016904a2750799d77099da947c60d88"
+  },
+  "neuron_runtime": {
+    "adapter_sha256": "225f70c7fc5fb6fefa1ef8b662df7036ed36431b57252379ce0dd4b9e2210bcb",
+    "runtime_sha256": "38d74829a50d802eba0539d9c37273e7743e60d692b2af3fb6054805d08a85de",
+    "min_group_size": 100
+  },
+  "cpu": {
+    "warmup": 0,
+    "repeat_per_image": 1,
+    "sample_count": 3,
+    "session_creation_ms": 358.822404872626,
+    "mean_ms": 8334.18632896307,
+    "min_ms": 8319.61893592961,
+    "max_ms": 8350.52388603799,
+    "p50_ms": 8332.4161649216,
+    "p90_ms": 8346.90234181471,
+    "p95_ms": 8348.71311392635,
+    "peak_rss_kib": 830908,
+    "provider_node_events": {
+      "CPUExecutionProvider": 1026
+    }
+  },
+  "neuron_hybrid": {
+    "warmup": 3,
+    "repeat_per_image": 10,
+    "sample_count": 30,
+    "session_creation_ms": 4516.55947603285,
+    "mean_ms": 3720.75816820531,
+    "min_ms": 3699.03969811276,
+    "max_ms": 3743.15310898237,
+    "p50_ms": 3719.36543192714,
+    "p90_ms": 3735.28478608932,
+    "p95_ms": 3738.38237028103,
+    "peak_rss_kib": 1126744,
+    "speedup_vs_cpu_mean": 2.23991615477203,
+    "provider_node_events": {
+      "NeuronExecutionProvider": 330,
+      "CPUExecutionProvider": 6336
+    }
+  },
+  "parity": {
+    "detection_counts": [10, 13, 4],
+    "same_class_order": true,
+    "max_score_delta": 0.001625657081604,
+    "max_score_delta_limit": 0.01,
+    "max_bbox_delta_px": 0.0419921875,
+    "max_bbox_delta_px_limit": 0.5,
+    "passed": true
+  },
+  "status": "board_verified"
+}
