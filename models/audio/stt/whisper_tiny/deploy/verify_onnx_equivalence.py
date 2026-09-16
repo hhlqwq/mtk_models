@@ -81,7 +81,7 @@ def run_verification(args: argparse.Namespace) -> None:
         kv_caches.extend((
             np.zeros((dimensions.n_text_head, 1, head_dim, args.max_tokens),
                      dtype=np.float32),
-            np.zeros((dimensions.n_text_head, 1, args.max_tokens, head_dim),
+            np.zeros((dimensions.n_text_head, 1, head_dim, args.max_tokens),
                      dtype=np.float32),
         ))
     token_ids = [50258, 50259, 50359, 50363]
@@ -93,10 +93,9 @@ def run_verification(args: argparse.Namespace) -> None:
         position_weights = np.zeros(
             (1, dimensions.n_text_ctx), dtype=np.float32)
         position_weights[0, position] = 1.0
-        key_update = np.zeros((1, 1, 1, args.max_tokens), dtype=np.float32)
-        key_update[..., position] = 1.0
-        value_update = np.zeros((1, 1, args.max_tokens, 1), dtype=np.float32)
-        value_update[..., position, :] = 1.0
+        cache_update = np.zeros(
+            (1, 1, 1, args.max_tokens), dtype=np.float32)
+        cache_update[..., position] = 1.0
         attention_mask = np.full(
             (1, 1, 1, args.max_tokens), MASK_NEGATIVE, dtype=np.float32)
         attention_mask[..., :position + 1] = 0.0
@@ -107,15 +106,14 @@ def run_verification(args: argparse.Namespace) -> None:
             step_outputs = decoder(
                 torch.from_numpy(token_onehot),
                 torch.from_numpy(encoder_reference),
-                torch.from_numpy(position_weights), torch.from_numpy(key_update),
-                torch.from_numpy(value_update), torch.from_numpy(attention_mask),
+                torch.from_numpy(position_weights),
+                torch.from_numpy(cache_update), torch.from_numpy(attention_mask),
                 *[torch.from_numpy(cache) for cache in kv_caches])
         onnx_inputs = {
             "token_onehot": token_onehot,
             "audio_features": encoder_onnx,
             "position_weights": position_weights,
-            "key_update_mask": key_update,
-            "value_update_mask": value_update,
+            "cache_update_mask": cache_update,
             "attention_mask": attention_mask,
         }
         for layer in range(dimensions.n_text_layer):

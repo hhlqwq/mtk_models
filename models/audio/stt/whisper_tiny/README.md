@@ -9,7 +9,8 @@
 - 输入：16 kHz 单声道 PCM/WAV,单段最长 30 秒.
 - 输出：中文或英文转写文本,使用 Greedy Search.
 - 图拆分：`encoder_fp32.onnx` 与 `decoder_step_fp32.onnx`.
-- Decoder：单 Token 自回归,固定 200 Token KV Cache；每层 Key/Value 使用独立 rank-4 I/O.
+- Decoder：单 Token 自回归,固定 200 Token KV Cache；每层 Key/Value 使用相同的
+  `[H, 1, D, M]` rank-4 I/O 布局.
 - Token Embedding 使用主机 One-Hot + MatMul,规避 MDLA 不支持的 `GATHER`.
 - 导出时关闭 Torch SDPA,使用 OpenAI 官方 MatMul/Softmax 注意力分支,兼容 Torch 2.0 ONNX.
 - 首版不包含流式麦克风、长音频滑窗、时间戳、翻译和说话人分离.
