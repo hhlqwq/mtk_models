@@ -21,7 +21,7 @@ build_model() {
         "${NCC_BIN}" --arch="${NCC_ARCH}" --show-exec-plan \
             "${input_path}" -o "${output_path}"
     elif [[ "${NCC_MODE}" == "strict" ]]; then
-        "${NCC_BIN}" --arch="${NCC_ARCH}" --suppress-output \
+        "${NCC_BIN}" --arch="${NCC_ARCH}" --suppress-input --suppress-output \
             --disallow-bridge "${input_path}" -o "${output_path}"
     else
         echo "[ERROR] NCC_MODE 仅支持 check 或 strict." >&2

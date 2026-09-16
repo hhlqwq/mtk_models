@@ -49,8 +49,11 @@ KV Cache 的逐 Token 最大绝对误差,避免用单一宽松 `allclose` 掩盖
 ```bash
 bash models/audio/stt/whisper_tiny/deploy/convert.sh
 bash models/audio/stt/whisper_tiny/deploy/build.sh
+NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 ```
 
+严格编译同时使用 `--suppress-input --suppress-output --disallow-bridge`，板端程序必须按
+TFLite 声明的 FP32 Shape 直接填写输入并读取输出，避免编译器插入外部布局转换桥接。
 首次运行应保留 Converter/NCC 完整日志并检查执行计划.只有 Encoder 与 Decoder 循环都在
 92 板端生成正确文本,才可升级为"板端已验证".完整交付还要求 LibriSpeech WER、
 AISHELL-1 CER、RTF、Token 延迟、峰值 RSS、文件哈希和运行 ID.
