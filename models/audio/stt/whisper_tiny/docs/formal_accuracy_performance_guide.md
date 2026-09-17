@@ -34,13 +34,14 @@ bash models/audio/stt/whisper_tiny/deploy/build_board_cpp.sh
 
 ## 3. LibriSpeech test-clean
 
-假设解压后存在 `LibriSpeech/test-clean/`：
+89 上的 `test-clean` 已解压到
+`/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpeech/test-clean/LibriSpeech/test-clean/`：
 
 ```bash
 export DATASET=librispeech
 export RUN_ID=20260917_librispeech_test_clean_fp16_v1
-export DATASET_ROOT=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/speech/LibriSpeech/test-clean
-export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/speech/test-clean.tar.gz
+export DATASET_ROOT=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpeech/test-clean/LibriSpeech/test-clean
+export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpeech/test-clean.tar.gz
 
 bash models/audio/stt/whisper_tiny/deploy/prepare_accuracy.sh
 bash models/audio/stt/whisper_tiny/deploy/run_accuracy_board.sh
@@ -49,13 +50,13 @@ bash models/audio/stt/whisper_tiny/deploy/summarize_accuracy.sh
 
 ## 4. AISHELL-1 test
 
-假设解压根目录为 `data_aishell/`：
+89 上已单独解压官方 test 的 20 位说话人、7,176 条 WAV；目录同时包含完整转录文件：
 
 ```bash
 export DATASET=aishell1
 export RUN_ID=20260917_aishell1_test_fp16_v1
-export DATASET_ROOT=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/speech/data_aishell
-export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/speech/data_aishell.tgz
+export DATASET_ROOT=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/Aishell/test
+export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/Aishell/data_aishell.tgz
 
 bash models/audio/stt/whisper_tiny/deploy/prepare_accuracy.sh
 bash models/audio/stt/whisper_tiny/deploy/run_accuracy_board.sh

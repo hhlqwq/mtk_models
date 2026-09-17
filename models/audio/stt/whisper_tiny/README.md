@@ -67,7 +67,8 @@ NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 `deploy/prepare_accuracy.sh`、`deploy/run_accuracy_board.sh` 和
 `deploy/summarize_accuracy.sh` 完成输入准备、板端断点续跑及指标汇总。数据集由用户下载，
 脚本不会联网，也不会修改原始数据。AISHELL-1 使用评测指南记录的 OpenSLR 镜像下载，
-官方 SLR33 页面保留为来源与许可证依据。完整命令和指标口径见
+官方 SLR33 页面保留为来源与许可证依据。加载器兼容完整数据集的 `wav/test/` 布局和
+独立测试集的 `test/wav/` 布局。完整命令和指标口径见
 [`docs/formal_accuracy_performance_guide.md`](docs/formal_accuracy_performance_guide.md)。
 
 ## 验证边界

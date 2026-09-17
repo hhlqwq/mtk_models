@@ -60,6 +60,19 @@ def load_librispeech(root: Path) -> list[tuple[str, Path, str]]:
     return samples
 
 
+def find_aishell_test_directories(root: Path) -> list[Path]:
+    """定位 AISHELL-1 test WAV 目录,兼容完整数据集和独立测试集布局."""
+    standard_test = root / "wav" / "test"
+    if standard_test.is_dir():
+        return [standard_test]
+
+    standalone_wav = root / "wav"
+    if root.name.lower() == "test" and standalone_wav.is_dir():
+        return [standalone_wav]
+
+    return [path for path in root.rglob("test") if path.is_dir()]
+
+
 def load_aishell(root: Path) -> list[tuple[str, Path, str]]:
     """读取 AISHELL-1 test transcript 与 WAV 路径."""
     transcript_candidates = sorted(root.rglob("aishell_transcript*.txt"))
@@ -71,7 +84,7 @@ def load_aishell(root: Path) -> list[tuple[str, Path, str]]:
             encoding="utf-8").splitlines():
         fields = line.split()
         references[fields[0]] = "".join(fields[1:])
-    test_directories = [path for path in root.rglob("test") if path.is_dir()]
+    test_directories = find_aishell_test_directories(root)
     wav_paths = sorted({path for directory in test_directories
                         for path in directory.rglob("*.wav")})
     samples = []
