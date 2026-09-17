@@ -63,6 +63,12 @@ NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 `docs/benchmark.md`.完整交付还要求 LibriSpeech WER、AISHELL-1 CER、分组延迟/RTF、
 峰值 RSS 和中文/噪声样例.
 
+正式批量评测使用 `whisper_board_eval` 持久加载双 DLA，通过
+`deploy/prepare_accuracy.sh`、`deploy/run_accuracy_board.sh` 和
+`deploy/summarize_accuracy.sh` 完成输入准备、板端断点续跑及指标汇总。数据集由用户下载，
+脚本不会联网，也不会修改原始数据。完整命令和指标口径见
+[`docs/formal_accuracy_performance_guide.md`](docs/formal_accuracy_performance_guide.md)。
+
 ## 验证边界
 
 - 已验证：OpenAI FP32/改写图/ONNX 数值对齐、MTK Converter 8.16.0 转换、NCC 8.2.31

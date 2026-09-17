@@ -46,6 +46,9 @@ models/audio/stt/whisper_tiny/original/tiny.pt
 models/audio/stt/whisper_tiny/models/SHA256SUMS
 models/audio/stt/whisper_tiny/models/onnx_manifest.json
 models/audio/stt/whisper_tiny/examples/output/runs/
+models/audio/stt/whisper_tiny/deploy/inference_demo/inspect_whisper_io
+models/audio/stt/whisper_tiny/deploy/inference_demo/whisper_board_decode
+models/audio/stt/whisper_tiny/deploy/inference_demo/whisper_board_eval
 
 # 板端 C++ 交叉编译产物.
 models/perception/object_detection/yolov5s/deploy/inference_demo/yolov5s_board_eval

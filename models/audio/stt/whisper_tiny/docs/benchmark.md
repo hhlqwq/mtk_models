@@ -17,3 +17,7 @@ Decoder 调用数包含 4 个初始提示 Token,因此高于生成 Token 数.
 正式报告必须包含音频读取/重采样、Log-Mel、Encoder、首 Token、Decoder 单 Token、端到端
 耗时、RTF、Tokens/s、加载时间和峰值 RSS,并按 1、5、15、30 秒音频分组报告
 Mean/P50/P90/P95.
+
+持久化批量评测器已经实现,会记录模型加载、Encoder、首 Token、Decoder、NPU RTF、
+Tokens/s、进程峰值 RSS 和各时长分组统计。按用户分工尚未运行正式数据,因此本页暂不新增
+任何推测性能值。

@@ -30,7 +30,9 @@ build_binary() {
     sha256sum "${output}"
 }
 
-echo "[1/2] 交叉编译 Whisper-Tiny 板端 I/O 检查程序."
+echo "[1/3] 交叉编译 Whisper-Tiny 板端 I/O 检查程序."
 build_binary inspect_whisper_io.cpp inspect_whisper_io
-echo "[2/2] 交叉编译 Whisper-Tiny 双 DLA 解码程序."
+echo "[2/3] 交叉编译 Whisper-Tiny 双 DLA 解码程序."
 build_binary whisper_board_decode.cpp whisper_board_decode
+echo "[3/3] 交叉编译 Whisper-Tiny 持久化批量评测程序."
+build_binary whisper_board_eval.cpp whisper_board_eval
