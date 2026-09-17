@@ -94,6 +94,51 @@ bash deploy/stage_neuron_runtime.sh \
 这些专有运行库不进入 Git.正式刷入官方 v26.0 镜像后可不设置隔离目录,但仍需先用系统
 自带 SqueezeNet 对照确认 Neuron EP 可用.
 
+### 全量 NPU 检测错误根因
+
+`NEURON_FLAG_MIN_GROUP_SIZE=0` 可以得到约 `401.500 ms` 的官网同档延迟,但其检测结果
+错误不是普通 FP16 舍入误差.2026-09-17 使用固定图片和固定中间张量进行算子级拆分后,
+已经把首个确定性错误定位到三个分类分支 `cls_contrasts.{0,1,2}/MatMul` 使用的
+`BatchMatMulLayer`.该算子计算视觉特征与固化文本特征的相似度；stride 8 分支的输入为
+`[1,6400,512] × [1,512,80]`,随后结果还会乘以 `exp(logit_scale)` 并加 bias,因此
+MatMul 偏差会被放大为错误的类别 logits 和饱和置信度.
+
+官方 [G720 Supported Operations](https://neuropilot.mediatek.com/sphinx/g720/html/l1_supported_operations/l2_supported_operations/l3_supported_ops/supported_operations.html)
+把 `BATCH_MATMUL` 列为 MDLA 3.5、MDLA 5.0/5.1/5.3/5.5 和 MVPU 2.5 支持的硬件
+算子,但“列表支持”不等于当前 BSP、驱动和编译器组合已经通过该形状的数值一致性验证.
+当前板端的实测证据如下：
+
+| 检查项 | 结果 |
+| --- | --- |
+| 单算子 CPU 输出 | range `[-24.918762,8.697776]`,mean `-4.840788` |
+| 单算子 Neuron 输出 | range `[-11.875,5.464844]`,mean `-1.107744` |
+| CPU/Neuron 差异 | max abs `28.957825`,mean abs `4.023510`,P99 abs `9.533292` |
+| 标准 FP16 模拟误差 | 128 个位置 max abs `0.003028`,mean abs `0.000625` |
+| 改写为二维 MatMul | 错误完全保留,max abs `28.957829` |
+| 去掉 `--reshape-to-4d` | 错误完全保留 |
+| 把 `--opt=3` 改为 `--opt=0` | 错误完全保留 |
+
+ORT profiling 确认该微型 MatMul 由 `NeuronExecutionProvider` 执行,不是 CPU fallback.
+关闭 `NEURON_FLAG_USE_FP16` 后,编译器对同一个 `BatchMatMulLayer` 明确报告 GPU/EDMA
+不支持、MDLA 不支持 Float32 输入和输出,随后编译失败；这证明当前可执行路径是 MDLA
+FP16.因此目前可以确认的直接根因是：**Neuron 8.2.16 在当前 Genio 720 软件栈上为
+MDLA 编译或执行该大矩阵 FP16 BatchMatMul 时产生了错误数值**.问题不在预处理、NMS、
+DFL、opset 11 到 13 转换,也不由 `--reshape-to-4d` 或 `--opt=3` 单独触发.
+
+Genio 720 芯片包含 MVPU 资源,但当前环境并没有把 MVPU 暴露成可用的 Neuron device：
+
+- Neuron 只枚举到 `mtk-gpu` 和 `mtk-mdla`,没有 `mtk-mvpu`.
+- `/sys/bus/platform/drivers/mtk_mdla/` 已绑定 `soc:mdla`,而 `mtk_mvpu/` 没有绑定设备.
+- 固件创建了 MVPU TX/RX RPMsg endpoint,但 `/sys/bus/rpmsg/drivers/` 没有对应 MVPU
+  driver；这只能证明固件端点存在,不能证明用户态可以调度 MVPU.
+- 显式使用 `--num-mdla=0 --num-mvpu=1` 时运行时异常退出,不能建立 MVPU 执行路径.
+
+所以“板上有 MVPU”和“当前 Neuron EP 可以使用 MVPU”必须分开表述.目前没有证据证明
+MVPU 2.5 执行同一 MatMul 一定正确,也没有证据证明官网 `403.15 ms` 使用了 MVPU；需要
+恢复完整匹配且能够枚举 `mtk-mvpu` 的 BSP/驱动/固件/Neuron 组合后,重新运行这个单算子
+门禁才能判断.在此之前,全量 NPU 结果不得用于发布；当前正确性方案仍是
+`NEURON_FLAG_MIN_GROUP_SIZE=100`,让包含分类 MatMul 的 neck/head 留在 CPU.
+
 退出容器,在 89 宿主机执行：
 
 ```bash
