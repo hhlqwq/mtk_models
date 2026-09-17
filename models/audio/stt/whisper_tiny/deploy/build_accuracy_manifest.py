@@ -152,10 +152,14 @@ def build_manifest(args: argparse.Namespace) -> None:
         "archive": str(args.archive.resolve()) if args.archive else None,
         "archive_sha256": sha256_file(args.archive.resolve())
         if args.archive else None,
-        "source_url": (
+        "source_page_url": (
+            "https://www.openslr.org/12/"
+            if args.dataset == "librispeech" else
+            "https://www.openslr.org/33/"),
+        "download_url": (
             "https://www.openslr.org/resources/12/test-clean.tar.gz"
             if args.dataset == "librispeech" else
-            "https://www.openslr.org/resources/33/data_aishell.tgz"),
+            "https://openslr.magicdatatech.com/resources/33/data_aishell.tgz"),
         "license": "CC BY 4.0" if args.dataset == "librispeech"
         else "Apache License 2.0",
     }
