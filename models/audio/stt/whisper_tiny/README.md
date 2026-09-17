@@ -66,7 +66,7 @@ NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 正式批量评测使用 `whisper_board_eval` 持久加载双 DLA，通过
 `deploy/prepare_accuracy.sh`、`deploy/run_accuracy_board.sh` 和
 `deploy/summarize_accuracy.sh` 完成输入准备、板端断点续跑及指标汇总。数据集由用户下载，
-脚本不会联网，也不会修改原始数据。AISHELL-1 使用 MagicData 的 OpenSLR 镜像下载，
+脚本不会联网，也不会修改原始数据。AISHELL-1 使用评测指南记录的 OpenSLR 镜像下载，
 官方 SLR33 页面保留为来源与许可证依据。完整命令和指标口径见
 [`docs/formal_accuracy_performance_guide.md`](docs/formal_accuracy_performance_guide.md)。
 

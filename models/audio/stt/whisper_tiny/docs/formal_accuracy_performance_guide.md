@@ -8,9 +8,9 @@
 | 数据集 | 正式子集 | 来源页面 | 下载地址 | 许可证 | 官方体量 |
 |---|---|---|---|---|---:|
 | LibriSpeech | `test-clean` | `https://www.openslr.org/12/` | `https://www.openslr.org/resources/12/test-clean.tar.gz` | CC BY 4.0 | 346 MB |
-| AISHELL-1 | `test` | `https://www.openslr.org/33/` | `https://openslr.magicdatatech.com/resources/33/data_aishell.tgz` | Apache License 2.0 | 15 GB |
+| AISHELL-1 | `test` | `https://www.openslr.org/33/` | `https://openslr.trmal.net/resources/33/data_aishell.tgz` | Apache License 2.0 | 15 GB |
 
-AISHELL-1 使用 MagicData 提供的 OpenSLR 镜像下载，官方 SLR33 页面继续作为数据集来源与
+AISHELL-1 使用上述 OpenSLR 镜像下载，官方 SLR33 页面继续作为数据集来源与
 许可证依据。下载完成后先使用 OpenSLR 提供的 MD5 文件验证，再记录实测 SHA-256。建议把压缩包和
 解压目录放在 89 的
 `/data/users/hailong.he/nas_smb/Datasets/open_source/raw/speech/`；该 NAS 路径已经只读挂载

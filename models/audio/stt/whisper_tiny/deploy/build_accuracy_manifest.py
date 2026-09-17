@@ -159,7 +159,7 @@ def build_manifest(args: argparse.Namespace) -> None:
         "download_url": (
             "https://www.openslr.org/resources/12/test-clean.tar.gz"
             if args.dataset == "librispeech" else
-            "https://openslr.magicdatatech.com/resources/33/data_aishell.tgz"),
+            "https://openslr.trmal.net/resources/33/data_aishell.tgz"),
         "license": "CC BY 4.0" if args.dataset == "librispeech"
         else "Apache License 2.0",
     }
