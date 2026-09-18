@@ -70,6 +70,8 @@ NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 官方 SLR33 页面保留为来源与许可证依据。加载器兼容完整数据集的 `wav/test/` 布局和
 独立测试集的 `test/wav/` 布局。完整命令和指标口径见
 [`docs/formal_accuracy_performance_guide.md`](docs/formal_accuracy_performance_guide.md)。
+三个正式评测 Shell 入口均应在 Ubuntu89 宿主机运行；脚本自行调用 MTK 容器内的 Whisper
+环境。中断后可按指南显式复用已完成的数据清单。
 
 ## 验证边界
 

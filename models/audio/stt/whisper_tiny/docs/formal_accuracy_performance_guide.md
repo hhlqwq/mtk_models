@@ -28,6 +28,10 @@ cd /data/users/hailong.he/github/mtk_models
 bash models/audio/stt/whisper_tiny/deploy/build_board_cpp.sh
 ```
 
+所有 `prepare_accuracy.sh`、`run_accuracy_board.sh` 和 `summarize_accuracy.sh` 都必须在
+Ubuntu89 宿主机运行,不要进入 `hhl_g720_8011` 后执行。脚本会自行通过 `docker exec`
+调用容器内的 Whisper 环境,并把生成目录的所有权恢复为当前宿主用户。
+
 生成的 `whisper_board_eval` 会在一次进程内持久加载 Encoder/Decoder DLA，并对 JSONL
 清单逐条推理。输出每完成一条就落盘；重复使用同一个输出路径时会跳过已有 `status=ok`
 的样例，从而实现断点续跑。
@@ -46,6 +50,14 @@ export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpee
 bash models/audio/stt/whisper_tiny/deploy/prepare_accuracy.sh
 bash models/audio/stt/whisper_tiny/deploy/run_accuracy_board.sh
 bash models/audio/stt/whisper_tiny/deploy/summarize_accuracy.sh
+```
+
+如果 `prepare_accuracy.sh` 曾在容器内完成第 1 阶段、但在 `docker: command not found`
+处中断,修复目录所有权后可设置 `REUSE_MANIFEST=1` 复用已有清单和标准 WAV,避免重新计算
+大压缩包 SHA-256：
+
+```bash
+REUSE_MANIFEST=1 bash models/audio/stt/whisper_tiny/deploy/prepare_accuracy.sh
 ```
 
 ## 4. AISHELL-1 test
