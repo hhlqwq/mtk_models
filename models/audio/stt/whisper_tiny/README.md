@@ -63,15 +63,40 @@ NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 `docs/benchmark.md`.完整交付还要求 LibriSpeech WER、AISHELL-1 CER、分组延迟/RTF、
 峰值 RSS 和中文/噪声样例.
 
-正式批量评测使用 `whisper_board_eval` 持久加载双 DLA，通过
-`deploy/prepare_accuracy.sh`、`deploy/run_accuracy_board.sh` 和
-`deploy/summarize_accuracy.sh` 完成输入准备、板端断点续跑及指标汇总。数据集由用户下载，
-脚本不会联网，也不会修改原始数据。AISHELL-1 使用评测指南记录的 OpenSLR 镜像下载，
-官方 SLR33 页面保留为来源与许可证依据。加载器兼容完整数据集的 `wav/test/` 布局和
-独立测试集的 `test/wav/` 布局。完整命令和指标口径见
+## 正式精度与性能一键评测
+
+正式入口是 `deploy/run_formal_evaluation.sh`。必须在 Ubuntu89 宿主机运行,不要进入
+`hhl_g720_8011` 容器。脚本会一次完成：交叉编译板端程序、构建数据清单与 OpenAI 基线、
+部署到 Genio 720 执行全部样本、取回结果并生成 CER/WER 与性能报告。任一步骤失败都会
+返回非零,不会把不完整结果标记为正式结果。
+
+AISHELL-1 test：
+
+```bash
+cd /data/users/hailong.he/github/mtk_models
+export DATASET=aishell1
+export RUN_ID=20260918_aishell1_test_fp16_v1
+export DATASET_ROOT=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/Aishell/test
+export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/Aishell/data_aishell.tgz
+bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
+```
+
+LibriSpeech test-clean：
+
+```bash
+cd /data/users/hailong.he/github/mtk_models
+export DATASET=librispeech
+export RUN_ID=20260918_librispeech_test_clean_fp16_v1
+export DATASET_ROOT=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpeech/test-clean/LibriSpeech/test-clean
+export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpeech/test-clean.tar.gz
+bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
+```
+
+数据集由用户下载,脚本不会联网或修改原始数据。AISHELL-1 加载器兼容完整数据集的
+`wav/test/` 和独立测试集的 `test/wav/` 布局。结果写入
+`.eval/whisper_tiny/<run_id>/report/`；`summary.json` 只有在失败和缺失样本均为 0 时才会
+标记为 `complete`。底层三个分步脚本仅用于故障定位。完整指标口径见
 [`docs/formal_accuracy_performance_guide.md`](docs/formal_accuracy_performance_guide.md)。
-三个正式评测 Shell 入口均应在 Ubuntu89 宿主机运行；脚本自行调用 MTK 容器内的 Whisper
-环境。中断后可按指南显式复用已完成的数据清单。
 
 ## 验证边界
 

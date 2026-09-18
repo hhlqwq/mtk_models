@@ -13,24 +13,25 @@
 AISHELL-1 使用上述 OpenSLR 镜像下载，官方 SLR33 页面继续作为数据集来源与
 许可证依据。下载完成后先使用 OpenSLR 提供的 MD5 文件验证，再记录实测 SHA-256。建议把压缩包和
 解压目录放在 89 的
-`/data/users/hailong.he/nas_smb/Datasets/open_source/raw/speech/`；该 NAS 路径已经只读挂载
+`/data/users/hailong.he/nas_smb/Datasets/open_source/raw/`；该 NAS 路径已经只读挂载
 到 `hhl_g720_8011`。也可以放到其他目录，但必须通过 `DATASET_ROOT` 和 `ARCHIVE` 显式传入。
 
 项目只评测不超过 30 秒的音频。清单构建器会把超过 30 秒的条目写入
 `excluded_over_30s.jsonl`，不会静默截断后混入正式 WER/CER；报告必须同时披露排除数量。
 
-## 2. 构建批量评测程序
+## 2. 一键正式评测入口
 
-在 Ubuntu89 的项目根目录执行：
+正式入口必须在 Ubuntu89 宿主机执行,不要进入 `hhl_g720_8011` 容器。它会自行调用容器
+环境和板端,依次完成交叉编译、数据与框架基线准备、全部样本板端推理及最终报告：
 
 ```bash
 cd /data/users/hailong.he/github/mtk_models
-bash models/audio/stt/whisper_tiny/deploy/build_board_cpp.sh
+bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
 ```
 
-所有 `prepare_accuracy.sh`、`run_accuracy_board.sh` 和 `summarize_accuracy.sh` 都必须在
-Ubuntu89 宿主机运行,不要进入 `hhl_g720_8011` 后执行。脚本会自行通过 `docker exec`
-调用容器内的 Whisper 环境,并把生成目录的所有权恢复为当前宿主用户。
+`prepare_accuracy.sh`、`run_accuracy_board.sh` 和 `summarize_accuracy.sh` 是一键入口调用的
+内部阶段脚本,仅在定位故障或断点恢复时单独使用。容器生成文件的所有权会恢复为当前宿主
+用户。
 
 生成的 `whisper_board_eval` 会在一次进程内持久加载 Encoder/Decoder DLA，并对 JSONL
 清单逐条推理。输出每完成一条就落盘；重复使用同一个输出路径时会跳过已有 `status=ok`
@@ -43,21 +44,11 @@ Ubuntu89 宿主机运行,不要进入 `hhl_g720_8011` 后执行。脚本会自�
 
 ```bash
 export DATASET=librispeech
-export RUN_ID=20260917_librispeech_test_clean_fp16_v1
+export RUN_ID=20260918_librispeech_test_clean_fp16_v1
 export DATASET_ROOT=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpeech/test-clean/LibriSpeech/test-clean
 export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpeech/test-clean.tar.gz
 
-bash models/audio/stt/whisper_tiny/deploy/prepare_accuracy.sh
-bash models/audio/stt/whisper_tiny/deploy/run_accuracy_board.sh
-bash models/audio/stt/whisper_tiny/deploy/summarize_accuracy.sh
-```
-
-如果 `prepare_accuracy.sh` 曾在容器内完成第 1 阶段、但在 `docker: command not found`
-处中断,修复目录所有权后可设置 `REUSE_MANIFEST=1` 复用已有清单和标准 WAV,避免重新计算
-大压缩包 SHA-256：
-
-```bash
-REUSE_MANIFEST=1 bash models/audio/stt/whisper_tiny/deploy/prepare_accuracy.sh
+bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
 ```
 
 ## 4. AISHELL-1 test
@@ -66,18 +57,16 @@ REUSE_MANIFEST=1 bash models/audio/stt/whisper_tiny/deploy/prepare_accuracy.sh
 
 ```bash
 export DATASET=aishell1
-export RUN_ID=20260917_aishell1_test_fp16_v1
+export RUN_ID=20260918_aishell1_test_fp16_v1
 export DATASET_ROOT=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/Aishell/test
 export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/Aishell/data_aishell.tgz
 
-bash models/audio/stt/whisper_tiny/deploy/prepare_accuracy.sh
-bash models/audio/stt/whisper_tiny/deploy/run_accuracy_board.sh
-bash models/audio/stt/whisper_tiny/deploy/summarize_accuracy.sh
+bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
 ```
 
-如果 4090 显存不足，可降低 `REFERENCE_BATCH_SIZE`；如果只想先生成 Mel 而暂不跑 OpenAI
-框架基线，可设置 `REFERENCE_DEVICE=none`。正式交付时仍应补跑框架基线，用于统计 NPU 与
-OpenAI 输出的规范化文本、Token 完全一致率。
+如果 4090 显存不足，可降低 `REFERENCE_BATCH_SIZE`。一键正式评测必须生成 OpenAI 框架
+基线,不允许设置 `REFERENCE_DEVICE=none`；框架基线用于统计 NPU 与 OpenAI 输出的规范化
+文本、Token 完全一致率。
 
 ## 5. 指标口径
 
