@@ -11,6 +11,7 @@ readonly MODEL_ROOT="${REPO_ROOT}/models/audio/stt/whisper_tiny"
 readonly DEPLOY_ROOT="${MODEL_ROOT}/deploy"
 readonly EVAL_ROOT="${EVAL_ROOT:-${REPO_ROOT}/.eval/whisper_tiny/${RUN_ID}}"
 readonly CONTAINER="${MTK_CONTAINER:-hhl_g720_8011}"
+readonly SKIP_BOARD_BUILD="${SKIP_BOARD_BUILD:-0}"
 
 if ! command -v docker >/dev/null 2>&1; then
     echo "[ERROR] 未找到 docker,请退出容器并在 Ubuntu89 宿主机运行本脚本." >&2
@@ -25,8 +26,12 @@ if [[ "${REFERENCE_DEVICE:-cuda}" == "none" ]]; then
     exit 2
 fi
 
-echo "[PIPELINE 1/4] 交叉编译板端批量评测程序."
-bash "${DEPLOY_ROOT}/build_board_cpp.sh"
+if [[ "${SKIP_BOARD_BUILD}" == "1" ]]; then
+    echo "[PIPELINE 1/4] 复用已由总入口编译的板端批量评测程序."
+else
+    echo "[PIPELINE 1/4] 交叉编译板端批量评测程序."
+    bash "${DEPLOY_ROOT}/build_board_cpp.sh"
+fi
 
 echo "[PIPELINE 2/4] 构建数据清单、Mel 和 OpenAI 框架基线."
 bash "${DEPLOY_ROOT}/prepare_accuracy.sh"
@@ -37,6 +42,6 @@ bash "${DEPLOY_ROOT}/run_accuracy_board.sh"
 echo "[PIPELINE 4/4] 汇总精度、耗时、一致性和资源指标."
 bash "${DEPLOY_ROOT}/summarize_accuracy.sh"
 
-echo "[OK] 正式评测全部完成."
+echo "[OK] ${DATASET} 单数据集正式评测完成."
 echo "[OK] 报告: ${EVAL_ROOT}/report/report.md"
 echo "[OK] 汇总: ${EVAL_ROOT}/report/summary.json"

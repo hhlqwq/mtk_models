@@ -22,22 +22,46 @@ AISHELL-1 使用上述 OpenSLR 镜像下载，官方 SLR33 页面继续作为数
 ## 2. 一键正式评测入口
 
 正式入口必须在 Ubuntu89 宿主机执行,不要进入 `hhl_g720_8011` 容器。它会自行调用容器
-环境和板端,依次完成交叉编译、数据与框架基线准备、全部样本板端推理及最终报告：
+环境和板端,依次完成两套数据的交叉编译、数据与框架基线准备、全部样本板端推理及联合
+报告：
 
 ```bash
 cd /data/users/hailong.he/github/mtk_models
-bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
+bash models/audio/stt/whisper_tiny/deploy/run_all_formal_evaluations.sh
 ```
 
-`prepare_accuracy.sh`、`run_accuracy_board.sh` 和 `summarize_accuracy.sh` 是一键入口调用的
-内部阶段脚本,仅在定位故障或断点恢复时单独使用。容器生成文件的所有权会恢复为当前宿主
-用户。
+双数据集入口会在开始前校验 AISHELL-1 与 LibriSpeech 的目录和压缩包,只编译一次板端程序,
+并顺序执行两套 Run。已有 `complete`、失败 0、缺失 0 的 Run 默认直接复用；设置
+`REUSE_COMPLETE_RUNS=0` 才会强制重新执行。只有两套 Run 都完整时才生成联合报告并输出
+“两套正式评测全部完成”。
+
+`run_formal_evaluation.sh` 是单数据集恢复入口；`prepare_accuracy.sh`、
+`run_accuracy_board.sh` 和 `summarize_accuracy.sh` 是更底层的阶段脚本。它们仅用于定位故障
+或断点恢复,不能代表双数据集全部完成。容器生成文件的所有权会恢复为当前宿主用户。
 
 生成的 `whisper_board_eval` 会在一次进程内持久加载 Encoder/Decoder DLA，并对 JSONL
 清单逐条推理。输出每完成一条就落盘；重复使用同一个输出路径时会跳过已有 `status=ok`
 的样例，从而实现断点续跑。
 
-## 3. LibriSpeech test-clean
+## 3. 当前补跑命令
+
+AISHELL-1 Run `20260918_aishell1_test_fp16_v1` 已完成。使用下列命令时,双数据集入口会复用
+该 Run,只执行尚未完成的 LibriSpeech,再生成联合报告：
+
+```bash
+cd /data/users/hailong.he/github/mtk_models
+export EVAL_DATE=20260921
+export AISHELL_RUN_ID=20260918_aishell1_test_fp16_v1
+bash models/audio/stt/whisper_tiny/deploy/run_all_formal_evaluations.sh
+```
+
+跨天恢复时继续使用相同的 `EVAL_DATE`,避免创建新的 LibriSpeech Run 目录。
+
+## 4. 单数据集故障恢复
+
+以下命令不是完整正式评测入口,只在对应数据集失败后用于单独恢复。
+
+### LibriSpeech test-clean
 
 89 上的 `test-clean` 已解压到
 `/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpeech/test-clean/LibriSpeech/test-clean/`：
@@ -51,7 +75,7 @@ export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpee
 bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
 ```
 
-## 4. AISHELL-1 test
+### AISHELL-1 test
 
 89 上已单独解压官方 test 的 20 位说话人、7,176 条 WAV；目录同时包含完整转录文件：
 

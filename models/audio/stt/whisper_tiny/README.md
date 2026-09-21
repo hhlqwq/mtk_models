@@ -66,37 +66,37 @@ NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 
 ## 正式精度与性能一键评测
 
-正式入口是 `deploy/run_formal_evaluation.sh`。必须在 Ubuntu89 宿主机运行,不要进入
-`hhl_g720_8011` 容器。脚本会一次完成：交叉编译板端程序、构建数据清单与 OpenAI 基线、
-部署到 Genio 720 执行全部样本、取回结果并生成 CER/WER 与性能报告。任一步骤失败都会
-返回非零,不会把不完整结果标记为正式结果。
-
-AISHELL-1 test：
+双数据集正式入口是 `deploy/run_all_formal_evaluations.sh`。必须在 Ubuntu89 宿主机运行,
+不要进入 `hhl_g720_8011` 容器。默认数据路径就是本项目在 89 上的实际路径,一条命令会依次
+完成 AISHELL-1 test 和 LibriSpeech `test-clean`,最后生成联合 CER/WER 与性能报告：
 
 ```bash
 cd /data/users/hailong.he/github/mtk_models
-export DATASET=aishell1
-export RUN_ID=20260918_aishell1_test_fp16_v1
-export DATASET_ROOT=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/Aishell/test
-export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/Aishell/data_aishell.tgz
-bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
+bash models/audio/stt/whisper_tiny/deploy/run_all_formal_evaluations.sh
 ```
 
-LibriSpeech test-clean：
+脚本启动前会同时检查两套数据目录和压缩包；只交叉编译一次板端程序。默认复用状态为
+`complete` 且样例无失败、无缺失的已有 Run,其余 Run 会从已有 JSONL 断点继续。当前已经
+完成 AISHELL-1,因此补跑 LibriSpeech 时应显式复用既有 AISHELL Run：
 
 ```bash
 cd /data/users/hailong.he/github/mtk_models
-export DATASET=librispeech
-export RUN_ID=20260918_librispeech_test_clean_fp16_v1
-export DATASET_ROOT=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpeech/test-clean/LibriSpeech/test-clean
-export ARCHIVE=/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LibriSpeech/test-clean.tar.gz
-bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
+export EVAL_DATE=20260921
+export AISHELL_RUN_ID=20260918_aishell1_test_fp16_v1
+bash models/audio/stt/whisper_tiny/deploy/run_all_formal_evaluations.sh
 ```
+
+保留同一个 `EVAL_DATE` 可确保跨天重试仍复用相同的 LibriSpeech 和联合 Run 目录。
+
+只有两套 `summary.json` 都为 `complete` 时,脚本才会输出“两套正式评测全部完成”,并在
+`.eval/whisper_tiny/<combined_run_id>/report/` 生成联合 `summary.json` 和 `report.md`。
+设置 `REUSE_COMPLETE_RUNS=0` 可强制重新运行两套数据。`run_formal_evaluation.sh` 是供单数据集
+故障定位和断点重跑的内部入口,完成时只报告当前数据集,不再输出含糊的“全部完成”。
 
 数据集由用户下载,脚本不会联网或修改原始数据。AISHELL-1 加载器兼容完整数据集的
 `wav/test/` 和独立测试集的 `test/wav/` 布局。结果写入
 `.eval/whisper_tiny/<run_id>/report/`；`summary.json` 只有在失败和缺失样本均为 0 时才会
-标记为 `complete`。底层三个分步脚本仅用于故障定位。完整指标口径见
+标记为 `complete`。单数据集入口及底层三个分步脚本仅用于故障定位。完整指标口径见
 [`docs/formal_accuracy_performance_guide.md`](docs/formal_accuracy_performance_guide.md)。
 
 ## 2026-09-18 AISHELL-1 正式结果
