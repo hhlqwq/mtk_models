@@ -3,7 +3,9 @@ name: MediaTek Genio 720 EVK
 soc: MT8189
 board_host: root@192.168.0.92
 board_root: /root/hailong.he
-os: Rity Demo 26.0-dev
+os: Rity Demo 26.0-release
+kernel: 6.6.137-mtk+ga246e0c68c39-g429091ed5965
 npu: MDLA 5.3
 neuron_runtime: 8.2.16
-
+onnx_runtime: 1.20.2
+llm_cmdline_tool: /usr/sbin/llm_cmdline_tool

@@ -70,14 +70,22 @@ ImageNet 或 COCO 原图的情况下直接展示"已经完成测试".公开样�
 | Neuron Compiler | 8.2.31 |
 | Genio 720 EVK | `root@192.168.0.92`,无密码 |
 | 板端目录 | `/root/hailong.he/<model>/{model,demo,eval}`；共享数据位于 `/root/hailong.he/datasets` |
-| 板端系统 | Rity Demo 26.0-dev / Scarthgap / Linux 6.6.117 |
+| 板端系统 | Rity Demo 26.0-release / Scarthgap / Linux 6.6.137 |
 | 板端 Neuron Runtime | 8.2.16 |
+| 板端 ONNX Runtime | 1.20.2；包含 Neuron、XNNPACK 和 CPU Execution Provider |
+| 板端 GAI 工具 | `/usr/sbin/llm_cmdline_tool`；工具存在已验证，LLM/VLM 模型推理待验证 |
 
 89 宿主机和 G720 Docker 容器内的项目目录均固定为
 `/data/users/hailong.he/github/mtk_models`,路径完全一致.
 
 详细说明见 [环境文档](docs/environment.md)、[Genio 720 板端规范](docs/genio_720.md) 和
 [2026-09-07 官网与实际环境核对记录](docs/genio_720_environment_audit_20260907.md).
+
+2026-09-21 已通过 Windows 主机和 `USB 3.2 P0` 将官方 eMMC v26.0 镜像完整刷入
+Genio 720 EVK.当前平台基线和刷写证据见
+[Genio 720 v26.0 升级记录](docs/genio_720_v26_upgrade_20260921.md).现有模型报告中的
+`26.0-dev / 6.6.117` 是对应历史运行的真实环境,不会批量改写；这些模型在正式 v26.0
+上的兼容性、精度和性能需要重新执行后才能更新状态.
 
 ## 快速开始
 

@@ -15,6 +15,8 @@
 | mtk_quantization | 8.2.1 | 量化工具 |
 | ncc-tflite | Neuron 8.2.31 | TFLite 到 DLA 编译 |
 | neuronrt | 板端 8.2.16 | DLA NPU 推理 |
+| ONNX Runtime | 板端 1.20.2 | Neuron/XNNPACK/CPU Execution Provider 在线推理 |
+| llm_cmdline_tool | `neuropilot-bin` 1.0-r0 | GAI LLM/VLM 命令行入口；模型推理待验证 |
 
 主机编译器与板端运行时版本不同.每份 benchmark 都必须同时记录二者,避免只写模糊的
 "NeuroPilot SDK 8".
@@ -23,7 +25,7 @@
 `neuropilot-sdk-basic-8.0.11-build20260211.tar.gz` 完全对应.官网没有声明 NCC 8.2.31
 生成的全部 DLA 均兼容板端 Runtime 8.2.16,因此该组合只能按模型实测确认.
 
-## 当前部署状态（2026-09-07）
+## 当前部署状态（2026-09-21）
 
 ```text
 89 宿主: Ubuntu 24.04.4 LTS / Linux 6.8.0-136-generic
@@ -36,6 +38,24 @@
 当前容器中的 Python 3.11.11、Converter 8.16.0、Quantization 8.2.1、NCC 8.2.31、
 Torch 2.0.0+cu118 和 ONNX 1.13.1 已通过版本查询确认.Torch CUDA 和 ONNX Runtime
 CUDA 已在 RTX 4090 D 上执行运算验证.旧 Debian 12 容器和镜像已删除.
+
+Genio 720 EVK 已刷入官方 IoT Yocto v26.0 eMMC 镜像.当前板端基线为：
+
+```text
+系统: Rity Demo Layer 26.0-release (scarthgap)
+内核: 6.6.137-mtk+ga246e0c68c39-g429091ed5965
+Neuron Runtime: 8.2.16
+ONNX Runtime: 1.20.2
+ONNX Runtime Provider: NeuronExecutionProvider / XnnpackExecutionProvider / CPUExecutionProvider
+GAI 命令行工具: /usr/sbin/llm_cmdline_tool
+SSH: root@192.168.0.92,空密码
+```
+
+板端已验证 APUSYS NP8 模块和设备节点存在.`llm_cmdline_tool` 已完成无模型参数解析检查,
+但尚未加载 Model Zoo 的 YAML、LLM 或 VLM 资源.现有模型精度和性能报告来自升级前的
+`26.0-dev / 6.6.117` 环境；除非重新执行,不得将历史数值标记成正式 v26.0 实测结果.
+完整刷写与验证记录见
+[Genio 720 v26.0 升级记录](genio_720_v26_upgrade_20260921.md).
 
 迁移前的容器检查、软件清单和可写层差异已保存到
 `/data/users/hailong.he/data/MTKG720/migration_20260907/`,用于追溯,不作为可直接恢复的容器镜像.

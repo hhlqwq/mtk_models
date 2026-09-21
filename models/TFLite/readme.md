@@ -33,6 +33,9 @@
 
 ### 2. TFLite(LiteRT) - Generative AI
    大型语言模型 (LLM)、视觉语言模型 (VLM)、语音(ASR) 和图像生成模型(仅安卓), 以下模型[来源于](https://genio.mediatek.com/doc/iot-aihub/ai_hub/model_zoo/litert_gai/supported_models.html)
+   
+开发板[LLM工具](https://genio.mediatek.com/doc/iot-aihub/ai_hub/supported_os/yocto/litert_gai/llm_cmdline_tool.html), [VLM工具](https://genio.mediatek.com/doc/iot-aihub/ai_hub/supported_os/yocto/litert_gai/vlm_cmdline_tool.html), 新版本 [发行说明](https://genio.mediatek.com/doc/iot-yocto/latest/sw/yocto/release-notes/iot-yocto-v26.0-release-note.html)：iot-yocto-v26.0-release  v26.0 - 2026 Jul 29  
+[刷机指南](https://genio.mediatek.com/doc/iot-yocto/latest/sw/yocto/get-started/flash.html)
 #### LLM
 | 模型 | source | 性能(Prompt/Generative) token/s | 实测 |
 | ------ | ------ | ------ | ------ |

@@ -1,5 +1,9 @@
 # Genio 720 环境与官方资料核对记录（2026-09-07）
 
+> 本文主体保留 2026-09-07 的历史快照.开发板已于 2026-09-21 刷入正式 v26.0；
+> 后续结果见本文末尾和
+> [Genio 720 v26.0 升级记录](genio_720_v26_upgrade_20260921.md).
+
 ## 核对范围
 
 本记录核对以下四类信息：
@@ -10,7 +14,8 @@
 4. 本仓库登记的工具链与平台配置.
 
 初始核对完成后,已按用户授权迁移 Docker 容器,并下载、校验、解包正式 Rity v26.0 镜像.
-开发板当前只能通过网络访问,无法通过 USB 接入 89；正式刷写尚未开始,板端系统未改变.
+截至 2026-09-07,开发板只能通过网络访问,无法通过 USB 接入 89；正式刷写尚未开始,
+板端系统未改变.
 
 ## 官方资料来源
 
@@ -115,8 +120,8 @@ Neuron Runtime: 8.2.16
 
 板端升级前备份保存于
 `/data/users/hailong.he/data/MTKG720/migration_20260907/board_root_hailong.he_before_v26.0.tar.gz`,
-并附有 MD5.当前 89 的 USB 枚举尚无 MediaTek `0e8d:0003` 设备,而且开发板无法通过 USB
-接入 89,因此实际刷写未开始.
+并附有 MD5.截至 2026-09-07,89 的 USB 枚举尚无 MediaTek `0e8d:0003` 设备,而且
+开发板无法通过 USB 接入 89,因此当时实际刷写未开始.
 
 板端只读检查确认 `/dev/mmcblk0p10` 是唯一 `rootfs`,并正挂载为 `/`；启动参数直接使用
 `root=PARTLABEL=rootfs`.系统未安装 RAUC、SWUpdate、Mender、OSTree 或 Aktualizr,也没有
@@ -161,3 +166,25 @@ daemon 模式仍依赖目标板与刷机主机之间的 USB/fastboot 链路.因�
 
 - 任何模型的重新转换、NCC 编译、DLA 加载、板端推理、精度或性能.
 - 正式 Rity v26.0 刷写后的 Neuron Runtime 版本和模型兼容性.
+
+## 2026-09-21 后续升级结果
+
+正式 eMMC 镜像已改由 Windows 主机通过 `USB 3.2 P0` 刷入 Genio 720 EVK.
+`genio-flash` 1.7.1 完成 `mmc0`、`mmc0boot0`、`mmc0boot1` 写入并成功重启.
+升级后实时验证如下：
+
+```text
+系统: Rity Demo Layer 26.0-release (scarthgap)
+内核: 6.6.137-mtk+ga246e0c68c39-g429091ed5965
+Neuron Runtime: 8.2.16
+ONNX Runtime: 1.20.2
+GAI 工具: /usr/sbin/llm_cmdline_tool
+地址: root@192.168.0.92,空密码
+```
+
+APUSYS NP8 模块和设备节点存在,ORT 可枚举 Neuron、XNNPACK 和 CPU Provider.
+这些是软件栈和运行前提检查,不是模型推理证据.原“正式刷写尚未开始”和“刷写后版本
+未验证”的结论只适用于本文 2026-09-07 主体记录,已由本节和独立升级记录取代.
+
+尚未在正式 v26.0 上重新运行历史模型,也未使用 `llm_cmdline_tool` 加载 Model Zoo 的
+LLM/VLM 配置.后续报告必须保留旧环境证据并为新运行分配新的 run ID.
