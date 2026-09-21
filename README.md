@@ -45,7 +45,7 @@ ImageNet 或 COCO 原图的情况下直接展示"已经完成测试".公开样�
 | [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 完整交付 |
 | [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | 完整交付 |
 | [YOLO-World XL](models/perception/object_detection/yoloworld_xl/README.md) | Perception / Object detection | 640×640 RGB | AILab-CVC / MediaTek Model Zoo ONNX | 板端已验证；正式 COCO mAP 待补 |
-| [Whisper-Tiny](models/audio/stt/whisper_tiny/README.md) | Audio / STT | 16 kHz 单声道、最长 30 秒 | OpenAI Whisper v20250625 | 板端已验证；正式 WER/CER 待补 |
+| [Whisper-Tiny](models/audio/stt/whisper_tiny/README.md) | Audio / STT | 16 kHz 单声道、最长 30 秒 | OpenAI Whisper v20250625 | 板端已验证；AISHELL-1 已测，LibriSpeech 待测 |
 
 公开三图结果分别位于各模型的 `examples/output/public/`,可通过模型 README 直接查看.
 

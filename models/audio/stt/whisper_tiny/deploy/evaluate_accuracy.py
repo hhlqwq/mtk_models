@@ -201,14 +201,27 @@ def write_markdown(path: Path, dataset: str, summary: dict) -> None:
     """生成可直接审阅的精度与性能 Markdown."""
     accuracy = summary["accuracy"]
     performance = summary["performance"]["overall"]
-    path.write_text(
+    lines = [
         f"# {dataset} 正式评测结果\n\n"
         f"- 状态：`{summary['status']}`\n"
         f"- 样例数：`{summary['successful_samples']}` / "
         f"`{summary['expected_samples']}`\n"
-        f"- {accuracy['metric'].upper()}：`{accuracy['value']:.6f}`\n"
+        f"- NPU {accuracy['metric'].upper()}：`{accuracy['value']:.6f}`\n"
         f"- 规范化文本完全一致率："
         f"`{accuracy['normalized_exact_match_rate']:.6f}`\n"
+    ]
+    if "framework_accuracy" in summary:
+        framework_accuracy = summary["framework_accuracy"]
+        parity = summary["framework_parity"]
+        lines.append(
+            f"- OpenAI {framework_accuracy['metric'].upper()}："
+            f"`{framework_accuracy['value']:.6f}`\n"
+            f"- NPU/OpenAI 规范化文本完全一致率："
+            f"`{parity['normalized_text_exact_match_rate']:.6f}`\n"
+            f"- NPU/OpenAI Token 完全一致率："
+            f"`{parity['token_exact_match_rate']:.6f}`\n")
+    lines.append(
+        f"- 未到 EOT 样例数：`{summary['truncated_samples']}`\n"
         f"- Encoder Mean/P50/P90/P95："
         f"`{performance['encoder_ms']['mean']:.3f}` / "
         f"`{performance['encoder_ms']['p50']:.3f}` / "
@@ -218,8 +231,8 @@ def write_markdown(path: Path, dataset: str, summary: dict) -> None:
         f"`{performance['npu_rtf']['mean']:.6f}` / "
         f"`{performance['npu_rtf']['p50']:.6f}` / "
         f"`{performance['npu_rtf']['p90']:.6f}` / "
-        f"`{performance['npu_rtf']['p95']:.6f}`\n",
-        encoding="utf-8")
+        f"`{performance['npu_rtf']['p95']:.6f}`\n")
+    path.write_text("".join(lines), encoding="utf-8")
 
 
 def main() -> None:
@@ -241,6 +254,9 @@ def main() -> None:
         args.dataset, evaluated_sources,
         {sample_id: successful[sample_id] for sample_id in evaluated_sources}
     ) if successful else ({}, [])
+    truncated_sample_ids = sorted(
+        item["sample_id"] for item in successful.values()
+        if not item.get("reached_eot", False))
     summary = {
         "status": "complete" if complete else "incomplete",
         "dataset": args.dataset,
@@ -250,22 +266,38 @@ def main() -> None:
         "missing_samples": len(missing),
         "accuracy": accuracy,
         "performance": performance_summary(list(successful.values())),
-        "truncated_samples": sum(
-            not item.get("reached_eot", False) for item in successful.values()),
+        "truncated_samples": len(truncated_sample_ids),
+        "truncated_sample_ids": truncated_sample_ids,
     }
     if args.reference_predictions:
         framework = {item["sample_id"]: item for item in
                      read_jsonl(args.reference_predictions)}
         shared = set(successful) & set(framework)
         normalize = normalized_units(args.dataset)[0]
+        framework_sources = {
+            sample_id: sources[sample_id] for sample_id in sources
+            if sample_id in framework
+        }
+        framework_accuracy, _ = metric_summary(
+            args.dataset, framework_sources,
+            {sample_id: framework[sample_id]
+             for sample_id in framework_sources})
+        summary["framework_accuracy"] = framework_accuracy
+        normalized_text_exact_matches = sum(
+            normalize(successful[item]["text"]) ==
+            normalize(framework[item]["text"]) for item in shared)
+        token_exact_matches = sum(
+            successful[item]["tokens"] == framework[item]["tokens"]
+            for item in shared)
         summary["framework_parity"] = {
             "compared_samples": len(shared),
-            "normalized_text_exact_matches": sum(
-                normalize(successful[item]["text"]) ==
-                normalize(framework[item]["text"]) for item in shared),
-            "token_exact_matches": sum(
-                successful[item]["tokens"] == framework[item]["tokens"]
-                for item in shared),
+            "normalized_text_exact_matches": normalized_text_exact_matches,
+            "normalized_text_exact_match_rate": (
+                normalized_text_exact_matches / len(shared)
+                if shared else None),
+            "token_exact_matches": token_exact_matches,
+            "token_exact_match_rate": (
+                token_exact_matches / len(shared) if shared else None),
         }
     if args.preprocess_metrics:
         summary["host_preprocessing"] = preprocessing_summary(

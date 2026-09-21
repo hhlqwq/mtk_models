@@ -2,7 +2,8 @@
 
 本目录用于将 OpenAI 多语言 Whisper-Tiny 部署到 MT8189 / Genio 720.当前状态为
 `板端已验证`：双 DLA 已在 Neuron Runtime 8.2.16 完成英文与静音 Smoke Test,
-Token 和文本均与 OpenAI FP32 Greedy Search 基线完全一致.正式 WER/CER 与完整性能评测待补.
+Token 和文本均与 OpenAI FP32 Greedy Search 基线完全一致；AISHELL-1 test 正式 CER 与
+性能评测已完成,LibriSpeech `test-clean` WER 仍待补.
 
 ## 首版范围
 
@@ -60,8 +61,8 @@ NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 `deploy/prepare_board_inputs.py` 在 89 上生成 FP16 Mel、OpenAI FP32 基线和固定解码规则；
 `deploy/decode_board_tokens.py` 将板端 Token 解码为文本并执行精确对比。
 2026-09-16 的板端证据见 `docs/board_smoke_20260916.json`、`docs/accuracy.md` 和
-`docs/benchmark.md`.完整交付还要求 LibriSpeech WER、AISHELL-1 CER、分组延迟/RTF、
-峰值 RSS 和中文/噪声样例.
+`docs/benchmark.md`.AISHELL-1 正式结果见 `docs/accuracy.md`、`docs/benchmark.md` 和
+`docs/formal_eval_20260918_aishell1.json`；完整交付仍要求 LibriSpeech WER 和近 30 秒样例.
 
 ## 正式精度与性能一键评测
 
@@ -98,10 +99,26 @@ bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
 标记为 `complete`。底层三个分步脚本仅用于故障定位。完整指标口径见
 [`docs/formal_accuracy_performance_guide.md`](docs/formal_accuracy_performance_guide.md)。
 
+## 2026-09-18 AISHELL-1 正式结果
+
+Run `20260918_aishell1_test_fp16_v1` 完成全部 `7,176` 条测试音频,失败与缺失均为 0.
+NPU CER 为 `45.5935%`,同一数据、规范化和 Greedy Search 规则下的 OpenAI CUDA 基线 CER
+为 `45.8264%`。NPU/OpenAI 规范化文本完全一致率为 `94.2586%`,Token 完全一致率为
+`94.0775%`。其中 14 条 NPU 解码出现重复并达到 196 个生成 Token 上限,已保留在 CER 中.
+
+整体 NPU 耗时 Mean/P50/P90/P95 为 `296.899/286.599/372.385/399.918 ms`,NPU RTF 为
+`0.062009/0.060940/0.075719/0.080382`,进程峰值 RSS 为 `112,292 KB`。这些数字只覆盖
+Neuron Runtime 的 Encoder 和自回归 Decoder,不包含音频读取、Log-Mel、部署传输和文本解码.
+
+该 Run 的执行状态为 `complete`,但 CER 较高、仍有 `5.7414%` 文本未与框架完全一致,
+因此不将其描述为精度验收通过。详细误差、分桶性能、哈希和限制见上述三份证据文档.
+
 ## 验证边界
 
 - 已验证：OpenAI FP32/改写图/ONNX 数值对齐、MTK Converter 8.16.0 转换、NCC 8.2.31
   双图单一 MDLA 5.3 执行步、禁止 bridge 编译、Genio 720 双 DLA 完整解码.
 - 已验证样例：OpenAI `jfk.flac` 的 23 个 Token 和文本逐项一致；生成的 5 秒静音样例
   输出 1 个 Token `291`（文本 `you`）,与 OpenAI FP32 基线一致且不同于 JFK 输出.
-- 未验证：LibriSpeech WER、AISHELL-1 CER、中文/噪声样例、正式重复性能统计、RTF 和峰值 RSS.
+- 已验证：AISHELL-1 test `7,176/7,176` 完整运行、同协议 OpenAI/NPU CER、文本与 Token
+  一致率、NPU 延迟/RTF/Tokens/s、主机预处理耗时和进程峰值 RSS.
+- 未验证：LibriSpeech WER、15–30 秒正式样例、噪声鲁棒性和跨多次 Run 的性能方差.

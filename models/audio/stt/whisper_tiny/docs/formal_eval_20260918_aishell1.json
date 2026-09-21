@@ -1,0 +1,138 @@
+{
+  "date": "2026-09-18",
+  "run_id": "20260918_aishell1_test_fp16_v1",
+  "execution_status": "complete",
+  "delivery_status": "board_validated",
+  "accuracy_acceptance": "not_claimed",
+  "repository_commit_at_run": "8a9c2037d1d323fc6366e689a875a42be2c08059",
+  "dataset": {
+    "name": "AISHELL-1",
+    "subset": "test",
+    "source_page_url": "https://www.openslr.org/33/",
+    "download_url": "https://openslr.trmal.net/resources/33/data_aishell.tgz",
+    "license": "Apache License 2.0",
+    "archive_sha256": "a4a0313cde0a933e0e01a451f77de0a23d6c942f4694af5bb7f40b9dc38143fe",
+    "source_manifest_sha256": "ac8396326581765a4afda4a333bb297b2ec1aba387e72d029ce8b10030d32ab6",
+    "expected_samples": 7176,
+    "successful_samples": 7176,
+    "failed_samples": 0,
+    "missing_samples": 0,
+    "excluded_over_30s": 0
+  },
+  "protocol": {
+    "language": "zh",
+    "task": "transcribe",
+    "timestamps": false,
+    "decoding": "greedy",
+    "max_generated_tokens": 196,
+    "normalizer": "OpenAI BasicTextNormalizer then remove whitespace",
+    "unit": "Unicode character",
+    "traditional_simplified_conversion": false
+  },
+  "accuracy": {
+    "npu": {
+      "cer": 0.4559347110199017,
+      "errors": 47766,
+      "substitutions": 44442,
+      "deletions": 990,
+      "insertions": 2334,
+      "reference_units": 104765,
+      "normalized_exact_matches": 198,
+      "normalized_exact_match_rate": 0.027591973244147156
+    },
+    "openai_cuda": {
+      "cer": 0.4582637331169761,
+      "errors": 48010,
+      "substitutions": 44437,
+      "deletions": 993,
+      "insertions": 2580,
+      "reference_units": 104765,
+      "normalized_exact_matches": 201,
+      "normalized_exact_match_rate": 0.028010033444816052
+    },
+    "parity": {
+      "compared_samples": 7176,
+      "normalized_text_exact_matches": 6764,
+      "normalized_text_exact_match_rate": 0.9425863991081382,
+      "token_exact_matches": 6751,
+      "token_exact_match_rate": 0.9407748049052397
+    },
+    "truncated_samples": 14,
+    "truncated_sample_ids": [
+      "BAC009S0767W0336",
+      "BAC009S0768W0401",
+      "BAC009S0769W0432",
+      "BAC009S0770W0414",
+      "BAC009S0903W0203",
+      "BAC009S0904W0139",
+      "BAC009S0904W0160",
+      "BAC009S0904W0470",
+      "BAC009S0906W0244",
+      "BAC009S0907W0189",
+      "BAC009S0912W0130",
+      "BAC009S0913W0390",
+      "BAC009S0913W0425",
+      "BAC009S0915W0316"
+    ]
+  },
+  "performance": {
+    "scope": "NeuronRuntime encoder and autoregressive decoder only",
+    "overall": {
+      "encoder_ms": {"mean": 78.54033734671107, "p50": 78.5187, "p90": 78.69205, "p95": 78.739225},
+      "first_token_ms": {"mean": 120.07959810479392, "p50": 120.077, "p90": 120.351, "p95": 120.446},
+      "decoder_total_ms": {"mean": 218.35828787625456, "p50": 208.023, "p90": 293.77099999999996, "p95": 321.45550000000003},
+      "npu_total_ms": {"mean": 296.89862402452536, "p50": 286.5985, "p90": 372.3845, "p95": 399.9175},
+      "npu_rtf": {"mean": 0.06200865213210711, "p50": 0.0609402, "p90": 0.0757192, "p95": 0.080381675},
+      "tokens_per_second": {"mean": 55.18996560758085, "p50": 55.7103, "p90": 65.24125000000001, "p95": 67.172575},
+      "peak_rss_kb": 112292
+    },
+    "duration_buckets": {
+      "le_5s": {
+        "samples": 4007,
+        "npu_total_ms": {"mean": 262.3794329922641, "p50": 255.154, "p90": 308.0622, "p95": 326.9501},
+        "npu_rtf": {"mean": 0.0686151294235089, "p50": 0.0665569, "p90": 0.07952336, "p95": 0.08479109}
+      },
+      "5_15s": {
+        "samples": 3169,
+        "npu_total_ms": {"mean": 340.54595708425364, "p50": 337.86, "p90": 400.93339999999995, "p95": 422.03739999999993},
+        "npu_rtf": {"mean": 0.05365517958346475, "p50": 0.0533078, "p90": 0.06389734, "p95": 0.06730918}
+      },
+      "15_25s": {"samples": 0},
+      "25_30s": {"samples": 0}
+    },
+    "board_wall_time_seconds": 2359.99,
+    "board_exit_status": 0,
+    "external_time_max_rss_kb": 0,
+    "rss_source": "per-sample getrusage in whisper_board_eval"
+  },
+  "host_preprocessing": {
+    "host": "ubuntu89",
+    "audio_decode_ms": {"mean": 0.20010827321802144, "p50": 0.19410194363445044, "p90": 0.24554249830543995, "p95": 0.26229876675643027},
+    "log_mel_ms": {"mean": 3.4326667478982955, "p50": 3.4435754641890526, "p90": 4.222646995913237, "p95": 4.363428277429193},
+    "mel_write_ms": {"mean": 1.7658179153166784, "p50": 1.6894435393624008, "p90": 1.8552865367382765, "p95": 2.069569018203765}
+  },
+  "target": {
+    "soc": "MT8189 / Genio 720",
+    "kernel": "6.6.117-mtk+ge93786e7114b-gbdfdf5b7370c",
+    "neuron_runtime": "8.2.16",
+    "precision": "fp16",
+    "ncc": "8.2.31",
+    "arch": "mdla5.3"
+  },
+  "artifacts": {
+    "whisper_board_eval_sha256": "adc7a661d22827738dedc03e454b055192135deda86bfd5fa72c24511fa07399",
+    "encoder_dla_sha256": "6d7dbe0a1e657a018f1505dc3aed173a143290f54d5a6e3e4b9d3a653fa6045a",
+    "decoder_dla_sha256": "7c8f49cd6ca710e10deeefdd76a8ce948b208df612de1df9c30b32f7b9756b9b",
+    "input_manifest_sha256": "a084eba181c37cd6d9ea7e4719fc467e42e86c2c4faf131422f192889d06870b",
+    "reference_predictions_sha256": "663c0ac7c88f0766cc5bb3b012e4d01a3c5286d3f4f0604b33e930c6b125dd7c",
+    "board_predictions_sha256": "18bc082355942ccf1b36ea9c544c2fd10c2f944ffef57025dc7c2ca459a33ce3",
+    "summary_sha256": "aad3bdc67e1f24f843020ac6551f10445460253c08baacb4c202e076499e7934",
+    "report_sha256": "5f03c64e80fb052df979172d79c2dcd6b39a2c3508c9a29cb268a4ea8d2781d4"
+  },
+  "pending": [
+    "LibriSpeech test-clean WER",
+    "15-30 second formal samples",
+    "noise robustness",
+    "repeat-run performance variance"
+  ]
+}

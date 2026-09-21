@@ -68,7 +68,16 @@ bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
 基线,不允许设置 `REFERENCE_DEVICE=none`；框架基线用于统计 NPU 与 OpenAI 输出的规范化
 文本、Token 完全一致率。
 
-## 5. 指标口径
+## 5. 已完成正式 Run
+
+AISHELL-1 Run `20260918_aishell1_test_fp16_v1` 已完成 `7,176/7,176` 条样例,失败与缺失均为
+0。NPU CER 为 `45.5935%`,OpenAI 同协议 CER 为 `45.8264%`；详细一致性、截断说明和性能
+数据见 [`accuracy.md`](accuracy.md)、[`benchmark.md`](benchmark.md) 与
+[`formal_eval_20260918_aishell1.json`](formal_eval_20260918_aishell1.json).
+
+LibriSpeech `test-clean` 尚无正式 `summary.json`,不得填写或推断 WER.
+
+## 6. 指标口径
 
 - 英文：OpenAI `EnglishTextNormalizer` 后按单词计算 WER。
 - 中文：OpenAI `BasicTextNormalizer` 后移除空白，按 Unicode 字符计算 CER。
@@ -80,7 +89,7 @@ bash models/audio/stt/whisper_tiny/deploy/run_formal_evaluation.sh
 - 分组：`≤5 s`、`5–15 s`、`15–25 s`、`25–30 s`，分别输出 Mean/P50/P90/P95。
 - 内存：板端程序逐条记录进程 `ru_maxrss`，外层 `/usr/bin/time -v` 保存独立原始记录。
 
-## 6. 运行目录与验收
+## 7. 运行目录与验收
 
 89 的全部中间文件位于 `.eval/whisper_tiny/<run_id>/`，该目录被 Git 忽略。92 的对应目录为
 `/root/hailong.he/whisper_tiny/eval/<run_id>/`。禁止复用不同数据集的 Run ID。
