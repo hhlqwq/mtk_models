@@ -47,3 +47,8 @@ models/
 当前 MediaTek ONNX Runtime Model Zoo 接入：
 
 - `perception/object_detection/yoloworld_xl`
+
+当前适配中的分割模型：
+
+- [`navigation/segmentation/fastsam`](navigation/segmentation/fastsam/README.md):
+  FastSAM-s / 640×640,已提供离线转换与板端脚本,待官方权重和真实 NPU 验证.

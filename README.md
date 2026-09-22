@@ -41,6 +41,7 @@ ImageNet 或 COCO 原图的情况下直接展示"已经完成测试".公开样�
 
 | 模型 | 任务 | 标准输入 | 来源 | 当前状态 |
 | --- | --- | --- | --- | --- |
+| [FastSAM-s](models/navigation/segmentation/fastsam/README.md) | Navigation / Segmentation | 640×640 RGB | CASIA-LMC-Lab / Ultralytics 8.0.111 | 环境建设中；待官方权重与板端验证 |
 | [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics | 完整交付 |
 | [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 完整交付 |
 | [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | 完整交付 |

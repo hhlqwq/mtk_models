@@ -51,6 +51,10 @@ models/audio/stt/whisper_tiny/deploy/inference_demo/whisper_board_decode
 models/audio/stt/whisper_tiny/deploy/inference_demo/whisper_board_eval
 
 # 板端 C++ 交叉编译产物.
+# FastSAM 本地导出、校准与完整性记录.
+models/navigation/segmentation/fastsam/models/*.json
+models/navigation/segmentation/fastsam/models/*SHA256SUMS
+
 models/perception/object_detection/yolov5s/deploy/inference_demo/yolov5s_board_eval
 models/interaction/pose_detection/rtmpose_body2d/deploy/inference_demo/rtmpose_board_eval
 

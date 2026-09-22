@@ -1,0 +1,22 @@
+模型作者官方仓库:
+https://github.com/CASIA-LMC-Lab/FastSAM
+官方源码参考提交:
+b4ed20c2fed75eadc5aa7d8b09fedd137b873b52
+https://github.com/CASIA-LMC-Lab/FastSAM/tree/b4ed20c2fed75eadc5aa7d8b09fedd137b873b52
+
+FastSAM-s.pt 官方 README 链接:
+https://drive.google.com/file/d/10XmSj6mmpmRb8NhXbtiuO9cTTBwR_9SV/view?usp=sharing
+状态: 未下载; 大小和 SHA-256 待本机下载后记录,不得伪造.
+
+实际加载与导出实现,复用 89 容器预装版本:
+https://github.com/ultralytics/ultralytics/tree/v8.0.111
+版本: ultralytics==8.0.111
+此版本兼容性必须通过真实 FastSAM-s 权重导出验证后确认.
+
+上游许可证:
+https://github.com/CASIA-LMC-Lab/FastSAM/blob/b4ed20c2fed75eadc5aa7d8b09fedd137b873b52/LICENSE
+https://github.com/ultralytics/ultralytics/blob/v8.0.111/LICENSE
+
+下载策略:
+用户在 Windows 下载官方权重并同步至 89; 89 和 92 不执行在线下载.
+不使用 Qualcomm 或第三方预导出模型作为移植源.

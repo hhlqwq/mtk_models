@@ -1,5 +1,15 @@
 schema_version: 1
 models:
+  - id: fastsam
+    batch: first_batch
+    pilot: false
+    scenario: navigation
+    category: segmentation
+    path: models/navigation/segmentation/fastsam
+    source: CASIA-LMC-Lab/FastSAM
+    platforms:
+      genio_720: environment_ready
+      genio_5100: not_started
   - id: yolov5s
     batch: first_batch
     pilot: true

@@ -1,0 +1,8 @@
+FastSAM 官方代码与 Ultralytics 实现遵循上游 AGPL-3.0 许可证.
+模型权重的适用条款以上游发布说明为准,交付前保留该版本的许可证记录.
+
+完整许可证:
+https://github.com/CASIA-LMC-Lab/FastSAM/blob/b4ed20c2fed75eadc5aa7d8b09fedd137b873b52/LICENSE
+https://github.com/ultralytics/ultralytics/blob/v8.0.111/LICENSE
+
+本目录的适配代码不得改变或移除上游代码与模型的许可证义务.
