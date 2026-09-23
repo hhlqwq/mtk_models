@@ -1,0 +1,27 @@
+id: mobilefacenet
+name: MobileFaceNet
+scenario: interaction
+category: face_recognition
+source:
+  provider: github
+  repository: foamliu/MobileFaceNet
+  revision: f609486344888baa5a618116d7ebaa46dc96071a
+  weights: mobilefacenet.pt
+  weights_url: https://github.com/foamliu/MobileFaceNet/releases/download/v1.0/mobilefacenet.pt
+  weights_sha256: 90a00ba1d8b0b688af3deb731ed53dca582e6106805d1bc3cfdef55f570493f4
+input:
+  shape: [1, 3, 112, 112]
+  layout: NCHW
+  color: BGR
+output:
+  type: face_embedding
+metrics:
+  accuracy: pending
+  performance: latency_ms
+targets:
+  genio_720:
+    status: environment_ready
+    precisions: [fp32, int8]
+  genio_5100:
+    status: not_started
+    precisions: []
