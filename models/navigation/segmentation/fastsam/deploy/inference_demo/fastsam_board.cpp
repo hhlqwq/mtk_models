@@ -189,8 +189,9 @@ std::pair<std::vector<int8_t>, Geometry> Preprocess(const cv::Mat& image,
   Geometry geo{image.cols, image.rows};
   geo.ratio = std::min(static_cast<float>(kSize) / image.cols,
                        static_cast<float>(kSize) / image.rows);
-  const int width = std::lround(image.cols * geo.ratio);
-  const int height = std::lround(image.rows * geo.ratio);
+  // Python round 在 .5 处取最近偶数,此处必须和导出基线保持一致.
+  const int width = static_cast<int>(std::nearbyint(image.cols * geo.ratio));
+  const int height = static_cast<int>(std::nearbyint(image.rows * geo.ratio));
   geo.left = (kSize - width) / 2;
   geo.top = (kSize - height) / 2;
   cv::Mat canvas(kSize, kSize, CV_8UC3, cv::Scalar(114, 114, 114));
@@ -358,7 +359,7 @@ std::vector<Detection> Decode(const NeuronModel& model,
         const float y1 = (anchor_y - distance[1]) * stride;
         const float x2 = (anchor_x + distance[2]) * stride;
         const float y2 = (anchor_y + distance[3]) * stride;
-        Detection detection{cv::Rect2f(x1, y1, x2 - x1, y2 - y1), score};
+        Detection detection{cv::Rect2f(x1, y1, x2 - x1, y2 - y1), score, {}, cv::Mat()};
         for (int channel = 0; channel < kCoefficientCount; ++channel) {
           detection.coefficient[channel] = ReadValue(model, config[box_slot + 2],
                                                      box_slot + 2, channel, row, column);

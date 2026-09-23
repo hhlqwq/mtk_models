@@ -8,7 +8,7 @@ models:
     path: models/navigation/segmentation/fastsam
     source: CASIA-LMC-Lab/FastSAM
     platforms:
-      genio_720: environment_ready
+      genio_720: board_verified
       genio_5100: not_started
   - id: yolov5s
     batch: first_batch

@@ -35,6 +35,11 @@ def load_model(weights):
     checkpoint = torch.load(str(weights), map_location="cpu")
     model = checkpoint.get("ema") or checkpoint["model"]
     model = model.float().cpu().eval()
+    # 兼容早期 PyTorch 序列化的 Upsample; None 保持旧版默认缩放语义.
+    for module in model.modules():
+        if isinstance(module, torch.nn.Upsample) and not hasattr(
+                module, "recompute_scale_factor"):
+            module.recompute_scale_factor = None
     head = model.model[-1]
     if (head.nc, head.nm, head.reg_max, head.nl) != (1, 32, 16, 3):
         raise ValueError("权重不是预期的 FastSAM 分割结构.")

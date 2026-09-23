@@ -7,7 +7,7 @@ source:
   repository: CASIA-LMC-Lab/FastSAM
   revision: b4ed20c2fed75eadc5aa7d8b09fedd137b873b52
   weights: FastSAM-s.pt
-  weights_sha256: null
+  weights_sha256: e9034d7478a8e9d1bfb57b51592e521a253287c7cdcf79258f61ea6d68584a0d
   license: AGPL-3.0
   implementation_repository: ultralytics/ultralytics
   implementation_revision: v8.0.111
@@ -27,8 +27,8 @@ metrics:
   performance: latency_ms
 targets:
   genio_720:
-    status: environment_ready
-    precisions: []
+    status: board_verified
+    precisions: [int8]
   genio_5100:
     status: not_started
     precisions: []
