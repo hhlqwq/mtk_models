@@ -1,13 +1,11 @@
-from torch.quantization import QuantStub, DeQuantStub
 import math
 
 import torch
 import torch.nn.functional as F
 from torch import nn
 from torch.nn import Parameter
-from torch.quantization import QuantStub, DeQuantStub
 
-from config import device, num_classes
+from config import device, num_classes, emb_size
 
 
 def _make_divisible(v, divisor, min_value=None):
@@ -35,9 +33,43 @@ class ConvBNReLU(nn.Sequential):
         padding = (kernel_size - 1) // 2
         super(ConvBNReLU, self).__init__(
             nn.Conv2d(in_planes, out_planes, kernel_size, stride, padding, groups=groups, bias=False),
-            nn.BatchNorm2d(out_planes, momentum=0.1),
-            nn.ReLU()
+            nn.BatchNorm2d(out_planes),
+            nn.ReLU6(inplace=True)
         )
+
+
+class DepthwiseSeparableConv(nn.Module):
+    def __init__(self, in_planes, out_planes, kernel_size, padding, bias=False):
+        super(DepthwiseSeparableConv, self).__init__()
+        self.depthwise = nn.Conv2d(in_planes, in_planes, kernel_size=kernel_size, padding=padding, groups=in_planes,
+                                   bias=bias)
+        self.pointwise = nn.Conv2d(in_planes, out_planes, kernel_size=1, bias=bias)
+        self.bn1 = nn.BatchNorm2d(in_planes)
+        self.bn2 = nn.BatchNorm2d(out_planes)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.depthwise(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+
+        x = self.pointwise(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        return x
+
+
+class GDConv(nn.Module):
+    def __init__(self, in_planes, out_planes, kernel_size, padding, bias=False):
+        super(GDConv, self).__init__()
+        self.depthwise = nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, padding=padding, groups=in_planes,
+                                   bias=bias)
+        self.bn = nn.BatchNorm2d(in_planes)
+
+    def forward(self, x):
+        x = self.depthwise(x)
+        x = self.bn(x)
+        return x
 
 
 class InvertedResidual(nn.Module):
@@ -58,36 +90,21 @@ class InvertedResidual(nn.Module):
             ConvBNReLU(hidden_dim, hidden_dim, stride=stride, groups=hidden_dim),
             # pw-linear
             nn.Conv2d(hidden_dim, oup, 1, 1, 0, bias=False),
-            nn.BatchNorm2d(oup, momentum=0.1),
+            nn.BatchNorm2d(oup),
         ])
         self.conv = nn.Sequential(*layers)
-        # Replace torch.add with floatfunctional
-        self.skip_add = nn.quantized.FloatFunctional()
 
     def forward(self, x):
         if self.use_res_connect:
-            return self.skip_add.add(x, self.conv(x))
+            return x + self.conv(x)
         else:
             return self.conv(x)
-
-
-class depthwise_separable_conv(nn.Module):
-    def __init__(self, nin, nout, kernel_size, padding, bias=False):
-        super(depthwise_separable_conv, self).__init__()
-        self.depthwise = nn.Conv2d(nin, nin, kernel_size=kernel_size, padding=padding, groups=nin, bias=bias)
-        self.pointwise = nn.Conv2d(nin, nout, kernel_size=1, bias=bias)
-
-    def forward(self, x):
-        out = self.depthwise(x)
-        out = self.pointwise(out)
-        return out
 
 
 class MobileFaceNet(nn.Module):
     def __init__(self, width_mult=1.0, inverted_residual_setting=None, round_nearest=8):
         """
         MobileNet V2 main class
-
         Args:
             num_classes (int): Number of classes
             width_mult (float): Width multiplier - adjusts number of channels in each layer by this amount
@@ -103,8 +120,6 @@ class MobileFaceNet(nn.Module):
         if inverted_residual_setting is None:
             inverted_residual_setting = [
                 # t, c, n, s
-                [1, 64, 1, 2],
-                [1, 64, 1, 1],
                 [2, 64, 5, 2],
                 [4, 128, 1, 2],
                 [2, 128, 6, 1],
@@ -118,10 +133,11 @@ class MobileFaceNet(nn.Module):
                              "or a 4-element list, got {}".format(inverted_residual_setting))
 
         # building first layer
-        input_channel = _make_divisible(input_channel * width_mult, round_nearest)
+        # input_channel = _make_divisible(input_channel * width_mult, round_nearest)
         self.last_channel = _make_divisible(last_channel * max(1.0, width_mult), round_nearest)
-        features = [ConvBNReLU(3, input_channel, stride=1)]
-        features.append(depthwise_separable_conv(nin=64, nout=64, kernel_size=3, padding=0))
+        self.conv1 = ConvBNReLU(3, input_channel, stride=2)
+        self.dw_conv = DepthwiseSeparableConv(in_planes=64, out_planes=64, kernel_size=3, padding=1)
+        features = list()
         # building inverted residual blocks
         for t, c, n, s in inverted_residual_setting:
             output_channel = _make_divisible(c * width_mult, round_nearest)
@@ -130,17 +146,12 @@ class MobileFaceNet(nn.Module):
                 features.append(block(input_channel, output_channel, stride, expand_ratio=t))
                 input_channel = output_channel
         # building last several layers
-        features.append(ConvBNReLU(input_channel, self.last_channel, kernel_size=1))
-        features.append(depthwise_separable_conv(nin=512, nout=512, kernel_size=7, padding=0))
+        self.conv2 = ConvBNReLU(input_channel, self.last_channel, kernel_size=1)
+        self.gdconv = GDConv(in_planes=512, out_planes=512, kernel_size=7, padding=0)
+        self.conv3 = nn.Conv2d(512, 128, kernel_size=1)
+        self.bn = nn.BatchNorm2d(128)
         # make it nn.Sequential
         self.features = nn.Sequential(*features)
-        self.quant = QuantStub()
-        self.dequant = DeQuantStub()
-        # building classifier
-        self.embedder = nn.Sequential(
-            nn.Dropout(0.2),
-            nn.BatchNorm1d(512)
-        )
 
         # weight initialization
         for m in self.modules():
@@ -156,32 +167,22 @@ class MobileFaceNet(nn.Module):
                 nn.init.zeros_(m.bias)
 
     def forward(self, x):
-
-        x = self.quant(x)
-
+        x = self.conv1(x)
+        x = self.dw_conv(x)
         x = self.features(x)
-        x = x.mean([2, 3])
-        x = self.embedder(x)
-        x = self.dequant(x)
+        x = self.conv2(x)
+        x = self.gdconv(x)
+        x = self.conv3(x)
+        x = self.bn(x)
+        x = x.view(x.size(0), -1)
         return x
-
-    # Fuse Conv+BN and Conv+BN+Relu modules prior to quantization
-    # This operation does not change the numerics
-    def fuse_model(self):
-        for m in self.modules():
-            if type(m) == ConvBNReLU:
-                torch.quantization.fuse_modules(m, ['0', '1', '2'], inplace=True)
-            if type(m) == InvertedResidual:
-                for idx in range(len(m.conv)):
-                    if type(m.conv[idx]) == nn.Conv2d:
-                        torch.quantization.fuse_modules(m.conv, [str(idx), str(idx + 1)], inplace=True)
 
 
 class ArcMarginModel(nn.Module):
     def __init__(self, args):
         super(ArcMarginModel, self).__init__()
 
-        self.weight = Parameter(torch.FloatTensor(num_classes, args.emb_size))
+        self.weight = Parameter(torch.FloatTensor(num_classes, emb_size))
         nn.init.xavier_uniform_(self.weight)
 
         self.easy_margin = args.easy_margin
@@ -211,5 +212,8 @@ class ArcMarginModel(nn.Module):
 
 
 if __name__ == "__main__":
-    model = MobileFaceNet().to(device)
-    print(model)
+    from torchscope import scope
+
+    model = MobileFaceNet()
+    # print(model)
+    scope(model, input_size=(3, 112, 112))

@@ -6,16 +6,16 @@
 ## 来源和边界
 
 - 模型设计：[MobileFaceNets 论文](https://arxiv.org/abs/1804.07573)。
-- 固定开源实现：[`foamliu/MobileFaceNet` v1.0](https://github.com/foamliu/MobileFaceNet/tree/f609486344888baa5a618116d7ebaa46dc96071a)。这是第三方 PyTorch 实现，并非论文作者代码。
+- 固定开源实现：[`foamliu/MobileFaceNet` a687c71](https://github.com/foamliu/MobileFaceNet/tree/a687c71bea830e70d05fb3b38ddc7c68e1687e94)。这是第三方 PyTorch 实现，并非论文作者代码。
 - 原始权重：[v1.0 `mobilefacenet.pt`](https://github.com/foamliu/MobileFaceNet/releases/download/v1.0/mobilefacenet.pt)，4,135,271 字节，SHA-256 `90a00ba1d8b0b688af3deb731ed53dca582e6106805d1bc3cfdef55f570493f4`。
 - 仓库代码为 Apache-2.0，保留上游 `LICENSE`。权重使用范围和 MS-Celeb-1M 训练数据的产品使用条件仍需单独核实；当前部署只用于板端技术冒烟。
-- `original/upstream/` 保存 v1.0 的 `mobilefacenet.py` 和 `config.py`。只移除了推理/导出不用的 `torchsummary` 导入与打印调用，网络和权重参数未改动。
+- `original/upstream/` 保存上述固定提交的原样 `mobilefacenet.py` 和 `config.py`。上游 v1.0 标签源码采用不同的 512 维结构，无法严格加载其 v1.0 发布权重；固定提交中的 128 维结构与权重参数布局对应。
 
 ## 输入输出
 
 上游训练代码从 OpenCV 读取 **BGR** 图片，将 112×112 图像按 `(像素值 - 127.5) / 128` 转为 NCHW FP32。
-输入必须是预先对齐的人脸，不能把整幅相机画面直接输入。本模型的实际输出维度以固定权重
-的 PyTorch 和 ONNX 检查为准，不采用其他模型页面的维度描述。
+输入必须是预先对齐的人脸，不能把整幅相机画面直接输入。本模型目标输出 128 维，
+实际输出维度以固定权重的 PyTorch 和 ONNX 检查为准。
 
 ## 转换和板端冒烟
 

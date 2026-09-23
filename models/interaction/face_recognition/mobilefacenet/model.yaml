@@ -5,7 +5,7 @@ category: face_recognition
 source:
   provider: github
   repository: foamliu/MobileFaceNet
-  revision: f609486344888baa5a618116d7ebaa46dc96071a
+  revision: a687c71bea830e70d05fb3b38ddc7c68e1687e94
   weights: mobilefacenet.pt
   weights_url: https://github.com/foamliu/MobileFaceNet/releases/download/v1.0/mobilefacenet.pt
   weights_sha256: 90a00ba1d8b0b688af3deb731ed53dca582e6106805d1bc3cfdef55f570493f4

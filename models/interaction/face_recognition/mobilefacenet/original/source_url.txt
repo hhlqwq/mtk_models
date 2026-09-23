@@ -1,7 +1,8 @@
 第三方开源实现：https://github.com/foamliu/MobileFaceNet
-固定源码版本：v1.0 f609486344888baa5a618116d7ebaa46dc96071a
+固定源码版本：a687c71bea830e70d05fb3b38ddc7c68e1687e94
 原始权重：https://github.com/foamliu/MobileFaceNet/releases/download/v1.0/mobilefacenet.pt
 原始权重大小：4135271 bytes
 原始权重 SHA-256：90a00ba1d8b0b688af3deb731ed53dca582e6106805d1bc3cfdef55f570493f4
 源码许可证：Apache-2.0
 论文：https://arxiv.org/abs/1804.07573
+备注：v1.0 标签中的 512 维源码与 v1.0 发布权重不匹配；此源码版本的 128 维结构与权重参数布局对应。
