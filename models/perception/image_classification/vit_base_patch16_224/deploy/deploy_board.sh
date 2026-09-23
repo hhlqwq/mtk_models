@@ -5,7 +5,9 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
-readonly BOARD_DIR="${MTK_BOARD_ROOT:-/root/hailong.he}/vit_base_patch16_224/demo/smoke"
+readonly BOARD_MODEL_ROOT="${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_models}/vit_base_patch16_224"
+readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models"
+readonly BOARD_DIR="${BOARD_MODEL_ROOT}/demo/smoke"
 readonly DEFAULT_IMAGE="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ILSVRC2012/val/ILSVRC2012_val_00000001.JPEG"
 readonly DEMO_IMAGE="${VIT_DEMO_IMAGE:-${DEFAULT_IMAGE}}"
 readonly INPUT_BIN="${MODEL_ROOT}/examples/input/input_int8.bin"
@@ -24,10 +26,11 @@ python "${MODEL_ROOT}/deploy/inference_demo/prepare_input.py" \
     --metadata "${INPUT_METADATA}"
 
 echo "[2/4] 创建板端目录."
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DIR}'"
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "mkdir -p '${BOARD_DIR}' '${BOARD_MODEL_DIR}'"
 echo "[3/4] 部署 DLA 和 Demo."
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/models/model_int8.dla" \
-    "${BOARD_HOST}:${BOARD_DIR}/model_int8.dla"
+    "${BOARD_HOST}:${BOARD_MODEL_DIR}/model_int8.dla"
 scp "${SSH_OPTIONS[@]}" "${INPUT_BIN}" \
     "${BOARD_HOST}:${BOARD_DIR}/input_int8.bin"
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/deploy/inference_demo/run_board.sh" \

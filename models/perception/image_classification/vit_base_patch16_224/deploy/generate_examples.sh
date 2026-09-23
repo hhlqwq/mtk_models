@@ -6,7 +6,9 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
-readonly BOARD_DIR="${MTK_BOARD_ROOT:-/root/hailong.he}/vit_base_patch16_224/demo/public"
+readonly BOARD_MODEL_ROOT="${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_models}/vit_base_patch16_224"
+readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models"
+readonly BOARD_DIR="${BOARD_MODEL_ROOT}/demo/public"
 readonly INPUT_DIR="${MODEL_ROOT}/examples/input/public"
 readonly WORK_DIR="${MODEL_ROOT}/examples/input/generated"
 readonly RAW_DIR="${MODEL_ROOT}/examples/output/board_raw"
@@ -36,10 +38,11 @@ done
 
 echo "[2/5] 创建干净的板端三图运行目录."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "rm -rf '${BOARD_DIR}' && mkdir -p '${BOARD_DIR}/inputs' '${BOARD_DIR}/output'"
+    "rm -rf '${BOARD_DIR}' && mkdir -p '${BOARD_DIR}/inputs' '${BOARD_DIR}/output' '${BOARD_MODEL_DIR}'"
 echo "[3/5] 部署 DLA、输入和逐图运行脚本."
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/models/model_int8.dla" \
-    "${MODEL_ROOT}/deploy/inference_demo/board_eval_loop.sh" \
+    "${BOARD_HOST}:${BOARD_MODEL_DIR}/"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/deploy/inference_demo/board_eval_loop.sh" \
     "${BOARD_HOST}:${BOARD_DIR}/"
 scp "${SSH_OPTIONS[@]}" "${WORK_DIR}"/*.bin \
     "${BOARD_HOST}:${BOARD_DIR}/inputs/"
@@ -47,7 +50,7 @@ scp "${SSH_OPTIONS[@]}" "${WORK_DIR}"/*.bin \
 echo "[4/5] 在 Genio 720 NPU 逐张推理."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "chmod +x '${BOARD_DIR}/board_eval_loop.sh' && \
-     '${BOARD_DIR}/board_eval_loop.sh' '${BOARD_DIR}/model_int8.dla' \
+     '${BOARD_DIR}/board_eval_loop.sh' '${BOARD_MODEL_DIR}/model_int8.dla' \
      '${BOARD_DIR}/inputs' '${BOARD_DIR}/output' 1"
 scp "${SSH_OPTIONS[@]}" "${BOARD_HOST}:${BOARD_DIR}/output/*.bin" "${RAW_DIR}/"
 

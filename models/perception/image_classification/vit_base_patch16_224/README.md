@@ -15,6 +15,10 @@
 > `ViT_B_16_Weights.IMAGENET1K_V1`.本目录旧 Qualcomm v0.61.0 ONNX 产物和结果仅
 > 保留为历史工程证据,不计入当前交付状态.
 
+板端模型放在 `/root/hailong.he/open_models/vit_base_patch16_224/models/`，运行结果位于
+同模型目录的 `demo/` 或 `eval/`；正式评测输入放在
+`/root/hailong.he/datasets/vit_base_patch16_224/<run_id>/inputs/`。
+
 ## 目标执行流程
 
 ```bash

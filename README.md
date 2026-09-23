@@ -70,7 +70,7 @@ ImageNet 或 COCO 原图的情况下直接展示"已经完成测试".公开样�
 | MTK Converter | 8.16.0 |
 | Neuron Compiler | 8.2.31 |
 | Genio 720 EVK | `root@192.168.0.92`,无密码 |
-| 板端目录 | `/root/hailong.he/<model>/{model,demo,eval}`；共享数据位于 `/root/hailong.he/datasets` |
+| 板端目录 | 开源模型 `/root/hailong.he/open_models/<model>/{models,demo,eval}`；共享数据 `/root/hailong.he/datasets`；MTK 官方 Model Zoo `/root/hailong.he/MTK_G720_DLA` |
 | 板端系统 | Rity Demo 26.0-release / Scarthgap / Linux 6.6.137 |
 | 板端 Neuron Runtime | 8.2.16 |
 | 板端 ONNX Runtime | 1.20.2；包含 Neuron、XNNPACK 和 CPU Execution Provider |

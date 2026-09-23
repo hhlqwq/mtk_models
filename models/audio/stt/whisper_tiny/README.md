@@ -99,6 +99,11 @@ bash models/audio/stt/whisper_tiny/deploy/run_all_formal_evaluations.sh
 标记为 `complete`。单数据集入口及底层三个分步脚本仅用于故障定位。完整指标口径见
 [`docs/formal_accuracy_performance_guide.md`](docs/formal_accuracy_performance_guide.md)。
 
+板端双 DLA 固定在 `/root/hailong.he/open_models/whisper_tiny/models/`；程序和运行日志位于
+同模型目录下。89 生成的 FP16 Mel 上传到
+`/root/hailong.he/datasets/whisper_tiny/<run_id>/mels/`，清单中的绝对路径与上传路径一致。
+评测脚本会核对板端 DLA 的 SHA-256,缺失或不一致时从 89 重新上传。
+
 ## 2026-09-18 AISHELL-1 正式结果
 
 Run `20260918_aishell1_test_fp16_v1` 完成全部 `7,176` 条测试音频,失败与缺失均为 0.

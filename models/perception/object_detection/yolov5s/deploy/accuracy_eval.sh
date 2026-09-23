@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # YOLOv5s COCO val2017 正式精度评测驱动 (在 89 服务器宿主机执行).
 # 用法: bash accuracy_eval.sh [all|npu|fp32|evaluate]
-# 环境变量: MTK_BOARD_HOST / MTK_BOARD_ROOT / EVAL_RUN_ID / TOTAL / CHUNK.
+# 环境变量: MTK_BOARD_HOST / MTK_BOARD_OPEN_MODELS_ROOT / EVAL_RUN_ID / TOTAL / CHUNK.
 
 set -euo pipefail
 
 readonly PROJECT_ROOT="/data/users/hailong.he/github/mtk_models"
 readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
-readonly BOARD_ROOT="${MTK_BOARD_ROOT:-/root/hailong.he}"
+readonly BOARD_MODEL_ROOT="${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_models}/yolov5s"
+readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models"
 readonly MODEL_DIR="${PROJECT_ROOT}/models/perception/object_detection/yolov5s"
 readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
 readonly WORK_BASE="${PROJECT_ROOT}/.eval/yolov5s/runs"
@@ -18,7 +19,8 @@ readonly EVAL_PY="${PROJECT_ROOT}/tools/accuracy/yolov5s_val_coco.py"
 readonly TOTAL="${TOTAL:-5000}"
 readonly CHUNK="${CHUNK:-500}"
 readonly STAGE="${1:-all}"
-readonly BOARD_EVAL="${BOARD_ROOT}/yolov5s/eval/raw_${RUN_ID}"
+readonly BOARD_EVAL="${BOARD_MODEL_ROOT}/eval/raw_${RUN_ID}"
+readonly BOARD_INPUT="${MTK_BOARD_DATASETS_ROOT:-/root/hailong.he/datasets}/yolov5s/${RUN_ID}/inputs"
 readonly HASH_FILE="${WORK}/run_inputs_sha256.txt"
 readonly CONFIG_FILE="${WORK}/run_config.txt"
 
@@ -84,17 +86,17 @@ run_npu() {
     done
 
     echo "[2/5] 推送 DLA、输入和板端循环脚本."
-    ssh "${BOARD_HOST}" "mkdir -p '${BOARD_EVAL}/inputs' '${BOARD_EVAL}/outputs'"
+    ssh "${BOARD_HOST}" "mkdir -p '${BOARD_MODEL_DIR}' '${BOARD_INPUT}' '${BOARD_EVAL}/outputs'"
     scp -q "${MODEL_DIR}/models/model_int8.dla" \
-        "${BOARD_HOST}:${BOARD_EVAL}/model_int8.dla"
+        "${BOARD_HOST}:${BOARD_MODEL_DIR}/model_int8.dla"
     scp -q "${MODEL_DIR}/deploy/inference_demo/board_eval_loop.sh" \
         "${BOARD_HOST}:${BOARD_EVAL}/board_eval_loop.sh"
     tar -C "${WORK}/npu_bins" -cf - . | ssh "${BOARD_HOST}" \
-        "tar -C '${BOARD_EVAL}/inputs' -xf -"
+        "tar -C '${BOARD_INPUT}' -xf -"
 
     echo "[3/5] 板端 neuronrt 批量推理 (进度每 50 张打印一次)."
     ssh "${BOARD_HOST}" "sh '${BOARD_EVAL}/board_eval_loop.sh' \
-        '${BOARD_EVAL}/model_int8.dla' '${BOARD_EVAL}/inputs' \
+        '${BOARD_MODEL_DIR}/model_int8.dla' '${BOARD_INPUT}' \
         '${BOARD_EVAL}/outputs'"
 
     echo "[4/5] 回传板端输出."
@@ -102,7 +104,7 @@ run_npu() {
     ssh "${BOARD_HOST}" "tar -C '${BOARD_EVAL}/outputs' -cf - ." \
         | tar -C "${WORK}/npu_outputs" -xf -
     echo "  清理本次运行的板端评测数据."
-    ssh "${BOARD_HOST}" "rm -rf '${BOARD_EVAL}'"
+    ssh "${BOARD_HOST}" "rm -rf '${BOARD_EVAL}' '${BOARD_INPUT}'"
 
     echo "[5/5] 解码 NPU 输出."
     docker_run --stage decode --backend npu \

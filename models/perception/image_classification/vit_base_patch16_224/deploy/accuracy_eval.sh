@@ -3,14 +3,15 @@
 # 用法: bash accuracy_eval.sh [prepare|board|compare|all]
 # 环境变量: EVAL_RUN_ID / START / TOTAL(默认 1000) / CHUNK /
 # IMAGENET_LABELS / ACCURACY_EXCLUDE_START / ACCURACY_EXCLUDE_COUNT /
-# MTK_BOARD_HOST / MTK_BOARD_ROOT.
+# MTK_BOARD_HOST / MTK_BOARD_OPEN_MODELS_ROOT.
 
 set -euo pipefail
 
 readonly PROJECT_ROOT="/data/users/hailong.he/github/mtk_models"
 readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
-readonly BOARD_ROOT="${MTK_BOARD_ROOT:-/root/hailong.he}"
+readonly BOARD_MODEL_ROOT="${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_models}/vit_base_patch16_224"
+readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models"
 readonly MODEL_DIR="${PROJECT_ROOT}/models/perception/image_classification/vit_base_patch16_224"
 readonly EVAL_PY="${PROJECT_ROOT}/tools/accuracy/vit_val_agreement.py"
 readonly START="${START:-0}"
@@ -36,7 +37,8 @@ fi
 readonly EVAL_RUN_ID
 readonly WORK="${PROJECT_ROOT}/.eval/vit_base_patch16_224/runs/${EVAL_RUN_ID}"
 readonly WORK_C="${WORK}"
-readonly BOARD_EVAL="${BOARD_ROOT}/vit_base_patch16_224/eval/${EVAL_RUN_ID}"
+readonly BOARD_EVAL="${BOARD_MODEL_ROOT}/eval/${EVAL_RUN_ID}"
+readonly BOARD_INPUT="${MTK_BOARD_DATASETS_ROOT:-/root/hailong.he/datasets}/vit_base_patch16_224/${EVAL_RUN_ID}/inputs"
 readonly RUN_CONFIG="${WORK}/run_inputs_sha256.txt"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
@@ -102,18 +104,18 @@ run_board() {
     echo "[board] 推送 DLA、输入并批量推理."
     test -f "${WORK}/prepare.done"
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-        "mkdir -p '${BOARD_EVAL}/inputs' '${BOARD_EVAL}/outputs'"
+        "mkdir -p '${BOARD_MODEL_DIR}' '${BOARD_INPUT}' '${BOARD_EVAL}/outputs'"
     scp "${SSH_OPTIONS[@]}" -q "${MODEL_DIR}/models/model_int8.dla" \
-        "${BOARD_HOST}:${BOARD_EVAL}/model_int8.dla"
+        "${BOARD_HOST}:${BOARD_MODEL_DIR}/model_int8.dla"
     scp "${SSH_OPTIONS[@]}" -q \
         "${MODEL_DIR}/deploy/inference_demo/board_eval_loop.sh" \
         "${BOARD_HOST}:${BOARD_EVAL}/board_eval_loop.sh"
     tar -C "${WORK}/npu_bins" -cf - . | \
         ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-        "tar -C '${BOARD_EVAL}/inputs' -m -xf -"
+        "tar -C '${BOARD_INPUT}' -m -xf -"
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "sh '${BOARD_EVAL}/board_eval_loop.sh' \
-        '${BOARD_EVAL}/model_int8.dla' '${BOARD_EVAL}/inputs' \
+        '${BOARD_MODEL_DIR}/model_int8.dla' '${BOARD_INPUT}' \
         '${BOARD_EVAL}/outputs'"
     echo "[board] 回传输出,板端原始证据保留在 ${BOARD_EVAL}."
     mkdir -p "${WORK}/npu_outputs"

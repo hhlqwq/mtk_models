@@ -90,28 +90,28 @@ Windows 侧已实际执行 `ssh root@192.168.0.92` 并验证 `uid=0(root)`.
 
 ## 板端目录规范
 
-板端根目录只保留共享目录和按模型划分的工作目录：
+板端根目录按来源划分模型,测试数据统一进入共享目录：
 
 ```text
 /root/hailong.he/
 ├── datasets/                  # 共享评测数据集.
 ├── wheels/                    # 共享离线 wheel.
 ├── archive/<date>/            # 历史探针与旧目录,不参与当前运行.
-└── <model>/
-    ├── model/                 # DLA、板端二进制与固定运行辅助文件.
-    ├── demo/
-    │   ├── smoke/             # 少量输入的冒烟/性能验证.
-    │   └── public/            # 纳入仓库的公开三图示例.
-    └── eval/<run_id>/         # 独立正式评测运行及其证据.
+├── MTK_G720_DLA/              # MediaTek 官方 Model Zoo.
+└── open_models/<model>/       # 本仓库适配的开源模型.
+    ├── models/                # DLA、ONNX 与固定运行辅助文件.
+    ├── demo/                  # 少量输入的冒烟与公开示例.
+    ├── eval/<run_id>/         # 独立正式评测运行及其证据.
+    └── runs/<run_id>/         # 需要独立工作目录的模型运行.
 ```
 
 禁止在 `/root/hailong.he` 根目录直接放置 DLA、输入 bin、探针输出或模型专属运行目录.
-脚本必须以 `demo/smoke`、`demo/public` 或 `eval/<run_id>` 三类目录之一作为输出位置；
+正式数据集保存在 `datasets/`,包括 Whisper-Tiny 板端 Mel 输入。脚本以 `demo/`、
+`eval/<run_id>` 或 `runs/<run_id>` 作为模型输出位置；
 每个新的正式运行必须使用新的 `run_id`,不得覆盖既有证据.
 
-历史板端目录可在确认没有 `neuronrt` 进程后,于板端执行
-`tools/board/normalize_genio720_layout.sh` 进行一次性整理.脚本逐项显示移动进度,
-旧文件统一移入 `archive/<date>/layout_normalization/legacy`,不直接删除.
+`tools/board/normalize_genio720_layout.sh` 仅用于旧版目录的一次性整理,不适用于已存在
+`open_models/` 或 `MTK_G720_DLA/` 的新布局；历史评测文档保留当时的实际路径.
 
 ## 精度口径
 

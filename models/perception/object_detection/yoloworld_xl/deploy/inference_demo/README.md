@@ -15,5 +15,5 @@ stride 8/16/32 距离框解码、逐类别 NMS 和原图坐标恢复.
 `--neuron-min-group-size` 默认值为本项目实测通过的 `100`.设为官方 benchmark 的 `0`
 虽然接近官网纯性能,但三张样例均会触及 300 个检测上限,不得作为正确结果发布.
 如果板端系统运行库与官方 v26.0 不一致,先运行 `deploy/stage_neuron_runtime.sh`,再设置
-`MTK_NEURON_RUNTIME_DIR=/root/hailong.he/yoloworld_xl/runtime_v26`.隔离目录不会覆盖
+`MTK_NEURON_RUNTIME_DIR=/root/hailong.he/open_models/yoloworld_xl/runtime_v26`.隔离目录不会覆盖
 `/usr/lib`.

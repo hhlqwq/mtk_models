@@ -5,9 +5,9 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
-readonly BOARD_ROOT="${MTK_BOARD_ROOT:-/root/hailong.he}"
-readonly BOARD_MODEL_DIR="${BOARD_ROOT}/yoloworld_xl/model"
-readonly BOARD_DEMO_DIR="${BOARD_ROOT}/yoloworld_xl/demo"
+readonly BOARD_MODEL_ROOT="${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_models}/yoloworld_xl"
+readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models"
+readonly BOARD_DEMO_DIR="${BOARD_MODEL_ROOT}/demo"
 readonly MODEL_PATH="${MODEL_ROOT}/models/model_fp32_opset13.onnx"
 readonly SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
@@ -20,7 +20,7 @@ test -f "${SCRIPT_DIR}/inference_demo/compare_results.py"
 echo "[2/4] 创建板端规范目录."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_MODEL_DIR}' '${BOARD_DEMO_DIR}/runtime' \
-        '${BOARD_DEMO_DIR}/public/images' '${BOARD_ROOT}/yoloworld_xl/eval'"
+        '${BOARD_DEMO_DIR}/public/images' '${BOARD_MODEL_ROOT}/eval'"
 
 echo "[3/4] 上传兼容 ONNX、运行脚本和公开样例."
 readonly LOCAL_SHA256="$(sha256sum "${MODEL_PATH}" | awk '{print $1}')"

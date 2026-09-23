@@ -5,7 +5,9 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="${MODEL_ROOT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
-readonly BOARD_DIR="${MTK_BOARD_ROOT:-/root/hailong.he}/rtmpose_body2d/demo/smoke"
+readonly BOARD_MODEL_ROOT="${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_models}/rtmpose_body2d"
+readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models"
+readonly BOARD_DIR="${BOARD_MODEL_ROOT}/demo/smoke"
 readonly COCO_ROOT="${COCO_ROOT:-/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017}"
 readonly INPUT_DIR="${MODEL_ROOT}/examples/input/generated"
 readonly OUTPUT_DIR="${MODEL_ROOT}/examples/output"
@@ -32,13 +34,13 @@ python "${MODEL_ROOT}/deploy/inference_demo/prepare_input.py" \
 
 echo "[2/6] 创建干净的板端运行目录."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "mkdir -p '${BOARD_DIR}' && rm -rf '${BOARD_DIR}/inputs' '${BOARD_DIR}/output'"
+    "mkdir -p '${BOARD_DIR}' '${BOARD_MODEL_DIR}' && rm -rf '${BOARD_DIR}/inputs' '${BOARD_DIR}/output'"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DIR}/inputs' '${BOARD_DIR}/output'"
 
 echo "[3/6] 部署 DLA、输入和运行脚本."
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/models/model_int8.dla" \
-    "${BOARD_HOST}:${BOARD_DIR}/model_int8.dla"
+    "${BOARD_HOST}:${BOARD_MODEL_DIR}/model_int8.dla"
 scp "${SSH_OPTIONS[@]}" "${INPUT_DIR}"/*.bin \
     "${BOARD_HOST}:${BOARD_DIR}/inputs/"
 scp "${SSH_OPTIONS[@]}" \

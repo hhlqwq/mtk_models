@@ -6,7 +6,8 @@ readonly REPO_ROOT="${REPO_ROOT:-/data/users/hailong.he/github/mtk_models}"
 readonly MODEL_ROOT="${REPO_ROOT}/models/audio/stt/whisper_tiny"
 readonly DEPLOY_ROOT="${MODEL_ROOT}/deploy"
 readonly EVAL_BASE="${EVAL_BASE:-${REPO_ROOT}/.eval/whisper_tiny}"
-readonly BOARD_ROOT="${BOARD_ROOT:-/root/hailong.he/whisper_tiny}"
+readonly BOARD_ROOT="${BOARD_ROOT:-${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_models}/whisper_tiny}"
+readonly BOARD_DATASETS_ROOT="${MTK_BOARD_DATASETS_ROOT:-/root/hailong.he/datasets}"
 readonly DATE_TAG="${EVAL_DATE:-$(date +%Y%m%d)}"
 readonly AISHELL_RUN_ID="${AISHELL_RUN_ID:-\
 ${DATE_TAG}_aishell1_test_fp16_v1}"
@@ -80,6 +81,7 @@ run_dataset() {
     local archive="$5"
     local eval_root="$6"
     local board_eval_root="${BOARD_ROOT}/eval/${run_id}"
+    local board_mel_root="${BOARD_DATASETS_ROOT}/whisper_tiny/${run_id}/mels"
     local summary_path="${eval_root}/report/summary.json"
 
     echo "[SUITE ${index}/2] ${dataset}, Run ID: ${run_id}."
@@ -94,7 +96,9 @@ run_dataset() {
     DATASET_ROOT="${dataset_root}" \
     ARCHIVE="${archive}" \
     EVAL_ROOT="${eval_root}" \
+    BOARD_ROOT="${BOARD_ROOT}" \
     BOARD_EVAL_ROOT="${board_eval_root}" \
+    BOARD_MEL_ROOT="${board_mel_root}" \
     SKIP_BOARD_BUILD=1 \
         bash "${DEPLOY_ROOT}/run_formal_evaluation.sh"
 }

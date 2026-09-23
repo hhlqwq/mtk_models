@@ -5,7 +5,7 @@ set -eu
 readonly DEMO_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 readonly OUTPUT_DIR="${DEMO_DIR}/output"
 readonly NEURONRT="/usr/sbin/neuronrt"
-readonly DLA_FILE="${DEMO_DIR}/model_int8.dla"
+readonly DLA_FILE="${DEMO_DIR}/../../models/model_int8.dla"
 readonly INPUT_FILE="${DEMO_DIR}/input_int8.bin"
 
 mkdir -p "${OUTPUT_DIR}"

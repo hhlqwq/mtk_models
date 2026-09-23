@@ -5,7 +5,9 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
-readonly BOARD_DIR="${MTK_BOARD_ROOT:-/root/hailong.he}/yolov5s/demo/public"
+readonly BOARD_MODEL_ROOT="${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_models}/yolov5s"
+readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models"
+readonly BOARD_DIR="${BOARD_MODEL_ROOT}/demo/public"
 readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
 readonly INPUT_DIR="${MODEL_ROOT}/examples/input/public"
 readonly OUTPUT_DIR="${MODEL_ROOT}/examples/output/public"
@@ -21,15 +23,16 @@ echo "[1/6] 交叉编译 Genio 720 推理器."
 bash "${SCRIPT_DIR}/build_board_cpp.sh"
 echo "[2/6] 创建干净的板端三图运行目录."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "rm -rf '${BOARD_DIR}' && mkdir -p '${BOARD_DIR}/images' '${BOARD_DIR}/output'"
+    "rm -rf '${BOARD_DIR}' && mkdir -p '${BOARD_DIR}/images' '${BOARD_DIR}/output' '${BOARD_MODEL_DIR}'"
 echo "[3/6] 部署 DLA、C++ 推理器和三张公开图片."
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/models/model_int8.dla" "${BINARY}" \
-    "${BOARD_HOST}:${BOARD_DIR}/"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/models/model_int8.dla" \
+    "${BOARD_HOST}:${BOARD_MODEL_DIR}/"
+scp "${SSH_OPTIONS[@]}" "${BINARY}" "${BOARD_HOST}:${BOARD_DIR}/"
 scp "${SSH_OPTIONS[@]}" "${INPUT_DIR}"/*.jpg \
     "${BOARD_HOST}:${BOARD_DIR}/images/"
 echo "[4/6] 在 Genio 720 执行三张图片推理."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "'${BOARD_DIR}/yolov5s_board_eval' --model '${BOARD_DIR}/model_int8.dla' \
+    "'${BOARD_DIR}/yolov5s_board_eval' --model '${BOARD_MODEL_DIR}/model_int8.dla' \
       --images '${BOARD_DIR}/images' --output-dir '${BOARD_DIR}/output' \
       --limit 3 --warmup 2 --progress-interval 1 --confidence 0.25 \
       --iou 0.45 --max-det 100"

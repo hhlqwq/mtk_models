@@ -115,8 +115,10 @@ LibriSpeech `test-clean` 尚无正式 `summary.json`,不得填写或推断 WER.
 
 ## 7. 运行目录与验收
 
-89 的全部中间文件位于 `.eval/whisper_tiny/<run_id>/`，该目录被 Git 忽略。92 的对应目录为
-`/root/hailong.he/whisper_tiny/eval/<run_id>/`。禁止复用不同数据集的 Run ID。
+89 的全部中间文件位于 `.eval/whisper_tiny/<run_id>/`，该目录被 Git 忽略。92 的模型目录为
+`/root/hailong.he/open_models/whisper_tiny/models/`，结果位于
+`/root/hailong.he/open_models/whisper_tiny/eval/<run_id>/`，FP16 Mel 输入位于
+`/root/hailong.he/datasets/whisper_tiny/<run_id>/mels/`。禁止复用不同数据集的 Run ID。
 
 每个正式 Run 至少应包含：
 

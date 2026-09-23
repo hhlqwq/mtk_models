@@ -144,7 +144,7 @@ MVPU 2.5 执行同一 MatMul 一定正确,也没有证据证明官网 `403.15 ms
 ```bash
 cd /data/users/hailong.he/github/mtk_models/models/perception/object_detection/yoloworld_xl
 RUN_ID=20260916_v26isolated_v2 \
-MTK_NEURON_RUNTIME_DIR=/root/hailong.he/yoloworld_xl/runtime_v26 \
+MTK_NEURON_RUNTIME_DIR=/root/hailong.he/open_models/yoloworld_xl/runtime_v26 \
 bash deploy/run_board.sh
 ```
 
@@ -157,7 +157,7 @@ bash deploy/run_board.sh
 5. 保存 ORT profiling,区分 Neuron 节点和 CPU fallback 节点.
 6. 回传检测框图片、JSON、延迟、峰值 RSS、环境及哈希证据.
 
-板端目录固定为 `/root/hailong.he/yoloworld_xl/{model,demo,eval}`.每次运行必须使用新的
+板端目录固定为 `/root/hailong.he/open_models/yoloworld_xl/{models,demo,eval}`.每次运行必须使用新的
 `RUN_ID`,不得覆盖旧证据.
 
 ## 已确认的模型接口

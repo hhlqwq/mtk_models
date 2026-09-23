@@ -5,12 +5,13 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
-readonly BOARD_ROOT="${MTK_BOARD_ROOT:-/root/hailong.he}"
+readonly BOARD_MODEL_ROOT="${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_models}/yoloworld_xl"
+readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models"
 readonly BOARD_NEURON_RUNTIME_DIR="${MTK_NEURON_RUNTIME_DIR:-}"
 readonly RUN_ID="${RUN_ID:-$(date +%Y%m%d_%H%M%S)}"
-readonly BOARD_MODEL="${BOARD_ROOT}/yoloworld_xl/model/model_fp32_opset13.onnx"
-readonly BOARD_IMAGES="${BOARD_ROOT}/yoloworld_xl/demo/public/images"
-readonly BOARD_OUTPUT="${BOARD_ROOT}/yoloworld_xl/demo/public/${RUN_ID}"
+readonly BOARD_MODEL="${BOARD_MODEL_DIR}/model_fp32_opset13.onnx"
+readonly BOARD_IMAGES="${BOARD_MODEL_ROOT}/demo/public/images"
+readonly BOARD_OUTPUT="${BOARD_MODEL_ROOT}/demo/public/${RUN_ID}"
 readonly LOCAL_OUTPUT="${MODEL_ROOT}/examples/output/board/${RUN_ID}"
 readonly SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
@@ -75,7 +76,7 @@ BOARD_PREPARE
 
 echo "[4/8] 执行 CPU EP 三图基线,每张图运行 1 次."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "cd '${BOARD_ROOT}/yoloworld_xl/model' && \
+    "cd '${BOARD_MODEL_DIR}' && \
      python3 run_board.py \
         --model '${BOARD_MODEL}' \
         --images '${BOARD_IMAGES}' \
@@ -87,7 +88,7 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
 
 echo "[5/8] 执行混合 Neuron EP 三图验证,每张图预热后运行 10 次."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "cd '${BOARD_ROOT}/yoloworld_xl/model' && \
+    "cd '${BOARD_MODEL_DIR}' && \
      ${neuron_env[*]} python3 run_board.py \
         --model '${BOARD_MODEL}' \
         --images '${BOARD_IMAGES}' \
@@ -99,7 +100,7 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
 
 echo "[6/8] 比较 CPU 与 Neuron 检测结果."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "cd '${BOARD_ROOT}/yoloworld_xl/model' && \
+    "cd '${BOARD_MODEL_DIR}' && \
      python3 compare_results.py \
         --cpu '${BOARD_OUTPUT}/cpu/results.json' \
         --neuron '${BOARD_OUTPUT}/neuron/results.json' \

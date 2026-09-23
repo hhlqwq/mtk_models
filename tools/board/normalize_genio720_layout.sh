@@ -94,6 +94,10 @@ verify_board_root() {
 
 
 test -d "${BOARD_ROOT}"
+if [[ -e "${BOARD_ROOT}/open_models" || -e "${BOARD_ROOT}/MTK_G720_DLA" ]]; then
+    echo "[ERROR] 当前是新版板端布局,旧版一次性整理脚本不可执行." >&2
+    exit 1
+fi
 if pgrep -x neuronrt >/dev/null 2>&1; then
     echo "[ERROR] 检测到运行中的 neuronrt,请等待任务结束后再整理." >&2
     exit 1

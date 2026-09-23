@@ -15,6 +15,9 @@
 > COCO-WholeBody 256×192 官方配置和权重.本目录旧 Qualcomm v0.61.0 ONNX 产物和
 > 结果仅保留为历史工程证据,不计入当前交付状态.
 
+板端模型放在 `/root/hailong.he/open_models/rtmpose_body2d/models/`，运行结果位于
+同模型目录的 `demo/` 或 `eval/`；COCO val2017 放在 `/root/hailong.he/datasets/coco/val2017/`。
+
 RTMPose 是 top-down 姿态模型,只处理人体检测框.转换校准与板端 Demo 使用 COCO person
 标注框模拟上游检测器输出,执行仿射裁剪、INT8 量化、板端推理和 SimCC 解码.正式
 WholeBody 精度评测则固定使用 Faster R-CNN 检测框,具体协议见"正式评测数据".完整图片应用

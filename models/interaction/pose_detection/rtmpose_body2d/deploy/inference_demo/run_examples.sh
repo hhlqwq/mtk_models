@@ -6,7 +6,7 @@ DEMO_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 INPUT_DIR="${DEMO_DIR}/inputs"
 OUTPUT_DIR="${DEMO_DIR}/output"
 NEURONRT="/usr/sbin/neuronrt"
-DLA_FILE="${DEMO_DIR}/model_int8.dla"
+DLA_FILE="${BOARD_MODEL_DIR:-${DEMO_DIR}/../../models}/model_int8.dla"
 
 mkdir -p "${OUTPUT_DIR}"
 test -x "${NEURONRT}"

@@ -11,7 +11,7 @@ readonly EVAL_ROOT="${EVAL_ROOT:-${REPO_ROOT}/.eval/whisper_tiny/${RUN_ID}}"
 readonly CONTAINER="${MTK_CONTAINER:-hhl_g720_8011}"
 readonly REFERENCE_DEVICE="${REFERENCE_DEVICE:-cuda}"
 readonly REFERENCE_BATCH_SIZE="${REFERENCE_BATCH_SIZE:-16}"
-readonly BOARD_EVAL_ROOT="${BOARD_EVAL_ROOT:-/root/hailong.he/whisper_tiny/eval/${RUN_ID}}"
+readonly BOARD_MEL_ROOT="${BOARD_MEL_ROOT:-${MTK_BOARD_DATASETS_ROOT:-/root/hailong.he/datasets}/whisper_tiny/${RUN_ID}/mels}"
 readonly ARCHIVE="${ARCHIVE:-}"
 readonly HOST_UID="$(id -u)"
 readonly HOST_GID="$(id -g)"
@@ -55,7 +55,7 @@ docker exec -e PYTHONUNBUFFERED=1 -w "${REPO_ROOT}" "${CONTAINER}" \
     --output-dir "${EVAL_ROOT}" \
     --weights "${MODEL_ROOT}/original/tiny.pt" \
     --language "${LANGUAGE}" \
-    --board-mel-root "${BOARD_EVAL_ROOT}/mels" \
+    --board-mel-root "${BOARD_MEL_ROOT}" \
     --reference-device "${REFERENCE_DEVICE}" \
     --batch-size "${REFERENCE_BATCH_SIZE}"
 prepare_status=$?

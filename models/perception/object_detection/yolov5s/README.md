@@ -15,6 +15,9 @@
 Qualcomm Hugging Face 页面用于对标交付形式；由于其页面当前描述的是 YOLOv5-M 且不分发
 预导出资产,本模型采用 Ultralytics YOLOv5s 上游权重,并按照 MTK 官方 YOLOv5s 流程转换.
 
+板端模型放在 `/root/hailong.he/open_models/yolov5s/models/`，运行结果位于同模型目录的
+`demo/` 或 `eval/`；正式评测输入放在 `/root/hailong.he/datasets/yolov5s/<run_id>/inputs/`。
+
 ## 本机离线输入
 
 YOLOv5s 权重属于模型文件,必须由用户手动下载到本机工作区.正确的 Ultralytics v7.0
