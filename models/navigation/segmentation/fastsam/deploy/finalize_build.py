@@ -20,7 +20,7 @@ def main():
         raise ValueError("导出与量化 ONNX 来源不一致.")
     if sha256_file(root / "model_int8.tflite") != quantization["tflite_sha256"]:
         raise ValueError("编译输入 TFLite 与量化元数据不一致.")
-    names = ["model_int8.dla", "model_int8.json", "model_fp32.onnx",
+    names = ["model_int8.dla", "model_int8.json", "runtime_config.csv", "model_fp32.onnx",
              "pytorch_reference.npz", "export_manifest.json"]
     manifest = {"arch": "mdla5.3", "suppress_output": True, "disallow_bridge": True,
                 "weights_sha256": exported["weights_sha256"],

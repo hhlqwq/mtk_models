@@ -54,6 +54,8 @@ models/audio/stt/whisper_tiny/deploy/inference_demo/whisper_board_eval
 # FastSAM 本地导出、校准与完整性记录.
 models/navigation/segmentation/fastsam/models/*.json
 models/navigation/segmentation/fastsam/models/*SHA256SUMS
+models/navigation/segmentation/fastsam/models/runtime_config.csv
+models/navigation/segmentation/fastsam/deploy/inference_demo/fastsam_board
 
 models/perception/object_detection/yolov5s/deploy/inference_demo/yolov5s_board_eval
 models/interaction/pose_detection/rtmpose_body2d/deploy/inference_demo/rtmpose_board_eval

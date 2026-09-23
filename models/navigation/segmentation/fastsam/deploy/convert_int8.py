@@ -80,6 +80,15 @@ def main():
                 "native_layout_board_verified": False}
     args.output.with_suffix(".json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    contract = [input_detail] + outputs
+    lines = []
+    for item in contract:
+        shape = item["shape"]
+        lines.append(",".join(map(str, [item.get("semantic", "input"),
+                                      item.get("index", 0), *shape[1:],
+                                      item["scale"], item["zero_point"]])))
+    (args.output.parent / "runtime_config.csv").write_text(
+        "\n".join(lines) + "\n", encoding="utf-8")
     print("[OK] TFLite 与量化元数据已保存,原生输出布局仍需板端验证.")
 
 

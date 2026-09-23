@@ -39,6 +39,12 @@ bash models/navigation/segmentation/fastsam/deploy/convert.sh
 bash models/navigation/segmentation/fastsam/deploy/build.sh
 ```
 
+89 宿主交叉编译 C++ 板端程序:
+
+```bash
+bash models/navigation/segmentation/fastsam/deploy/build_board_cpp.sh
+```
+
 导出 opset 13,10 个原始输出分别保留三个尺度的框 logits、分数 logits、
 掩码系数及原型.DFL、NMS 和掩码还原在 CPU 完成,不编入 DLA.
 原型分支包含转置卷积,其 MTK 转换与 MDLA 支持仍需真实编译核实.
@@ -56,10 +62,11 @@ export FASTSAM_RUN_ID="$(date +%Y%m%d_%H%M%S)"
 bash models/navigation/segmentation/fastsam/deploy/deploy_board.sh
 ```
 
-流程在 `/root/hailong.he/fastsam/runs/<run_id>` 执行 ONNX CPU 基线、PyTorch/ONNX
-比较、NPU 推理、ONNX/NPU 比较与 100 次 runtime 性能采集.
+流程在 `/root/hailong.he/open_models/fastsam/runs/<run_id>` 由 C++ 执行单次 NPU 推理,
+生成逐实例掩码、叠加图、C++ 耗时与运行日志.正式 PyTorch/ONNX/NPU 同图精度
+对照是后续独立评测,不能把这次冒烟当作数值一致性结论.
 输出保存在 `examples/output/runs/<run_id>`; 同名板端目录存在时拒绝覆盖.
-NPU 量化一致性报告不会自动给出合格结论,需审核误差、漏检和可视化结果.
+冒烟成功仍需审核掩码图和日志,不能单凭 Runtime 加载成功得出精度结论.
 
 详细说明: [Demo](deploy/inference_demo/README.md)、[精度](docs/accuracy.md)、
 [性能](docs/benchmark.md)、[模型卡](model_card.md).
@@ -67,9 +74,17 @@ NPU 量化一致性报告不会自动给出合格结论,需审核误差、漏检
 ## 当前阻塞
 
 - 官方 FastSAM-s.pt 尚未下载,真实权重与 Ultralytics 8.0.111 的兼容性待确认.
-- 89 到 92 的 SSH 主机密钥因刷机发生变化,待核实后记录.
-- 新系统的板端 Python、NumPy、OpenCV、ONNX Runtime 依赖待重新核实.
 - 正式数据集长评测不自动启动,与小样本一致性验证分开维护.
+
+## 板端冒烟前置检查
+
+2026-09-23: 用户确认刷机后的 92 开发板 RSA 指纹
+`SHA256:zU7LkySuztN9I7hdCEP4DMYBl743C28KfxiZsvmE9Rk`.
+89 重新扫描得到相同指纹后更新 SSH 记录,严格主机密钥检查下成功连接.
+板端内核为 `6.6.137-mtk+ga246e0c68c39-g429091ed5965`,
+Python 可导入 OpenCV 4.9.0、NumPy 1.26.4 和 ONNX Runtime 1.20.2;
+`neuronrt -v` 报告 8.2.16.这些仅证明环境组件可用,
+还没有 FastSAM 模型硬件推理证据.
 
 ## 静态检查记录
 

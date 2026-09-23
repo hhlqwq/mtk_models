@@ -9,6 +9,7 @@
 | export_manifest.json | 权重、源码实现、图片、模型哈希及导出检查结果 |
 | model_int8.tflite | MTK INT8 校准产物 |
 | model_int8.json | 量化参数、输出索引语义映射、校准图片清单 |
+| runtime_config.csv | C++ 板端程序使用的输入输出张量契约 |
 | model_int8.dla | MDLA 5.3 无桥接编译产物 |
 | SHA256SUMS / DLA_SHA256SUMS | 产物完整性校验 |
 | deployment_manifest.json | DLA、量化参数、ONNX 和 PyTorch 基线的构建绑定 |
