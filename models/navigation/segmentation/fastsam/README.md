@@ -98,3 +98,23 @@ Python 可导入 OpenCV 4.9.0、NumPy 1.26.4 和 ONNX Runtime 1.20.2;
 FastSAM 注册条目和目录必需文件检查通过.全仓 `tools/check_registry.py` 仍因已有
 Whisper 条目的 `board_validated` 不在允许状态列表中失败; 本次未修改其他模型状态.
 这些检查本身不代表模型执行;真实模型证据见上述冒烟报告.
+
+## 新镜像全量复测入口
+
+在 Ubuntu89 宿主机运行 `EVAL_RUN_ID=<新ID> bash deploy/run_full_accuracy.sh`。
+89 编译 DLA 和 C++ 程序，92 对 COCO val2017 全部 5000 张图片计算**类别无关**
+实例分割 AP：把标注中 80 个类别合并为一个 `object` 类，不与标准 80 类 segm AP
+直接比较。报告保留在 `/root/hailong.he/open_models/fastsam/eval/<新ID>/report/`。
+该全量协议尚未实跑，原先单图冒烟结果不能代替它。用户检查和备份报告后，
+自行清理本次运行目录；脚本不清理整个运行现场。
+
+FastSAM 全量数据由用户放在 92 的
+`/root/hailong.he/datasets/coco/val2017/images/`（5000 张 JPG）与
+`/root/hailong.he/datasets/coco/val2017/annotations/instances_val2017.json`。
+板端 Python 需可导入 `cv2`、`numpy` 和 `pycocotools`；入口先检查这些条件，
+不会自动下载数据或安装依赖。中断后使用同一 `EVAL_RUN_ID` 加
+`EVAL_RESUME=1` 续跑；每张图保留 COCO RLE 检查点，转换完成后的逐图 PNG
+和张量临时目录会自动移除，全量预测、日志和报告保留供用户检查与清理。
+如中断时留下 `raw/<图片ID>/`，先人工检查并删除该目录后再续跑。
+板端 C++ 每张图重新加载模型，报告的 NPU 耗时仅计 Runtime 推理调用，
+端到端耗时含模型加载，均非预热后的常驻模型性能。
