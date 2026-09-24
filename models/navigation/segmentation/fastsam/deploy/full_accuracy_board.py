@@ -5,7 +5,6 @@ import contextlib
 import io
 import json
 import os
-import shutil
 import statistics
 from pathlib import Path
 
@@ -165,4 +164,8 @@ def evaluate(args: argparse.Namespace) -> None:
 
 
 if __name__ == "__main__":
-    evaluate(parse_args())
+    arguments = parse_args()
+    if arguments.mode == "encode-one":
+        encode_one(arguments)
+    else:
+        evaluate(arguments)

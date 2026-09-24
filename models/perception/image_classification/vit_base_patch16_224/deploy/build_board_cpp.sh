@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
+# 在 89 交叉编译 ViT 的 AArch64 板端评测程序.
 
 set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly SOURCE="${SCRIPT_DIR}/inference_demo/rtmpose_board_eval.cpp"
-readonly OUTPUT="${SCRIPT_DIR}/inference_demo/rtmpose_board_eval"
-readonly MANIFEST_SOURCE="${SCRIPT_DIR}/inference_demo/prepare_eval_manifest.cpp"
-readonly MANIFEST_OUTPUT="${SCRIPT_DIR}/inference_demo/prepare_eval_manifest"
+readonly SOURCE="${SCRIPT_DIR}/vit_board_eval.cpp"
+readonly OUTPUT="${SCRIPT_DIR}/vit_board_eval"
 readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT:-/data/users/hailong.he/data/MTKG720/cpp_toolchain}"
 readonly OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
@@ -20,7 +19,6 @@ test -f "${OPENCV_BUILD}/opencv2/cvconfig.h"
 test -f "${NEURON_INCLUDE}/neuron/api/RuntimeAPI.h"
 test -f "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8"
 
-echo "[1/2] 交叉编译 Genio 720 RTMPose C++ 评测程序."
 "${CXX}" \
     -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${OPENCV_BUILD}" \
@@ -36,16 +34,5 @@ echo "[1/2] 交叉编译 Genio 720 RTMPose C++ 评测程序."
     -Wl,--allow-shlib-undefined -pthread -ldl \
     -o "${OUTPUT}"
 
-echo "[2/2] 检查目标架构."
-"${CXX}" \
-    -std=c++20 -O2 -DNDEBUG -Wall -Wextra -Wpedantic \
-    -I"${OPENCV_BUILD}" \
-    -I"${OPENCV_SOURCE}/modules/core/include" \
-    "${MANIFEST_SOURCE}" \
-    "${TARGET_LIBS}/libopencv_core.so.409" \
-    -Wl,--allow-shlib-undefined -pthread -ldl \
-    -o "${MANIFEST_OUTPUT}"
 file "${OUTPUT}"
-file "${MANIFEST_OUTPUT}"
 sha256sum "${OUTPUT}"
-sha256sum "${MANIFEST_OUTPUT}"

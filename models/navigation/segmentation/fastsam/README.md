@@ -105,13 +105,15 @@ Whisper 条目的 `board_validated` 不在允许状态列表中失败; 本次未
 89 编译 DLA 和 C++ 程序，92 对 COCO val2017 全部 5000 张图片计算**类别无关**
 实例分割 AP：把标注中 80 个类别合并为一个 `object` 类，不与标准 80 类 segm AP
 直接比较。报告保留在 `/root/hailong.he/open_models/fastsam/eval/<新ID>/report/`。
-该全量协议尚未实跑，原先单图冒烟结果不能代替它。用户检查和备份报告后，
-自行清理本次运行目录；脚本不清理整个运行现场。
+该全量协议尚未实跑，原先单图冒烟结果不能代替它。用户手动保存并上传报告后，
+再以相同 `EVAL_RUN_ID` 执行 `CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
+测试和清理是两次独立执行，测试脚本不自动清理本次模型及报告。
 
 FastSAM 全量数据由用户放在 92 的
 `/root/hailong.he/datasets/coco/val2017/images/`（5000 张 JPG）与
 `/root/hailong.he/datasets/coco/val2017/annotations/instances_val2017.json`。
-板端 Python 需可导入 `cv2`、`numpy` 和 `pycocotools`；入口先检查这些条件，
+板端由 shell 逐图调用 C++ 完成预处理与 NPU 推理，Python 仅将预测掩码编码为
+COCO RLE 并计算分割 AP。指标计算需 `cv2`、`numpy` 和 `pycocotools`；入口先检查这些条件，
 不会自动下载数据或安装依赖。中断后使用同一 `EVAL_RUN_ID` 加
 `EVAL_RESUME=1` 续跑；每张图保留 COCO RLE 检查点，转换完成后的逐图 PNG
 和张量临时目录会自动移除，全量预测、日志和报告保留供用户检查与清理。

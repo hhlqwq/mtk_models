@@ -6,11 +6,11 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
 readonly BOARD_MODEL_ROOT="${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_models}/yolov5s"
-readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models"
 readonly BOARD_DATASET="${MTK_BOARD_DATASETS_ROOT:-/root/hailong.he/datasets}/coco/val2017"
 readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)}"
 readonly BOARD_OUTPUT="${BOARD_MODEL_ROOT}/eval/${RUN_ID}"
-readonly LOCAL_OUTPUT="${MODEL_ROOT}/examples/output/board_cpp_accuracy/${RUN_ID}"
+readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models/${RUN_ID}"
+readonly BOARD_RESULT="${BOARD_MODEL_ROOT}/results/${RUN_ID}"
 readonly BINARY="${SCRIPT_DIR}/inference_demo/yolov5s_board_eval"
 readonly EVALUATOR="${SCRIPT_DIR}/inference_demo/evaluate_coco.py"
 readonly ANNOTATIONS="${BOARD_DATASET}/annotations/instances_val2017.json"
@@ -20,10 +20,9 @@ if [[ ! "${RUN_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
     echo "[ERROR] EVAL_RUN_ID 只能包含字母、数字、点、下划线和连字符." >&2
     exit 1
 fi
-if [[ -e "${LOCAL_OUTPUT}" ]]; then
-    echo "[ERROR] 本地运行目录已存在,请使用新的 EVAL_RUN_ID: ${LOCAL_OUTPUT}" >&2
-    exit 1
-fi
+bash "${SCRIPT_DIR}/../../../../../tools/evaluation/check_board_clock.sh"
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "python3 -c 'import pycocotools'"
 
 # 采集板端系统与 CPU 调频状态,并写入指定证据文件.
 capture_board_state() {
@@ -141,19 +140,48 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         system_after.txt run_inputs_manifest.txt dataset_images_sha256.txt \
         > run_outputs_sha256.txt"
 
-echo "[8/8] 回传完整的交付证据,不回传逐图预测和原生输出."
-mkdir -p "${LOCAL_OUTPUT}"
-scp "${SSH_OPTIONS[@]}" "${BOARD_HOST}:${BOARD_OUTPUT}/coco_metrics.json" \
-    "${BOARD_HOST}:${BOARD_OUTPUT}/coco_summary.log" \
-    "${BOARD_HOST}:${BOARD_OUTPUT}/board_eval.log" \
-    "${BOARD_HOST}:${BOARD_OUTPUT}/cocoeval.log" \
-    "${BOARD_HOST}:${BOARD_OUTPUT}/timing_summary_current_run.json" \
-    "${BOARD_HOST}:${BOARD_OUTPUT}/timings.csv" \
-    "${BOARD_HOST}:${BOARD_OUTPUT}/processed_ids.txt" \
-    "${BOARD_HOST}:${BOARD_OUTPUT}/run_inputs_manifest.txt" \
-    "${BOARD_HOST}:${BOARD_OUTPUT}/run_outputs_sha256.txt" \
-    "${BOARD_HOST}:${BOARD_OUTPUT}/dataset_images_sha256.txt" \
-    "${BOARD_HOST}:${BOARD_OUTPUT}/system_before.txt" \
-    "${BOARD_HOST}:${BOARD_OUTPUT}/system_after.txt" \
-    "${LOCAL_OUTPUT}/"
-echo "[OK] 板端 C++ 全量精度测试完成: ${LOCAL_OUTPUT}"
+echo "[8/8] 在 92 整理轻量报告,本次不清理."
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" bash -s -- \
+    "${BOARD_OUTPUT}" "${RUN_ID}" <<'BOARD_REPORT'
+set -euo pipefail
+readonly run_dir="$1"
+readonly run_id="$2"
+mkdir -p "${run_dir}/report"
+cp "${run_dir}/coco_metrics.json" \
+    "${run_dir}/coco_summary.log" \
+    "${run_dir}/board_eval.log" \
+    "${run_dir}/cocoeval.log" \
+    "${run_dir}/timing_summary_current_run.json" \
+    "${run_dir}/timings.csv" \
+    "${run_dir}/processed_ids.txt" \
+    "${run_dir}/run_inputs_manifest.txt" \
+    "${run_dir}/run_outputs_sha256.txt" \
+    "${run_dir}/dataset_images_sha256.txt" \
+    "${run_dir}/system_before.txt" \
+    "${run_dir}/system_after.txt" \
+    "${run_dir}/report/"
+python3 - "${run_dir}/report/coco_metrics.json" \
+    "${run_dir}/report/summary.json" "${run_id}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+metrics = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+if metrics.get("images") != 5000:
+    raise SystemExit("[ERROR] COCO 全量图片数不等于 5000.")
+summary = {
+    "status": "complete",
+    "model": "yolov5s",
+    "run_id": sys.argv[3],
+    "dataset": "coco_val2017",
+    "images": metrics["images"],
+    "accuracy": metrics["metrics"],
+}
+Path(sys.argv[2]).write_text(
+    json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+PY
+BOARD_REPORT
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" bash -s -- "${BOARD_OUTPUT}/report" \
+    < "${SCRIPT_DIR}/../../../../../tools/evaluation/capture_board_system.sh"
+echo "[OK] YOLOv5s 板端全量精度报告: ${BOARD_OUTPUT}/report"
+echo "[NEXT] 手动上传结果到 Git 后,运行 EVAL_RUN_ID=${RUN_ID} bash ${SCRIPT_DIR}/cleanup_full_accuracy.sh"

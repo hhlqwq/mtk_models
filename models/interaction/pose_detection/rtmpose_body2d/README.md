@@ -136,3 +136,15 @@ MMPose 默认的 `bbox_keypoint` 重评分、0.2 关键点阈值和 0.9 WholeBod
   ONNX 的同协议全量 AP 已通过 `deploy/accuracy_eval.sh` 完成补跑.脚本按
   `prepare/pytorch/onnx/evaluate/compare` 分阶段执行,中断后使用相同
   `EVAL_RUN_ID` 可继续,并实时显示已处理检测框、速度和预计剩余时间.
+
+## 新镜像全量复测入口
+
+在 Ubuntu89 宿主机运行 `EVAL_RUN_ID=<新ID> bash deploy/run_full_accuracy.sh`。
+89 只交叉编译和部署；92 使用 C++ 生成 104125 个人体检测框清单，
+再由 C++ 完成预处理、NPU 推理与后处理，Python 只计算 COCO-WholeBody AP/AR。
+旧 `accuracy_eval.sh` 的三后端 89 流程保留为历史证据，
+不能作为新镜像板端复测。报告留在
+`/root/hailong.he/open_models/rtmpose_body2d/eval/<新ID>/report/`。
+用户手动上传 Git 后，另行运行
+`EVAL_RUN_ID=<新ID> CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
+详见[全量板端复测工作流](../../../../docs/full_accuracy_board_workflow.md)。

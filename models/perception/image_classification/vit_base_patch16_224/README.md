@@ -107,7 +107,9 @@ float32 `[0,1]`. `convert.sh` 默认使用排序后的 ImageNet val 第 1001~110
 0-based 标签. 正式绝对精度报告已同时披露完整 50,000 张指标, 以及排除其中 100 张
 PTQ 校准图片后的 49,900 张独立指标; 默认 1000 张结果保留为早期后端一致性证据.
 
-评测采用独立运行目录 `.eval/vit_base_patch16_224/runs/<run_id>/`. `all` 自动
+以下 `.eval`/`accuracy_eval.sh` 内容属于旧的 89 端对照流程。新镜像全量复测请用文末
+`deploy/run_full_accuracy.sh`。旧流程采用独立运行目录
+`.eval/vit_base_patch16_224/runs/<run_id>/`. `all` 自动
 创建运行 ID; 分阶段执行必须为 `prepare`、`board`、`compare` 设置相同的
 `EVAL_RUN_ID`. 模型、脚本、样本数或标签变化时必须使用新的运行 ID.
 `START` 和 `TOTAL` 可选择连续子集; 完整 50,000 条标签可以直接用于任意子集,
@@ -119,3 +121,16 @@ PTQ 校准图片后的 49,900 张独立指标; 默认 1000 张结果保留为早
 历史 Qualcomm v0.61.0 图的 IR/opset 降级、外部权重合并和 CUDA Provider 限制只保留
 为旧工程证据,不适用于新的 PyTorch Vision 导出模型.新模型需要使用新的运行 ID 重新
 完成 ONNX Runtime、MTK Converter、NCC 和板端验证.
+
+## 新镜像全量复测入口
+
+在 Ubuntu89 宿主机运行 `EVAL_RUN_ID=<新ID> bash deploy/run_full_accuracy.sh`。
+89 编译 DLA 和板端 C++ 程序并提取量化元数据；92 由常驻 C++ Runtime
+完成完整 50000 张 ImageNet val 的预处理和 NPU 推理，Python 仅计算
+Top-1/Top-5。报告的 `npu_ms` 只计 Runtime 推理调用，不包含图片解码与预处理；
+它与旧版逐图启动 `neuronrt` 的耗时口径不同。报告保留在
+`/root/hailong.he/open_models/vit_base_patch16_224/eval/<新ID>/report/`。
+用户手动上传 Git 后，再单独执行
+`EVAL_RUN_ID=<新ID> CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
+旧 `accuracy_eval.sh` 的 89 ONNX 对照流程不用于本次板端独立复测。
+详见[全量板端复测工作流](../../../../docs/full_accuracy_board_workflow.md)。

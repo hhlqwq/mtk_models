@@ -64,7 +64,10 @@ NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 `docs/benchmark.md`.AISHELL-1 正式结果见 `docs/accuracy.md`、`docs/benchmark.md` 和
 `docs/formal_eval_20260918_aishell1.json`；完整交付仍要求 LibriSpeech WER 和近 30 秒样例.
 
-## 正式精度与性能一键评测
+## 历史 89 端精度流程（不用于新镜像复测）
+
+新镜像全量复测请使用下文 `deploy/run_full_accuracy.sh`；本节旧入口在 89 进行数据准备
+和指标汇总，仅保留复核历史结果，不符合“92 独立完成测试”的新要求。
 
 双数据集正式入口是 `deploy/run_all_formal_evaluations.sh`。必须在 Ubuntu89 宿主机运行,
 不要进入 `hhl_g720_8011` 容器。默认数据路径就是本项目在 89 上的实际路径,一条命令会依次
@@ -127,3 +130,17 @@ Neuron Runtime 的 Encoder 和自回归 Decoder,不包含音频读取、Log-Mel�
 - 已验证：AISHELL-1 test `7,176/7,176` 完整运行、同协议 OpenAI/NPU CER、文本与 Token
   一致率、NPU 延迟/RTF/Tokens/s、主机预处理耗时和进程峰值 RSS.
 - 未验证：LibriSpeech WER、15–30 秒正式样例、噪声鲁棒性和跨多次 Run 的性能方差.
+
+## 新镜像全量复测入口
+
+在 Ubuntu89 宿主机手动运行 `EVAL_RUN_ID=<新ID> bash deploy/run_full_accuracy.sh`；
+89 只交叉编译和部署，92 使用 C++ 完成 LibriSpeech `test-clean` 预处理及双 DLA 推理，
+Python 仅计算 WER。89 从已安装的 OpenAI Whisper 包导出固定 80 Mel 滤波器和解码规则，
+不在 89 运行测试集推理。该新 C++ 音频准备流程尚未在 92 验证，不能将静态检查视为精度通过。
+不再运行 OpenAI CPU 基线，也不重复 AISHELL-1；历史 AISHELL-1
+CER 证据仍保留在文档中。新入口不调用旧的 89 端
+`run_all_formal_evaluations.sh`，也不自动清理、回传或提交 Git。结果保留在
+`/root/hailong.he/open_models/whisper_tiny/eval/<新ID>/report/`。
+用户取走报告并手动上传 Git 后，再单独运行
+`EVAL_RUN_ID=<新ID> CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
+详见[全量板端复测工作流](../../../../docs/full_accuracy_board_workflow.md)。

@@ -1,4 +1,4 @@
-"""在 MTK 容器中生成正式精度评测 Mel、板端清单和 FP32 基线."""
+"""在当前运行设备上生成正式精度评测 Mel、板端清单和 FP32 基线."""
 
 import argparse
 import hashlib

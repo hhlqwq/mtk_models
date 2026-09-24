@@ -23,18 +23,7 @@ if [[ "${RESUME}" != "0" && "${RESUME}" != "1" ]]; then
     echo "[ERROR] EVAL_RESUME 只能为 0 或 1." >&2
     exit 2
 fi
-host_epoch="$(date -u +%s)"
-board_epoch="$(ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" 'date -u +%s')"
-if [[ ! "${board_epoch}" =~ ^[0-9]+$ ]]; then
-    echo "[ERROR] 无法读取 92 的 UTC 时间." >&2
-    exit 2
-fi
-clock_delta=$((host_epoch - board_epoch))
-if (( clock_delta < 0 )); then clock_delta=$((-clock_delta)); fi
-if (( clock_delta > 600 )); then
-    echo "[ERROR] 92 与 89 的时钟相差 ${clock_delta} 秒,请先校准板端时间." >&2
-    exit 2
-fi
+bash "${SCRIPT_DIR}/../../../../../tools/evaluation/check_board_clock.sh"
 
 echo "[1/5] 在 92 预检完整 COCO 实例标注、图片和评测依赖."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" bash -s -- \
@@ -86,15 +75,51 @@ readonly model_dir="$2"
 readonly dataset="$3"
 readonly run_id="$4"
 readonly resume="$5"
-resume_arg=()
-if [[ "${resume}" == "1" ]]; then resume_arg+=(--resume); fi
+mkdir -p "${run_dir}/raw" "${run_dir}/predictions_by_image" "${run_dir}/report"
+count=0
+while IFS= read -r -d '' image; do
+    image_name="$(basename "${image}" .jpg)"
+    checkpoint="${run_dir}/predictions_by_image/${image_name}.json"
+    if [[ -e "${checkpoint}" ]]; then
+        if [[ "${resume}" != "1" ]]; then
+            echo "[ERROR] 非续跑模式下发现已有检查点: ${checkpoint}." >&2
+            exit 2
+        fi
+    else
+        image_dir="${run_dir}/raw/${image_name}"
+        if [[ -e "${image_dir}" ]]; then
+            echo "[ERROR] 存在未完成的逐图目录,请先检查: ${image_dir}." >&2
+            exit 2
+        fi
+        "${model_dir}/fastsam_board" \
+            --model "${model_dir}/model_int8.dla" \
+            --config "${model_dir}/runtime_config.csv" \
+            --image "${image}" --output-dir "${image_dir}" \
+            --confidence 0.001 --iou 0.9 --max-det 100
+        python3 "${run_dir}/tools/full_accuracy_board.py" \
+            --mode encode-one --image "${image}" \
+            --images "${dataset}/images" \
+            --annotations "${dataset}/annotations/instances_val2017.json" \
+            --work-dir "${run_dir}" --run-id "${run_id}"
+        # 原始掩码已编码进本次 run 的检查点,只移除可重建的逐图中间文件.
+        test "${image_dir}" = "${run_dir}/raw/${image_name}"
+        rm -r -- "${image_dir}"
+    fi
+    count=$((count + 1))
+    if (( count % 50 == 0 || count == 5000 )); then
+        free_kib="$(df -Pk "${run_dir}" | awk 'NR == 2 {print $4}')"
+        if (( free_kib < 3145728 )); then
+            echo "[ERROR] 板端空间低于 3 GiB,保留运行现场." >&2
+            exit 2
+        fi
+        echo "[PROGRESS] FastSAM ${count}/5000 张."
+    fi
+done < <(find "${dataset}/images" -maxdepth 1 -type f -name '*.jpg' -print0 | sort -z)
+test "${count}" -eq 5000
 python3 "${run_dir}/tools/full_accuracy_board.py" \
-    --binary "${model_dir}/fastsam_board" \
-    --model "${model_dir}/model_int8.dla" \
-    --config "${model_dir}/runtime_config.csv" \
-    --images "${dataset}/images" \
+    --mode evaluate --images "${dataset}/images" \
     --annotations "${dataset}/annotations/instances_val2017.json" \
-    --work-dir "${run_dir}" --run-id "${run_id}" "${resume_arg[@]}" \
+    --work-dir "${run_dir}" --run-id "${run_id}" \
     2>&1 | tee "${run_dir}/board_eval.log"
 BOARD_EVAL
 
@@ -105,10 +130,14 @@ set -euo pipefail
 readonly run_dir="$1"
 readonly model_dir="$2"
 readonly dataset="$3"
+find "${dataset}/images" -maxdepth 1 -type f -name '*.jpg' -print0 \
+    | sort -z | xargs -0 sha256sum > "${run_dir}/report/dataset_images_sha256.txt"
+test "$(wc -l < "${run_dir}/report/dataset_images_sha256.txt")" -eq 5000
 sha256sum "${model_dir}/model_int8.dla" \
     "${model_dir}/runtime_config.csv" \
     "${model_dir}/fastsam_board" \
     "${run_dir}/tools/full_accuracy_board.py" \
+    "${run_dir}/report/dataset_images_sha256.txt" \
     "${dataset}/annotations/instances_val2017.json" \
     > "${run_dir}/report/run_inputs_sha256.txt"
 sha256sum "${run_dir}/coco_segm_predictions.json" \
@@ -116,5 +145,7 @@ sha256sum "${run_dir}/coco_segm_predictions.json" \
     > "${run_dir}/report/raw_outputs_sha256.txt"
 cp "${run_dir}/board_eval.log" "${run_dir}/report/"
 BOARD_HASH
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" bash -s -- "${BOARD_RUN}/report" \
+    < "${SCRIPT_DIR}/../../../../../tools/evaluation/capture_board_system.sh"
 echo "[OK] FastSAM 板端全量精度报告: ${BOARD_RUN}/report"
 echo "[NEXT] 手动上传结果到 Git 后,运行 EVAL_RUN_ID=${RUN_ID} bash ${SCRIPT_DIR}/cleanup_full_accuracy.sh"

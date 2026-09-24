@@ -13,6 +13,7 @@ __pycache__/
 .env
 *.log
 logs/
+!models/**/results/full_accuracy/**/*.log
 
 # 模型与转换产物.
 *.pt

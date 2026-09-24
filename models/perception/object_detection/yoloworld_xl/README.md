@@ -181,3 +181,17 @@ MediaTek 官网的 Genio 720 Neuron EP `403.15 ms` 和 CPU EP `11214.33 ms` 是�
 隔离官方运行库已完成真实图片 NPU 小样本推理；当前实测与边界见 `docs/benchmark.md` 和
 `docs/accuracy.md`,正式运行摘要见 `docs/board_validation_20260916.json`.当前标记为
 "板端已验证",正式 COCO mAP 完成前不会标记为"完整交付".
+
+## 新镜像全量复测入口
+
+在 Ubuntu89 宿主机运行 `EVAL_RUN_ID=<新ID> bash deploy/run_full_accuracy.sh`；
+89 校验官方 ONNX、生成兼容图并交叉编译 C++ 程序；92 使用 ONNX Runtime 1.20.2
+C API 的 Neuron EP 对完整 5000 张 COCO val2017 图片推理，Python 仅计算 bbox AP，
+并核对同一常驻会话的三次预热 profiling 中确有 Neuron 节点；其余 5000 张
+不继续记录逐节点事件，避免耗尽板端空间。C++ 程序和指标流程尚未在 92 实测，
+静态检查不能视作精度验证。报告保留在
+`/root/hailong.he/open_models/yoloworld_xl/eval/<新ID>/report/`。
+脚本不回传、不自动清理、不提交 Git。用户手动上传报告后，再运行
+`EVAL_RUN_ID=<新ID> CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
+该协议尚未在新镜像运行，不能把脚本落地视为 mAP 已验证。
+详见[全量板端复测工作流](../../../../docs/full_accuracy_board_workflow.md)。

@@ -1,4 +1,4 @@
-"""在 Ubuntu89 主机上构建 Whisper 正式精度评测音频清单."""
+"""在当前运行设备上构建 Whisper 正式精度评测音频清单."""
 
 import argparse
 import hashlib

@@ -95,7 +95,10 @@ EDPA_1_2,导致板端 neuronrt 8.2.16 加载失败（`Found an unsupported targe
   由 `deploy/inference_demo/postprocess_outputs.py` 还原布局.
 - 实测原生输出与 CPU 参考 MAE≈1 LSB,属硬件舍入正常差异.
 
-## 精度评测
+## 历史精度评测与板端 C++ 路径
+
+新镜像全量复测请使用文末 `deploy/run_full_accuracy.sh`。本节的
+`accuracy_eval.sh` 会在 89 做后处理，仅供历史证据复核。
 
 三后端（PyTorch / ONNX / MTK NPU INT8）共享同一 letterbox 预处理、解码和 NMS,
 在 89 宿主机执行：
@@ -177,3 +180,14 @@ YOLOv5s 只有同时完成以下项目才视为交付完成：
 `deploy/inference_demo/yolov5s_board_eval.cpp`：DLA 只加载一次,JPEG 读取、letterbox、
 INT8 量化、Neuron Runtime 推理、MDLA 行对齐输出还原、YOLO 解码和 NMS 全部在 92 完成,
 板端直接生成 COCO 预测 JSON、完成清单和逐图耗时.5000 张原始输出不再回传到 89.
+
+## 新镜像全量复测入口
+
+在 Ubuntu89 宿主机运行 `EVAL_RUN_ID=<新ID> bash deploy/run_full_accuracy.sh`，
+一次完成 C++ 交叉编译与 92 上的 5000 张 COCO bbox AP/耗时测试。
+脚本不回传结果、不提交 Git、不自动清理。报告在
+`/root/hailong.he/open_models/yolov5s/eval/<新ID>/report/`。
+用户手动上传 Git 后，再运行
+`EVAL_RUN_ID=<新ID> CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
+旧 `accuracy_eval.sh` 的 89 后处理流程仅作历史对照，不是新镜像的正式入口。
+详见[全量板端复测工作流](../../../../docs/full_accuracy_board_workflow.md)。
