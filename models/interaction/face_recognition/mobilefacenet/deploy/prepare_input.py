@@ -18,7 +18,7 @@ def tensor_metadata(detail: dict) -> dict:
         raise ValueError(f"不支持该张量量化配置: {detail['name']}")
     return {
         "shape": [int(value) for value in detail["shape"]],
-        "dtype": np.dtype(detail["dtype"]).name,
+        "dtype": np.dtype(detail["type"].lower()).name,
         "scale": float(scales[0]),
         "zero_point": int(zero_points[0]),
     }
@@ -35,6 +35,8 @@ def prepare_inputs(tflite: Path, image_dir: Path, output_dir: Path) -> None:
     if input_meta["dtype"] != "int8" or len(outputs) != 1:
         raise ValueError("冒烟程序要求单输入 INT8、单输出图")
     output_meta = tensor_metadata(outputs[0])
+    if output_meta["dtype"] != "int8" or output_meta["shape"] != [1, 128]:
+        raise ValueError(f"输出张量异常: {output_meta}")
     images = sorted(image_dir.glob("*_aligned.jpg"))[:2]
     if len(images) != 2:
         raise ValueError("至少需要两张对齐人脸")

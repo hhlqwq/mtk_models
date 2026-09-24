@@ -19,15 +19,16 @@
 
 ## 转换和板端冒烟
 
-在 Ubuntu 89 的 `hhl_g720_8011` 容器中，从本目录执行：
+在 Ubuntu 89 的 `hhl_g720_8011` 容器中，从本目录执行转换和编译：
 
 ```bash
 bash deploy/convert.sh
 bash deploy/build.sh
-python deploy/prepare_input.py \
-  --tflite models/model_int8.tflite \
-  --image-dir examples/input/calibration \
-  --output-dir examples/input/generated
+```
+
+在 Ubuntu 89 主机的同一目录执行板端冒烟，脚本会通过容器准备量化输入：
+
+```bash
 bash deploy/deploy_board.sh
 ```
 

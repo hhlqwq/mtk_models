@@ -13,13 +13,19 @@ readonly OUTPUT_DIR="${MODEL_ROOT}/examples/output/runs/${RUN_ID}"
 readonly DLA="${MODEL_ROOT}/models/model_int8.dla"
 readonly TFLITE="${MODEL_ROOT}/models/model_int8.tflite"
 readonly CALIBRATION_DIR="${CALIBRATION_DIR:-${MODEL_ROOT}/examples/input/calibration}"
-readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+readonly CONTAINER="${MTK_CONTAINER:-hhl_g720_8011}"
+SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+if [[ -n "${MTK_BOARD_KNOWN_HOSTS:-}" ]]; then
+    SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=yes
+        -o UserKnownHostsFile="${MTK_BOARD_KNOWN_HOSTS}")
+fi
+readonly -a SSH_OPTIONS
 
 test -s "${DLA}"
 test -s "${TFLITE}"
 test -d "${CALIBRATION_DIR}"
 echo "[1/5] 从当前 TFLite 生成三份量化输入."
-python "${SCRIPT_DIR}/prepare_input.py" \
+docker exec "${CONTAINER}" python "${SCRIPT_DIR}/prepare_input.py" \
     --tflite "${TFLITE}" \
     --image-dir "${CALIBRATION_DIR}" \
     --output-dir "${INPUT_DIR}"
@@ -50,7 +56,7 @@ sha256sum "${DLA}" "${TFLITE}" "${INPUT_DIR}/face_1.bin" \
     > "${OUTPUT_DIR}/host_inputs_sha256.txt"
 
 echo "[5/5] 校验向量并写入冒烟结果."
-python "${SCRIPT_DIR}/verify_board.py" \
+python3 "${SCRIPT_DIR}/verify_board.py" \
     --metadata "${OUTPUT_DIR}/metadata.json" \
     --output-dir "${OUTPUT_DIR}/raw" \
     --result "${OUTPUT_DIR}/smoke_result.json"
