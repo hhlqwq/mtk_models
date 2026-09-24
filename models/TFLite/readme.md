@@ -24,8 +24,8 @@
 | 分类 | ResNet | [resnet-float](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/tflite/genio-520-720/resnet-float.zip) | Float32 | 224x224 | 3.86 | 3.97 |
 | 分类 | SqueezeNet | [squeezenet-quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/tflite/genio-520-720/squeezenet-quant.zip) | Quant8 | 224x224 | 1.00 | 0.99 |
 | 分类 | SqueezeNet | [squeezenet-float](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/tflite/genio-520-720/squeezenet-float.zip) | Float32 | 224x224 | 3.00 | 2.33 |
-| 分类 | VGG | [vgg-quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/tflite/genio-520-720/vgg-quant.zip) | Quant8 | 224x224 | 1.56 | 11.22 |
-| 分类 | VGG | [vgg-float](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/tflite/genio-520-720/vgg-float.zip) | Float32 | 224x224 | 3.15 | 33.24 |
+| 分类 | VGG | [vgg-quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/tflite/genio-520-720/vgg-quant.zip) | Quant8 | 224x224 | 11.54 | 11.22 |
+| 分类 | VGG | [vgg-float](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/tflite/genio-520-720/vgg-float.zip) | Float32 | 224x224 | 33.87 | 33.24 |
 | 识别 | VGGFace | [vggface-quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/tflite/genio-520-720/vggface-quant.zip) | Quant8 | 224x224 | 11.50 | 11.54 |
 | 识别 | VGGFace | [vggface-float](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/tflite/genio-520-720/vggface-float.zip) | Float32 | 224x224 | 33.80 | 33.87 |
 
