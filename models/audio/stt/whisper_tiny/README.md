@@ -11,6 +11,10 @@
 DLA 推理，Python 只计算 WER。不运行 89 端精度基线。新 C++ 音频流程目前仅通过静态检查，
 **不能将其视为板端运行或精度验证通过**。
 
+数据集来源为 [OpenSLR SLR12](https://www.openslr.org/12/)，下载文件为
+[test-clean.tar.gz](https://www.openslr.org/resources/12/test-clean.tar.gz)，许可证为
+CC BY 4.0。数据集由用户手动下载并放置，测试脚本不会联网获取。
+
 运行前确认：89 的本模型目录已有 `models/encoder_fp32.dla`、`models/decoder_step_fp32.dla` 和运行中的
 `hhl_g720_8011` 容器；92 已有完整的
 `/root/hailong.he/datasets/librispeech/test-clean/`、`ffmpeg` 和 OpenAI Whisper 的指标依赖，
@@ -91,17 +95,15 @@ NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 ```
 
 严格编译同时使用 `--suppress-input --suppress-output --disallow-bridge`，避免编译器插入
-外部布局转换桥接.板端 Runtime 探针确认原生 I/O 为 FP16；程序按 Runtime 返回的 padded
-字节数和布局填充缓冲区,不能把 TFLite 的 FP32 字节数直接传给 DLA.
-`deploy/build_board_cpp.sh` 会交叉编译板端 I/O 探针，用于在真实 Runtime 上核对每个
-输入输出的硬件对齐字节数和四维布局，并生成 `whisper_board_decode` 双 DLA 解码程序。
+外部布局转换桥接。旧镜像的板端探针曾确认原生 I/O 为 FP16；程序按 Runtime 返回的 padded
+字节数和布局填充缓冲区，不能把 TFLite 的 FP32 字节数直接传给 DLA。
+当前 `deploy/build_board_cpp.sh` 只交叉编译音频准备程序和双 DLA 批量评测程序。
 
 ## 旧镜像验证记录
 
-历史冒烟测试使用 `deploy/prepare_board_inputs.py` 在 89 生成 FP16 Mel、OpenAI FP32
-基线和固定解码规则，再用 `deploy/decode_board_tokens.py` 比对板端 Token 与文本。这些
-工具不属于上文的新镜像全量精度入口。
-2026-09-16 的板端证据见 `docs/board_smoke_20260916.json`、`docs/accuracy.md` 和
+旧冒烟和 89 端双数据集评测脚本已移除，不再提供旧流程入口；保留既有结果作为历史证据，
+不能用来证明新镜像通过验证。2026-09-16 的板端证据见
+`docs/board_smoke_20260916.json`、`docs/accuracy.md` 和
 `docs/benchmark.md`.AISHELL-1 正式结果见 `docs/accuracy.md`、`docs/benchmark.md` 和
 `docs/formal_eval_20260918_aishell1.json`；完整交付仍要求 LibriSpeech WER 和近 30 秒样例.
 
@@ -128,10 +130,3 @@ Neuron Runtime 的 Encoder 和自回归 Decoder,不包含音频读取、Log-Mel�
 - 已验证：AISHELL-1 test `7,176/7,176` 完整运行、同协议 OpenAI/NPU CER、文本与 Token
   一致率、NPU 延迟/RTF/Tokens/s、主机预处理耗时和进程峰值 RSS.
 - 未验证：LibriSpeech WER、15–30 秒正式样例、噪声鲁棒性和跨多次 Run 的性能方差.
-
-## 历史 89 端精度流程
-
-旧入口 `deploy/run_all_formal_evaluations.sh` 在 89 进行数据准备和指标汇总，依次处理
-AISHELL-1 与 LibriSpeech，仅用于复核旧镜像结果，**不用于本轮 92 独立全量复测**。旧流程的
-数据集路径、断点续跑方式和完整指标口径保留在
-[历史正式评测指南](docs/formal_accuracy_performance_guide.md)。

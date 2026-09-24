@@ -43,7 +43,6 @@ BOARD_PREFLIGHT
 
 echo "[2/4] 在 89 编译 C++ 程序并导出静态滤波器和解码规则."
 bash "${SCRIPT_DIR}/build_board_cpp.sh"
-bash "${SCRIPT_DIR}/build_board_audio_cpp.sh"
 test "$(docker inspect -f '{{.State.Running}}' "${CONTAINER}" 2>/dev/null)" = true
 docker exec "${CONTAINER}" mkdir -p "${ASSETS_DIR}"
 docker exec "${CONTAINER}" python3 "${SCRIPT_DIR}/export_board_assets.py" \
