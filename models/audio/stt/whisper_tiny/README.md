@@ -1,9 +1,46 @@
 # Whisper-Tiny
 
-本目录用于将 OpenAI 多语言 Whisper-Tiny 部署到 MT8189 / Genio 720.当前状态为
-`板端已验证`：双 DLA 已在 Neuron Runtime 8.2.16 完成英文与静音 Smoke Test,
-Token 和文本均与 OpenAI FP32 Greedy Search 基线完全一致；AISHELL-1 test 正式 CER 与
-性能评测已完成,LibriSpeech `test-clean` WER 仍待补.
+本目录用于将 OpenAI 多语言 Whisper-Tiny 部署到 MT8189 / Genio 720。旧镜像已完成双 DLA
+冒烟测试和 AISHELL-1 test 正式评测；**新镜像的 LibriSpeech `test-clean` 全量 WER 尚未
+在 92 板端验证**。历史结果不等于新镜像验收结果。
+
+## 当前全量精度测试
+
+本轮只测 LibriSpeech `test-clean` 全部 2,620 条音频，不再运行 AISHELL-1。一次只测试这
+一个模型。89 负责交叉编译、导出固定 Mel 滤波器和部署；92 使用 C++ 完成音频预处理与双
+DLA 推理，Python 只计算 WER。不运行 89 端精度基线。新 C++ 音频流程目前仅通过静态检查，
+**不能将其视为板端运行或精度验证通过**。
+
+运行前确认：89 的本模型目录已有 `models/encoder_fp32.dla`、`models/decoder_step_fp32.dla` 和运行中的
+`hhl_g720_8011` 容器；92 已有完整的
+`/root/hailong.he/datasets/librispeech/test-clean/`、`ffmpeg` 和 OpenAI Whisper 的指标依赖，
+且 89/92 系统时间正确。入口会检查这些前提，不会下载或解压数据集。
+
+在 **Ubuntu89 宿主机的仓库根目录** 手动启动；每次测试使用新的 `EVAL_RUN_ID`：
+
+```bash
+cd /data/users/hailong.he/github/mtk_models
+EVAL_RUN_ID=20260924_whisper_tiny_librispeech_v1 \
+  bash models/audio/stt/whisper_tiny/deploy/run_full_accuracy.sh
+```
+
+脚本成功后，先在 92 检查
+`/root/hailong.he/open_models/whisper_tiny/eval/<run_id>/report/summary.json`，确认
+`status` 为 `complete`，且 `expected_samples` 和 `successful_samples` 均为 2,620。
+模型、逐样本输出和报告此时仍留在 92；脚本不会
+自动清理、回传或提交 Git。请自行取走完整的 `report/`，保存到仓库对应模型的
+`results/full_accuracy/<run_id>/` 并手动上传 Git。确认报告已保存后，**另起一次命令**清理
+该 run 的板端大文件：
+
+```bash
+cd /data/users/hailong.he/github/mtk_models
+EVAL_RUN_ID=20260924_whisper_tiny_librispeech_v1 CONFIRM_RESULTS_UPLOADED=1 \
+  bash models/audio/stt/whisper_tiny/deploy/cleanup_full_accuracy.sh
+```
+
+清理后的小体积报告仍保留在 92 的
+`/root/hailong.he/open_models/whisper_tiny/results/<run_id>/`。完整目录约定、检查项和清理
+边界见[全量板端复测工作流](../../../../docs/full_accuracy_board_workflow.md)。
 
 ## 首版范围
 
@@ -58,54 +95,15 @@ NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 字节数和布局填充缓冲区,不能把 TFLite 的 FP32 字节数直接传给 DLA.
 `deploy/build_board_cpp.sh` 会交叉编译板端 I/O 探针，用于在真实 Runtime 上核对每个
 输入输出的硬件对齐字节数和四维布局，并生成 `whisper_board_decode` 双 DLA 解码程序。
-`deploy/prepare_board_inputs.py` 在 89 上生成 FP16 Mel、OpenAI FP32 基线和固定解码规则；
-`deploy/decode_board_tokens.py` 将板端 Token 解码为文本并执行精确对比。
+
+## 旧镜像验证记录
+
+历史冒烟测试使用 `deploy/prepare_board_inputs.py` 在 89 生成 FP16 Mel、OpenAI FP32
+基线和固定解码规则，再用 `deploy/decode_board_tokens.py` 比对板端 Token 与文本。这些
+工具不属于上文的新镜像全量精度入口。
 2026-09-16 的板端证据见 `docs/board_smoke_20260916.json`、`docs/accuracy.md` 和
 `docs/benchmark.md`.AISHELL-1 正式结果见 `docs/accuracy.md`、`docs/benchmark.md` 和
 `docs/formal_eval_20260918_aishell1.json`；完整交付仍要求 LibriSpeech WER 和近 30 秒样例.
-
-## 历史 89 端精度流程（不用于新镜像复测）
-
-新镜像全量复测请使用下文 `deploy/run_full_accuracy.sh`；本节旧入口在 89 进行数据准备
-和指标汇总，仅保留复核历史结果，不符合“92 独立完成测试”的新要求。
-
-双数据集正式入口是 `deploy/run_all_formal_evaluations.sh`。必须在 Ubuntu89 宿主机运行,
-不要进入 `hhl_g720_8011` 容器。默认数据路径就是本项目在 89 上的实际路径,一条命令会依次
-完成 AISHELL-1 test 和 LibriSpeech `test-clean`,最后生成联合 CER/WER 与性能报告：
-
-```bash
-cd /data/users/hailong.he/github/mtk_models
-bash models/audio/stt/whisper_tiny/deploy/run_all_formal_evaluations.sh
-```
-
-脚本启动前会同时检查两套数据目录和压缩包；只交叉编译一次板端程序。默认复用状态为
-`complete` 且样例无失败、无缺失的已有 Run,其余 Run 会从已有 JSONL 断点继续。当前已经
-完成 AISHELL-1,因此补跑 LibriSpeech 时应显式复用既有 AISHELL Run：
-
-```bash
-cd /data/users/hailong.he/github/mtk_models
-export EVAL_DATE=20260921
-export AISHELL_RUN_ID=20260918_aishell1_test_fp16_v1
-bash models/audio/stt/whisper_tiny/deploy/run_all_formal_evaluations.sh
-```
-
-保留同一个 `EVAL_DATE` 可确保跨天重试仍复用相同的 LibriSpeech 和联合 Run 目录。
-
-只有两套 `summary.json` 都为 `complete` 时,脚本才会输出“两套正式评测全部完成”,并在
-`.eval/whisper_tiny/<combined_run_id>/report/` 生成联合 `summary.json` 和 `report.md`。
-设置 `REUSE_COMPLETE_RUNS=0` 可强制重新运行两套数据。`run_formal_evaluation.sh` 是供单数据集
-故障定位和断点重跑的内部入口,完成时只报告当前数据集,不再输出含糊的“全部完成”。
-
-数据集由用户下载,脚本不会联网或修改原始数据。AISHELL-1 加载器兼容完整数据集的
-`wav/test/` 和独立测试集的 `test/wav/` 布局。结果写入
-`.eval/whisper_tiny/<run_id>/report/`；`summary.json` 只有在失败和缺失样本均为 0 时才会
-标记为 `complete`。单数据集入口及底层三个分步脚本仅用于故障定位。完整指标口径见
-[`docs/formal_accuracy_performance_guide.md`](docs/formal_accuracy_performance_guide.md)。
-
-板端双 DLA 固定在 `/root/hailong.he/open_models/whisper_tiny/models/`；程序和运行日志位于
-同模型目录下。89 生成的 FP16 Mel 上传到
-`/root/hailong.he/datasets/whisper_tiny/<run_id>/mels/`，清单中的绝对路径与上传路径一致。
-评测脚本会核对板端 DLA 的 SHA-256,缺失或不一致时从 89 重新上传。
 
 ## 2026-09-18 AISHELL-1 正式结果
 
@@ -121,7 +119,7 @@ Neuron Runtime 的 Encoder 和自回归 Decoder,不包含音频读取、Log-Mel�
 该 Run 的执行状态为 `complete`,但 CER 较高、仍有 `5.7414%` 文本未与框架完全一致,
 因此不将其描述为精度验收通过。详细误差、分桶性能、哈希和限制见上述三份证据文档.
 
-## 验证边界
+## 历史验证边界
 
 - 已验证：OpenAI FP32/改写图/ONNX 数值对齐、MTK Converter 8.16.0 转换、NCC 8.2.31
   双图单一 MDLA 5.3 执行步、禁止 bridge 编译、Genio 720 双 DLA 完整解码.
@@ -131,16 +129,9 @@ Neuron Runtime 的 Encoder 和自回归 Decoder,不包含音频读取、Log-Mel�
   一致率、NPU 延迟/RTF/Tokens/s、主机预处理耗时和进程峰值 RSS.
 - 未验证：LibriSpeech WER、15–30 秒正式样例、噪声鲁棒性和跨多次 Run 的性能方差.
 
-## 新镜像全量复测入口
+## 历史 89 端精度流程
 
-在 Ubuntu89 宿主机手动运行 `EVAL_RUN_ID=<新ID> bash deploy/run_full_accuracy.sh`；
-89 只交叉编译和部署，92 使用 C++ 完成 LibriSpeech `test-clean` 预处理及双 DLA 推理，
-Python 仅计算 WER。89 从已安装的 OpenAI Whisper 包导出固定 80 Mel 滤波器和解码规则，
-不在 89 运行测试集推理。该新 C++ 音频准备流程尚未在 92 验证，不能将静态检查视为精度通过。
-不再运行 OpenAI CPU 基线，也不重复 AISHELL-1；历史 AISHELL-1
-CER 证据仍保留在文档中。新入口不调用旧的 89 端
-`run_all_formal_evaluations.sh`，也不自动清理、回传或提交 Git。结果保留在
-`/root/hailong.he/open_models/whisper_tiny/eval/<新ID>/report/`。
-用户取走报告并手动上传 Git 后，再单独运行
-`EVAL_RUN_ID=<新ID> CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
-详见[全量板端复测工作流](../../../../docs/full_accuracy_board_workflow.md)。
+旧入口 `deploy/run_all_formal_evaluations.sh` 在 89 进行数据准备和指标汇总，依次处理
+AISHELL-1 与 LibriSpeech，仅用于复核旧镜像结果，**不用于本轮 92 独立全量复测**。旧流程的
+数据集路径、断点续跑方式和完整指标口径保留在
+[历史正式评测指南](docs/formal_accuracy_performance_guide.md)。
