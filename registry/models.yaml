@@ -1,5 +1,15 @@
 schema_version: 1
 models:
+  - id: depth_anything_v2_small
+    batch: first_batch
+    pilot: true
+    scenario: navigation
+    category: single_camera_depth
+    path: models/navigation/single_camera_depth/depth_anything_v2_small
+    source: DepthAnything/Depth-Anything-V2
+    platforms:
+      genio_720: board_verified
+      genio_5100: not_started
   - id: fastsam
     batch: first_batch
     pilot: false

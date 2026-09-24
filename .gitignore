@@ -42,6 +42,12 @@ models/interaction/pose_detection/rtmpose_body2d/original/exported/
 models/interaction/pose_detection/rtmpose_body2d/models/rtmpose_body2d.data
 models/interaction/pose_detection/rtmpose_body2d/models/SHA256SUMS
 
+# Depth Anything V2 Small 官方源码、转换产物与运行证据.
+models/navigation/single_camera_depth/depth_anything_v2_small/original/upstream/
+models/navigation/single_camera_depth/depth_anything_v2_small/models/SHA256SUMS
+models/navigation/single_camera_depth/depth_anything_v2_small/models/*.json
+models/navigation/single_camera_depth/depth_anything_v2_small/examples/output/runs/
+
 # Whisper-Tiny 官方权重、导出模型与运行证据.
 models/audio/stt/whisper_tiny/original/tiny.pt
 models/audio/stt/whisper_tiny/models/SHA256SUMS

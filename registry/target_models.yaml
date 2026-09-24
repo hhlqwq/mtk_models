@@ -91,6 +91,8 @@ scenarios:
         models:
           - id: depth_anything_v2
             display_name: Depth Anything V2
+            pilot: true
+            pilot_implementation: depth_anything_v2_small
       dual_camera_depth:
         display_name: Dual camera depth
         models:

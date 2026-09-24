@@ -1,0 +1,8 @@
+Official source: https://github.com/DepthAnything/Depth-Anything-V2
+Source revision: a561b849ebae10a6f5ef49e26c83cbbcd36c71bf
+Official Small weights: https://huggingface.co/depth-anything/Depth-Anything-V2-Small/resolve/03876f8651c73a60fe4c2c48294e09fcb6838fcf/depth_anything_v2_vits.pth
+Weights revision: 03876f8651c73a60fe4c2c48294e09fcb6838fcf
+Actual download mirror: https://hf-mirror.com/depth-anything/Depth-Anything-V2-Small/resolve/03876f8651c73a60fe4c2c48294e09fcb6838fcf/depth_anything_v2_vits.pth
+Weights size: 99218434 bytes
+Weights SHA-256: 715fade13be8f229f8a70cc02066f656f2423a59effd0579197bbf57860e1378
+License: Apache-2.0 for the Small model, according to the official source README and model card.

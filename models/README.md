@@ -12,25 +12,26 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 
 | 指标 | 数量 | 说明 |
 | --- | ---: | --- |
-| 已进入实现注册表 | 6 / 46（13.0%） | 6 个注册实现相对于 46 个目标候选的规模比；存在模型变体映射和额外 Model Zoo 模型，不等同于严格完成率 |
+| 已进入实现注册表 | 7 / 46（15.2%） | 7 个注册实现相对于 46 个目标候选的规模比；存在模型变体映射和额外 Model Zoo 模型，不等同于严格完成率 |
 | 已有模型目录但未注册 | 1 | MobileFaceNet 已板端冒烟，尚未加入 `registry/models.yaml` |
-| Genio 720 完整交付 | 3 / 6（50.0%） | 精度、性能、Demo 和文档均已闭环 |
-| Genio 720 已注册模型的板端运行证据 | 6 / 6（100%） | FastSAM 已完成单图硬件冒烟；还包括 `complete`、`board_verified` 和 Whisper 的历史非规范状态 `board_validated` |
+| Genio 720 完整交付 | 3 / 7（42.9%） | 精度、性能、Demo 和文档均已闭环 |
+| Genio 720 已注册模型的板端运行证据 | 7 / 7（100%） | Depth Anything V2 Small 已完成 518×518 双图硬件冒烟；还包括 `complete`、`board_verified` 和 Whisper 的历史非规范状态 `board_validated` |
 | Genio 720 未注册模型的板端运行证据 | 1 / 1 | MobileFaceNet 已完成三次硬件冒烟，正式指标待测 |
-| Genio 5100 已开始 | 0 / 6（0.0%） | 当前所有注册模型均为 `not_started` |
+| Genio 5100 已开始 | 0 / 7（0.0%） | 当前所有注册模型均为 `not_started` |
 
 ### Genio 720 状态分布
 
 | 状态 | 数量 | 占已注册模型比例 |
 | --- | ---: | ---: |
-| 完整交付 `complete` | 3 | 50.0% |
-| 板端验证 `board_verified` | 2 | 33.3% |
-| 历史状态 `board_validated` | 1 | 16.7% |
+| 完整交付 `complete` | 3 | 42.9% |
+| 板端验证 `board_verified` | 3 | 42.9% |
+| 历史状态 `board_validated` | 1 | 14.3% |
 
 ## 已注册模型状态
 
 | 模型 | 机器人能力 | 官方来源 | Genio 720 | Genio 5100 | Inference Time | Reference Metric | On-device Metric | 当前缺口与下一步 |
 | --- | --- | --- | --- | --- | ---: | --- | --- | --- |
+| [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | 单目相对深度与空间结构 | DepthAnything/Depth-Anything-V2 | 🔵 `board_verified` | ⚪ `not_started` | 待稳定测量 | 待正式评测 | 待正式评测 | [518×518 双图、三次硬件冒烟通过](navigation/single_camera_depth/depth_anything_v2_small/docs/smoke.md)；补齐正式深度精度与预热后性能 |
 | [FastSAM-s](navigation/segmentation/fastsam/README.md) | 目标分割、交互式区域选择 | CASIA-LMC-Lab/FastSAM | 🔵 `board_verified` | ⚪ `not_started` | [单次 15.909 ms/图](navigation/segmentation/fastsam/docs/board_smoke_20260923.md) | 待正式评测 | 待正式评测 | 官方权重已完成转换、编译与单图硬件冒烟；补齐正式类别无关分割精度与预热后稳定性能 |
 | [YOLOv5s](perception/object_detection/yolov5s/README.md) | 通用目标检测 | Ultralytics/YOLOv5 | 🟢 `complete` | ⚪ `not_started` | [9.629 ms/图](perception/object_detection/yolov5s/docs/benchmark.md) | [FP32 ONNX mAP@0.5:0.95 0.3709](perception/object_detection/yolov5s/docs/accuracy.md) | [INT8 mAP@0.5:0.95 0.3586](perception/object_detection/yolov5s/docs/accuracy.md) | 作为 Genio 5100 首个迁移基线，复用已完成的全链路验收协议 |
 | [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | 图像分类 | PyTorch Vision | 🟢 `complete` | ⚪ `not_started` | [51.7129 ms/图](perception/image_classification/vit_base_patch16_224/docs/benchmark.md) | [FP32 ONNX Top-1 80.64%](perception/image_classification/vit_base_patch16_224/docs/accuracy.md) | [INT8 Top-1 79.38%](perception/image_classification/vit_base_patch16_224/docs/accuracy.md) | Genio 720 已闭环；后续按平台需求迁移 Genio 5100 |
@@ -52,10 +53,10 @@ Neuron EP 与 CPU EP 混合执行的 `session.run` 耗时，不能视为纯 NPU 
 调用耗时，未经预热和重复统计，不能作为稳定平均延迟。MobileFaceNet 尚无毫秒级计时报告。
 
 `Reference Metric` 是本项目同协议浮点模型精度参考，`On-device Metric` 是实际板端模型
-推理得到的精度；两列使用相同任务指标与评测集。YOLOv5s 使用 COCO val2017 5,000 图，
+推理得到的精度；两列使用相同任务指标与评测集。Depth Anything V2 Small 的双图相关系数仅是冒烟数值检查，尚无正式精度指标。YOLOv5s 使用 COCO val2017 5,000 图，
 ViT 使用 ImageNet val 50,000 图，RTMPose 使用 COCO-WholeBody 验证集与相同人体框，
 Whisper-Tiny 使用 AISHELL-1 test 7,176 段音频。Whisper 的 CER 越低越好，但当前数值
-不代表精度验收通过。尚未实施的推荐模型，以及 FastSAM、YOLO-World XL 和
+不代表精度验收通过。尚未实施的推荐模型，以及 Depth Anything V2 Small、FastSAM、YOLO-World XL 和
 MobileFaceNet 的正式精度，均不填写估算值。
 
 ¹ `board_validated` 是 `registry/models.yaml` 当前保存的历史状态值，但不属于
