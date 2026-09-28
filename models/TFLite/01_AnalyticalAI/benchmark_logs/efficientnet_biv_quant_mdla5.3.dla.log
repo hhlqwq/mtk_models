@@ -1,0 +1,6 @@
+Did not specify the inputs, automatically generated them
+Did not specify the output file name, automatically generated in output0.bin, output1.bin ...
+Inference repeats for 1000 times.
+Total inference time = 1337.5 ms (1.3375 ms/inf)
+Avg. FPS : 746.1
+Skip writing outputs when using random inputs without user-provided seed
