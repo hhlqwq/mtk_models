@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-COCO val2017 全量 bbox mAP 已完成。运行编号 `20260928_yoloworld_coco_full_v3`，Genio 720 使用正确性优先的混合 Neuron/CPU EP 处理 5,000/5,000 张图片，bbox AP50:95 `0.4729515582`，AP50 `0.6368820482`。[完整报告](../results/full_accuracy/20260928_yoloworld_coco_full_v3/summary.json)。标注 SHA-256 为 `e8c7f7908f1d7278341fae127d0da654f102f11bd7b21d8aeefa635b8c810b6f`，板端路径 `/root/hailong.he/datasets/coco/val2017/`；原始数据来源见 [COCO 2017 下载页](https://cocodataset.org/#download)。该结果不代表全图纯 NPU 执行，也没有同协议 CPU 全量指标对照。
+COCO val2017 全量 bbox mAP 已完成。运行编号 `20260928_yoloworld_coco_full_v3`，Genio 720 使用正确性优先的混合 Neuron/CPU EP 处理 5,000/5,000 张图片，bbox AP50:95 `0.4729515582`，AP50 `0.6368820482`，[板端报告](../results/full_accuracy/20260928_yoloworld_coco_full_v3/summary.json)。同一 5,000 张、80 类映射、分数阈值 0.001、NMS IoU 0.65、最多 300 框的 FP32 ONNX CUDA 优先参考端 AP50:95 `0.4729530726`，AP50 `0.6370186653`，[参考报告](../results/reference_accuracy/coco_fp32_v1/summary.json)。两端 AP50:95 相差约 `0.0000015`，但该板端会话仍包含 CPU fallback，不能描述为全图纯 NPU 精度。标注 SHA-256 为 `e8c7f7908f1d7278341fae127d0da654f102f11bd7b21d8aeefa635b8c810b6f`，板端路径 `/root/hailong.he/datasets/coco/val2017/`；原始数据来源见 [COCO 2017 下载页](https://cocodataset.org/#download)。
 
 三张公开图片的混合 Neuron EP 推理已通过 CPU 一致性门禁.固定配置为完整 opset 13 模型、
 `NEURON_FLAG_USE_FP16=1` 和 `NEURON_FLAG_MIN_GROUP_SIZE=100`：

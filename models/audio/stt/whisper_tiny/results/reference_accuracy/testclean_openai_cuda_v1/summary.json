@@ -1,0 +1,20 @@
+{
+  "status": "complete",
+  "backend": "openai_whisper_cuda_fp16_compute",
+  "dataset": "librispeech_test_clean_30s_window",
+  "expected_samples": 2620,
+  "successful_samples": 2620,
+  "weights_sha256": "65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9",
+  "predictions_sha256": "2003f7e39b315b2f83e5b3fb27c85c672d2ab7a41811526d607b2c7ba3c5e30e",
+  "accuracy": {
+    "metric": "wer",
+    "value": 0.07554641974843004,
+    "errors": 4006,
+    "substitutions": 2909,
+    "deletions": 456,
+    "insertions": 641,
+    "reference_units": 53027,
+    "normalized_exact_matches": 1121,
+    "normalized_exact_match_rate": 0.42786259541984734
+  }
+}

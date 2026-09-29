@@ -15,13 +15,13 @@
 | 默认阈值 | confidence=0.4, NMS IoU=0.9, max_det=100 |
 | 提示支持 | 全图、单前景点、单 xyxy 框; 提示语义见 Demo 文档 |
 | 尚不支持 | 文本/CLIP、负点组合、多图批处理、G5100 实测 |
-| 已验证精度 | 16 张校准图的 INT8 PTQ,Genio 720 板端单图运行 |
+| 已验证精度 | COCO val2017 5,000 图类别无关 segm AP50:95：FP32 ONNX `0.05210`，板端 `0.06114`；两端后处理差异见精度报告 |
 | 交付状态 | 板端已验证,COCO val2017 全量类别无关精度已完成；常驻实例稳定性能待补 |
 
-FastSAM 不输出 COCO 80 类语义标签.正式精度应采用明确的类别无关协议,
+FastSAM 不输出 COCO 80 类语义标签.本次正式精度采用类别无关协议,
 不能把所有预测随意设置为某个 COCO 类别后宣称完成标准实例分割 mAP.
 640 输入是本项目端侧配置,不直接比较官方 1024 输入结果.
 
 记录和哈希由 `export_manifest.json`、`model_int8.json`、`SHA256SUMS`、
 `DLA_SHA256SUMS` 和板端 `results.json` 承载.本次证据见
-[2026-09-23 板端冒烟报告](docs/board_smoke_20260923.md).
+[精度报告](docs/accuracy.md)与[2026-09-23 板端冒烟报告](docs/board_smoke_20260923.md).

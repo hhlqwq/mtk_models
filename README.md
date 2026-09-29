@@ -52,8 +52,9 @@ ImageNet 或 COCO 原图的情况下直接展示"已经完成测试".公开样�
 
 公开三图结果分别位于各模型的 `examples/output/public/`,可通过模型 README 直接查看.
 
-各模型的正式数据集、结果和耗时口径分别记录在其 `docs/accuracy.md` 与
-`docs/benchmark.md`，机器可读报告保存在各自的 `results/full_accuracy/<run_id>/`。
+各模型的正式数据集、板端与同协议参考精度、耗时口径分别记录在其 `docs/accuracy.md` 与
+`docs/benchmark.md`，机器可读报告保存在各自的 `results/full_accuracy/<run_id>/` 和
+`results/reference_accuracy/<run_id>/`。
 Whisper-Tiny 本轮正式精度仅评测 LibriSpeech `test-clean` 全部 2,620 条音频。
 
 状态只能使用以下四类：

@@ -196,6 +196,7 @@ C API 的 Neuron EP 对完整 5000 张 COCO val2017 图片推理，Python 仅计
 bbox AP50:95 为 0.47295，AP50 为 0.63688；常驻会话 `session.Run` 平均
 3,864.08 ms/张、P95 为 5,730.39 ms。三次预热的 profiling 记录
 30 个 Neuron EP 节点事件及 576 个 CPU 节点事件。
+同协议 FP32 ONNX 全量参考 AP50:95 为 0.472953，两端精度见[精度报告](docs/accuracy.md)。
 详细结果见[板端报告](results/full_accuracy/20260928_yoloworld_coco_full_v3/summary.json)。
 板端运行目录保留在
 `/root/hailong.he/open_models/yoloworld_xl/eval/<新ID>/report/`。

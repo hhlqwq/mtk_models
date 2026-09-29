@@ -16,6 +16,7 @@
 `20260928_depth_da2k_full_v1` 已完成 1,033 张图、2,068 个点对，正确 1,774 对，
 点对准确率 85.78%；每图 `neuronrt` 命令平均耗时 194.70 ms。
 详细数据与哈希见[板端报告](results/full_accuracy/20260928_depth_da2k_full_v1/summary.json)。
+同协议 FP32 ONNX 全量参考准确率为 94.83%，板端低 9.04 个百分点；详见[精度报告](docs/accuracy.md)。
 
 数据来源为 [官方 DA-2K 数据集](https://huggingface.co/datasets/depth-anything/DA-2K/tree/main)，
 实际获取地址为

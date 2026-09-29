@@ -13,6 +13,7 @@ DLA 推理，Python 只计算 WER。不运行 89 端精度基线。
 `20260928_whisper_testclean_full_v1` 已完成全部 2,620 条，失败与缺失均为 0。
 [板端报告](results/full_accuracy/20260928_whisper_testclean_full_v1/summary.json)
 记录 WER 为 0.075603、平均 NPU 总耗时 460.05 ms/条、平均 NPU RTF 0.07149。
+同协议 OpenAI CUDA 全量参考 WER 为 0.075546；两端完整统计见[精度报告](docs/accuracy.md)。
 
 输入统一解码为 16 kHz 单声道，再按 Whisper 的 30 秒窗口截断或补零。`test-clean`
 中存在略长于 30 秒的原始音频，例如 `121-123859-0002.flac` 为 30.04 秒；评测仍计入

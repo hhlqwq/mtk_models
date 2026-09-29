@@ -14,6 +14,7 @@
 `20260928_mobilefacenet_lfw_full_v1` 已完成 7,701 张不同图片的特征提取及全部
 6,000 对十折验证，正确 4,270 对，准确率 71.17%；每张图的 `neuronrt` 命令平均
 耗时 36.21 ms。详细十折阈值和哈希见[板端报告](results/full_accuracy/20260928_mobilefacenet_lfw_full_v1/summary.json)。
+同协议 FP32 ONNX 全量参考准确率为 70.95%；两端结果和非对齐输入限制见[精度报告](docs/accuracy.md)。
 
 数据使用 [LFW 图像与官方验证对的 Hugging Face 整理版](https://huggingface.co/datasets/marcelohaps/lfw)，
 图像来自 `original_non_aligned` 变体，13,233 张。实际 Parquet 获取地址为

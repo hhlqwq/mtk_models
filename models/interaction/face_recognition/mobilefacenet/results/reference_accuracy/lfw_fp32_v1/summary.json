@@ -1,0 +1,88 @@
+{
+  "status": "complete",
+  "backend": "onnxruntime_cuda_fp32",
+  "dataset": "lfw_original_non_aligned_6000_pairs_10_folds",
+  "unique_images": 7701,
+  "model_sha256": "5d046c1f6cc3b9cc69600f750d67e5ba6f1b6d115c47fa0c0fa7151cd605b7cb",
+  "pairs_sha256": "7f540157be42f57ab5bb1d7ef53b7b379e0331b4842cbd32f4d1b625243e54fe",
+  "metric_protocol": "lfw_10_fold_train_9_test_1_cosine_threshold",
+  "pairs": 6000,
+  "positive_pairs": 3000,
+  "negative_pairs": 3000,
+  "correct_pairs": 4257,
+  "verification_accuracy": 0.7095,
+  "fold_mean_accuracy": 0.7095,
+  "fold_std_accuracy": 0.02515562671760645,
+  "folds": [
+    {
+      "fold": 1,
+      "pairs": 600,
+      "correct": 411,
+      "accuracy": 0.685,
+      "threshold": 0.7024134695529938
+    },
+    {
+      "fold": 2,
+      "pairs": 600,
+      "correct": 430,
+      "accuracy": 0.7166666666666667,
+      "threshold": 0.6955262124538422
+    },
+    {
+      "fold": 3,
+      "pairs": 600,
+      "correct": 442,
+      "accuracy": 0.7366666666666667,
+      "threshold": 0.6955262124538422
+    },
+    {
+      "fold": 4,
+      "pairs": 600,
+      "correct": 425,
+      "accuracy": 0.7083333333333334,
+      "threshold": 0.6955262124538422
+    },
+    {
+      "fold": 5,
+      "pairs": 600,
+      "correct": 407,
+      "accuracy": 0.6783333333333333,
+      "threshold": 0.6931615173816681
+    },
+    {
+      "fold": 6,
+      "pairs": 600,
+      "correct": 445,
+      "accuracy": 0.7416666666666667,
+      "threshold": 0.6902760863304138
+    },
+    {
+      "fold": 7,
+      "pairs": 600,
+      "correct": 445,
+      "accuracy": 0.7416666666666667,
+      "threshold": 0.6955262124538422
+    },
+    {
+      "fold": 8,
+      "pairs": 600,
+      "correct": 435,
+      "accuracy": 0.725,
+      "threshold": 0.6913319826126099
+    },
+    {
+      "fold": 9,
+      "pairs": 600,
+      "correct": 407,
+      "accuracy": 0.6783333333333333,
+      "threshold": 0.6913319826126099
+    },
+    {
+      "fold": 10,
+      "pairs": 600,
+      "correct": 410,
+      "accuracy": 0.6833333333333333,
+      "threshold": 0.690332293510437
+    }
+  ]
+}

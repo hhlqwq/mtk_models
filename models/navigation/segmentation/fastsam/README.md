@@ -111,6 +111,8 @@ Whisper 条目的 `board_validated` 不在允许状态列表中失败; 本次未
 逐图端到端平均 142.97 ms/张。端到端计时包含逐图重新加载模型，
 不可当作常驻模型吞吐。用户手动保存并上传报告后，
 再以相同 `EVAL_RUN_ID` 执行 `CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
+同数据集与类别无关协议的 FP32 ONNX 参考 AP50:95 为 0.05210，
+两端后处理实现边界和结果见[精度报告](docs/accuracy.md)。
 测试和清理是两次独立执行，测试脚本不自动清理本次模型及报告。
 
 FastSAM 全量数据由用户放在 92 的
