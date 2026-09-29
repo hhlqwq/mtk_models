@@ -43,6 +43,7 @@ def main() -> None:
         "status": "complete",
         "backend": "onnxruntime_cuda_fp32",
         "dataset": "lfw_original_non_aligned_6000_pairs_10_folds",
+        "input_protocol": "RGB_ImageNet_normalize_full_image_resize_112x112_no_landmark_alignment",
         "unique_images": len(names),
         "model_sha256": sha256_file(args.model),
         "pairs_sha256": sha256_file(args.dataset_root / "pairs.csv"),

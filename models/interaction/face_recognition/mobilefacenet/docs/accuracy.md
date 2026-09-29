@@ -1,8 +1,8 @@
 # 精度报告
 
-状态：LFW 全量十折验证已完成；应用场景精度仍待评测。
+状态：输入协议纠正后，LFW 全量十折精度重测中；应用场景精度仍待评测。
 
-运行编号 `20260928_mobilefacenet_lfw_full_v1`，Genio 720 提取 7,701 张不同图片的特征，按 6,000 对、10 折协议验证，正确 4,270 对，准确率 `0.7116666667`，[板端报告](../results/full_accuracy/20260928_mobilefacenet_lfw_full_v1/summary.json)。同一批非对齐图、同一预处理及每折九折选阈值规则下，FP32 ONNX CUDA 优先参考端正确 4,257/6,000 对，准确率 `0.7095`，[参考报告](../results/reference_accuracy/lfw_fp32_v1/summary.json)。两端相差 `0.2167` 个百分点；该小幅聚合差异不证明量化带来精度提升。数据使用原始**非对齐**人脸并直接缩放到 112×112，不能与关键点对齐的 LFW 公布准确率直接比较。
+锁定上游提交的 [`lfw_eval.py`](https://github.com/foamliu/MobileFaceNet/blob/a687c71bea830e70d05fb3b38ddc7c68e1687e94/lfw_eval.py) 先做人脸五点对齐，将 BGR 转为 RGB，再使用 [`data_gen.py`](https://github.com/foamliu/MobileFaceNet/blob/a687c71bea830e70d05fb3b38ddc7c68e1687e94/data_gen.py) 的 ImageNet 均值及标准差归一化。旧运行 `20260928_mobilefacenet_lfw_full_v1` 使用 BGR、`(x - 127.5) / 128`，且对原始非对齐人脸直接缩放。因此旧 FP32 ONNX `0.7095`、板端 `0.7116666667` 只用于定位输入错误，不作为模型正式精度或与公开数值比较。原始[板端报告](../results/full_accuracy/20260928_mobilefacenet_lfw_full_v1/summary.json)和[参考报告](../results/reference_accuracy/lfw_fp32_v1/summary.json)保留供复核。
 
 数据源为 [LFW Hugging Face 整理版](https://huggingface.co/datasets/marcelohaps/lfw)，原始 Parquet 地址 `https://hf-mirror.com/api/datasets/marcelohaps/lfw/parquet/default/train/0.parquet`，SHA-256 `85ff8ac9530a935d2dc6f9e2933cfd72c79089b2f1c403c996b808ba5c07abcf`。验证对来自提交 `12a61458b56d0433d07269dc1d64368abf4f6b4d` 的 `pairs.csv`，SHA-256 `7f540157be42f57ab5bb1d7ef53b7b379e0331b4842cbd32f4d1b625243e54fe`。板端 `/root/hailong.he/datasets/lfw/` 共 13,233 张图、6,000 对。
 

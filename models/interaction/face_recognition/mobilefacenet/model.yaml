@@ -12,7 +12,8 @@ source:
 input:
   shape: [1, 3, 112, 112]
   layout: NCHW
-  color: BGR
+  color: RGB
+  normalization: imagenet_mean_std
 output:
   type: face_embedding
 metrics:

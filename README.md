@@ -46,7 +46,7 @@ ImageNet 或 COCO 原图的情况下直接展示"已经完成测试".公开样�
 | [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics | 完整交付 |
 | [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 完整交付 |
 | [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | 完整交付 |
-| [MobileFaceNet](models/interaction/face_recognition/mobilefacenet/README.md) | Interaction / Face recognition | 112×112 BGR 人脸 | foamliu/MobileFaceNet | 板端已验证；LFW 原始非对齐图十折全量测试已完成 |
+| [MobileFaceNet](models/interaction/face_recognition/mobilefacenet/README.md) | Interaction / Face recognition | 112×112 RGB 对齐人脸 | foamliu/MobileFaceNet | 板端已验证；输入协议修正后 LFW 十折全量精度重测中 |
 | [YOLO-World XL](models/perception/object_detection/yoloworld_xl/README.md) | Perception / Object detection | 640×640 RGB | AILab-CVC / MediaTek Model Zoo ONNX | 混合 Neuron/CPU EP 已验证；纯 NPU 正确性未通过，暂停后续全量测试 |
 | [Whisper-Tiny](models/audio/stt/whisper_tiny/README.md) | Audio / STT | 16 kHz 单声道、最长 30 秒 | OpenAI Whisper v20250625 | 板端已验证；LibriSpeech test-clean 全量 WER 已完成 |
 

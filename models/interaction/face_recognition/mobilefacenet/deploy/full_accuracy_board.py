@@ -60,7 +60,7 @@ def load_pairs(dataset_root: Path) -> list[dict[str, str]]:
 
 
 def make_input(image: Path, metadata: dict, destination: Path) -> None:
-    """按上游 BGR 协议将原始 LFW 图缩放并量化为 112x112。"""
+    """按上游 RGB 归一化协议缩放并量化原始 LFW 图。"""
     input_meta = metadata["input"]
     if (input_meta["shape"] != [1, 3, 112, 112] or
             input_meta["dtype"] != "int8"):
@@ -160,6 +160,8 @@ def evaluate(args: argparse.Namespace) -> None:
     """逐张执行硬件推理并计算全部验证对,支持安全续跑。"""
     rows = load_pairs(args.dataset_root)
     metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
+    if metadata.get("input_protocol") != "RGB_ImageNet_normalize_aligned_112x112":
+        raise ValueError("量化元数据未使用修正后的 RGB 输入协议。")
     source_manifest = args.dataset_root / "source_manifest.json"
     if not source_manifest.is_file() or not args.model.is_file():
         raise FileNotFoundError("缺少模型或固定数据集来源清单。")
@@ -224,7 +226,7 @@ def evaluate(args: argparse.Namespace) -> None:
         "model": "mobilefacenet",
         "run_id": args.run_id,
         "dataset": "LFW_original_non_aligned",
-        "input_protocol": "BGR_full_image_resize_112x112_no_landmark_alignment",
+        "input_protocol": "RGB_ImageNet_normalize_full_image_resize_112x112_no_landmark_alignment",
         "distinct_images": len(names),
         **verification,
         "cli_wall_mean_ms": float(np.mean(wall_times)),

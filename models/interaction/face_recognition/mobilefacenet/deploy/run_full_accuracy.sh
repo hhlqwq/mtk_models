@@ -12,7 +12,7 @@ readonly BOARD_ROOT="/root/hailong.he/open_models/mobilefacenet"
 readonly BOARD_MODEL_DIR="${BOARD_ROOT}/models/${RUN_ID}"
 readonly BOARD_RUN="${BOARD_ROOT}/eval/${RUN_ID}"
 readonly BOARD_DATASET="/root/hailong.he/datasets/lfw"
-readonly SMOKE_METADATA="${MODEL_ROOT}/examples/output/runs/20260924T020219Z/metadata.json"
+readonly INPUT_METADATA="${MODEL_ROOT}/examples/input/generated/metadata.json"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
 if [[ ! "${RUN_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
@@ -24,7 +24,19 @@ if [[ "${RESUME}" != "0" && "${RESUME}" != "1" ]]; then
     exit 2
 fi
 test -s "${MODEL_ROOT}/models/model_int8.dla"
-test -s "${SMOKE_METADATA}"
+test -s "${INPUT_METADATA}"
+python3 - "${INPUT_METADATA}" "${MODEL_ROOT}/models/model_int8.tflite" <<'CHECK_METADATA'
+import hashlib
+import json
+import sys
+
+metadata = json.load(open(sys.argv[1], encoding="utf-8"))
+digest = hashlib.sha256(open(sys.argv[2], "rb").read()).hexdigest()
+if metadata.get("input_protocol") != "RGB_ImageNet_normalize_aligned_112x112":
+    raise ValueError("请先按修正后的 RGB 协议重新生成量化元数据。")
+if metadata.get("tflite_sha256") != digest:
+    raise ValueError("量化元数据与当前 TFLite 不匹配。")
+CHECK_METADATA
 bash "${SCRIPT_DIR}/../../../../../tools/evaluation/check_board_clock.sh"
 
 echo "[1/3] 核对 92 的 LFW 十折数据与 Python 依赖."
@@ -47,7 +59,7 @@ if [[ "${RESUME}" == "0" ]]; then
         "${SCRIPT_DIR}/full_accuracy_board.py" \
         "${SCRIPT_DIR}/face_utils.py" \
         "${BOARD_HOST}:${BOARD_MODEL_DIR}/"
-    scp "${SSH_OPTIONS[@]}" "${SMOKE_METADATA}" \
+    scp "${SSH_OPTIONS[@]}" "${INPUT_METADATA}" \
         "${BOARD_HOST}:${BOARD_MODEL_DIR}/metadata.json"
 else
     echo "[2/3] 续跑,沿用本次已部署的模型和评测代码."

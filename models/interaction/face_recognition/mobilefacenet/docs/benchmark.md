@@ -1,6 +1,6 @@
 # 性能报告
 
-状态：全量逐图 CLI 耗时与常驻 C++ Neuron Runtime 调用延迟均已记录。
+状态：旧 DLA 的全量逐图 CLI 耗时与常驻 C++ Neuron Runtime 调用延迟已记录；修正输入协议后的 DLA 待重测。
 
 运行编号 `20260928_mobilefacenet_lfw_full_v1`，7,701 张不同图片逐图调用 `neuronrt`，CLI 墙钟平均 `36.2141417901 ms/图`。[完整报告](../results/full_accuracy/20260928_mobilefacenet_lfw_full_v1/summary.json)。该口径包含每图进程启动和模型加载，不是常驻实例的单次 NPU 推理耗时。
 

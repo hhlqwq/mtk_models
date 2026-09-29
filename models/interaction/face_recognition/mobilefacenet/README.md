@@ -5,7 +5,7 @@
 ```text
 模型: MobileFaceNet
 任务: 人脸特征提取与验证
-输入: 1×3×112×112 BGR
+输入: 1×3×112×112 RGB
 输出: 人脸特征向量
 设备: MediaTek Genio 720 EVK
 部署格式: INT8 TFLite → DLA
@@ -22,7 +22,7 @@
 | --- | --- | --- |
 | 固定第三方实现与权重 | 已锁定 | 源码提交和权重哈希见[来源和边界](#来源和边界) |
 | 自行导出 ONNX 与 INT8 DLA | 已完成 | 转换及板端冒烟见[流程](#转换和板端冒烟) |
-| LFW 非对齐图全量验证 | 已完成 | 6,000 对十折的[三端结果](docs/accuracy.md) |
+| LFW 全量验证 | 重测中 | 旧结果使用错误的颜色及归一化协议，见[精度报告](docs/accuracy.md) |
 | 常驻实例性能 | 已完成 | 预热后 100 次 Neuron Runtime 调用及峰值 RSS，见[性能报告](docs/benchmark.md) |
 | 应用层识别 | 待补 | 检测、对齐、现场识别与多帧决策尚未评估 |
 
@@ -34,10 +34,10 @@
 中断后使用相同 ID 加 `EVAL_RESUME=1` 续跑；原始输出、逐图检查点与报告保留在
 `/root/hailong.he/open_models/mobilefacenet/eval/<新ID>/`。
 
-`20260928_mobilefacenet_lfw_full_v1` 已完成 7,701 张不同图片的特征提取及全部
-6,000 对十折验证，正确 4,270 对，准确率 71.17%；每张图的 `neuronrt` 命令平均
-耗时 36.21 ms。详细十折阈值和哈希见[板端报告](results/full_accuracy/20260928_mobilefacenet_lfw_full_v1/summary.json)。
-同协议 FP32 ONNX 全量参考准确率为 70.95%；两端结果和非对齐输入限制见[精度报告](docs/accuracy.md)。
+`20260928_mobilefacenet_lfw_full_v1` 曾处理全部 6,000 对，但使用了与锁定上游
+验证代码不一致的 BGR 和 `(x - 127.5) / 128` 输入。旧结果及哈希留在
+[板端报告](results/full_accuracy/20260928_mobilefacenet_lfw_full_v1/summary.json) 供排查，
+不作为正式精度。正确协议的参考端和板端结果正在重测，见[精度报告](docs/accuracy.md)。
 
 数据使用 [LFW 图像与官方验证对的 Hugging Face 整理版](https://huggingface.co/datasets/marcelohaps/lfw)，
 图像来自 `original_non_aligned` 变体，13,233 张。实际 Parquet 获取地址为
@@ -63,7 +63,8 @@ SHA-256 为 `7f540157be42f57ab5bb1d7ef53b7b379e0331b4842cbd32f4d1b625243e54fe`�
 
 ## 输入输出
 
-上游训练代码从 OpenCV 读取 **BGR** 图片，将 112×112 图像按 `(像素值 - 127.5) / 128` 转为 NCHW FP32。
+锁定上游的 LFW 验证代码将 OpenCV 的 BGR 对齐结果转为 **RGB**，再按 ImageNet 均值
+`[0.485, 0.456, 0.406]` 和标准差 `[0.229, 0.224, 0.225]` 归一化为 NCHW FP32。
 输入必须是预先对齐的人脸，不能把整幅相机画面直接输入。本模型目标输出 128 维，
 实际输出维度以固定权重的 PyTorch 和 ONNX 检查为准。
 
