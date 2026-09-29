@@ -1,0 +1,53 @@
+INFO: Using yaml config file: scripts/config-yocto_qwen3vl-2b.yaml
+[llm_sdk][1] Using yaml config file: scripts/config-yocto_qwen3vl-2b.yaml
+INFO: Reading prompt from file: scripts/sample_prompt.txt
+[llm_sdk][1] Reading prompt from file: scripts/sample_prompt.txt
+INFO: Begin LLaVA model init...
+[llm_sdk][1] Begin LLaVA model init...
+Done Parsing YAML
+WARN: Failed to load libneuron_runtime.so, trying libneuronusdk_runtime.mtk.so...
+[neuron_runtime_library_init][2] Failed to load libneuron_runtime.so, trying libneuronusdk_runtime.mtk.so...
+INFO: Successfully loaded libneuronusdk_runtime.mtk.so!
+[neuron_runtime_library_init][1] Successfully loaded libneuronusdk_runtime.mtk.so!
+INFO: Loading CLIP DLA: <FileSource: /usr/share/llm/qwen3vl-2b/encoder/Qwen3VL_2B_FP_asym4W_sym16A_rotate_overture_legacy_hessian_0.dla>
+[llm_sdk][1] Loading CLIP DLA: <FileSource: /usr/share/llm/qwen3vl-2b/encoder/Qwen3VL_2B_FP_asym4W_sym16A_rotate_overture_legacy_hessian_0.dla>
+INFO: Done LLaVA init. (Time taken: 0.556812s)
+[llm_sdk][1] Done LLaVA init. (Time taken: 0.556812s)
+INFO: Initialized HuggingFace tokenizer.
+[llm_sdk][1] Initialized HuggingFace tokenizer.
+INFO: Vocab size: 151669
+[llm_sdk][1] Vocab size: 151669
+=========== Processing the 0-th input. ===========
+INFO: Preformatted prompt with 'Qwen3VLNoInput'
+[llm_sdk][1] Preformatted prompt with 'Qwen3VLNoInput'
+INFO: Rotary embedding. (Time taken: 0.00985331s)
+[llm_sdk][1] Rotary embedding. (Time taken: 0.00985331s)
+INFO: Done CLIP dla inference in: 0.49914s
+[llm_sdk][1] Done CLIP dla inference in: 0.49914s
+INFO: Done analyzing prompt (Total 159 tokens) in 0.793431s (322.649 tok/s)
+[llm_sdk][1] Done analyzing prompt (Total 159 tokens) in 0.793431s (322.649 tok/s)
+INFO: Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+INFO: Done model hot swapping. (Time taken: 3.27219s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 3.27219s)
+
+Response [Max Length = 128]:
+这是一张充满温情和人与宠物间情感的图片。画面中，一位女士和一只狗（看起来像一只拉布拉多犬）在海边的沙滩上，她们都坐在沙地上，共同面对着海面。女士穿着一件格子衬衫，而狗则穿着一件蓝色的背带。她们的双手都伸向对方，似乎在进行一个互动，而她们的视线都朝向对方。背景是海面和天空，天空是橙色的，而海面是白色的。整个画面充满了温暖和宁静的氛围。</eos></end>
+
+
+[Full Prompt]
+<|im_start|>user
+<|vision_start|><image><|vision_end|>请描述下这张图片<|im_end|>
+<|im_start|>assistant
+
+
+[Full Response]
+这是一张充满温情和人与宠物间情感的图片。画面中，一位女士和一只狗（看起来像一只拉布拉多犬）在海边的沙滩上，她们都坐在沙地上，共同面对着海面。女士穿着一件格子衬衫，而狗则穿着一件蓝色的背带。她们的双手都伸向对方，似乎在进行一个互动，而她们的视线都朝向对方。背景是海面和天空，天空是橙色的，而海面是白色的。整个画面充满了温暖和宁静的氛围。
+
+[Latency]
+      Prompt Mode: 322.649 tok/s
+  Generative Mode: 13.5249 tok/s
+
+[Average Performance among the given 1 prompts]
+      Prompt Mode: 322.649 tok/s
+  Generative Mode: 13.5249 tok/s
