@@ -34,7 +34,12 @@ def main() -> None:
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--work-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--protocol", type=Path,
+                        default=Path(__file__).with_name("accuracy_protocol.json"))
     args = parser.parse_args()
+    protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
+    if protocol["input_size"] != 640 or protocol["images"] != 5000:
+        raise ValueError("FastSAM 参考端需要 640 输入与完整 5,000 图协议。")
     if args.output_dir.exists():
         raise FileExistsError(args.output_dir)
     images = sorted(args.images.glob("*.jpg"))
@@ -56,7 +61,9 @@ def main() -> None:
             raise ValueError(f"图片无法解码: {image_path}。")
         tensor, geometry = preprocess(image)
         outputs = session.run(None, {input_name: tensor})
-        _, scores, masks = postprocess(outputs, geometry, 0.4, 0.9, 100)
+        _, scores, masks = postprocess(
+            outputs, geometry, protocol["confidence"], protocol["nms_iou"],
+            protocol["max_detections"])
         for score, mask in zip(scores, masks):
             encoded = mask_utils.encode(np.asfortranarray(mask.astype(np.uint8)))
             encoded["counts"] = encoded["counts"].decode("ascii")
@@ -79,6 +86,7 @@ def main() -> None:
     (args.output_dir / "cocoeval.log").write_text(log.getvalue(), encoding="utf-8")
     report = {"status": "complete", "backend": "onnxruntime_fp32_cuda_preferred",
               "dataset": "coco_val2017_class_agnostic_segm",
+              "protocol": protocol,
               "images": len(images), "predictions": len(predictions),
               "ap50_95": float(evaluator.stats[0]),
               "ap50": float(evaluator.stats[1]),

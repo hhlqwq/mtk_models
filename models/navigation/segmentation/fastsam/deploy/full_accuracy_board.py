@@ -25,6 +25,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--annotations", type=Path, required=True)
     parser.add_argument("--work-dir", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
+    parser.add_argument("--protocol", type=Path,
+                        default=Path(__file__).with_name("accuracy_protocol.json"))
     return parser.parse_args()
 
 
@@ -69,6 +71,12 @@ def encode_one(args: argparse.Namespace) -> None:
         encoding="utf-8"))
     if result.get("backend") != "cpp_neuron_runtime_hw":
         raise ValueError(f"不是硬件推理结果: {args.image.name}.")
+    protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
+    for field, expected in (("confidence", protocol["confidence"]),
+                            ("nms_iou", protocol["nms_iou"]),
+                            ("max_detections", protocol["max_detections"])):
+        if result.get(field) != expected:
+            raise ValueError(f"板端 {field} 与固定评测协议不一致: {args.image.name}.")
     image_predictions = []
     for detection in result["detections"]:
         mask_path = image_dir / detection["mask"]
@@ -86,6 +94,7 @@ def encode_one(args: argparse.Namespace) -> None:
         })
     save_checkpoint(checkpoint, {
         "image_id": image_id,
+        "protocol": protocol,
         "npu_ms": float(result["npu_ms"]),
         "end_to_end_ms": float(result["end_to_end_ms"]),
         "predictions": image_predictions,
@@ -94,8 +103,9 @@ def encode_one(args: argparse.Namespace) -> None:
 
 def evaluate(args: argparse.Namespace) -> None:
     """核对完整 C++ 预测并计算 COCO segm AP."""
+    protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
     images = sorted(args.images.glob("*.jpg"))
-    if len(images) != 5000:
+    if len(images) != protocol["images"]:
         raise ValueError(f"COCO val2017 需要 5000 张图片,实际 {len(images)}.")
     ground_truth = make_class_agnostic_ground_truth(args.annotations)
     expected = set(ground_truth.getImgIds())
@@ -121,6 +131,8 @@ def evaluate(args: argparse.Namespace) -> None:
                 encoding="utf-8"))
             if record["image_id"] != int(image.stem):
                 raise ValueError(f"检查点图片 ID 不一致: {image.stem}")
+            if record.get("protocol") != protocol:
+                raise ValueError(f"检查点评测协议不一致: {image.stem}")
             npu_times.append(record["npu_ms"])
             end_to_end_times.append(record["end_to_end_ms"])
             completed.write(f"{record['image_id']}\n")
@@ -147,6 +159,7 @@ def evaluate(args: argparse.Namespace) -> None:
         "run_id": args.run_id,
         "dataset": "coco_val2017_instances",
         "metric_protocol": "class_agnostic_segm_ap_all_gt_categories_merged",
+        "protocol": protocol,
         "images": 5000,
         "prediction_instances": prediction_count,
         "AP_50_95": float(evaluator.stats[0]),

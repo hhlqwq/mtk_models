@@ -1,10 +1,27 @@
 # 精度与一致性
 
-当前状态: 已完成同图 PyTorch 与板端 C++ NPU 冒烟比较，以及 COCO val2017 全量类别无关实例分割评测。
+当前状态：已完成同图 PyTorch 与板端 C++ NPU 冒烟比较；COCO val2017 全量精度正在按统一协议复评。
 
 ## COCO val2017 全量精度
 
-运行编号 `20260928_fastsam_full_v1`，Genio 720 板端处理 5,000/5,000 张图片，报告状态为 `complete`。将标注中的 80 个类别合并为 `object`，类别无关 segm AP50:95 为 `0.0611437061`，AP50 为 `0.1056471507`，[板端报告](../results/full_accuracy/20260928_fastsam_full_v1/summary.json)。同 5,000 张、同类别无关 GT、置信度 0.4、NMS IoU 0.9、最多 100 个实例的 FP32 ONNX 参考端 AP50:95 为 `0.0520981207`，AP50 为 `0.0925646343`，[参考报告](../results/reference_accuracy/coco_fp32_v1/summary.json)。两端的掩码后处理分别由板端 C++ 和参考端 Python 实现，聚合 AP 的差异不能单独解释为量化精度提升；需逐图核查预处理、掩码还原和候选排序。该类别无关口径不能与标准 80 类 COCO segm AP 直接比较。
+旧运行 `20260928_fastsam_full_v1` 在 5,000/5,000 张图片上得到板端类别无关
+segm AP50:95 `0.0611437061`，[板端原始报告](../results/full_accuracy/20260928_fastsam_full_v1/summary.json)。
+旧 FP32 ONNX 参考端 AP50:95 为 `0.0520981207`，[参考端原始报告](../results/reference_accuracy/coco_fp32_v1/summary.json)。
+核查评测入口发现：板端使用置信度阈值 **0.001**，参考端使用 **0.4**；旧文档曾误写两端都是 0.4。
+因此这两个数字不能作为同协议的精度差值，也不能说明量化提升。
+
+对板端已保存的预测按 0.4 筛选，不重新运行模型，类别无关 segm AP50:95
+仍约为 **0.060**，说明阈值不一致并非低 AP 的唯一原因。旧板端预测共
+499,974 个实例，其中 263,571 个得分高于 0.4；旧参考端预测共 236,937 个。
+目前通过单张 COCO 图片核对，原始 PyTorch 与 FP32 ONNX 的前 10 个实例
+掩码 IoU 均大于 0.98。这仅验证该图片，不代替全量原始框架基线。
+
+新协议固定在 [`deploy/accuracy_protocol.json`](../deploy/accuracy_protocol.json)：
+640×640 方形输入、置信度 0.001、NMS IoU 0.9、每图最多 100 个实例，
+COCO val2017 的 80 类标注合并为一个 `object` 类。下一步在同一数据集上
+运行原始 PyTorch、FP32 ONNX，并与已保留的板端 0.001 预测核对；
+分别报告三端 AP、AP50、实例数及逐图差异。该类别无关口径不能与
+标准 80 类 COCO segm AP、官方 FastSAM-x 的 1024 输入结果直接比较。
 
 数据位于板端 `/root/hailong.he/datasets/coco/val2017/`，共 5,000 张；标注文件 `annotations/instances_val2017.json` 的 SHA-256 为 `e8c7f7908f1d7278341fae127d0da654f102f11bd7b21d8aeefa635b8c810b6f`。数据从 89 的 `/data/users/hailong.he/datasets/coco/` 复制；原始数据来源见 [COCO 2017 下载页](https://cocodataset.org/#download)。校准图片与正式评价图片的使用边界仍需以运行清单核对。
 

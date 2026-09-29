@@ -14,7 +14,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | --- | ---: | --- |
 | 已进入实现注册表 | 8 / 46（17.4%） | 8 个注册实现相对于 46 个目标候选的规模比；存在模型变体映射和额外 Model Zoo 模型，不等同于严格完成率 |
 | Genio 720 完整交付 | 3 / 8（37.5%） | 精度、性能、Demo 和文档均已闭环 |
-| Genio 720 已注册模型的板端运行证据 | 8 / 8（100%） | Depth Anything V2 Small、FastSAM-s、MobileFaceNet、YOLO-World XL 和 Whisper-Tiny 已完成各自数据集的全量评测；注册状态仍包括 `complete`、`board_verified` 和 Whisper 的历史非规范值 `board_validated` |
+| Genio 720 已注册模型的板端运行证据 | 8 / 8（100%） | FastSAM-s 已保存 COCO 全量板端输出，但参考端和板端旧协议不一致，精度复评中；注册状态仍包括 `complete`、`board_verified` 和 Whisper 的历史非规范值 `board_validated` |
 | Genio 5100 已开始 | 0 / 8（0.0%） | 当前所有注册模型均为 `not_started` |
 
 ### Genio 720 状态分布
@@ -30,7 +30,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | 模型 | 机器人能力 | 开源实现来源 | Genio 720 | Genio 5100 | Inference Time | 评测数据集 | Reference Metric | On-device Metric | 当前缺口与下一步 |
 | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- |
 | [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | 单目相对深度与空间结构 | DepthAnything/Depth-Anything-V2 | 🔵 `board_verified` | ⚪ `not_started` | [CLI 墙钟均值 194.70 ms/图](navigation/single_camera_depth/depth_anything_v2_small/docs/benchmark.md) | DA-2K，1,033 图、2,068 点对 | [FP32 ONNX DA-2K 点对准确率 94.83%](navigation/single_camera_depth/depth_anything_v2_small/docs/accuracy.md) | [NPU DA-2K 点对准确率 85.78%](navigation/single_camera_depth/depth_anything_v2_small/docs/accuracy.md) | 同协议全量对照已完成；板端低 9.04 个百分点，需分析量化误差与常驻实例性能 |
-| [FastSAM-s](navigation/segmentation/fastsam/README.md) | 目标分割、交互式区域选择 | CASIA-LMC-Lab/FastSAM | 🔵 `board_verified` | ⚪ `not_started` | [NPU 调用均值 14.88 ms/图](navigation/segmentation/fastsam/docs/benchmark.md) | COCO val2017，5,000 图；类别无关分割 | [FP32 ONNX 类别无关 segm AP50:95 0.05210](navigation/segmentation/fastsam/docs/accuracy.md) | [NPU 类别无关 segm AP50:95 0.06114](navigation/segmentation/fastsam/docs/accuracy.md) | COCO val2017 5,000 图全量完成；需逐图核查两端后处理差异及常驻实例性能 |
+| [FastSAM-s](navigation/segmentation/fastsam/README.md) | 目标分割、交互式区域选择 | CASIA-LMC-Lab/FastSAM | 🔵 `board_verified` | ⚪ `not_started` | [NPU 调用均值 14.88 ms/图](navigation/segmentation/fastsam/docs/benchmark.md) | COCO val2017，5,000 图；类别无关分割 | [旧阈值 0.4，复评中](navigation/segmentation/fastsam/docs/accuracy.md) | [旧阈值 0.001，复评中](navigation/segmentation/fastsam/docs/accuracy.md) | 旧版两端阈值不一致；统一协议并补原始 PyTorch 基线后重报 AP |
 | [YOLOv5s](perception/object_detection/yolov5s/README.md) | 通用目标检测 | Ultralytics/YOLOv5 | 🟢 `complete` | ⚪ `not_started` | [9.629 ms/图](perception/object_detection/yolov5s/docs/benchmark.md) | COCO val2017，5,000 图；bbox | [FP32 ONNX mAP@0.5:0.95 0.3709](perception/object_detection/yolov5s/docs/accuracy.md) | [INT8 mAP@0.5:0.95 0.3586](perception/object_detection/yolov5s/docs/accuracy.md) | 作为 Genio 5100 首个迁移基线，复用已完成的全链路验收协议 |
 | [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | 图像分类 | PyTorch Vision | 🟢 `complete` | ⚪ `not_started` | [51.7129 ms/图](perception/image_classification/vit_base_patch16_224/docs/benchmark.md) | ILSVRC2012 val，50,000 图 | [FP32 ONNX Top-1 80.64%](perception/image_classification/vit_base_patch16_224/docs/accuracy.md) | [INT8 Top-1 79.38%](perception/image_classification/vit_base_patch16_224/docs/accuracy.md) | Genio 720 已闭环；后续按平台需求迁移 Genio 5100 |
 | [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | 人体姿态和人机交互 | OpenMMLab/MMPose | 🟢 `complete` | ⚪ `not_started` | [3.8527 ms/人体框](interaction/pose_detection/rtmpose_body2d/docs/benchmark.md) | COCO-WholeBody V1.0 val，5,000 图、104,125 人体框 | [FP32 ONNX WholeBody AP 0.5703](interaction/pose_detection/rtmpose_body2d/docs/accuracy.md) | [INT8 WholeBody AP 0.5324](interaction/pose_detection/rtmpose_body2d/docs/accuracy.md) | 单框耗时不含上游人体检测器；后续可组合动作识别 |
@@ -43,7 +43,10 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 为 Runtime 调用耗时；YOLO-World XL 为 Neuron/CPU 混合 EP 的 `session.Run`；Depth Anything
 与 MobileFaceNet 为逐图 `neuronrt` CLI 墙钟，包含进程启动与模型加载。不同协议的耗时不能直接排名。
 
-`Reference Metric` 只填写与对应板端结果使用相同数据集和协议的浮点模型基线。上表五项新补的参考端均已全量运行，机器可读结果位于各模型 `results/reference_accuracy/`；Whisper 使用 OpenAI CUDA FP16 计算，其余使用 FP32 ONNX CUDA 优先执行。
+`Reference Metric` 只填写与对应板端结果使用相同数据集和协议的浮点模型基线。
+FastSAM 旧参考端与板端置信度阈值不同，复评完成前不展示两端 AP 数字；其余模型的
+机器可读结果位于各模型 `results/reference_accuracy/`。Whisper 使用 OpenAI CUDA
+FP16 计算，其余已完成参考端使用 FP32 ONNX CUDA 优先执行。
 `On-device Metric` 为真实板端全量指标。YOLOv5s 使用 COCO val2017 5,000 图，ViT 使用
 ImageNet val 50,000 图，RTMPose 使用 COCO-WholeBody；Whisper-Tiny 本轮正式 WER 仅使用
 LibriSpeech `test-clean` 2,620 条，旧 AISHELL-1 CER 另见其模型精度文档。FastSAM 的类别无关

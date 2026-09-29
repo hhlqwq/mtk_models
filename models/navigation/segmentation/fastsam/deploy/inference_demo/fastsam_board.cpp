@@ -511,7 +511,10 @@ void SaveResults(const Options& options, const cv::Mat& image,
   std::ofstream result(options.output_dir / "results.json");
   if (!result) throw std::runtime_error("无法写入结果 JSON.");
   result << std::fixed << std::setprecision(6)
-         << "{\"backend\":\"cpp_neuron_runtime_hw\",\"instance_count_before_prompt\":"
+         << "{\"backend\":\"cpp_neuron_runtime_hw\",\"confidence\":"
+         << options.confidence << ",\"nms_iou\":" << options.iou
+         << ",\"max_detections\":" << options.max_detections
+         << ",\"instance_count_before_prompt\":"
          << items.size() << ",\"selected_count\":" << selected.size()
          << ",\"preprocess_ms\":" << preprocess_ms
          << ",\"model_load_ms\":" << model_load_ms << ",\"npu_ms\":" << npu_ms

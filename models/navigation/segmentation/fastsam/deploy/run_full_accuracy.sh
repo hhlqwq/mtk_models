@@ -14,6 +14,10 @@ readonly BOARD_MODEL_ROOT="${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_m
 readonly BOARD_RUN="${BOARD_MODEL_ROOT}/eval/${RUN_ID}"
 readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models/${RUN_ID}"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+read -r CONFIDENCE NMS_IOU MAX_DETECTIONS < <(
+    python3 -c 'import json,sys; p=json.load(open(sys.argv[1])); print(p["confidence"],p["nms_iou"],p["max_detections"])' \
+        "${SCRIPT_DIR}/accuracy_protocol.json")
+readonly CONFIDENCE NMS_IOU MAX_DETECTIONS
 
 if [[ ! "${RUN_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
     echo "[ERROR] EVAL_RUN_ID 非法." >&2
@@ -62,19 +66,25 @@ if [[ "${RESUME}" == "0" ]]; then
         "${BOARD_HOST}:${BOARD_MODEL_DIR}/"
     scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/full_accuracy_board.py" \
         "${BOARD_HOST}:${BOARD_RUN}/tools/"
+    scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/accuracy_protocol.json" \
+        "${BOARD_HOST}:${BOARD_RUN}/tools/"
 else
     echo "[2-3/5] 续跑,沿用该 run 已部署的模型和评测代码."
 fi
 
 echo "[4/5] 在 92 完成 5000 张类别无关实例分割 AP 与耗时统计."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" bash -s -- \
-    "${BOARD_RUN}" "${BOARD_MODEL_DIR}" "${BOARD_DATASET}" "${RUN_ID}" "${RESUME}" <<'BOARD_EVAL'
+    "${BOARD_RUN}" "${BOARD_MODEL_DIR}" "${BOARD_DATASET}" "${RUN_ID}" "${RESUME}" \
+    "${CONFIDENCE}" "${NMS_IOU}" "${MAX_DETECTIONS}" <<'BOARD_EVAL'
 set -euo pipefail
 readonly run_dir="$1"
 readonly model_dir="$2"
 readonly dataset="$3"
 readonly run_id="$4"
 readonly resume="$5"
+readonly confidence="$6"
+readonly nms_iou="$7"
+readonly max_detections="$8"
 mkdir -p "${run_dir}/raw" "${run_dir}/predictions_by_image" "${run_dir}/report"
 count=0
 while IFS= read -r -d '' image; do
@@ -95,7 +105,8 @@ while IFS= read -r -d '' image; do
             --model "${model_dir}/model_int8.dla" \
             --config "${model_dir}/runtime_config.csv" \
             --image "${image}" --output-dir "${image_dir}" \
-            --confidence 0.001 --iou 0.9 --max-det 100
+            --confidence "${confidence}" --iou "${nms_iou}" \
+            --max-det "${max_detections}"
         python3 "${run_dir}/tools/full_accuracy_board.py" \
             --mode encode-one --image "${image}" \
             --images "${dataset}/images" \
@@ -137,6 +148,7 @@ sha256sum "${model_dir}/model_int8.dla" \
     "${model_dir}/runtime_config.csv" \
     "${model_dir}/fastsam_board" \
     "${run_dir}/tools/full_accuracy_board.py" \
+    "${run_dir}/tools/accuracy_protocol.json" \
     "${run_dir}/report/dataset_images_sha256.txt" \
     "${dataset}/annotations/instances_val2017.json" \
     > "${run_dir}/report/run_inputs_sha256.txt"
