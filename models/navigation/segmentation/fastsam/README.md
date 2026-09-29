@@ -9,13 +9,13 @@
 输出: 检测头与掩码原型
 设备: MediaTek Genio 720 EVK
 部署格式: INT8 TFLite → DLA
-当前状态: 板端已验证；三端全量精度已核对，稳定性能待补
+当前状态: 板端已验证；三端全量精度与常驻性能已测
 ```
 
 官方 FastSAM-s 权重已完成原始前向、ONNX 导出、16 张校准图 INT8 转换、
 Genio 720 DLA 编译和 C++ 硬件推理。旧版 COCO 全量评测的参考端与板端置信度
 阈值不一致；现已补齐同协议的 PyTorch、ONNX 参考端，并与旧板端输出核对。
-三端 AP 和剩余差异见[精度报告](docs/accuracy.md)。预热后常驻实例的稳定性能仍待测。
+三端指标和剩余差异见[精度报告](docs/accuracy.md)，常驻实例性能见[性能报告](docs/benchmark.md)。
 
 ## 交付状态
 
@@ -24,7 +24,7 @@ Genio 720 DLA 编译和 C++ 硬件推理。旧版 COCO 全量评测的参考端�
 | 官方权重与原始框架 | 已锁定 | `FastSAM-s.pt` 及源码、权重哈希见下文 |
 | 自行导出 ONNX | 已完成 | FP32 产物、原始头数值检查见 `models/` |
 | MTK INT8 TFLite / DLA | 已完成 | 16 张校准图版本；产物哈希见模型清单 |
-| 板端 Demo 与耗时 | 已完成 | C++ 硬件推理与计时见[板端记录](docs/board_smoke_20260923.md) |
+| 板端 Demo 与耗时 | 已完成 | C++ 硬件推理及常驻计时见[性能报告](docs/benchmark.md) |
 | COCO val2017 全量精度 | 已完成 | 三端同协议结果见[精度报告](docs/accuracy.md)；逐图差异仍待归因 |
 
 采用 FastSAM-s、batch=1、640×640.模型生成类别无关实例掩码,

@@ -1,6 +1,6 @@
 # Genio 720 性能
 
-COCO val2017 全量评测已记录逐图耗时；预热后常驻 Runtime 的稳定性能仍待测。
+COCO val2017 全量评测已记录逐图耗时；预热后常驻 Runtime 的稳定性能也已测得。
 
 运行编号 `20260928_fastsam_full_v1` 处理 5,000 张图片，`NeuronRuntime_inference` 平均 `14.8848309588 ms/张`，逐图端到端平均 `142.9671195278 ms/张`。[完整报告](../results/full_accuracy/20260928_fastsam_full_v1/summary.json)。shell 对每张图片重新启动 C++ 程序并加载模型，端到端数值包含该开销，不能换算成常驻实例吞吐量。
 
@@ -14,9 +14,13 @@ C++ Demo 单独记录:
 - `peak_rss_kib`: C++ 进程峰值 RSS.
 - `smoke.log`: 板端 C++ 单次运行日志.
 
-先前单次冒烟没有预热后重复推理统计.`npu_ms` 包含 API 调用边界,
-不能直接宣称是纯 MDLA 核内延迟.正式基准需在同一 Runtime 实例中预热后重复测量.
-正式发布需同时记录板端系统、Runtime 版本、模型哈希、电源/性能档位与统计方法.
+运行编号 `20260929_board_persistent_v1` 在 92 使用与全量精度相同的 DLA 和真实量化输入 `input_int8.bin`，常驻 C++ Neuron Runtime 预热 10 次、正式连续推理 100 次。[机器可读报告](../results/benchmark/20260929_board_persistent_v1/summary.json)。
+
+| 计时范围 | Mean | P50 | P95 | 峰值 RSS |
+| --- | ---: | ---: | ---: | ---: |
+| `NeuronRuntime_inference` API 调用 | 14.2735 ms | 14.2641 ms | 14.3713 ms | 20,260 KiB |
+
+DLA SHA-256 为 `d2dc50f4ed65bc4faf2cd929ef262ed102ed610036fee0202ba2b675ecfb98e7`，输入 SHA-256 为 `e48b2c311f81639a4d0ae5c4a10e8544aeacf585286edc1a834b7265c3e157db`。程序在 89 使用 `bash deploy/build_board_benchmark.sh` 交叉编译，在 92 使用 `deploy/benchmark_board.cpp` 的参数 `--model`、`--input`、`--report`、`--warmup 10 --repeats 100` 运行。计时不含预处理、模型加载、CPU 掩码后处理和结果写入；`npu_ms` 包含 Runtime API 边界，不能直接称作 MDLA 核内纯计算时间。电源与性能档位未单独锁定，跨设备比较仍需控制这些条件。
 
 本次单次结果见 [板端冒烟报告](board_smoke_20260923.md):
 `NeuronRuntime_inference` 调用 15.909384 ms,端到端 243.595616 ms,
