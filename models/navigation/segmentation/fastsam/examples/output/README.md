@@ -4,5 +4,8 @@
 包括原始输出、逐实例 PNG 掩码、overlay.jpg、results.json、比较报告和运行日志.
 2026-09-23 C++ 板端冒烟结果位于 `runs/20260923_cpp_fastsam_smoke_v2`;
 此目录在 89 和本机保留,不进入普通 Git.
-精选叠加图位于 `public/fastsam_s_sample_1_overlay.jpg`,原始图片复用
-YOLOv5s 公共样例目录中的 CC0 图片 `000000000001.jpg`.
+`public/` 还包含与 YOLOv5s 一样平铺的三张板端叠加图
+`sample_1_segmentation.jpg` 至 `sample_3_segmentation.jpg`，以及同名 JSON。
+三张输入复用 YOLOv5s 公共样例目录中的 CC0 图片；JSON 内保存分数、框、
+掩码 COCO RLE 和逐图耗时。三图仅用于输出展示，不替代完整 COCO AP。
+旧精选叠加图 `public/fastsam_s_sample_1_overlay.jpg` 作为历史冒烟示例保留。

@@ -31,6 +31,23 @@ Genio 720 DLA 编译和 C++ 硬件推理。旧版 COCO 全量评测的参考端�
 支持全图输出与轻量点/框提示,暂不接入文本提示所需的 CLIP.
 G5100 保持未开始状态.
 
+## 公开三图示例
+
+复用 [YOLOv5s 的三张 CC0 公共输入](../../perception/object_detection/yolov5s/examples/input/public/ASSET_LICENSE.md)，
+在 Genio 720 上运行 C++、DLA 与 Neuron Runtime。Demo 使用置信度 0.4、NMS IoU 0.9，
+每张最多展示 30 个实例；该展示参数与正式 AP 评测不同，图片不代替 COCO 全量精度。
+`examples/output/public/` 平铺保存三张叠加图及对应 JSON；JSON 内含每个掩码的 COCO RLE。
+
+| 典型输入 | 分割实例数 | 板端结果 |
+| --- | ---: | --- |
+| 城市路口 | 30 | [![城市路口分割](examples/output/public/sample_1_segmentation.jpg)](examples/output/public/sample_1_segmentation.jpg) |
+| 室内餐厅 | 30 | [![室内餐厅分割](examples/output/public/sample_2_segmentation.jpg)](examples/output/public/sample_2_segmentation.jpg) |
+| 公园人物 | 30 | [![公园人物分割](examples/output/public/sample_3_segmentation.jpg)](examples/output/public/sample_3_segmentation.jpg) |
+
+机器可读结果分别见 [图 1](examples/output/public/sample_1_segmentation.json)、
+[图 2](examples/output/public/sample_2_segmentation.json)和
+[图 3](examples/output/public/sample_3_segmentation.json)。
+
 ## 官方资源准备
 
 - 模型作者: [CASIA-LMC-Lab/FastSAM](https://github.com/CASIA-LMC-Lab/FastSAM).
