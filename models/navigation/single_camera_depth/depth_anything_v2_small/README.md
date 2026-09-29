@@ -9,7 +9,7 @@
 输出: 518×518 相对深度图
 设备: MediaTek Genio 720 EVK
 部署格式: INT8 TFLite → DLA
-当前状态: 板端已验证；稳定性能与应用层精度待补
+当前状态: 板端已验证；常驻性能已测，应用层精度待补
 ```
 
 本目录用于 Genio 720 的单目相对深度验证。官方 Small 权重已完成 518×518 转换、MDLA 5.3 无桥接编译、板端硬件冒烟和 DA-2K 全量点对评测。输出是**相对深度**，不能直接当作米制距离或安全避障阈值。
@@ -22,7 +22,7 @@
 | MTK INT8 TFLite / DLA | 已完成 | 518×518 转换、MDLA 5.3 无桥接编译 |
 | 板端 Demo | 已完成 | 两张图片与 PyTorch 同图对照见[冒烟报告](docs/smoke.md) |
 | DA-2K 全量点对精度 | 已完成 | [参考端与板端结果](docs/accuracy.md) |
-| 常驻实例性能 | 待补 | 当前仅有逐图 CLI 墙钟耗时，见[性能报告](docs/benchmark.md) |
+| 常驻实例性能 | 已完成 | 预热后 100 次 Neuron Runtime 调用及峰值 RSS，见[性能报告](docs/benchmark.md) |
 
 ## DA-2K 正式精度入口
 
@@ -89,6 +89,6 @@ bash deploy/deploy_board.sh
 
 ## 本次结果
 
-运行编号 `20260924T092605Z`。两张图片的板端相对深度图分别与同输入 PyTorch 参考达到 0.995495、0.990525 的逐像素 Pearson 相关系数；重复输入的原始输出逐字节一致。板端绝对输出幅值与 PyTorch 有差别；全量精度见[精度报告](docs/accuracy.md)，稳定延迟和 Genio 5100 仍待评估。冒烟证据见 [smoke.md](docs/smoke.md)，全量耗时见[性能报告](docs/benchmark.md)。
+运行编号 `20260924T092605Z`。两张图片的板端相对深度图分别与同输入 PyTorch 参考达到 0.995495、0.990525 的逐像素 Pearson 相关系数；重复输入的原始输出逐字节一致。板端绝对输出幅值与 PyTorch 有差别；全量精度见[精度报告](docs/accuracy.md)，常驻调用耗时见[性能报告](docs/benchmark.md)。冒烟证据见 [smoke.md](docs/smoke.md)。Genio 5100 仍待评估。
 
 ![板端相对深度预览](examples/output/public/depth_anything_v2_small_sample_1.png)

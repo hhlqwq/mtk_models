@@ -1,0 +1,12 @@
+{
+  "backend": "cpp_neuron_runtime_hw",
+  "timing_scope": "NeuronRuntime_inference API call",
+  "warmup": 10,
+  "repeats": 100,
+  "mean_ms": 133.902,
+  "p50_ms": 133.843,
+  "p95_ms": 134.417,
+  "min_ms": 133.665,
+  "max_ms": 134.607,
+  "peak_rss_kib": 33444
+}
