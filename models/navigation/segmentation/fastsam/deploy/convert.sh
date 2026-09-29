@@ -4,17 +4,20 @@ set -euo pipefail
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly WEIGHTS="${FASTSAM_WEIGHTS:-${MODEL_ROOT}/original/FastSAM-s.pt}"
+readonly EVALUATION_HASHES="${FASTSAM_EVALUATION_HASHES:-${MODEL_ROOT}/results/full_accuracy/20260928_fastsam_full_v1/dataset_images_sha256.txt}"
 : "${FASTSAM_WEIGHTS_SHA256:?请设置已核实的官方权重 SHA-256}"
 : "${FASTSAM_IMAGE:?请设置现有样例图片绝对路径}"
 : "${FASTSAM_CALIBRATION_DIR:?请设置校准图片目录}"
 test -f "${WEIGHTS}"
 test -f "${FASTSAM_IMAGE}"
 test -d "${FASTSAM_CALIBRATION_DIR}"
+test -s "${EVALUATION_HASHES}"
 python "${SCRIPT_DIR}/export_model.py" --weights "${WEIGHTS}" \
     --weights-sha256 "${FASTSAM_WEIGHTS_SHA256}" --image "${FASTSAM_IMAGE}" \
     --output-dir "${MODEL_ROOT}/models"
 python "${SCRIPT_DIR}/convert_int8.py" --onnx "${MODEL_ROOT}/models/model_fp32.onnx" \
     --calibration-dir "${FASTSAM_CALIBRATION_DIR}" --samples "${FASTSAM_CALIBRATION_SAMPLES:-100}" \
+    --evaluation-hashes "${EVALUATION_HASHES}" \
     --output "${MODEL_ROOT}/models/model_int8.tflite"
 sha256sum "${WEIGHTS}" "${MODEL_ROOT}/models/model_fp32.onnx" \
     "${MODEL_ROOT}/models/model_int8.tflite" > "${MODEL_ROOT}/models/SHA256SUMS"

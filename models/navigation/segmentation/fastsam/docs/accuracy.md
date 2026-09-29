@@ -1,7 +1,8 @@
 # 精度与一致性
 
-当前状态：COCO val2017 全量 PyTorch、FP32 ONNX 与板端结果已按统一协议核对；
-主要报告类别无关 segm AR@100，逐图差异归因待补。
+当前状态：COCO val2017 全量 PyTorch、FP32 ONNX 与旧板端结果已按统一协议核对；
+旧 DLA 使用了 16 张 val2017 图片校准，与评测集重叠，因此旧板端 AR 仅作历史诊断。
+独立校准 DLA 正在全量复评；主要指标为类别无关 segm AR@100。
 
 ## COCO val2017 全量精度
 
@@ -25,13 +26,20 @@ COCO val2017 的 80 类标注合并为一个 `object` 类。三端使用同一 5
 | --- | ---: | ---: | --- |
 | 官方 PyTorch FP32 | 0.391 | 499,881 | [结果摘要](../results/reference_accuracy/coco_pytorch_v2/summary.json) |
 | FP32 ONNX | 0.390 | 499,882 | [结果摘要](../results/reference_accuracy/coco_fp32_v2/summary.json) |
-| Genio 720 INT8 DLA | 0.370 | 499,974 | [COCOeval 日志](../results/full_accuracy/20260928_fastsam_full_v1/coco_summary.log) |
+| Genio 720 旧 INT8 DLA，校准集重叠 | 0.370 | 499,974 | [历史 COCOeval 日志](../results/full_accuracy/20260928_fastsam_full_v1/coco_summary.log) |
 
 原始模型与 ONNX 的 AR@100 接近，板端低约 0.020，仍需逐图检查预处理、
 掩码还原和量化输出。官方 FastSAM 的目标候选生成评测报告 AR10、AR100、AR1000；
 本表是 **segm AR@100**，与其 bbox 候选指标、FastSAM-x 权重和输入设置不同，
 不能直接比较数值。该类别无关口径也不能与
 标准 80 类 COCO segm AP、官方 FastSAM-x 的 1024 输入结果直接比较。
+
+排查时对固定间隔抽取的 200 张 COCO 图比较了旧板端与 ONNX 的 20,000 个掩码：
+板端掩码有 95.3% 能找到 IoU≥0.5 的 ONNX 掩码。单图原始张量核对显示 C++ 量化输入
+与参考输入逐字节相同，同一组板端原始输出经 C++ 与 Python 后处理得到的 100 个掩码
+逐个相同。新 DLA 使用 100 张 ImageNet 图片校准，与 5,000 张 COCO val2017 图片的
+SHA-256 集合零重叠；200 张同图门禁的 ONNX / 旧 DLA / 新 DLA segm AR@100 分别为
+0.408714 / 0.389318 / 0.393746。抽样结果不代替新 DLA 的 5,000 张正式结果。
 
 旧脚本还计算出同协议 PyTorch / ONNX / 板端 segm AP50:95 分别为
 0.054621 / 0.054454 / 0.061144。这些数字保留在[原始 PyTorch 报告](../results/reference_accuracy/coco_pytorch_v2/summary.json)、

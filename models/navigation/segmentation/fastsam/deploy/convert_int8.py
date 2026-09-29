@@ -33,6 +33,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--onnx", type=Path, required=True)
     parser.add_argument("--calibration-dir", type=Path, required=True)
+    parser.add_argument("--evaluation-hashes", type=Path, required=True)
     parser.add_argument("--samples", type=int, default=100)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -42,6 +43,16 @@ def main():
         raise ValueError("校准图片不足或 samples 非正数.")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     calibration = [{"path": str(path), "sha256": sha256_file(path)} for path in paths]
+    evaluation_hashes = {
+        line.split()[0] for line in args.evaluation_hashes.read_text(
+            encoding="utf-8").splitlines() if line.strip()
+    }
+    if len(evaluation_hashes) != 5000:
+        raise ValueError("COCO val2017 评测图片清单必须包含 5,000 个不同 SHA-256。")
+    overlapping = [item["path"] for item in calibration
+                   if item["sha256"] in evaluation_hashes]
+    if overlapping:
+        raise ValueError(f"校准图片与 COCO val2017 评测集重叠: {overlapping[:5]}")
 
     def calibration_data():
         """按固定顺序提供与板端一致的预处理输入."""
@@ -75,7 +86,9 @@ def main():
     metadata = {"input": input_detail, "outputs": outputs,
                 "onnx_sha256": sha256_file(args.onnx),
                 "tflite_sha256": sha256_file(args.output),
-                "calibration": calibration, "converter": mtk_converter.__version__,
+                "calibration": calibration,
+                "evaluation_hashes_sha256": sha256_file(args.evaluation_hashes),
+                "converter": mtk_converter.__version__,
                 "native_layout": "NCHW_INT8_WIDTH_ALIGN16",
                 "native_layout_board_verified": False}
     args.output.with_suffix(".json").write_text(

@@ -9,13 +9,15 @@
 输出: 检测头与掩码原型
 设备: MediaTek Genio 720 EVK
 部署格式: INT8 TFLite → DLA
-当前状态: 板端已验证；三端全量精度与常驻性能已测
+当前状态: 板端已验证；旧 DLA 校准集重叠，独立校准全量复评中
 ```
 
 官方 FastSAM-s 权重已完成原始前向、ONNX 导出、16 张校准图 INT8 转换、
 Genio 720 DLA 编译和 C++ 硬件推理。旧版 COCO 全量评测的参考端与板端置信度
 阈值不一致；现已补齐同协议的 PyTorch、ONNX 参考端，并与旧板端输出核对。
-三端指标和剩余差异见[精度报告](docs/accuracy.md)，常驻实例性能见[性能报告](docs/benchmark.md)。
+旧 DLA 的 16 张校准图片来自 COCO val2017，旧板端结果只作为历史诊断；
+独立校准模型正在全量复评。各端指标见[精度报告](docs/accuracy.md)，
+旧 DLA 的常驻性能见[性能报告](docs/benchmark.md)。
 
 ## 交付状态
 
@@ -25,7 +27,7 @@ Genio 720 DLA 编译和 C++ 硬件推理。旧版 COCO 全量评测的参考端�
 | 自行导出 ONNX | 已完成 | FP32 产物、原始头数值检查见 `models/` |
 | MTK INT8 TFLite / DLA | 已完成 | 16 张校准图版本；产物哈希见模型清单 |
 | 板端 Demo 与耗时 | 已完成 | C++ 硬件推理及常驻计时见[性能报告](docs/benchmark.md) |
-| COCO val2017 全量精度 | 已完成 | 三端同协议结果见[精度报告](docs/accuracy.md)；逐图差异仍待归因 |
+| COCO val2017 全量精度 | 复评中 | PyTorch、ONNX 全量已完成；旧 DLA 校准集重叠，独立校准 DLA 正在复评 |
 
 采用 FastSAM-s、batch=1、640×640.模型生成类别无关实例掩码,
 支持全图输出与轻量点/框提示,暂不接入文本提示所需的 CLIP.
@@ -75,14 +77,16 @@ D:\code\github\mtk_models\models\navigation\segmentation\fastsam\original\FastSA
 cd /data/users/hailong.he/github/mtk_models
 export FASTSAM_WEIGHTS_SHA256='e9034d7478a8e9d1bfb57b51592e521a253287c7cdcf79258f61ea6d68584a0d'
 export FASTSAM_IMAGE='/data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s/examples/input/public/000000000001.jpg'
-export FASTSAM_CALIBRATION_DIR='/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images'
+export FASTSAM_CALIBRATION_DIR='/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ILSVRC2012/val'
 bash models/navigation/segmentation/fastsam/deploy/download_original.sh
 bash models/navigation/segmentation/fastsam/deploy/convert.sh
 bash models/navigation/segmentation/fastsam/deploy/build.sh
 ```
 
-2026-09-23 冒烟转换使用了 `--samples 16`; 上述脚本默认 100 张校准图,
-执行后会生成新的模型哈希,不能与本次证据混用.
+2026-09-23 冒烟转换使用了 COCO val2017 的 16 张图片校准，和正式评测集重叠；
+该旧 DLA 仅保留为历史对照。上述脚本默认使用独立 ImageNet 图片 100 张，
+并核对所选图片 SHA-256 与已保存的 COCO val2017 全量清单没有重叠。
+执行后会生成新的模型哈希，不能与旧结果混用。
 
 89 宿主交叉编译 C++ 板端程序:
 
