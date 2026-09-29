@@ -1,0 +1,956 @@
+Using yaml config file: scripts/config-yocto_qwen2.5_7b_instruct.yaml
+[llm_sdk][1] Using yaml config file: scripts/config-yocto_qwen2.5_7b_instruct.yaml
+Reading prompt from file: scripts/prompts/sample_prompt-introduction.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/sample_prompt-introduction.txt
+Reading prompt from file: scripts/prompts/p01.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p01.txt
+Reading prompt from file: scripts/prompts/p02.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p02.txt
+Reading prompt from file: scripts/prompts/p03.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p03.txt
+Reading prompt from file: scripts/prompts/p04.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p04.txt
+Reading prompt from file: scripts/prompts/p05.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p05.txt
+Reading prompt from file: scripts/prompts/p06.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p06.txt
+Reading prompt from file: scripts/prompts/p07.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p07.txt
+Reading prompt from file: scripts/prompts/p08.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p08.txt
+Reading prompt from file: scripts/prompts/p09.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p09.txt
+
+>>>>>>>>>>> Current yaml config: scripts/config-yocto_qwen2.5_7b_instruct.yaml <<<<<<<<<<<
+Begin model init...
+[llm_sdk][1] Begin model init...
+WARN: Failed to load libneuron_runtime.so, trying libneuronusdk_runtime.mtk.so...
+[neuron_runtime_library_init][2] Failed to load libneuron_runtime.so, trying libneuronusdk_runtime.mtk.so...
+Successfully loaded libneuronusdk_runtime.mtk.so!
+[neuron_runtime_library_init][1] Successfully loaded libneuronusdk_runtime.mtk.so!
+Done model init. (Time taken: 16.7259s)
+[llm_sdk][1] Done model init. (Time taken: 16.7259s)
+Initialized HuggingFace tokenizer.
+[llm_sdk][1] Initialized HuggingFace tokenizer.
+Vocab size: 151665
+[llm_sdk][1] Vocab size: 151665
+=========== Processing the 0-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 23
+[llm_sdk][1] Num prompt tokens: 23
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+tell me about you<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 1.99402s (64.192 tok/s)
+[llm_sdk][1] Done analyzing prompt in 1.99402s (64.192 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 16.1772s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.1772s)
+
+Response [Max Length = 512]:
+I'm a large language model created by Alibaba Cloud, designed to assist with a wide variety of tasks. I can help with writing, generating creative content, answering questions, and more. I don't have personal experiences or emotions, but I'm here to provide information and support you in any way I can! Is there something specific you'd like to know or discuss?</eos></end>
+
+[Full Response]
+I'm a large language model created by Alibaba Cloud, designed to assist with a wide variety of tasks. I can help with writing, generating creative content, answering questions, and more. I don't have personal experiences or emotions, but I'm here to provide information and support you in any way I can! Is there something specific you'd like to know or discuss?
+
+[Latency]
+      Prompt Mode: 64.192 tok/s
+  Generative Mode: 3.98607 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 16.2571s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.2571s)
+=========== Processing the 1-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 33
+[llm_sdk][1] Num prompt tokens: 33
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+What are the main differences between TCP and UDP protocols in computer networking?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 1.96515s (65.1348 tok/s)
+[llm_sdk][1] Done analyzing prompt in 1.96515s (65.1348 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 16.1257s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.1257s)
+
+Response [Max Length = 512]:
+TCP (Transmission Control Protocol) and UDP (User Datagram Protocol) are two of the most commonly used protocols in computer networking, each with its own set of characteristics and use cases. Here are the main differences between TCP and UDP:
+
+### 1. **Connection-Oriented vs. Connectionless**
+   - **TCP**: Connection-oriented, meaning it establishes a connection (handshake) between the sender and receiver before data transfer begins. This ensures reliable delivery and error correction.
+   - **UDP**: Connectionless, meaning it does not establish a connection before sending data. It is more lightweight and faster but less reliable.
+
+### 2. **Reliability**
+   - **TCP**: Provides a reliable data transfer service. It ensures that data is delivered in the correct order and without errors. It uses mechanisms like sequence numbers, acknowledgments, and retransmissions to achieve this.
+   - **UDP**: Does not guarantee reliable delivery. It is more concerned with speed and efficiency. If data is lost or corrupted, it is the responsibility of the application layer to handle it.
+
+### 3. **Error Correction**
+   - **TCP**: Implements error correction and flow control to ensure data integrity and to manage the flow of data between the sender and receiver.
+   - **UDP**: Does not provide error correction or flow control. It is up to the application to handle any errors or missing data.
+
+### 4. **Latency**
+   - **TCP**: Generally has higher latency due to the overhead of establishing and maintaining a connection and the additional processing required for error correction.
+   - **UDP**: Has lower latency because it does not perform these additional checks and does not establish a connection.
+
+### 5. **Data Transfer**
+   - **TCP**: Data is sent in segments, and each segment is acknowledged by the receiver. If a segment is lost, the sender will retransmit it.
+   - **UDP**: Data is sent in packets, and each packet is independent. If a packet is lost, it is not retransmitted.
+
+### 6. **Use Cases**
+   - **TCP**: Suitable for applications that require reliable data transfer, such as web browsing, email, and file transfers.
+   - **UDP**: Suitable for applications that require low latency and high throughput, such as real-time video streaming, online gaming, and VoIP (Voice over Internet Protocol).
+
+### 7. **Header Size**
+   - **TCP**: Larger header (20 bytes) due to the additional information required for connection management and error correction.
+   -</end>
+
+[Full Response]
+TCP (Transmission Control Protocol) and UDP (User Datagram Protocol) are two of the most commonly used protocols in computer networking, each with its own set of characteristics and use cases. Here are the main differences between TCP and UDP:
+
+### 1. **Connection-Oriented vs. Connectionless**
+   - **TCP**: Connection-oriented, meaning it establishes a connection (handshake) between the sender and receiver before data transfer begins. This ensures reliable delivery and error correction.
+   - **UDP**: Connectionless, meaning it does not establish a connection before sending data. It is more lightweight and faster but less reliable.
+
+### 2. **Reliability**
+   - **TCP**: Provides a reliable data transfer service. It ensures that data is delivered in the correct order and without errors. It uses mechanisms like sequence numbers, acknowledgments, and retransmissions to achieve this.
+   - **UDP**: Does not guarantee reliable delivery. It is more concerned with speed and efficiency. If data is lost or corrupted, it is the responsibility of the application layer to handle it.
+
+### 3. **Error Correction**
+   - **TCP**: Implements error correction and flow control to ensure data integrity and to manage the flow of data between the sender and receiver.
+   - **UDP**: Does not provide error correction or flow control. It is up to the application to handle any errors or missing data.
+
+### 4. **Latency**
+   - **TCP**: Generally has higher latency due to the overhead of establishing and maintaining a connection and the additional processing required for error correction.
+   - **UDP**: Has lower latency because it does not perform these additional checks and does not establish a connection.
+
+### 5. **Data Transfer**
+   - **TCP**: Data is sent in segments, and each segment is acknowledged by the receiver. If a segment is lost, the sender will retransmit it.
+   - **UDP**: Data is sent in packets, and each packet is independent. If a packet is lost, it is not retransmitted.
+
+### 6. **Use Cases**
+   - **TCP**: Suitable for applications that require reliable data transfer, such as web browsing, email, and file transfers.
+   - **UDP**: Suitable for applications that require low latency and high throughput, such as real-time video streaming, online gaming, and VoIP (Voice over Internet Protocol).
+
+### 7. **Header Size**
+   - **TCP**: Larger header (20 bytes) due to the additional information required for connection management and error correction.
+   -
+
+[Latency]
+      Prompt Mode: 65.1348 tok/s
+  Generative Mode: 4.06169 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 15.8255s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 15.8255s)
+=========== Processing the 2-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 35
+[llm_sdk][1] Num prompt tokens: 35
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Explain the concept of gradient descent and why it is used in machine learning.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 1.95681s (65.4127 tok/s)
+[llm_sdk][1] Done analyzing prompt in 1.95681s (65.4127 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 15.7575s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 15.7575s)
+
+Response [Max Length = 512]:
+Gradient descent is a first-order iterative optimization algorithm used to find the minimum of a function. In the context of machine learning, it is primarily used to minimize the cost function or loss function, which measures the difference between the predicted values and the actual values. The goal is to find the set of parameters (weights) that minimize this function.
+
+### Key Concepts:
+
+1. **Cost Function (Loss Function):**
+   - The cost function, often denoted as \( J(\theta) \), measures how well the model's predictions match the actual data. The goal is to minimize this function.
+
+2. **Gradient:**
+   - The gradient of the cost function with respect to the parameters is a vector that points in the direction of the steepest increase of the function. The negative of the gradient points in the direction of the steepest decrease.
+
+3. **Learning Rate:**
+   - The learning rate (\(\alpha\)) is a hyperparameter that determines the size of the steps taken towards the minimum. If the learning rate is too small, the algorithm will take a long time to converge. If it is too large, the algorithm might overshoot the minimum and fail to converge.
+
+4. **Update Rule:**
+   - The update rule for the parameters (weights) in gradient descent is given by:
+     \[
+     \theta_j := \theta_j - \alpha \frac{\partial J(\theta)}{\partial \theta_j}
+     \]
+     where \(\theta_j\) is the parameter to be updated, \(\alpha\) is the learning rate, and \(\frac{\partial J(\theta)}{\partial \theta_j}\) is the partial derivative of the cost function with respect to \(\theta_j\).
+
+### Steps of Gradient Descent:
+
+1. **Initialization:**
+   - Initialize the parameters (weights) to some starting values.
+
+2. **Compute the Gradient:**
+   - Calculate the gradient of the cost function with respect to the parameters.
+
+3. **Update Parameters:**
+   - Update the parameters using the update rule.
+
+4. **Repeat:**
+   - Repeat steps 2 and 3 until the cost function is minimized or a predefined number of iterations is reached.
+
+### Why Gradient Descent is Used in Machine Learning:
+
+1. **Optimization:**
+   - Gradient descent helps in finding the optimal set of parameters that minimize the cost function. This is crucial for training models, especially in scenarios where the cost function is non-convex and has multiple local minima.
+
+2</end>
+
+[Full Response]
+Gradient descent is a first-order iterative optimization algorithm used to find the minimum of a function. In the context of machine learning, it is primarily used to minimize the cost function or loss function, which measures the difference between the predicted values and the actual values. The goal is to find the set of parameters (weights) that minimize this function.
+
+### Key Concepts:
+
+1. **Cost Function (Loss Function):**
+   - The cost function, often denoted as \( J(\theta) \), measures how well the model's predictions match the actual data. The goal is to minimize this function.
+
+2. **Gradient:**
+   - The gradient of the cost function with respect to the parameters is a vector that points in the direction of the steepest increase of the function. The negative of the gradient points in the direction of the steepest decrease.
+
+3. **Learning Rate:**
+   - The learning rate (\(\alpha\)) is a hyperparameter that determines the size of the steps taken towards the minimum. If the learning rate is too small, the algorithm will take a long time to converge. If it is too large, the algorithm might overshoot the minimum and fail to converge.
+
+4. **Update Rule:**
+   - The update rule for the parameters (weights) in gradient descent is given by:
+     \[
+     \theta_j := \theta_j - \alpha \frac{\partial J(\theta)}{\partial \theta_j}
+     \]
+     where \(\theta_j\) is the parameter to be updated, \(\alpha\) is the learning rate, and \(\frac{\partial J(\theta)}{\partial \theta_j}\) is the partial derivative of the cost function with respect to \(\theta_j\).
+
+### Steps of Gradient Descent:
+
+1. **Initialization:**
+   - Initialize the parameters (weights) to some starting values.
+
+2. **Compute the Gradient:**
+   - Calculate the gradient of the cost function with respect to the parameters.
+
+3. **Update Parameters:**
+   - Update the parameters using the update rule.
+
+4. **Repeat:**
+   - Repeat steps 2 and 3 until the cost function is minimized or a predefined number of iterations is reached.
+
+### Why Gradient Descent is Used in Machine Learning:
+
+1. **Optimization:**
+   - Gradient descent helps in finding the optimal set of parameters that minimize the cost function. This is crucial for training models, especially in scenarios where the cost function is non-convex and has multiple local minima.
+
+2
+
+[Latency]
+      Prompt Mode: 65.4127 tok/s
+  Generative Mode: 4.06006 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 16.0568s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.0568s)
+=========== Processing the 3-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 33
+[llm_sdk][1] Num prompt tokens: 33
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Describe how garbage collection works in modern programming languages like Java or Python.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 1.95775s (65.3811 tok/s)
+[llm_sdk][1] Done analyzing prompt in 1.95775s (65.3811 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 15.7931s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 15.7931s)
+
+Response [Max Length = 512]:
+Garbage collection is an automated memory management technique used in modern programming languages like Java and Python to manage memory allocation and deallocation. It helps in reducing the burden on the programmer to manually manage memory, which can be error-prone and time-consuming. Here's how garbage collection works in Java and Python:
+
+### Java
+
+1. **Heap and Stack Memory**:
+   - In Java, the heap is where objects are stored, and the stack is where local variables and method calls are stored.
+   - The heap is managed by the garbage collector, while the stack is managed by the JVM (Java Virtual Machine).
+
+2. **Garbage Collection Process**:
+   - **Marking Phase**: The garbage collector identifies objects that are no longer reachable from the application's root set (e.g., global variables, static variables, and objects on the stack).
+   - **Sweeping Phase**: The garbage collector reclaims the memory occupied by the unreachable objects.
+   - **Compacting Phase** (optional): In some garbage collection algorithms, the garbage collector may move the remaining objects to compact the heap, making it easier to manage memory.
+
+3. **Garbage Collection Algorithms**:
+   - **Generational Garbage Collection**: Java uses a generational approach where objects are divided into generations (young, old, and permanent). Younger generations are collected more frequently.
+   - **Mark-Sweep-Compact**: This is a common algorithm where the garbage collector marks reachable objects, sweeps the heap to remove unreachable objects, and compacts the heap.
+
+4. **Garbage Collection Triggers**:
+   - Garbage collection is triggered automatically by the JVM based on various conditions such as memory usage, system configuration, and JVM settings.
+
+### Python
+
+1. **Reference Counting**:
+   - Python uses reference counting as its primary garbage collection mechanism. Each object has a reference count that is incremented when a reference to the object is created and decremented when the reference is deleted.
+   - When the reference count reaches zero, the object is considered unreachable and is deallocated.
+
+2. **Generational Garbage Collection**:
+   - Python also uses a generational approach to garbage collection, similar to Java. Objects are divided into generations (new, old, and double-free).
+   - The new generation is collected more frequently, and the old generation is collected less frequently.
+
+3. **Garbage Collection Triggers**:
+   - Garbage collection in Python is triggered automatically by the interpreter when the reference count of an object reaches zero.
+   - Python also</end>
+
+[Full Response]
+Garbage collection is an automated memory management technique used in modern programming languages like Java and Python to manage memory allocation and deallocation. It helps in reducing the burden on the programmer to manually manage memory, which can be error-prone and time-consuming. Here's how garbage collection works in Java and Python:
+
+### Java
+
+1. **Heap and Stack Memory**:
+   - In Java, the heap is where objects are stored, and the stack is where local variables and method calls are stored.
+   - The heap is managed by the garbage collector, while the stack is managed by the JVM (Java Virtual Machine).
+
+2. **Garbage Collection Process**:
+   - **Marking Phase**: The garbage collector identifies objects that are no longer reachable from the application's root set (e.g., global variables, static variables, and objects on the stack).
+   - **Sweeping Phase**: The garbage collector reclaims the memory occupied by the unreachable objects.
+   - **Compacting Phase** (optional): In some garbage collection algorithms, the garbage collector may move the remaining objects to compact the heap, making it easier to manage memory.
+
+3. **Garbage Collection Algorithms**:
+   - **Generational Garbage Collection**: Java uses a generational approach where objects are divided into generations (young, old, and permanent). Younger generations are collected more frequently.
+   - **Mark-Sweep-Compact**: This is a common algorithm where the garbage collector marks reachable objects, sweeps the heap to remove unreachable objects, and compacts the heap.
+
+4. **Garbage Collection Triggers**:
+   - Garbage collection is triggered automatically by the JVM based on various conditions such as memory usage, system configuration, and JVM settings.
+
+### Python
+
+1. **Reference Counting**:
+   - Python uses reference counting as its primary garbage collection mechanism. Each object has a reference count that is incremented when a reference to the object is created and decremented when the reference is deleted.
+   - When the reference count reaches zero, the object is considered unreachable and is deallocated.
+
+2. **Generational Garbage Collection**:
+   - Python also uses a generational approach to garbage collection, similar to Java. Objects are divided into generations (new, old, and double-free).
+   - The new generation is collected more frequently, and the old generation is collected less frequently.
+
+3. **Garbage Collection Triggers**:
+   - Garbage collection in Python is triggered automatically by the interpreter when the reference count of an object reaches zero.
+   - Python also
+
+[Latency]
+      Prompt Mode: 65.3811 tok/s
+  Generative Mode: 4.05995 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 16.0522s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.0522s)
+=========== Processing the 4-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 36
+[llm_sdk][1] Num prompt tokens: 36
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+What is the role of an operating system kernel and which subsystems does it manage?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 1.94696s (65.7436 tok/s)
+[llm_sdk][1] Done analyzing prompt in 1.94696s (65.7436 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 15.8803s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 15.8803s)
+
+Response [Max Length = 512]:
+The operating system (OS) kernel is a fundamental component of an operating system, responsible for managing hardware resources and providing common services for application software. Here’s a detailed look at its role and the subsystems it manages:
+
+### Role of the Kernel
+
+1. **Resource Management**:
+   - **Memory Management**: Manages the allocation and deallocation of memory for processes.
+   - **CPU Management**: Schedules processes to run on the CPU, handles context switching, and manages interrupts.
+   - **Storage Management**: Manages access to storage devices (hard drives, SSDs, etc.).
+
+2. **Process Management**:
+   - **Process Scheduling**: Determines which processes get access to the CPU and in what order.
+   - **Process Creation and Termination**: Creates and destroys processes.
+   - **Inter-Process Communication (IPC)**: Facilitates communication between processes.
+
+3. **Device Management**:
+   - **Driver Management**: Manages device drivers that control hardware.
+   - **Input/Output (I/O) Management**: Handles I/O operations for devices.
+
+4. **File System Management**:
+   - **File System Operations**: Provides functions for creating, reading, writing, and deleting files.
+   - **File System Security**: Manages access control and permissions.
+
+5. **Inter-Process Communication (IPC)**:
+   - **Synchronization**: Ensures that processes do not interfere with each other.
+   - **Message Passing**: Allows processes to communicate with each other.
+
+6. **System Calls**:
+   - **APIs**: Provides a set of functions that applications can use to interact with the kernel and underlying hardware.
+
+7. **Interrupt Handling**:
+   - **Interrupt Management**: Handles hardware interrupts and manages the response to these interrupts.
+
+### Subsystems Managed by the Kernel
+
+1. **Process Management**:
+   - **Process State**: Tracks the state of each process (running, ready, waiting, etc.).
+   - **Process Scheduling Algorithms**: Determines the order in which processes are executed.
+   - **Context Switching**: Switches between processes.
+
+2. **Memory Management**:
+   - **Virtual Memory**: Manages virtual memory, allowing processes to use more memory than is physically available.
+   - **Memory Allocation**: Allocates and deallocates memory for processes.
+   - **Memory Protection**: Ensures that processes do not access each other's memory.
+
+3. **Device Management**:
+   - **Device Drivers**: Manages communication with hardware devices.
+   - **I/O Operations**: Handles</end>
+
+[Full Response]
+The operating system (OS) kernel is a fundamental component of an operating system, responsible for managing hardware resources and providing common services for application software. Here’s a detailed look at its role and the subsystems it manages:
+
+### Role of the Kernel
+
+1. **Resource Management**:
+   - **Memory Management**: Manages the allocation and deallocation of memory for processes.
+   - **CPU Management**: Schedules processes to run on the CPU, handles context switching, and manages interrupts.
+   - **Storage Management**: Manages access to storage devices (hard drives, SSDs, etc.).
+
+2. **Process Management**:
+   - **Process Scheduling**: Determines which processes get access to the CPU and in what order.
+   - **Process Creation and Termination**: Creates and destroys processes.
+   - **Inter-Process Communication (IPC)**: Facilitates communication between processes.
+
+3. **Device Management**:
+   - **Driver Management**: Manages device drivers that control hardware.
+   - **Input/Output (I/O) Management**: Handles I/O operations for devices.
+
+4. **File System Management**:
+   - **File System Operations**: Provides functions for creating, reading, writing, and deleting files.
+   - **File System Security**: Manages access control and permissions.
+
+5. **Inter-Process Communication (IPC)**:
+   - **Synchronization**: Ensures that processes do not interfere with each other.
+   - **Message Passing**: Allows processes to communicate with each other.
+
+6. **System Calls**:
+   - **APIs**: Provides a set of functions that applications can use to interact with the kernel and underlying hardware.
+
+7. **Interrupt Handling**:
+   - **Interrupt Management**: Handles hardware interrupts and manages the response to these interrupts.
+
+### Subsystems Managed by the Kernel
+
+1. **Process Management**:
+   - **Process State**: Tracks the state of each process (running, ready, waiting, etc.).
+   - **Process Scheduling Algorithms**: Determines the order in which processes are executed.
+   - **Context Switching**: Switches between processes.
+
+2. **Memory Management**:
+   - **Virtual Memory**: Manages virtual memory, allowing processes to use more memory than is physically available.
+   - **Memory Allocation**: Allocates and deallocates memory for processes.
+   - **Memory Protection**: Ensures that processes do not access each other's memory.
+
+3. **Device Management**:
+   - **Device Drivers**: Manages communication with hardware devices.
+   - **I/O Operations**: Handles
+
+[Latency]
+      Prompt Mode: 65.7436 tok/s
+  Generative Mode: 4.04229 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 16.0611s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.0611s)
+=========== Processing the 5-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 35
+[llm_sdk][1] Num prompt tokens: 35
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Compare supervised learning and unsupervised learning with two short examples for each category.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 2.08947s (61.2596 tok/s)
+[llm_sdk][1] Done analyzing prompt in 2.08947s (61.2596 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 15.8081s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 15.8081s)
+
+Response [Max Length = 512]:
+Sure! Let's compare supervised learning and unsupervised learning with two short examples for each category.
+
+### Supervised Learning
+
+**Example 1: Email Spam Classification**
+- **Description**: In this scenario, you have a dataset of emails, where each email is labeled as "spam" or "not spam." The goal is to build a model that can predict whether a new, unseen email is spam or not.
+- **Data**: The dataset includes features such as the presence of certain keywords, the sender's address, and the time of day the email was sent.
+- **Model**: A machine learning model, such as a logistic regression or a decision tree, is trained on the labeled data to learn the patterns that distinguish spam from non-spam emails.
+- **Outcome**: The model can be used to classify new emails as spam or not spam based on the learned patterns.
+
+**Example 2: Predicting House Prices**
+- **Description**: You have a dataset of houses, where each house is labeled with its selling price. The goal is to build a model that can predict the price of a new house based on its features.
+- **Data**: The dataset includes features such as the number of bedrooms, square footage, location, and age of the house.
+- **Model**: A regression model, such as linear regression or a neural network, is trained on the labeled data to learn the relationship between the features and the house prices.
+- **Outcome**: The model can be used to predict the price of a new house based on its features.
+
+### Unsupervised Learning
+
+**Example 1: Customer Segmentation**
+- **Description**: In this scenario, you have a dataset of customer transactions without any labels. The goal is to group customers into different segments based on their purchasing behavior.
+- **Data**: The dataset includes features such as the amount spent, the frequency of purchases, and the types of products purchased.
+- **Model**: A clustering algorithm, such as K-means or hierarchical clustering, is used to identify natural groupings or segments within the customer data.
+- **Outcome**: The model can be used to segment customers into different groups, which can help in targeted marketing and personalized recommendations.
+
+**Example 2: Anomaly Detection in Network Traffic**
+- **Description**: You have a dataset of network traffic data without any labels. The goal is to identify unusual patterns or anomalies in the network traffic that might indicate malicious activity.
+- **Data**: The dataset includes features such as the volume of data transferred, the frequency of data packets,</end>
+
+[Full Response]
+Sure! Let's compare supervised learning and unsupervised learning with two short examples for each category.
+
+### Supervised Learning
+
+**Example 1: Email Spam Classification**
+- **Description**: In this scenario, you have a dataset of emails, where each email is labeled as "spam" or "not spam." The goal is to build a model that can predict whether a new, unseen email is spam or not.
+- **Data**: The dataset includes features such as the presence of certain keywords, the sender's address, and the time of day the email was sent.
+- **Model**: A machine learning model, such as a logistic regression or a decision tree, is trained on the labeled data to learn the patterns that distinguish spam from non-spam emails.
+- **Outcome**: The model can be used to classify new emails as spam or not spam based on the learned patterns.
+
+**Example 2: Predicting House Prices**
+- **Description**: You have a dataset of houses, where each house is labeled with its selling price. The goal is to build a model that can predict the price of a new house based on its features.
+- **Data**: The dataset includes features such as the number of bedrooms, square footage, location, and age of the house.
+- **Model**: A regression model, such as linear regression or a neural network, is trained on the labeled data to learn the relationship between the features and the house prices.
+- **Outcome**: The model can be used to predict the price of a new house based on its features.
+
+### Unsupervised Learning
+
+**Example 1: Customer Segmentation**
+- **Description**: In this scenario, you have a dataset of customer transactions without any labels. The goal is to group customers into different segments based on their purchasing behavior.
+- **Data**: The dataset includes features such as the amount spent, the frequency of purchases, and the types of products purchased.
+- **Model**: A clustering algorithm, such as K-means or hierarchical clustering, is used to identify natural groupings or segments within the customer data.
+- **Outcome**: The model can be used to segment customers into different groups, which can help in targeted marketing and personalized recommendations.
+
+**Example 2: Anomaly Detection in Network Traffic**
+- **Description**: You have a dataset of network traffic data without any labels. The goal is to identify unusual patterns or anomalies in the network traffic that might indicate malicious activity.
+- **Data**: The dataset includes features such as the volume of data transferred, the frequency of data packets,
+
+[Latency]
+      Prompt Mode: 61.2596 tok/s
+  Generative Mode: 4.05907 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 15.7719s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 15.7719s)
+=========== Processing the 6-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 34
+[llm_sdk][1] Num prompt tokens: 34
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+How does a convolutional neural network process image data and extract useful features?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 2.09773s (61.0183 tok/s)
+[llm_sdk][1] Done analyzing prompt in 2.09773s (61.0183 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 16.09s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.09s)
+
+Response [Max Length = 512]:
+A Convolutional Neural Network (CNN) is a type of neural network that is particularly well-suited for processing grid-like data such as images. The process of how a CNN extracts useful features from image data can be broken down into several key steps:
+
+1. **Input Layer**: The input to a CNN is typically an image, which is represented as a grid of pixels. Each pixel has a value that represents its color or intensity. The image is usually converted into a 3D tensor (height, width, channels) where channels represent the color channels (e.g., red, green, blue).
+
+2. **Convolutional Layer**: The first step in the CNN is the convolutional layer. This layer applies a set of learnable filters (also called kernels) to the input image. Each filter is a small matrix that slides over the input image, performing element-wise multiplications and summing the results. This process is called a convolution. The output of the convolutional layer is a 3D tensor (height, width, filters), where each filter produces a feature map that highlights certain features in the input image.
+
+3. **Activation Function**: After the convolution, an activation function (commonly ReLU) is applied to the output of the convolutional layer. The activation function introduces non-linearity into the model, allowing it to learn more complex patterns. The ReLU function sets all negative values to zero, which helps in reducing the number of parameters and speeds up the training process.
+
+4. **Pooling Layer**: The pooling layer (often max pooling) is used to reduce the spatial dimensions of the feature maps. Max pooling takes the maximum value from a small region of the feature map, which helps in making the network more robust to small translations in the input. This layer reduces the number of parameters and computational cost, and also helps in making the network invariant to small shifts in the input.
+
+5. **Flattening Layer**: The output of the pooling layer is a 3D tensor, but the next layer (fully connected layer) requires a 1D vector. Therefore, the output of the pooling layer is flattened into a 1D vector. This vector is then passed to the fully connected layers.
+
+6. **Fully Connected Layers**: The fully connected layers (also called dense layers) are used to classify the input image. These layers take the flattened vector and map it to the output classes. The first fully connected layer often has a large number of neurons, and subsequent layers have fewer neurons. The output of the</end>
+
+[Full Response]
+A Convolutional Neural Network (CNN) is a type of neural network that is particularly well-suited for processing grid-like data such as images. The process of how a CNN extracts useful features from image data can be broken down into several key steps:
+
+1. **Input Layer**: The input to a CNN is typically an image, which is represented as a grid of pixels. Each pixel has a value that represents its color or intensity. The image is usually converted into a 3D tensor (height, width, channels) where channels represent the color channels (e.g., red, green, blue).
+
+2. **Convolutional Layer**: The first step in the CNN is the convolutional layer. This layer applies a set of learnable filters (also called kernels) to the input image. Each filter is a small matrix that slides over the input image, performing element-wise multiplications and summing the results. This process is called a convolution. The output of the convolutional layer is a 3D tensor (height, width, filters), where each filter produces a feature map that highlights certain features in the input image.
+
+3. **Activation Function**: After the convolution, an activation function (commonly ReLU) is applied to the output of the convolutional layer. The activation function introduces non-linearity into the model, allowing it to learn more complex patterns. The ReLU function sets all negative values to zero, which helps in reducing the number of parameters and speeds up the training process.
+
+4. **Pooling Layer**: The pooling layer (often max pooling) is used to reduce the spatial dimensions of the feature maps. Max pooling takes the maximum value from a small region of the feature map, which helps in making the network more robust to small translations in the input. This layer reduces the number of parameters and computational cost, and also helps in making the network invariant to small shifts in the input.
+
+5. **Flattening Layer**: The output of the pooling layer is a 3D tensor, but the next layer (fully connected layer) requires a 1D vector. Therefore, the output of the pooling layer is flattened into a 1D vector. This vector is then passed to the fully connected layers.
+
+6. **Fully Connected Layers**: The fully connected layers (also called dense layers) are used to classify the input image. These layers take the flattened vector and map it to the output classes. The first fully connected layer often has a large number of neurons, and subsequent layers have fewer neurons. The output of the
+
+[Latency]
+      Prompt Mode: 61.0183 tok/s
+  Generative Mode: 4.07761 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 15.8994s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 15.8994s)
+=========== Processing the 7-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 35
+[llm_sdk][1] Num prompt tokens: 35
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Explain what a database index is and how it improves query performance in SQL.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 1.89892s (67.4068 tok/s)
+[llm_sdk][1] Done analyzing prompt in 1.89892s (67.4068 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 16.1285s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.1285s)
+
+Response [Max Length = 512]:
+A database index is a data structure that improves the speed of database operations, particularly for queries. When a database table is created, it is stored in a way that allows for efficient retrieval of data, but without an index, the database must scan the entire table to find the required data, which can be time-consuming for large datasets.
+
+### How Indexes Work
+
+1. **Data Structure**: An index is a separate data structure that contains a sorted copy of a column or a combination of columns from a table. This sorted copy allows the database to quickly locate the rows that match the query conditions.
+
+2. **Types of Indexes**: There are several types of indexes, including:
+   - **B-tree Index**: The most common type, which is a balanced tree structure that allows for efficient insertion, deletion, and search operations.
+   - **Hash Index**: Uses a hash function to map keys to a specific location in the index.
+   - **Bitmap Index**: Suitable for columns with a small number of distinct values, where it can be more efficient to store a bitmap for each value.
+
+3. **Index Columns**: Indexes can be created on one or more columns of a table. The columns chosen for indexing should be those that are frequently used in WHERE clauses, JOIN conditions, or ORDER BY clauses.
+
+### How Indexes Improve Query Performance
+
+1. **Reduced I/O Operations**: Without an index, the database must read the entire table to find the required data, which can be a significant number of I/O operations. With an index, the database can quickly locate the relevant rows by scanning the index, which is much faster.
+
+2. **Efficient Searching**: When a query is executed, the database can use the index to quickly find the relevant rows, reducing the number of rows that need to be scanned. This is particularly useful for large tables.
+
+3. **Sorting and Grouping**: Indexes can also help in sorting and grouping data, which are common operations in SQL queries. For example, an index on a column used in an ORDER BY clause can speed up the sorting process.
+
+4. **Join Operations**: When joining tables, indexes can help in quickly finding the matching rows in the other table, reducing the number of rows that need to be compared.
+
+### Example
+
+Consider a table `employees` with columns `id`, `name`, `department`, and `salary`. If you frequently run queries like:
+
+```sql
+SELECT * FROM employees WHERE department = 'Sales';
+```
+
+Creating an index on the `department` column</end>
+
+[Full Response]
+A database index is a data structure that improves the speed of database operations, particularly for queries. When a database table is created, it is stored in a way that allows for efficient retrieval of data, but without an index, the database must scan the entire table to find the required data, which can be time-consuming for large datasets.
+
+### How Indexes Work
+
+1. **Data Structure**: An index is a separate data structure that contains a sorted copy of a column or a combination of columns from a table. This sorted copy allows the database to quickly locate the rows that match the query conditions.
+
+2. **Types of Indexes**: There are several types of indexes, including:
+   - **B-tree Index**: The most common type, which is a balanced tree structure that allows for efficient insertion, deletion, and search operations.
+   - **Hash Index**: Uses a hash function to map keys to a specific location in the index.
+   - **Bitmap Index**: Suitable for columns with a small number of distinct values, where it can be more efficient to store a bitmap for each value.
+
+3. **Index Columns**: Indexes can be created on one or more columns of a table. The columns chosen for indexing should be those that are frequently used in WHERE clauses, JOIN conditions, or ORDER BY clauses.
+
+### How Indexes Improve Query Performance
+
+1. **Reduced I/O Operations**: Without an index, the database must read the entire table to find the required data, which can be a significant number of I/O operations. With an index, the database can quickly locate the relevant rows by scanning the index, which is much faster.
+
+2. **Efficient Searching**: When a query is executed, the database can use the index to quickly find the relevant rows, reducing the number of rows that need to be scanned. This is particularly useful for large tables.
+
+3. **Sorting and Grouping**: Indexes can also help in sorting and grouping data, which are common operations in SQL queries. For example, an index on a column used in an ORDER BY clause can speed up the sorting process.
+
+4. **Join Operations**: When joining tables, indexes can help in quickly finding the matching rows in the other table, reducing the number of rows that need to be compared.
+
+### Example
+
+Consider a table `employees` with columns `id`, `name`, `department`, and `salary`. If you frequently run queries like:
+
+```sql
+SELECT * FROM employees WHERE department = 'Sales';
+```
+
+Creating an index on the `department` column
+
+[Latency]
+      Prompt Mode: 67.4068 tok/s
+  Generative Mode: 4.06601 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 16.0172s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.0172s)
+=========== Processing the 8-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 36
+[llm_sdk][1] Num prompt tokens: 36
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+What are the advantages and disadvantages of a microservices architecture compared to a monolith?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 1.96137s (65.2605 tok/s)
+[llm_sdk][1] Done analyzing prompt in 1.96137s (65.2605 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 16.1243s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.1243s)
+
+Response [Max Length = 512]:
+A microservices architecture and a monolithic architecture each have their own set of advantages and disadvantages. Here’s a detailed comparison:
+
+### Advantages of Microservices Architecture
+
+1. **Scalability**:
+   - **Horizontal Scaling**: Each microservice can be scaled independently based on the load it receives.
+   - **Resource Utilization**: Resources can be allocated more efficiently, as services can be scaled up or down as needed.
+
+2. **Fault Isolation**:
+   - **Resilience**: If one microservice fails, it does not necessarily bring down the entire application. Other services can continue to function.
+   - **Maintenance**: Isolated services make it easier to identify and fix issues without affecting the entire system.
+
+3. **Technology Diversity**:
+   - **Flexibility**: Different microservices can use different technologies, languages, and databases, allowing for the best tool for each task.
+   - **Innovation**: Teams can experiment with new technologies and frameworks without affecting the rest of the application.
+
+4. **Development and Deployment**:
+   - **Parallel Development**: Multiple teams can work on different microservices simultaneously, accelerating development cycles.
+   - **Continuous Deployment**: Smaller, more frequent updates can be deployed without disrupting the entire application.
+
+5. **Reusability**:
+   - **Code Reuse**: Microservices can be reused across different applications, reducing development time and effort.
+
+### Disadvantages of Microservices Architecture
+
+1. **Complexity**:
+   - **Coordination**: Managing multiple services requires a robust service mesh and communication protocols, which can be complex.
+   - **Integration**: Integrating services can be challenging, especially when dealing with inter-service communication and data consistency.
+
+2. **Operational Overhead**:
+   - **Monitoring and Logging**: Monitoring and logging across multiple services can be more complex and resource-intensive.
+   - **Infrastructure Management**: Managing a large number of services requires more infrastructure and operational expertise.
+
+3. **Data Management**:
+   - **Consistency**: Ensuring data consistency across multiple services can be difficult, especially in distributed systems.
+   - **Data Management**: Each microservice may need to manage its own database, leading to potential data redundancy and inconsistency.
+
+4. **Security**:
+   - **Authentication and Authorization**: Securing microservices can be more complex, as each service needs to be secured independently.
+   - **API Management**: Managing APIs and ensuring secure communication between services can be challenging.
+
+5. **Learning Curve**:
+   - **Team Training**: Teams need to understand</end>
+
+[Full Response]
+A microservices architecture and a monolithic architecture each have their own set of advantages and disadvantages. Here’s a detailed comparison:
+
+### Advantages of Microservices Architecture
+
+1. **Scalability**:
+   - **Horizontal Scaling**: Each microservice can be scaled independently based on the load it receives.
+   - **Resource Utilization**: Resources can be allocated more efficiently, as services can be scaled up or down as needed.
+
+2. **Fault Isolation**:
+   - **Resilience**: If one microservice fails, it does not necessarily bring down the entire application. Other services can continue to function.
+   - **Maintenance**: Isolated services make it easier to identify and fix issues without affecting the entire system.
+
+3. **Technology Diversity**:
+   - **Flexibility**: Different microservices can use different technologies, languages, and databases, allowing for the best tool for each task.
+   - **Innovation**: Teams can experiment with new technologies and frameworks without affecting the rest of the application.
+
+4. **Development and Deployment**:
+   - **Parallel Development**: Multiple teams can work on different microservices simultaneously, accelerating development cycles.
+   - **Continuous Deployment**: Smaller, more frequent updates can be deployed without disrupting the entire application.
+
+5. **Reusability**:
+   - **Code Reuse**: Microservices can be reused across different applications, reducing development time and effort.
+
+### Disadvantages of Microservices Architecture
+
+1. **Complexity**:
+   - **Coordination**: Managing multiple services requires a robust service mesh and communication protocols, which can be complex.
+   - **Integration**: Integrating services can be challenging, especially when dealing with inter-service communication and data consistency.
+
+2. **Operational Overhead**:
+   - **Monitoring and Logging**: Monitoring and logging across multiple services can be more complex and resource-intensive.
+   - **Infrastructure Management**: Managing a large number of services requires more infrastructure and operational expertise.
+
+3. **Data Management**:
+   - **Consistency**: Ensuring data consistency across multiple services can be difficult, especially in distributed systems.
+   - **Data Management**: Each microservice may need to manage its own database, leading to potential data redundancy and inconsistency.
+
+4. **Security**:
+   - **Authentication and Authorization**: Securing microservices can be more complex, as each service needs to be secured independently.
+   - **API Management**: Managing APIs and ensuring secure communication between services can be challenging.
+
+5. **Learning Curve**:
+   - **Team Training**: Teams need to understand
+
+[Latency]
+      Prompt Mode: 65.2605 tok/s
+  Generative Mode: 4.04687 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 15.8133s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 15.8133s)
+=========== Processing the 9-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 35
+[llm_sdk][1] Num prompt tokens: 35
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Describe the typical steps of the software development life cycle and the role of testing.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 1.92218s (66.5911 tok/s)
+[llm_sdk][1] Done analyzing prompt in 1.92218s (66.5911 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 16.0169s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.0169s)
+
+Response [Max Length = 512]:
+The Software Development Life Cycle (SDLC) is a process used by software developers to develop, create, and maintain applications or systems. It typically involves several phases, each with specific goals and deliverables. The role of testing is crucial at various stages of the SDLC to ensure the quality and reliability of the software. Here’s a typical breakdown of the SDLC and the role of testing within it:
+
+### 1. **Requirements Gathering and Analysis**
+   - **Role of Testing:** 
+     - **Requirement Analysis:** Testers work closely with stakeholders to understand the requirements and ensure they are clear, complete, and testable.
+     - **Requirement Validation:** Testers validate the requirements to ensure they are feasible and align with the project goals.
+
+### 2. **Design**
+   - **Role of Testing:**
+     - **Test Strategy Development:** Testers develop a test strategy that outlines the approach to testing, including the types of testing (unit, integration, system, acceptance) and the tools to be used.
+     - **Test Planning:** Testers create detailed test plans that define the scope, objectives, and resources required for testing.
+
+### 3. **Implementation/Development**
+   - **Role of Testing:**
+     - **Unit Testing:** Developers write unit tests to ensure individual components or modules work as expected.
+     - **Integration Testing:** Testers ensure that different components or modules work together as expected.
+
+### 4. **Testing**
+   - **Role of Testing:**
+     - **System Testing:** Testers validate the entire system to ensure it meets the specified requirements and functions correctly.
+     - **Regression Testing:** Testers ensure that new changes or updates do not break existing functionality.
+     - **Performance Testing:** Testers evaluate the system's performance under various conditions to ensure it can handle expected loads.
+     - **Security Testing:** Testers check for vulnerabilities and ensure the system is secure.
+     - **User Acceptance Testing (UAT):** Testers work with end-users to ensure the system meets their needs and expectations.
+
+### 5. **Deployment**
+   - **Role of Testing:**
+     - **Deployment Testing:** Testers ensure that the software can be deployed in the production environment without issues.
+     - **Post-Deployment Testing:** Testers monitor the system post-deployment to ensure it continues to function as expected.
+
+### 6. **Maintenance**
+   - **Role of Testing:**
+     - **Bug Fixing:** Testers identify and report bugs, and work with developers to fix them</end>
+
+[Full Response]
+The Software Development Life Cycle (SDLC) is a process used by software developers to develop, create, and maintain applications or systems. It typically involves several phases, each with specific goals and deliverables. The role of testing is crucial at various stages of the SDLC to ensure the quality and reliability of the software. Here’s a typical breakdown of the SDLC and the role of testing within it:
+
+### 1. **Requirements Gathering and Analysis**
+   - **Role of Testing:** 
+     - **Requirement Analysis:** Testers work closely with stakeholders to understand the requirements and ensure they are clear, complete, and testable.
+     - **Requirement Validation:** Testers validate the requirements to ensure they are feasible and align with the project goals.
+
+### 2. **Design**
+   - **Role of Testing:**
+     - **Test Strategy Development:** Testers develop a test strategy that outlines the approach to testing, including the types of testing (unit, integration, system, acceptance) and the tools to be used.
+     - **Test Planning:** Testers create detailed test plans that define the scope, objectives, and resources required for testing.
+
+### 3. **Implementation/Development**
+   - **Role of Testing:**
+     - **Unit Testing:** Developers write unit tests to ensure individual components or modules work as expected.
+     - **Integration Testing:** Testers ensure that different components or modules work together as expected.
+
+### 4. **Testing**
+   - **Role of Testing:**
+     - **System Testing:** Testers validate the entire system to ensure it meets the specified requirements and functions correctly.
+     - **Regression Testing:** Testers ensure that new changes or updates do not break existing functionality.
+     - **Performance Testing:** Testers evaluate the system's performance under various conditions to ensure it can handle expected loads.
+     - **Security Testing:** Testers check for vulnerabilities and ensure the system is secure.
+     - **User Acceptance Testing (UAT):** Testers work with end-users to ensure the system meets their needs and expectations.
+
+### 5. **Deployment**
+   - **Role of Testing:**
+     - **Deployment Testing:** Testers ensure that the software can be deployed in the production environment without issues.
+     - **Post-Deployment Testing:** Testers monitor the system post-deployment to ensure it continues to function as expected.
+
+### 6. **Maintenance**
+   - **Role of Testing:**
+     - **Bug Fixing:** Testers identify and report bugs, and work with developers to fix them
+
+[Latency]
+      Prompt Mode: 66.5911 tok/s
+  Generative Mode: 4.06759 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 16.0081s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 16.0081s)
+
+[Average Performance among the given 10 prompts]
+      Prompt Mode: 64.74 tok/s
+  Generative Mode: 4.05272 tok/s

@@ -1,0 +1,976 @@
+Using yaml config file: scripts/config-yocto_llama3.2_1b.yaml
+[llm_sdk][1] Using yaml config file: scripts/config-yocto_llama3.2_1b.yaml
+Reading prompt from file: scripts/prompts/sample_prompt-introduction.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/sample_prompt-introduction.txt
+Reading prompt from file: scripts/prompts/p01.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p01.txt
+Reading prompt from file: scripts/prompts/p02.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p02.txt
+Reading prompt from file: scripts/prompts/p03.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p03.txt
+Reading prompt from file: scripts/prompts/p04.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p04.txt
+Reading prompt from file: scripts/prompts/p05.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p05.txt
+Reading prompt from file: scripts/prompts/p06.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p06.txt
+Reading prompt from file: scripts/prompts/p07.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p07.txt
+Reading prompt from file: scripts/prompts/p08.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p08.txt
+Reading prompt from file: scripts/prompts/p09.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p09.txt
+
+>>>>>>>>>>> Current yaml config: scripts/config-yocto_llama3.2_1b.yaml <<<<<<<<<<<
+Begin model init...
+[llm_sdk][1] Begin model init...
+WARN: Failed to load libneuron_runtime.so, trying libneuronusdk_runtime.mtk.so...
+[neuron_runtime_library_init][2] Failed to load libneuron_runtime.so, trying libneuronusdk_runtime.mtk.so...
+Successfully loaded libneuronusdk_runtime.mtk.so!
+[neuron_runtime_library_init][1] Successfully loaded libneuronusdk_runtime.mtk.so!
+Done model init. (Time taken: 2.73823s)
+[llm_sdk][1] Done model init. (Time taken: 2.73823s)
+Initialized Tiktoken tokenizer.
+[llm_sdk][1] Initialized Tiktoken tokenizer.
+Vocab size: 128256
+[llm_sdk][1] Vocab size: 128256
+=========== Processing the 0-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 46
+[llm_sdk][1] Num prompt tokens: 46
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+tell me about you<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.354771s (360.796 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.354771s (360.796 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 2.42592s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 2.42592s)
+
+Response [Max Length = 512]:
+I’m a large language model, I don’t have personal experiences or emotions, but I can provide information on a wide range of topics, including history, science, technology, entertainment, and more.
+
+I’m a type of artificial intelligence model, specifically designed to simulate conversation and answer questions to the best of my knowledge based on the data I was trained on.
+
+I can generate text, answers to questions, and even create content like stories and poetry. I’m constantly learning and improving, so I may not always understand the nuances of human language, but I’m here to help with any questions or topics you may have.
+
+You can also interact with me in various ways:
+
+* Ask me a question or provide a prompt, and I’ll respond with a written answer.
+* Give me a topic or question, and I’ll do my best to provide a helpful response.
+* Engage in a conversation, and I’ll respond with a mix of text and answers.
+
+Let’s get started! What would you like to talk about today?</eos></end>
+
+[Full Response]
+I’m a large language model, I don’t have personal experiences or emotions, but I can provide information on a wide range of topics, including history, science, technology, entertainment, and more.
+
+I’m a type of artificial intelligence model, specifically designed to simulate conversation and answer questions to the best of my knowledge based on the data I was trained on.
+
+I can generate text, answers to questions, and even create content like stories and poetry. I’m constantly learning and improving, so I may not always understand the nuances of human language, but I’m here to help with any questions or topics you may have.
+
+You can also interact with me in various ways:
+
+* Ask me a question or provide a prompt, and I’ll respond with a written answer.
+* Give me a topic or question, and I’ll do my best to provide a helpful response.
+* Engage in a conversation, and I’ll respond with a mix of text and answers.
+
+Let’s get started! What would you like to talk about today?
+
+[Latency]
+      Prompt Mode: 360.796 tok/s
+  Generative Mode: 18.4063 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 1.08652s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 1.08652s)
+=========== Processing the 1-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 55
+[llm_sdk][1] Num prompt tokens: 55
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+What are the main differences between TCP and UDP protocols in computer networking?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.338665s (377.955 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.338665s (377.955 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.369289s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.369289s)
+
+Response [Max Length = 512]:
+Here's a detailed explanation of the main differences between TCP and UDP protocols:
+
+**1. Connection Establishment**
+
+TCP (Transmission Control Protocol) is a connection-oriented protocol, which means that a new connection is established between two endpoints before data is sent. In contrast, UDP (User Datagram Protocol) is a connectionless protocol, which means that no connection is established before data is sent.
+
+**2. Error Handling**
+
+TCP is designed to handle errors that occur during data transfer. If the data is lost or corrupted, the sender can retransmit the data and the receiver can retransmit it. In contrast, UDP does not handle errors in the same way and will not retransmit the data if it is lost or corrupted.
+
+**3. Flow Control**
+
+TCP uses a flow control mechanism to regulate the amount of data that can be sent in a single packet. This ensures that the sender does not send too much data at once. In contrast, UDP does not use a flow control mechanism and can send a large amount of data in a single packet.
+
+**4. Time Sensitive Data**
+
+TCP is designed to handle time-sensitive data, such as financial transactions or voice calls. In contrast, UDP is not designed to handle time-sensitive data and may not be reliable for such applications.
+
+**5. Reliability**
+
+TCP is designed to be reliable, meaning that the sender guarantees that the data will be delivered to the receiver. In contrast, UDP is not reliable and may not guarantee that the data will be delivered.
+
+**6. Buffer Management**
+
+TCP uses a buffer to manage the data that is sent and received. In contrast, UDP does not use a buffer and can handle large amounts of data.
+
+**7. Error Correction**
+
+TCP uses error correction mechanisms to detect and correct errors that occur during data transfer. In contrast, UDP does not use error correction mechanisms and may not be able to detect or correct errors.
+
+**8. Security**
+
+TCP is designed to be secure, meaning that the sender can control the access to the data. In contrast, UDP is not secure and may allow unauthorized access to the data.
+
+In summary, TCP is a connection-oriented protocol that handles errors and ensures reliability, while UDP is a connectionless protocol that does not handle errors and is not reliable. The choice of protocol depends on the specific use case and requirements.</eos></end>
+
+[Full Response]
+Here's a detailed explanation of the main differences between TCP and UDP protocols:
+
+**1. Connection Establishment**
+
+TCP (Transmission Control Protocol) is a connection-oriented protocol, which means that a new connection is established between two endpoints before data is sent. In contrast, UDP (User Datagram Protocol) is a connectionless protocol, which means that no connection is established before data is sent.
+
+**2. Error Handling**
+
+TCP is designed to handle errors that occur during data transfer. If the data is lost or corrupted, the sender can retransmit the data and the receiver can retransmit it. In contrast, UDP does not handle errors in the same way and will not retransmit the data if it is lost or corrupted.
+
+**3. Flow Control**
+
+TCP uses a flow control mechanism to regulate the amount of data that can be sent in a single packet. This ensures that the sender does not send too much data at once. In contrast, UDP does not use a flow control mechanism and can send a large amount of data in a single packet.
+
+**4. Time Sensitive Data**
+
+TCP is designed to handle time-sensitive data, such as financial transactions or voice calls. In contrast, UDP is not designed to handle time-sensitive data and may not be reliable for such applications.
+
+**5. Reliability**
+
+TCP is designed to be reliable, meaning that the sender guarantees that the data will be delivered to the receiver. In contrast, UDP is not reliable and may not guarantee that the data will be delivered.
+
+**6. Buffer Management**
+
+TCP uses a buffer to manage the data that is sent and received. In contrast, UDP does not use a buffer and can handle large amounts of data.
+
+**7. Error Correction**
+
+TCP uses error correction mechanisms to detect and correct errors that occur during data transfer. In contrast, UDP does not use error correction mechanisms and may not be able to detect or correct errors.
+
+**8. Security**
+
+TCP is designed to be secure, meaning that the sender can control the access to the data. In contrast, UDP is not secure and may allow unauthorized access to the data.
+
+In summary, TCP is a connection-oriented protocol that handles errors and ensures reliability, while UDP is a connectionless protocol that does not handle errors and is not reliable. The choice of protocol depends on the specific use case and requirements.
+
+[Latency]
+      Prompt Mode: 377.955 tok/s
+  Generative Mode: 18.5052 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.338845s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.338845s)
+=========== Processing the 2-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 57
+[llm_sdk][1] Num prompt tokens: 57
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Explain the concept of gradient descent and why it is used in machine learning.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.335077s (382.002 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.335077s (382.002 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.320406s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.320406s)
+
+Response [Max Length = 512]:
+**Gradient Descent: A Key Concept in Machine Learning**
+
+Gradient descent is a fundamental optimization technique used in machine learning to minimize the loss function of a model. It's a crucial concept that helps us understand how neural networks and other machine learning algorithms work.
+
+**What is Gradient Descent?**
+
+Gradient descent is an optimization method that iteratively updates the model's parameters to minimize the difference between the predicted and actual loss. It's a key component of the stochastic gradient descent algorithm, which is widely used in machine learning.
+
+**How Does Gradient Descent Work?**
+
+Here's a step-by-step explanation of the gradient descent process:
+
+1. **Initialize the model**: Start with an initial set of model parameters, such as weights and biases.
+2. **Compute the loss**: Calculate the loss function between the predicted output and the actual output. This loss function is typically a sum of squared errors.
+3. **Compute the gradient**: Calculate the gradient of the loss function with respect to each parameter. This is a vector of partial derivatives of the loss function with respect to each parameter.
+4. **Update the parameters**: Update the model's parameters using the gradient as a guide. This involves adjusting the weights and biases to minimize the loss.
+
+**Why is Gradient Descent Used in Machine Learning?**
+
+Gradient descent is used in machine learning for several reasons:
+
+1. **Minimize the loss**: By minimizing the loss function, gradient descent helps to optimize the model's performance and reduce the risk of overfitting.
+2. **Optimize the model**: Gradient descent is a powerful tool for optimizing the model's performance, allowing us to train models on large datasets and achieve state-of-the-art results.
+3. **Regularization**: Gradient descent can be used to add regularization terms to the model, which helps to prevent overfitting and improve the model's generalizability.
+
+**Real-World Applications of Gradient Descent**
+
+Gradient descent has numerous applications in real-world machine learning tasks, including:
+
+1. **Neural Networks**: Gradient descent is used in neural networks to optimize the weights and biases of the network.
+2. **Supervised Learning**: Gradient descent is used in supervised learning tasks, such as classification and regression.
+3. **Unsupervised Learning**: Gradient descent is used in unsupervised learning tasks, such as clustering and dimensionality reduction.
+
+In summary, gradient descent is a fundamental optimization technique used in machine learning to minimize the loss function of a model. It's a crucial concept that helps us understand how neural networks and other machine learning algorithms work.</end>
+
+[Full Response]
+**Gradient Descent: A Key Concept in Machine Learning**
+
+Gradient descent is a fundamental optimization technique used in machine learning to minimize the loss function of a model. It's a crucial concept that helps us understand how neural networks and other machine learning algorithms work.
+
+**What is Gradient Descent?**
+
+Gradient descent is an optimization method that iteratively updates the model's parameters to minimize the difference between the predicted and actual loss. It's a key component of the stochastic gradient descent algorithm, which is widely used in machine learning.
+
+**How Does Gradient Descent Work?**
+
+Here's a step-by-step explanation of the gradient descent process:
+
+1. **Initialize the model**: Start with an initial set of model parameters, such as weights and biases.
+2. **Compute the loss**: Calculate the loss function between the predicted output and the actual output. This loss function is typically a sum of squared errors.
+3. **Compute the gradient**: Calculate the gradient of the loss function with respect to each parameter. This is a vector of partial derivatives of the loss function with respect to each parameter.
+4. **Update the parameters**: Update the model's parameters using the gradient as a guide. This involves adjusting the weights and biases to minimize the loss.
+
+**Why is Gradient Descent Used in Machine Learning?**
+
+Gradient descent is used in machine learning for several reasons:
+
+1. **Minimize the loss**: By minimizing the loss function, gradient descent helps to optimize the model's performance and reduce the risk of overfitting.
+2. **Optimize the model**: Gradient descent is a powerful tool for optimizing the model's performance, allowing us to train models on large datasets and achieve state-of-the-art results.
+3. **Regularization**: Gradient descent can be used to add regularization terms to the model, which helps to prevent overfitting and improve the model's generalizability.
+
+**Real-World Applications of Gradient Descent**
+
+Gradient descent has numerous applications in real-world machine learning tasks, including:
+
+1. **Neural Networks**: Gradient descent is used in neural networks to optimize the weights and biases of the network.
+2. **Supervised Learning**: Gradient descent is used in supervised learning tasks, such as classification and regression.
+3. **Unsupervised Learning**: Gradient descent is used in unsupervised learning tasks, such as clustering and dimensionality reduction.
+
+In summary, gradient descent is a fundamental optimization technique used in machine learning to minimize the loss function of a model. It's a crucial concept that helps us understand how neural networks and other machine learning algorithms work.
+
+[Latency]
+      Prompt Mode: 382.002 tok/s
+  Generative Mode: 18.5055 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.330651s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.330651s)
+=========== Processing the 3-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 55
+[llm_sdk][1] Num prompt tokens: 55
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Describe how garbage collection works in modern programming languages like Java or Python.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.33685s (379.991 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.33685s (379.991 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.320366s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.320366s)
+
+Response [Max Length = 512]:
+**Garbage Collection in Modern Programming Languages**
+
+Garbage collection is a mechanism that automatically frees up memory occupied by objects that are no longer in use. In modern programming languages like Java and Python, garbage collection is a crucial component of the garbage collection mechanism.
+
+**Java Garbage Collection**
+
+In Java, garbage collection is implemented using a combination of two garbage collection algorithms:
+
+1. **Concurrent garbage collection**: This method is used for concurrent garbage collection, where multiple threads can access and modify the garbage collection process simultaneously.
+2. **Mark-and-sweep**: This method is used for non-concurrent garbage collection, where the garbage collection process is run in a separate thread.
+
+The **Mark-and-sweep** algorithm works as follows:
+
+1. **Marking**: The garbage collector identifies the objects that are reachable from the root object (i.e., the object that is being garbage collected).
+2. **Sweeping**: The garbage collector sweeps up the marked objects and frees up the memory occupied by these objects.
+
+**Python Garbage Collection**
+
+In Python, garbage collection is implemented using a combination of two garbage collection algorithms:
+
+1. **Tracing garbage collection**: This method is used for tracing garbage collection, where the garbage collector identifies the objects that are reachable from the root object (i.e., the object that is being garbage collected).
+2. **Mark-and-sweep**: This method is used for non-tracing garbage collection, where the garbage collector identifies the objects that are reachable from the root object (i.e., the object that is being garbage collected).
+
+The **Mark-and-sweep** algorithm works as follows:
+
+1. **Marking**: The garbage collector identifies the objects that are reachable from the root object (i.e., the object that is being garbage collected).
+2. **Sweeping**: The garbage collector sweeps up the marked objects and frees up the memory occupied by these objects.
+
+**Example Use Cases**
+
+* In Java, the garbage collection mechanism is used to manage memory for objects such as arrays, lists, and objects.
+* In Python, the garbage collection mechanism is used to manage memory for objects such as lists, dictionaries, and objects.
+
+**Advantages**
+
+* The garbage collection mechanism provides automatic memory management, which can help reduce memory leaks and improve performance.
+* The garbage collection mechanism can help improve the performance of applications by freeing up memory occupied by objects that are no longer in use.
+
+**Disadvantages**
+
+* The garbage collection mechanism can be slower than manual garbage collection, which can lead to performance issues in applications that require frequent garbage</end>
+
+[Full Response]
+**Garbage Collection in Modern Programming Languages**
+
+Garbage collection is a mechanism that automatically frees up memory occupied by objects that are no longer in use. In modern programming languages like Java and Python, garbage collection is a crucial component of the garbage collection mechanism.
+
+**Java Garbage Collection**
+
+In Java, garbage collection is implemented using a combination of two garbage collection algorithms:
+
+1. **Concurrent garbage collection**: This method is used for concurrent garbage collection, where multiple threads can access and modify the garbage collection process simultaneously.
+2. **Mark-and-sweep**: This method is used for non-concurrent garbage collection, where the garbage collection process is run in a separate thread.
+
+The **Mark-and-sweep** algorithm works as follows:
+
+1. **Marking**: The garbage collector identifies the objects that are reachable from the root object (i.e., the object that is being garbage collected).
+2. **Sweeping**: The garbage collector sweeps up the marked objects and frees up the memory occupied by these objects.
+
+**Python Garbage Collection**
+
+In Python, garbage collection is implemented using a combination of two garbage collection algorithms:
+
+1. **Tracing garbage collection**: This method is used for tracing garbage collection, where the garbage collector identifies the objects that are reachable from the root object (i.e., the object that is being garbage collected).
+2. **Mark-and-sweep**: This method is used for non-tracing garbage collection, where the garbage collector identifies the objects that are reachable from the root object (i.e., the object that is being garbage collected).
+
+The **Mark-and-sweep** algorithm works as follows:
+
+1. **Marking**: The garbage collector identifies the objects that are reachable from the root object (i.e., the object that is being garbage collected).
+2. **Sweeping**: The garbage collector sweeps up the marked objects and frees up the memory occupied by these objects.
+
+**Example Use Cases**
+
+* In Java, the garbage collection mechanism is used to manage memory for objects such as arrays, lists, and objects.
+* In Python, the garbage collection mechanism is used to manage memory for objects such as lists, dictionaries, and objects.
+
+**Advantages**
+
+* The garbage collection mechanism provides automatic memory management, which can help reduce memory leaks and improve performance.
+* The garbage collection mechanism can help improve the performance of applications by freeing up memory occupied by objects that are no longer in use.
+
+**Disadvantages**
+
+* The garbage collection mechanism can be slower than manual garbage collection, which can lead to performance issues in applications that require frequent garbage
+
+[Latency]
+      Prompt Mode: 379.991 tok/s
+  Generative Mode: 18.628 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.331768s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.331768s)
+=========== Processing the 4-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 58
+[llm_sdk][1] Num prompt tokens: 58
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+What is the role of an operating system kernel and which subsystems does it manage?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.335618s (381.386 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.335618s (381.386 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.338844s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.338844s)
+
+Response [Max Length = 512]:
+The operating system kernel, also known as the kernel of an operating system, is a software component that manages computer hardware resources and provides a platform for running applications. It manages the system's resources, such as memory, file systems, and input/output devices.
+
+The kernel manages the following subsystems:
+
+1. **Memory Management**: The kernel manages memory allocation and deallocation, ensuring that memory is used efficiently and that there are no memory leaks.
+2. **File System Management**: The kernel manages file systems, including creation, deletion, and access of files and directories.
+3. **Input/Output (I/O) Management**: The kernel manages input/output operations, such as keyboard and mouse input, and output operations, such as printing and saving files.
+4. **Networking Management**: The kernel manages networking operations, including communication between devices and the internet.
+5. **Security Management**: The kernel manages security features, such as access control lists, permissions, and encryption.
+6. **Device Management**: The kernel manages device drivers, which are software components that interact with hardware devices, such as graphics cards, sound cards, and network cards.
+7. **User Space Management**: The kernel manages user space, including processes, threads, and memory allocation.
+
+The kernel manages these subsystems by providing a platform for running applications, managing memory, and providing a set of APIs (Application Programming Interfaces) that allow applications to access hardware resources.
+
+In summary, the kernel is responsible for managing the system's resources, providing a platform for running applications, and ensuring that the system is stable, secure, and efficient.</eos></end>
+
+[Full Response]
+The operating system kernel, also known as the kernel of an operating system, is a software component that manages computer hardware resources and provides a platform for running applications. It manages the system's resources, such as memory, file systems, and input/output devices.
+
+The kernel manages the following subsystems:
+
+1. **Memory Management**: The kernel manages memory allocation and deallocation, ensuring that memory is used efficiently and that there are no memory leaks.
+2. **File System Management**: The kernel manages file systems, including creation, deletion, and access of files and directories.
+3. **Input/Output (I/O) Management**: The kernel manages input/output operations, such as keyboard and mouse input, and output operations, such as printing and saving files.
+4. **Networking Management**: The kernel manages networking operations, including communication between devices and the internet.
+5. **Security Management**: The kernel manages security features, such as access control lists, permissions, and encryption.
+6. **Device Management**: The kernel manages device drivers, which are software components that interact with hardware devices, such as graphics cards, sound cards, and network cards.
+7. **User Space Management**: The kernel manages user space, including processes, threads, and memory allocation.
+
+The kernel manages these subsystems by providing a platform for running applications, managing memory, and providing a set of APIs (Application Programming Interfaces) that allow applications to access hardware resources.
+
+In summary, the kernel is responsible for managing the system's resources, providing a platform for running applications, and ensuring that the system is stable, secure, and efficient.
+
+[Latency]
+      Prompt Mode: 381.386 tok/s
+  Generative Mode: 18.5904 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.329925s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.329925s)
+=========== Processing the 5-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 57
+[llm_sdk][1] Num prompt tokens: 57
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Compare supervised learning and unsupervised learning with two short examples for each category.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.334506s (382.654 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.334506s (382.654 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.336242s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.336242s)
+
+Response [Max Length = 512]:
+Here are the comparisons between supervised learning and unsupervised learning with two short examples for each category:
+
+**Supervised Learning:**
+
+Supervised learning involves training a model on labeled data, where the input is the data and the output is the target variable. The model learns to predict the output based on the input data.
+
+Example 1: Image Classification
+Supervised learning is used in image classification tasks, where the input is an image and the output is the label of the image (e.g., cat vs. dog). The model learns to classify the image into different categories based on the input features (e.g., color, texture, etc.).
+
+Example 2: Sentiment Analysis
+Supervised learning is used in sentiment analysis tasks, where the input is a piece of text and the output is the sentiment of the text (e.g., positive, negative, neutral). The model learns to predict the sentiment based on the input text features (e.g., keywords, phrases, etc.).
+
+**Unsupervised Learning:**
+
+Unsupervised learning involves training a model on unlabeled data, where the input is the data and the output is the cluster or the pattern of the data.
+
+Example 1: Clustering
+Unsupervised learning is used in clustering tasks, where the input is a dataset of customers and the output is the cluster of customers based on their characteristics (e.g., age, location, etc.). The model learns to group the customers into different clusters based on the input features.
+
+Example 2: Anomaly Detection
+Unsupervised learning is used in anomaly detection tasks, where the input is a dataset of data and the output is the anomaly or outlier in the data (e.g., unusual patterns, unusual values, etc.). The model learns to detect anomalies based on the input data features (e.g., unusual patterns, unusual values, etc.).
+
+These are just a few examples of the differences between supervised and unsupervised learning. The choice of which type of learning is appropriate depends on the specific problem and the characteristics of the data.</eos></end>
+
+[Full Response]
+Here are the comparisons between supervised learning and unsupervised learning with two short examples for each category:
+
+**Supervised Learning:**
+
+Supervised learning involves training a model on labeled data, where the input is the data and the output is the target variable. The model learns to predict the output based on the input data.
+
+Example 1: Image Classification
+Supervised learning is used in image classification tasks, where the input is an image and the output is the label of the image (e.g., cat vs. dog). The model learns to classify the image into different categories based on the input features (e.g., color, texture, etc.).
+
+Example 2: Sentiment Analysis
+Supervised learning is used in sentiment analysis tasks, where the input is a piece of text and the output is the sentiment of the text (e.g., positive, negative, neutral). The model learns to predict the sentiment based on the input text features (e.g., keywords, phrases, etc.).
+
+**Unsupervised Learning:**
+
+Unsupervised learning involves training a model on unlabeled data, where the input is the data and the output is the cluster or the pattern of the data.
+
+Example 1: Clustering
+Unsupervised learning is used in clustering tasks, where the input is a dataset of customers and the output is the cluster of customers based on their characteristics (e.g., age, location, etc.). The model learns to group the customers into different clusters based on the input features.
+
+Example 2: Anomaly Detection
+Unsupervised learning is used in anomaly detection tasks, where the input is a dataset of data and the output is the anomaly or outlier in the data (e.g., unusual patterns, unusual values, etc.). The model learns to detect anomalies based on the input data features (e.g., unusual patterns, unusual values, etc.).
+
+These are just a few examples of the differences between supervised and unsupervised learning. The choice of which type of learning is appropriate depends on the specific problem and the characteristics of the data.
+
+[Latency]
+      Prompt Mode: 382.654 tok/s
+  Generative Mode: 18.617 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.320056s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.320056s)
+=========== Processing the 6-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 56
+[llm_sdk][1] Num prompt tokens: 56
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+How does a convolutional neural network process image data and extract useful features?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.3269s (391.557 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.3269s (391.557 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.339928s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.339928s)
+
+Response [Max Length = 512]:
+A convolutional neural network (CNN) is a type of neural network that is commonly used for image and video processing tasks. Here's a high-level overview of how it processes image data and extracts useful features:
+
+**Input Processing**
+
+When an input image is fed into the CNN, it is typically preprocessed to prepare it for processing. This includes:
+
+1. **Image Resizing**: The image is resized to a fixed size, which is determined by the number of input channels (e.g., RGB images).
+2. **Data Normalization**: The image data is normalized to ensure that all pixel values are within a certain range (e.g., 0 to 1).
+3. **Channel Normalization**: The image data is normalized across different channels (e.g., RGB images).
+
+**Convolutional Layers**
+
+The input image is then passed through a series of convolutional layers, which are designed to extract features from the image data. Each convolutional layer consists of:
+
+1. **Convolutional Layer**: The input image is passed through a 3D convolutional layer, which applies a set of filters to the image data.
+2. **Activation Function**: The output of the convolutional layer is passed through an activation function (e.g., ReLU), which applies an element-wise activation function to the output.
+
+**Pooling and Feature Extraction**
+
+The output of the convolutional layer is then passed through a series of pooling layers, which reduce the spatial dimensions of the image data. The output of the pooling layer is then passed through a set of feature extraction functions (e.g., max-pooling, average-pooling).
+
+**Flatten and Dense Layers**
+
+The output of the pooling layer is flattened and dense layers are added to extract features from the flattened data.
+
+**Dense Layers**
+
+The output of the dense layers is flattened and dense layers are added to extract features from the flattened data.
+
+**Activation and Output**
+
+The output of the dense layers is passed through an activation function (e.g., ReLU) to apply an element-wise activation function to the output.
+
+**Final Output**
+
+The final output of the CNN is the feature extraction output.
+
+**Example Code**
+
+Here is an example code snippet in PyTorch that demonstrates how a CNN can be used to classify handwritten digits:
+```python
+import torch
+import torch.nn as nn
+import torchvision.utils as tv
+import torchvision.transforms as tv
+
+# Load the test set
+test_set = torchvision.datasets.ImageFolder('path/to/testset', download=True, download_mode=False)
+test_set =</end>
+
+[Full Response]
+A convolutional neural network (CNN) is a type of neural network that is commonly used for image and video processing tasks. Here's a high-level overview of how it processes image data and extracts useful features:
+
+**Input Processing**
+
+When an input image is fed into the CNN, it is typically preprocessed to prepare it for processing. This includes:
+
+1. **Image Resizing**: The image is resized to a fixed size, which is determined by the number of input channels (e.g., RGB images).
+2. **Data Normalization**: The image data is normalized to ensure that all pixel values are within a certain range (e.g., 0 to 1).
+3. **Channel Normalization**: The image data is normalized across different channels (e.g., RGB images).
+
+**Convolutional Layers**
+
+The input image is then passed through a series of convolutional layers, which are designed to extract features from the image data. Each convolutional layer consists of:
+
+1. **Convolutional Layer**: The input image is passed through a 3D convolutional layer, which applies a set of filters to the image data.
+2. **Activation Function**: The output of the convolutional layer is passed through an activation function (e.g., ReLU), which applies an element-wise activation function to the output.
+
+**Pooling and Feature Extraction**
+
+The output of the convolutional layer is then passed through a series of pooling layers, which reduce the spatial dimensions of the image data. The output of the pooling layer is then passed through a set of feature extraction functions (e.g., max-pooling, average-pooling).
+
+**Flatten and Dense Layers**
+
+The output of the pooling layer is flattened and dense layers are added to extract features from the flattened data.
+
+**Dense Layers**
+
+The output of the dense layers is flattened and dense layers are added to extract features from the flattened data.
+
+**Activation and Output**
+
+The output of the dense layers is passed through an activation function (e.g., ReLU) to apply an element-wise activation function to the output.
+
+**Final Output**
+
+The final output of the CNN is the feature extraction output.
+
+**Example Code**
+
+Here is an example code snippet in PyTorch that demonstrates how a CNN can be used to classify handwritten digits:
+```python
+import torch
+import torch.nn as nn
+import torchvision.utils as tv
+import torchvision.transforms as tv
+
+# Load the test set
+test_set = torchvision.datasets.ImageFolder('path/to/testset', download=True, download_mode=False)
+test_set =
+
+[Latency]
+      Prompt Mode: 391.557 tok/s
+  Generative Mode: 18.503 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.328489s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.328489s)
+=========== Processing the 7-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 57
+[llm_sdk][1] Num prompt tokens: 57
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Explain what a database index is and how it improves query performance in SQL.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.333662s (383.621 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.333662s (383.621 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.31864s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.31864s)
+
+Response [Max Length = 512]:
+A database index is a data structure that improves the performance of queries by providing an efficient way to access and retrieve data from a database. It is a data structure that stores information about the data in a way that allows the database to quickly locate and retrieve specific data.
+
+Imagine a library with a huge collection of books. Each book has a title, author, and publication date. If you want to find a specific book, you would have to search through the entire collection to find it. But, if you had a map of the library, you could quickly locate the book you're looking for by showing the map to the book's location.
+
+A database index works similarly. It is a data structure that stores information about the data in a way that allows the database to quickly locate and retrieve specific data. The index is typically created by creating a separate data structure that stores the information about the data in a way that allows the database to quickly locate and retrieve specific data.
+
+A database index can be created in several ways, including:
+
+* Creating an index on a specific column of a table
+* Creating an index on an index of a table
+* Creating an index on a specific table or view
+* Creating an index on a specific column of a table in a view
+
+Creating a database index can improve query performance in several ways, including:
+
+* Reducing the time it takes to execute a query
+* Improving the performance of the database
+* Reducing the number of disk I/O operations
+
+Here is an example of how a database index can be used to improve query performance:
+
+```sql
+CREATE TABLE customers (
+  id INT PRIMARY KEY,
+  name VARCHAR(50),
+  email VARCHAR(100)
+);
+
+CREATE INDEX idx_email ON customers (email);
+
+SELECT * FROM customers WHERE email = 'example@example.com';
+```
+
+In this example, the `CREATE INDEX` statement creates an index on the `email` column of the `customers` table. This means that the database will quickly locate the data in the `customers` table when a query is executed that uses the `email` column.
+
+The `CREATE INDEX` statement can also be used to improve query performance by creating an index on a specific column of a table. For example:
+
+```sql
+CREATE TABLE orders (
+  id INT PRIMARY KEY,
+  customer_id INT,
+  order_date DATE
+);
+
+CREATE INDEX idx_customer_id ON orders (customer_id);
+
+SELECT * FROM orders WHERE customer_id = 1;
+```
+
+In this example, the `CREATE INDEX` statement creates an index on the</end>
+
+[Full Response]
+A database index is a data structure that improves the performance of queries by providing an efficient way to access and retrieve data from a database. It is a data structure that stores information about the data in a way that allows the database to quickly locate and retrieve specific data.
+
+Imagine a library with a huge collection of books. Each book has a title, author, and publication date. If you want to find a specific book, you would have to search through the entire collection to find it. But, if you had a map of the library, you could quickly locate the book you're looking for by showing the map to the book's location.
+
+A database index works similarly. It is a data structure that stores information about the data in a way that allows the database to quickly locate and retrieve specific data. The index is typically created by creating a separate data structure that stores the information about the data in a way that allows the database to quickly locate and retrieve specific data.
+
+A database index can be created in several ways, including:
+
+* Creating an index on a specific column of a table
+* Creating an index on an index of a table
+* Creating an index on a specific table or view
+* Creating an index on a specific column of a table in a view
+
+Creating a database index can improve query performance in several ways, including:
+
+* Reducing the time it takes to execute a query
+* Improving the performance of the database
+* Reducing the number of disk I/O operations
+
+Here is an example of how a database index can be used to improve query performance:
+
+```sql
+CREATE TABLE customers (
+  id INT PRIMARY KEY,
+  name VARCHAR(50),
+  email VARCHAR(100)
+);
+
+CREATE INDEX idx_email ON customers (email);
+
+SELECT * FROM customers WHERE email = 'example@example.com';
+```
+
+In this example, the `CREATE INDEX` statement creates an index on the `email` column of the `customers` table. This means that the database will quickly locate the data in the `customers` table when a query is executed that uses the `email` column.
+
+The `CREATE INDEX` statement can also be used to improve query performance by creating an index on a specific column of a table. For example:
+
+```sql
+CREATE TABLE orders (
+  id INT PRIMARY KEY,
+  customer_id INT,
+  order_date DATE
+);
+
+CREATE INDEX idx_customer_id ON orders (customer_id);
+
+SELECT * FROM orders WHERE customer_id = 1;
+```
+
+In this example, the `CREATE INDEX` statement creates an index on the
+
+[Latency]
+      Prompt Mode: 383.621 tok/s
+  Generative Mode: 18.6661 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.329501s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.329501s)
+=========== Processing the 8-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 58
+[llm_sdk][1] Num prompt tokens: 58
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+What are the advantages and disadvantages of a microservices architecture compared to a monolith?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.336216s (380.707 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.336216s (380.707 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.330932s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.330932s)
+
+Response [Max Length = 512]:
+Here's a detailed comparison of microservices architecture and monolithic architecture:
+
+**Advantages of Microservices Architecture:**
+
+1. **Decouplation**: Microservices allow for independent development, deployment, and management of each service, making it easier to scale and maintain individual services.
+2. **Scalability**: Microservices can be scaled independently, allowing each service to be scaled up or down without affecting other services.
+3. **Reusability**: Services can be reused across multiple applications, reducing the overall cost of development and maintenance.
+4. **Flexibility**: Microservices enable easy integration of new services or features, making it easier to adapt to changing business needs.
+5. **Security**: Microservices can be designed with security in mind, allowing for more granular control over access and authentication.
+
+**Disadvantages of Microservices Architecture:**
+
+1. **Complexity**: Microservices can be more complex to manage and maintain, especially when dealing with multiple services and dependencies.
+2. **Over-Reliance on Services**: The success of a microservices architecture depends heavily on the quality and reliability of the individual services, which can be a challenge to manage.
+3. **Integration Complexity**: Integrating services across different applications can be challenging, especially when dealing with complex data flows and business logic.
+4. **Testing and Debugging**: Testing and debugging individual services can be more challenging due to the complexity of the overall system.
+5. **Error Propagation**: Errors can be more difficult to propagate and isolate in a microservices architecture compared to a monolithic one.
+
+**Advantages of Monolithic Architecture:**
+
+1. **Simplicity**: Monolithic architectures are often simpler to understand and maintain, as each component is self-contained and easy to understand.
+2. **Scalability**: Monolithic architectures can scale independently, making it easier to increase resource utilization without affecting other components.
+3. **Reusability**: Monolithic architectures enable easy reusability of code, reducing the overall cost of development and maintenance.
+4. **Faster Development**: Monolithic architectures can be developed and deployed faster, as each component is self-contained and easy to understand.
+5. **Easier Debugging**: Monolithic architectures are often easier to debug, as each component is self-contained and easy to understand.
+
+**Disadvantages of Monolithic Architecture:**
+
+1. **Complexity**: Monolithic architectures can be more complex to manage and maintain, especially when dealing with multiple components and dependencies.
+2. **Over-Reliance on Components**: The success of a</end>
+
+[Full Response]
+Here's a detailed comparison of microservices architecture and monolithic architecture:
+
+**Advantages of Microservices Architecture:**
+
+1. **Decouplation**: Microservices allow for independent development, deployment, and management of each service, making it easier to scale and maintain individual services.
+2. **Scalability**: Microservices can be scaled independently, allowing each service to be scaled up or down without affecting other services.
+3. **Reusability**: Services can be reused across multiple applications, reducing the overall cost of development and maintenance.
+4. **Flexibility**: Microservices enable easy integration of new services or features, making it easier to adapt to changing business needs.
+5. **Security**: Microservices can be designed with security in mind, allowing for more granular control over access and authentication.
+
+**Disadvantages of Microservices Architecture:**
+
+1. **Complexity**: Microservices can be more complex to manage and maintain, especially when dealing with multiple services and dependencies.
+2. **Over-Reliance on Services**: The success of a microservices architecture depends heavily on the quality and reliability of the individual services, which can be a challenge to manage.
+3. **Integration Complexity**: Integrating services across different applications can be challenging, especially when dealing with complex data flows and business logic.
+4. **Testing and Debugging**: Testing and debugging individual services can be more challenging due to the complexity of the overall system.
+5. **Error Propagation**: Errors can be more difficult to propagate and isolate in a microservices architecture compared to a monolithic one.
+
+**Advantages of Monolithic Architecture:**
+
+1. **Simplicity**: Monolithic architectures are often simpler to understand and maintain, as each component is self-contained and easy to understand.
+2. **Scalability**: Monolithic architectures can scale independently, making it easier to increase resource utilization without affecting other components.
+3. **Reusability**: Monolithic architectures enable easy reusability of code, reducing the overall cost of development and maintenance.
+4. **Faster Development**: Monolithic architectures can be developed and deployed faster, as each component is self-contained and easy to understand.
+5. **Easier Debugging**: Monolithic architectures are often easier to debug, as each component is self-contained and easy to understand.
+
+**Disadvantages of Monolithic Architecture:**
+
+1. **Complexity**: Monolithic architectures can be more complex to manage and maintain, especially when dealing with multiple components and dependencies.
+2. **Over-Reliance on Components**: The success of a
+
+[Latency]
+      Prompt Mode: 380.707 tok/s
+  Generative Mode: 18.5901 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.331638s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.331638s)
+=========== Processing the 9-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 57
+[llm_sdk][1] Num prompt tokens: 57
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Describe the typical steps of the software development life cycle and the role of testing.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.333724s (383.55 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.333724s (383.55 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.314531s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.314531s)
+
+Response [Max Length = 512]:
+The typical steps of the software development life cycle include:
+1. Requirements gathering: This involves defining the project requirements, gathering input from stakeholders, and creating a detailed project plan.
+2. Design: This involves creating the design of the software, including the architecture, user interface, and system architecture.
+3. Implementation: This involves writing the code for the software, including writing the requirements, creating the database, and implementing the system.
+4. Testing: This involves identifying and testing the software, including unit testing, integration testing, and system testing.
+5. Deployment: This involves deploying the software to the production environment, including setting up the infrastructure, configuring the environment, and deploying the software.
+6. Maintenance: This involves maintaining the software, including updating the code, fixing bugs, and adding new features.
+
+Testing is a critical component of the software development life cycle, and it plays a key role in ensuring the quality and reliability of the software. Here are some key aspects of testing:
+
+1. **Unit testing**: This involves testing individual units of code, such as functions or methods, to ensure they work as expected.
+2. **Integration testing**: This involves testing the interactions between different units of code, such as the integration of APIs or the integration of different components.
+3. **System testing**: This involves testing the entire system, including the overall architecture and the user interface.
+4. **User acceptance testing (UAT)**: This involves testing the software with real users to ensure it meets their expectations and requirements.
+5. **Beta testing**: This involves testing the software with a small group of users to identify any bugs or issues before the final release.
+6. **Quality assurance (QA) testing**: This involves testing the software to ensure it meets the required quality standards, including testing for defects and ensuring the software is stable and reliable.
+
+In summary, testing is an essential part of the software development life cycle, and it plays a critical role in ensuring the quality and reliability of the software. By identifying and testing the software, developers can ensure that the software meets the requirements and is free from defects.</eos></end>
+
+[Full Response]
+The typical steps of the software development life cycle include:
+1. Requirements gathering: This involves defining the project requirements, gathering input from stakeholders, and creating a detailed project plan.
+2. Design: This involves creating the design of the software, including the architecture, user interface, and system architecture.
+3. Implementation: This involves writing the code for the software, including writing the requirements, creating the database, and implementing the system.
+4. Testing: This involves identifying and testing the software, including unit testing, integration testing, and system testing.
+5. Deployment: This involves deploying the software to the production environment, including setting up the infrastructure, configuring the environment, and deploying the software.
+6. Maintenance: This involves maintaining the software, including updating the code, fixing bugs, and adding new features.
+
+Testing is a critical component of the software development life cycle, and it plays a key role in ensuring the quality and reliability of the software. Here are some key aspects of testing:
+
+1. **Unit testing**: This involves testing individual units of code, such as functions or methods, to ensure they work as expected.
+2. **Integration testing**: This involves testing the interactions between different units of code, such as the integration of APIs or the integration of different components.
+3. **System testing**: This involves testing the entire system, including the overall architecture and the user interface.
+4. **User acceptance testing (UAT)**: This involves testing the software with real users to ensure it meets their expectations and requirements.
+5. **Beta testing**: This involves testing the software with a small group of users to identify any bugs or issues before the final release.
+6. **Quality assurance (QA) testing**: This involves testing the software to ensure it meets the required quality standards, including testing for defects and ensuring the software is stable and reliable.
+
+In summary, testing is an essential part of the software development life cycle, and it plays a critical role in ensuring the quality and reliability of the software. By identifying and testing the software, developers can ensure that the software meets the requirements and is free from defects.
+
+[Latency]
+      Prompt Mode: 383.55 tok/s
+  Generative Mode: 18.6117 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.328252s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.328252s)
+
+[Average Performance among the given 10 prompts]
+      Prompt Mode: 380.422 tok/s
+  Generative Mode: 18.5623 tok/s

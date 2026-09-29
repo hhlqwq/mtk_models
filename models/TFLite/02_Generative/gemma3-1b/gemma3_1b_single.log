@@ -1,0 +1,21 @@
+Using yaml config file: scripts/config-yocto_gemma3_1b.yaml
+[llm_sdk][1] Using yaml config file: scripts/config-yocto_gemma3_1b.yaml
+Reading prompt from file: scripts/prompts/sample_prompt-introduction.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/sample_prompt-introduction.txt
+
+>>>>>>>>>>> Current yaml config: scripts/config-yocto_gemma3_1b.yaml <<<<<<<<<<<
+Begin model init...
+[llm_sdk][1] Begin model init...
+WARN: Failed to load libneuron_runtime.so, trying libneuronusdk_runtime.mtk.so...
+[neuron_runtime_library_init][2] Failed to load libneuron_runtime.so, trying libneuronusdk_runtime.mtk.so...
+Successfully loaded libneuronusdk_runtime.mtk.so!
+[neuron_runtime_library_init][1] Successfully loaded libneuronusdk_runtime.mtk.so!
+Done model init. (Time taken: 0.381801s)
+[llm_sdk][1] Done model init. (Time taken: 0.381801s)
+Initialized SentencePiece tokenizer.
+[llm_sdk][1] Initialized SentencePiece tokenizer.
+Vocab size: 262144
+[llm_sdk][1] Vocab size: 262144
+=========== Processing the 0-th input. ===========
+Preformatted prompt with 'GemmaNoInput'
+[llm_sdk][1] Preformatted prompt with 'GemmaNoInput'

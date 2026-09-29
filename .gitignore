@@ -94,3 +94,6 @@ Thumbs.db
 
 # 排查 MT8189 平台配置时留下的本地第三方资料
 .vendor
+
+
+!models/TFLite/**/*.log

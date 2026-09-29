@@ -37,35 +37,35 @@
 开发板[LLM工具](https://genio.mediatek.com/doc/iot-aihub/ai_hub/supported_os/yocto/litert_gai/llm_cmdline_tool.html), [VLM工具](https://genio.mediatek.com/doc/iot-aihub/ai_hub/supported_os/yocto/litert_gai/vlm_cmdline_tool.html), 新版本 [发行说明](https://genio.mediatek.com/doc/iot-yocto/latest/sw/yocto/release-notes/iot-yocto-v26.0-release-note.html)：iot-yocto-v26.0-release  v26.0 - 2026 Jul 29  
 [刷机指南](https://genio.mediatek.com/doc/iot-yocto/latest/sw/yocto/get-started/flash.html)
 #### LLM
-| 模型 | source | 性能(Prompt/Generative) token/s | 实测 |
+| 模型 | source | 性能 token/s | 实测 token/s |
 | ------ | ------ | ------ | ------ |
-| Qwen3-0.6B | [Qwen3-0.6B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3-0.6b.zip) | 535.94 / 22.93 | todo |
-| Qwen3-1.7B | [Qwen3-1.7B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3-1.7b.zip) | 262.73 / 13.84 | todo |
-| Qwen3-4B | [Qwen3-4B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3-4b.zip) | 125.58 / 7.25 | todo |
-| Qwen3-8B | [Qwen3-8B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3-8b.zip) | 80.17 / 4.76 | todo |
-| Qwen2.5-1.5B-Instruct | [Qwen2.5-1.5B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen2.5-1.5b.zip) | 337.06 / 19.25 | todo |
-| Qwen2.5-3B-Instruct | [Qwen2.5-3B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen2.5-3b.zip) | 163.23 / 10.64 | todo |
-| Qwen2.5-7B-Instruct | [Qwen2.5-7B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen2.5-7b.zip) | 69.47 / 4.73 | todo |
-| gemma3-1B (Text-Only) | [gemma3-1B (Text-Only)](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/gemma3-1b.zip) | 583.01 / 26.44 | todo |
-| gemma3-4B (Text-Only) | [gemma3-4B (Text-Only)](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/gemma3-4b.zip) | 176.79 / 5.93 | todo |
-| llama3.2-1B-Instruct | [llama3.2-1B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/llama3.2-1b.zip) | 400.57 / 24.92 | todo |
-| llama3.2-3B-Instruct | [llama3.2-3B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/llama3.2-3b.zip) | 153.56 / 10.36 | todo |
-| Phi-3-mini-4k-instruct | [Phi-3-mini-4k-instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/phi-3-mini-4k-instruct.zip) | 127.56 / 7.28 | todo |
-| Phi-3.5-mini-instruct | [Phi-3.5-mini-instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/phi-3.5-mini-instruct.zip) | 136.63 / 6.29 | todo |
+| Qwen3-0.6B | [Qwen3-0.6B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3-0.6b.zip) | 535.94 / 22.93 | [470 / 18.52](02_Generative\qwen3-0.6b\benchmark_qwen3-0.6b.log) |
+| Qwen3-1.7B | [Qwen3-1.7B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3-1.7b.zip) | 262.73 / 13.84 | [245.56 / 10.34](02_Generative\qwen3-1.7b\benchmark_qwen3-1.7b.log) |
+| Qwen3-4B | [Qwen3-4B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3-4b.zip) | 125.58 / 7.25 | [118.45 / 5.29](02_Generative\qwen3-4b\benchmark_qwen3-4b.log) |
+| Qwen3-8B | [Qwen3-8B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3-8b.zip) | 80.17 / 4.76 | [76.68 / 4.12](02_Generative\qwen3-8b\benchmark_qwen3-8b.log) |
+| Qwen2.5-1.5B-Instruct | [Qwen2.5-1.5B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen2.5-1.5b.zip) | 337.06 / 19.25 | [321.1 / 16.1](02_Generative\qwen2.5-1.5b\benchmark_qwen2.5-1.5b.log) |
+| Qwen2.5-3B-Instruct | [Qwen2.5-3B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen2.5-3b.zip) | 163.23 / 10.64 | [145.79 / 7.8](02_Generative\qwen2.5-3b\benchmark_qwen2.5-3b.log) |
+| Qwen2.5-7B-Instruct | [Qwen2.5-7B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen2.5-7b.zip) | 69.47 / 4.73 | [64.74 / 4.05](02_Generative\qwen2.5-7b\benchmark_qwen2.5-7b.log) |
+| gemma3-1B (Text-Only) | [gemma3-1B (Text-Only)](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/gemma3-1b.zip) | 583.01 / 26.44 | [failed](02_Generative\gemma3-1b\gemma3_1b_single.log) |
+| gemma3-4B (Text-Only) | [gemma3-4B (Text-Only)](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/gemma3-4b.zip) | 176.79 / 5.93 | [failed](02_Generative\gemma3-4b\benchmark_gemma3-4b.log) |
+| llama3.2-1B-Instruct | [llama3.2-1B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/llama3.2-1b.zip) | 400.57 / 24.92 | [380.4 / 18.56](02\llama3.2-1b\benchmark_llama3.2-1b.log) |
+| llama3.2-3B-Instruct | [llama3.2-3B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/llama3.2-3b.zip) | 153.56 / 10.36 |  [144.58 / 6.58](02_Generative\llama3.2-3b\benchmark_llama3.2-3b.log) |
+| Phi-3-mini-4k-instruct | [Phi-3-mini-4k-instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/phi-3-mini-4k-instruct.zip) | 127.56 / 7.28 | [127.91 / 6.62](02_Generative\Phi-3-mini-4k-instruct\benchmark_phi-3-mini-4k-instruct.log) |
+| Phi-3.5-mini-instruct | [Phi-3.5-mini-instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/phi-3.5-mini-instruct.zip) | 136.63 / 6.29 | [138.42 / 6.05](02_Generative\Phi-3.5-mini-instruct\benchmark_phi-3.5-mini-instruct.log) |
 
 
 #### VLM
 | 模型 | source | vit/Prompt/Generative | 实测 |
 | ------ | ------ | ------ | ------ |
-| Qwen3VL-2B | [Qwen3VL-2B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3vl-2b.zip) | 0.43 / 199.75 / 14.43 | todo |
+| Qwen3VL-2B | [Qwen3VL-2B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3vl-2b.zip) | 0.43s / 199.75 / 14.43 | [0.499s / 322.65 / 13.52](02_Generative\qwen3vl-2b\benchmark_qwen3vl-2b.log) |
 | Qwen3VL-4B | - | - | - |
 
 #### ASR
 | 模型 | source | Performance | 实测 |
 | ------ | ------ | ------ | ------ |
-| Whisper-base (8w16a) | [Whisper-base (8w16a)](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/whisper-base-8w16a.zip) | 160.6 ms / 174.8 tok/s | todo |
-| Qwen3-ASR-0.6B | [Qwen3-ASR-0.6B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3-asr-0.6b.zip) | 127.6 / 7.1 tok/s | todo |
-| Moonshine-Tiny | [Moonshine-Tiny](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/moonshine-tiny.zip) | V | todo |
+| Whisper-base (8w16a) | [Whisper-base (8w16a)](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/whisper-base-8w16a.zip) | 160.6 ms / 174.8 tok/s | 未包含asr_cmdline_tool |
+| Qwen3-ASR-0.6B | [Qwen3-ASR-0.6B](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen3-asr-0.6b.zip) | 127.6 / 7.1 tok/s | 未包含asr_cmdline_tool |
+| Moonshine-Tiny | [Moonshine-Tiny](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/moonshine-tiny.zip) | V | 未包含asr_cmdline_tool |
 
 
 ### 3. ONNX Runtime - Analytical AI

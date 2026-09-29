@@ -1,0 +1,640 @@
+Using yaml config file: scripts/config-yocto_qwen2.5_1.5b_instruct.yaml
+[llm_sdk][1] Using yaml config file: scripts/config-yocto_qwen2.5_1.5b_instruct.yaml
+Reading prompt from file: scripts/prompts/sample_prompt-introduction.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/sample_prompt-introduction.txt
+Reading prompt from file: scripts/prompts/p01.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p01.txt
+Reading prompt from file: scripts/prompts/p02.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p02.txt
+Reading prompt from file: scripts/prompts/p03.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p03.txt
+Reading prompt from file: scripts/prompts/p04.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p04.txt
+Reading prompt from file: scripts/prompts/p05.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p05.txt
+Reading prompt from file: scripts/prompts/p06.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p06.txt
+Reading prompt from file: scripts/prompts/p07.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p07.txt
+Reading prompt from file: scripts/prompts/p08.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p08.txt
+Reading prompt from file: scripts/prompts/p09.txt
+[llm_sdk][1] Reading prompt from file: scripts/prompts/p09.txt
+
+>>>>>>>>>>> Current yaml config: scripts/config-yocto_qwen2.5_1.5b_instruct.yaml <<<<<<<<<<<
+Begin model init...
+[llm_sdk][1] Begin model init...
+WARN: Failed to load libneuron_runtime.so, trying libneuronusdk_runtime.mtk.so...
+[neuron_runtime_library_init][2] Failed to load libneuron_runtime.so, trying libneuronusdk_runtime.mtk.so...
+Successfully loaded libneuronusdk_runtime.mtk.so!
+[neuron_runtime_library_init][1] Successfully loaded libneuronusdk_runtime.mtk.so!
+Done model init. (Time taken: 3.10455s)
+[llm_sdk][1] Done model init. (Time taken: 3.10455s)
+Initialized HuggingFace tokenizer.
+[llm_sdk][1] Initialized HuggingFace tokenizer.
+Vocab size: 151665
+[llm_sdk][1] Vocab size: 151665
+=========== Processing the 0-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 23
+[llm_sdk][1] Num prompt tokens: 23
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+tell me about you<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.403391s (317.31 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.403391s (317.31 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 2.98784s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 2.98784s)
+
+Response [Max Length = 512]:
+I am an artificial intelligence language model created by Anthropic. I am designed to assist with a wide range of tasks, including answering questions, providing information, generating text, and engaging in conversation. I am constantly learning and improving, and I am here to help you with any questions you may have.</eos></end>
+
+[Full Response]
+I am an artificial intelligence language model created by Anthropic. I am designed to assist with a wide range of tasks, including answering questions, providing information, generating text, and engaging in conversation. I am constantly learning and improving, and I am here to help you with any questions you may have.
+
+[Latency]
+      Prompt Mode: 317.31 tok/s
+  Generative Mode: 15.9698 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 1.11921s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 1.11921s)
+=========== Processing the 1-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 33
+[llm_sdk][1] Num prompt tokens: 33
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+What are the main differences between TCP and UDP protocols in computer networking?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.398082s (321.542 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.398082s (321.542 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.518275s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.518275s)
+
+Response [Max Length = 512]:
+TCP (Transmission Control Protocol) and UDP (User Datagram Protocol) are two different protocols used in computer networking. Here are some of the main differences between them:
+
+1. Purpose: TCP is used for reliable data transfer, while UDP is used for unstructured data transfer.
+
+2. Protocol stack: TCP is part of the TCP/IP protocol stack, while UDP is part of the IP (Internet Protocol) protocol stack.
+
+3. Data format: TCP uses a connection-oriented approach, while UDP uses a connectionless approach.
+
+4. Error handling: TCP uses error-checking mechanisms to ensure data integrity, while UDP does not.
+
+5. Security: TCP is more secure than UDP, as it uses encryption to protect data in transit.
+
+6. Performance: UDP is faster than TCP, as it does not require a connection to be established before sending data.
+
+7. Applications: TCP is commonly used for applications that require reliable data transfer, such as email and file transfer, while UDP is used for applications that require low-latency data transfer, such as streaming media.
+
+In summary, while both TCP and UDP have their own strengths and weaknesses, they are used in different scenarios based on the requirements of the application.</eos></end>
+
+[Full Response]
+TCP (Transmission Control Protocol) and UDP (User Datagram Protocol) are two different protocols used in computer networking. Here are some of the main differences between them:
+
+1. Purpose: TCP is used for reliable data transfer, while UDP is used for unstructured data transfer.
+
+2. Protocol stack: TCP is part of the TCP/IP protocol stack, while UDP is part of the IP (Internet Protocol) protocol stack.
+
+3. Data format: TCP uses a connection-oriented approach, while UDP uses a connectionless approach.
+
+4. Error handling: TCP uses error-checking mechanisms to ensure data integrity, while UDP does not.
+
+5. Security: TCP is more secure than UDP, as it uses encryption to protect data in transit.
+
+6. Performance: UDP is faster than TCP, as it does not require a connection to be established before sending data.
+
+7. Applications: TCP is commonly used for applications that require reliable data transfer, such as email and file transfer, while UDP is used for applications that require low-latency data transfer, such as streaming media.
+
+In summary, while both TCP and UDP have their own strengths and weaknesses, they are used in different scenarios based on the requirements of the application.
+
+[Latency]
+      Prompt Mode: 321.542 tok/s
+  Generative Mode: 16.1938 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.336294s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.336294s)
+=========== Processing the 2-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 35
+[llm_sdk][1] Num prompt tokens: 35
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Explain the concept of gradient descent and why it is used in machine learning.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.393915s (324.944 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.393915s (324.944 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.377284s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.377284s)
+
+Response [Max Length = 512]:
+Gradient descent is a popular optimization algorithm used in machine learning to find the minimum of a function. The idea is to iteratively update the parameters of a model in the direction of the steepest descent of the cost function. The cost function is a measure of how well the model is performing, and the goal is to minimize this cost function to improve the model's performance.
+
+The gradient descent algorithm works by calculating the gradient of the cost function with respect to the parameters, and then updating the parameters in the direction of the steepest descent. This process is repeated until the cost function is minimized, and the model is optimized.
+
+Gradient descent is used in machine learning because it is a simple and effective algorithm that can be used to optimize a wide range of machine learning models. It is also relatively easy to implement and can be used with a variety of different cost functions. Additionally, gradient descent is a general-purpose algorithm that can be used for a wide range of problems, including regression, classification, and clustering.
+
+However, gradient descent can also have some limitations. For example, it can get stuck in local minima, and it may not converge to the global minimum. Additionally, gradient descent can be computationally expensive, especially for large datasets and complex models. Therefore, there are other optimization algorithms that are used in machine learning, such as stochastic gradient descent and Adam, that are designed to address some of these limitations.</eos></end>
+
+[Full Response]
+Gradient descent is a popular optimization algorithm used in machine learning to find the minimum of a function. The idea is to iteratively update the parameters of a model in the direction of the steepest descent of the cost function. The cost function is a measure of how well the model is performing, and the goal is to minimize this cost function to improve the model's performance.
+
+The gradient descent algorithm works by calculating the gradient of the cost function with respect to the parameters, and then updating the parameters in the direction of the steepest descent. This process is repeated until the cost function is minimized, and the model is optimized.
+
+Gradient descent is used in machine learning because it is a simple and effective algorithm that can be used to optimize a wide range of machine learning models. It is also relatively easy to implement and can be used with a variety of different cost functions. Additionally, gradient descent is a general-purpose algorithm that can be used for a wide range of problems, including regression, classification, and clustering.
+
+However, gradient descent can also have some limitations. For example, it can get stuck in local minima, and it may not converge to the global minimum. Additionally, gradient descent can be computationally expensive, especially for large datasets and complex models. Therefore, there are other optimization algorithms that are used in machine learning, such as stochastic gradient descent and Adam, that are designed to address some of these limitations.
+
+[Latency]
+      Prompt Mode: 324.944 tok/s
+  Generative Mode: 14.8298 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.35419s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.35419s)
+=========== Processing the 3-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 33
+[llm_sdk][1] Num prompt tokens: 33
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Describe how garbage collection works in modern programming languages like Java or Python.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.400129s (319.897 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.400129s (319.897 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.378402s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.378402s)
+
+Response [Max Length = 512]:
+Garbage collection is a process used by programming languages to automatically manage memory allocation and deallocation. In modern programming languages like Java or Python, garbage collection is used to automatically manage memory allocation and deallocation for objects that are no longer in use.
+
+In Java, objects that are no longer in use are automatically collected by the garbage collector. The garbage collector identifies objects that are no longer in use and deallocates their memory. This process is called "garbage collection" because the garbage collector is responsible for collecting the "garbage" (i.e., the memory that is no longer in use) from the heap.
+
+In Python, objects that are no longer in use are automatically collected by the garbage collector. The garbage collector identifies objects that are no longer in use and deallocates their memory. This process is called "garbage collection" because the garbage collector is responsible for collecting the "garbage" (i.e., the memory that is no longer in use) from the heap.
+
+In both Java and Python, the garbage collector is responsible for deallocating the memory that is no longer in use. This process is called "garbage collection" because the garbage collector is responsible for collecting the "garbage" (i.e., the memory that is no longer in use) from the heap.</eos></end>
+
+[Full Response]
+Garbage collection is a process used by programming languages to automatically manage memory allocation and deallocation. In modern programming languages like Java or Python, garbage collection is used to automatically manage memory allocation and deallocation for objects that are no longer in use.
+
+In Java, objects that are no longer in use are automatically collected by the garbage collector. The garbage collector identifies objects that are no longer in use and deallocates their memory. This process is called "garbage collection" because the garbage collector is responsible for collecting the "garbage" (i.e., the memory that is no longer in use) from the heap.
+
+In Python, objects that are no longer in use are automatically collected by the garbage collector. The garbage collector identifies objects that are no longer in use and deallocates their memory. This process is called "garbage collection" because the garbage collector is responsible for collecting the "garbage" (i.e., the memory that is no longer in use) from the heap.
+
+In both Java and Python, the garbage collector is responsible for deallocating the memory that is no longer in use. This process is called "garbage collection" because the garbage collector is responsible for collecting the "garbage" (i.e., the memory that is no longer in use) from the heap.
+
+[Latency]
+      Prompt Mode: 319.897 tok/s
+  Generative Mode: 16.3833 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.355569s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.355569s)
+=========== Processing the 4-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 36
+[llm_sdk][1] Num prompt tokens: 36
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+What is the role of an operating system kernel and which subsystems does it manage?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.397799s (321.771 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.397799s (321.771 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.37496s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.37496s)
+
+Response [Max Length = 512]:
+The operating system kernel is a core component of an operating system that manages the hardware resources and provides a common interface for all software applications. It acts as a bridge between the hardware and the software, ensuring that the software can access and use the hardware resources efficiently.
+
+The kernel manages several subsystems, including:
+
+1. Process Management: The kernel manages the creation, termination, and scheduling of processes. It creates new processes, manages their execution, and terminates them when they are no longer needed.
+
+2. Memory Management: The kernel manages memory allocation and deallocation, including the allocation of memory for processes, the management of memory pools, and the allocation of memory for data structures and other objects.
+
+3. File System Management: The kernel manages the file system, including the allocation of disk space, the management of file directories, and the retrieval of files from disk.
+
+4. Device Management: The kernel manages the hardware devices, including the allocation of I/O ports, the management of interrupts, and the allocation of memory for device drivers.
+
+5. Security and Integrity: The kernel manages security and integrity, including the protection of system resources, the management of access control, and the detection of security breaches.
+
+6. Networking: The kernel manages networking, including the allocation of network resources, the management of network interfaces, and the transmission of data between processes.
+
+Overall, the operating system kernel plays a critical role in managing the hardware resources and providing a common interface for all software applications.</eos></end>
+
+[Full Response]
+The operating system kernel is a core component of an operating system that manages the hardware resources and provides a common interface for all software applications. It acts as a bridge between the hardware and the software, ensuring that the software can access and use the hardware resources efficiently.
+
+The kernel manages several subsystems, including:
+
+1. Process Management: The kernel manages the creation, termination, and scheduling of processes. It creates new processes, manages their execution, and terminates them when they are no longer needed.
+
+2. Memory Management: The kernel manages memory allocation and deallocation, including the allocation of memory for processes, the management of memory pools, and the allocation of memory for data structures and other objects.
+
+3. File System Management: The kernel manages the file system, including the allocation of disk space, the management of file directories, and the retrieval of files from disk.
+
+4. Device Management: The kernel manages the hardware devices, including the allocation of I/O ports, the management of interrupts, and the allocation of memory for device drivers.
+
+5. Security and Integrity: The kernel manages security and integrity, including the protection of system resources, the management of access control, and the detection of security breaches.
+
+6. Networking: The kernel manages networking, including the allocation of network resources, the management of network interfaces, and the transmission of data between processes.
+
+Overall, the operating system kernel plays a critical role in managing the hardware resources and providing a common interface for all software applications.
+
+[Latency]
+      Prompt Mode: 321.771 tok/s
+  Generative Mode: 16.2547 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.322157s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.322157s)
+=========== Processing the 5-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 35
+[llm_sdk][1] Num prompt tokens: 35
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Compare supervised learning and unsupervised learning with two short examples for each category.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.400731s (319.417 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.400731s (319.417 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.373354s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.373354s)
+
+Response [Max Length = 512]:
+Supervised Learning:
+
+Example 1: Image Classification
+Suppose we have a dataset of images of cats and dogs. We want to train a model to classify new images into the categories of "cat" or "dog". In this case, we have labeled data, where each image is tagged with a category. The model learns to recognize patterns in the images that correspond to cats and dogs, and uses this knowledge to classify new images.
+
+Example 2: Spam Filtering
+Suppose we have a dataset of emails, where some are labeled as "spam" and some are labeled as "not spam". We want to train a model to classify new emails into these categories. In this case, we have labeled data, where each email is tagged with a category. The model learns to recognize patterns in the emails that correspond to spam and non-spam, and uses this knowledge to classify new emails.
+
+Unsupervised Learning:
+
+Example 1: Clustering
+Suppose we have a dataset of customer data, where each customer is represented by a set of features such as age, income, and spending habits. We want to train a model to group customers into clusters based on their similarities. In this case, we have unlabeled data, where each customer is represented by a set of features. The model learns to identify patterns in the data that correspond to different customer groups, and uses this knowledge to group customers into clusters.
+
+Example 2: Dimensionality Reduction
+Suppose we have a dataset of high-dimensional data, where each data point is represented by a large number of features. We want to train a model to reduce the number of features while preserving the most important information. In this case, we have unlabeled data, where each data point is represented by a set of features. The model learns to identify the most important features that correspond to the most important patterns in the data, and uses this knowledge to reduce the number of features while preserving the most important information.</eos></end>
+
+[Full Response]
+Supervised Learning:
+
+Example 1: Image Classification
+Suppose we have a dataset of images of cats and dogs. We want to train a model to classify new images into the categories of "cat" or "dog". In this case, we have labeled data, where each image is tagged with a category. The model learns to recognize patterns in the images that correspond to cats and dogs, and uses this knowledge to classify new images.
+
+Example 2: Spam Filtering
+Suppose we have a dataset of emails, where some are labeled as "spam" and some are labeled as "not spam". We want to train a model to classify new emails into these categories. In this case, we have labeled data, where each email is tagged with a category. The model learns to recognize patterns in the emails that correspond to spam and non-spam, and uses this knowledge to classify new emails.
+
+Unsupervised Learning:
+
+Example 1: Clustering
+Suppose we have a dataset of customer data, where each customer is represented by a set of features such as age, income, and spending habits. We want to train a model to group customers into clusters based on their similarities. In this case, we have unlabeled data, where each customer is represented by a set of features. The model learns to identify patterns in the data that correspond to different customer groups, and uses this knowledge to group customers into clusters.
+
+Example 2: Dimensionality Reduction
+Suppose we have a dataset of high-dimensional data, where each data point is represented by a large number of features. We want to train a model to reduce the number of features while preserving the most important information. In this case, we have unlabeled data, where each data point is represented by a set of features. The model learns to identify the most important features that correspond to the most important patterns in the data, and uses this knowledge to reduce the number of features while preserving the most important information.
+
+[Latency]
+      Prompt Mode: 319.417 tok/s
+  Generative Mode: 16.3373 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.343916s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.343916s)
+=========== Processing the 6-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 34
+[llm_sdk][1] Num prompt tokens: 34
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+How does a convolutional neural network process image data and extract useful features?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.396832s (322.555 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.396832s (322.555 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.361916s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.361916s)
+
+Response [Max Length = 512]:
+A convolutional neural network (CNN) is a type of deep learning algorithm that is designed to process image data and extract useful features from it. The CNN works by taking in an input image and using a series of layers to process it in a way that allows it to identify and extract useful features. 
+
+The first layer of the CNN is typically a convolutional layer, which takes in the input image and applies a series of filters to it. These filters are essentially mathematical functions that are applied to the input image to extract specific features. For example, a filter that is used to extract edges in an image would be applied to the image to identify the edges in the image. 
+
+The output of the convolutional layer is then passed through a series of other layers, including pooling layers, which reduce the size of the input and extract even more useful features. The output of the pooling layers is then passed through a fully connected layer, which takes in the output of the pooling layers and produces a final output that can be used for classification or other tasks. 
+
+Overall, the CNN works by taking in an input image and using a series of layers to process it in a way that allows it to identify and extract useful features. This allows the CNN to be trained to recognize specific patterns and features in the input data, which can then be used for a variety of tasks, such as image recognition or object detection.</eos></end>
+
+[Full Response]
+A convolutional neural network (CNN) is a type of deep learning algorithm that is designed to process image data and extract useful features from it. The CNN works by taking in an input image and using a series of layers to process it in a way that allows it to identify and extract useful features. 
+
+The first layer of the CNN is typically a convolutional layer, which takes in the input image and applies a series of filters to it. These filters are essentially mathematical functions that are applied to the input image to extract specific features. For example, a filter that is used to extract edges in an image would be applied to the image to identify the edges in the image. 
+
+The output of the convolutional layer is then passed through a series of other layers, including pooling layers, which reduce the size of the input and extract even more useful features. The output of the pooling layers is then passed through a fully connected layer, which takes in the output of the pooling layers and produces a final output that can be used for classification or other tasks. 
+
+Overall, the CNN works by taking in an input image and using a series of layers to process it in a way that allows it to identify and extract useful features. This allows the CNN to be trained to recognize specific patterns and features in the input data, which can then be used for a variety of tasks, such as image recognition or object detection.
+
+[Latency]
+      Prompt Mode: 322.555 tok/s
+  Generative Mode: 16.3741 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.353159s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.353159s)
+=========== Processing the 7-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 35
+[llm_sdk][1] Num prompt tokens: 35
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Explain what a database index is and how it improves query performance in SQL.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.396428s (322.883 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.396428s (322.883 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.355535s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.355535s)
+
+Response [Max Length = 512]:
+A database index is a data structure that is used to speed up the performance of queries on a database. It is a way of organizing data in a way that makes it easier to find specific information.
+
+A database index is created by adding a special column to a table that contains a list of values that are sorted in ascending or descending order. This list is called the index key. The index key is used to quickly locate the rows in the table that match a specific value or range of values.
+
+When a query is executed, the database engine uses the index to quickly locate the rows that match the query criteria. This reduces the number of rows that need to be scanned, which can significantly improve query performance.
+
+For example, consider a table called "orders" that contains columns for "order_id", "customer_name", and "order_date". If we want to find all orders placed by a specific customer, we can create an index on the "customer_name" column. This will allow the database engine to quickly locate all orders for that customer, rather than scanning the entire table.
+
+In addition to improving query performance, database indexes can also improve the performance of insert, update, and delete operations. By reducing the number of rows that need to be updated or deleted, indexes can improve the overall performance of these operations.
+
+Overall, database indexes are an important tool for improving the performance of SQL queries and other database operations. By creating indexes on frequently used columns, you can significantly improve the speed and efficiency of your database.</eos></end>
+
+[Full Response]
+A database index is a data structure that is used to speed up the performance of queries on a database. It is a way of organizing data in a way that makes it easier to find specific information.
+
+A database index is created by adding a special column to a table that contains a list of values that are sorted in ascending or descending order. This list is called the index key. The index key is used to quickly locate the rows in the table that match a specific value or range of values.
+
+When a query is executed, the database engine uses the index to quickly locate the rows that match the query criteria. This reduces the number of rows that need to be scanned, which can significantly improve query performance.
+
+For example, consider a table called "orders" that contains columns for "order_id", "customer_name", and "order_date". If we want to find all orders placed by a specific customer, we can create an index on the "customer_name" column. This will allow the database engine to quickly locate all orders for that customer, rather than scanning the entire table.
+
+In addition to improving query performance, database indexes can also improve the performance of insert, update, and delete operations. By reducing the number of rows that need to be updated or deleted, indexes can improve the overall performance of these operations.
+
+Overall, database indexes are an important tool for improving the performance of SQL queries and other database operations. By creating indexes on frequently used columns, you can significantly improve the speed and efficiency of your database.
+
+[Latency]
+      Prompt Mode: 322.883 tok/s
+  Generative Mode: 16.3621 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.357669s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.357669s)
+=========== Processing the 8-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 36
+[llm_sdk][1] Num prompt tokens: 36
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+What are the advantages and disadvantages of a microservices architecture compared to a monolith?<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.400694s (319.446 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.400694s (319.446 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.363218s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.363218s)
+
+Response [Max Length = 512]:
+Microservices architecture and monolithic architecture are two different approaches to building and managing software applications. Here are some advantages and disadvantages of each:
+
+Microservices architecture:
+
+Advantages:
+
+1. Scalability: Microservices architecture allows for better scalability as each service can be scaled independently, which can help to handle high traffic and large volumes of data.
+
+2. Flexibility: Microservices architecture allows for greater flexibility as each service can be developed, deployed, and scaled independently, which can help to accommodate changing business requirements.
+
+3. Innovation: Microservices architecture allows for greater innovation as each service can be developed and deployed independently, which can help to create new features and functionality.
+
+4. Security: Microservices architecture allows for better security as each service can be isolated and protected from other services, which can help to prevent security vulnerabilities.
+
+Disadvantages:
+
+1. Complexity: Microservices architecture can be complex to implement and manage, as each service needs to be developed, deployed, and scaled independently.
+
+2. Communication overhead: Microservices architecture requires more communication between services, which can increase the overhead and complexity of the system.
+
+3. Integration challenges: Microservices architecture requires more integration between services, which can be challenging to manage and maintain.
+
+Monolithic architecture:
+
+Advantages:
+
+1. Simplicity: Monolithic architecture is simpler to implement and manage, as all the services are integrated into a single application.
+
+2. Reduced complexity: Monolithic architecture reduces the complexity of the system, as all the services are integrated into a single application, which can make it easier to manage and maintain.
+
+3. Faster deployment: Monolithic architecture allows for faster deployment as all the services can be deployed together, which can help to reduce the time and effort required to deploy new features.
+
+Disadvantages:
+
+1. Scalability: Monolithic architecture is not as scalable as microservices architecture, as it is difficult to scale individual services independently.
+
+2. Security: Monolithic architecture can be more vulnerable to security threats, as all the services are integrated into a single application, which can make it easier for attackers to exploit vulnerabilities.
+
+3. Integration challenges: Monolithic architecture requires more integration between services, which can be challenging to manage and maintain.
+
+4. Innovation: Monolithic architecture can be less innovative, as it is difficult to develop and deploy new features independently, which can limit the ability to innovate.</eos></end>
+
+[Full Response]
+Microservices architecture and monolithic architecture are two different approaches to building and managing software applications. Here are some advantages and disadvantages of each:
+
+Microservices architecture:
+
+Advantages:
+
+1. Scalability: Microservices architecture allows for better scalability as each service can be scaled independently, which can help to handle high traffic and large volumes of data.
+
+2. Flexibility: Microservices architecture allows for greater flexibility as each service can be developed, deployed, and scaled independently, which can help to accommodate changing business requirements.
+
+3. Innovation: Microservices architecture allows for greater innovation as each service can be developed and deployed independently, which can help to create new features and functionality.
+
+4. Security: Microservices architecture allows for better security as each service can be isolated and protected from other services, which can help to prevent security vulnerabilities.
+
+Disadvantages:
+
+1. Complexity: Microservices architecture can be complex to implement and manage, as each service needs to be developed, deployed, and scaled independently.
+
+2. Communication overhead: Microservices architecture requires more communication between services, which can increase the overhead and complexity of the system.
+
+3. Integration challenges: Microservices architecture requires more integration between services, which can be challenging to manage and maintain.
+
+Monolithic architecture:
+
+Advantages:
+
+1. Simplicity: Monolithic architecture is simpler to implement and manage, as all the services are integrated into a single application.
+
+2. Reduced complexity: Monolithic architecture reduces the complexity of the system, as all the services are integrated into a single application, which can make it easier to manage and maintain.
+
+3. Faster deployment: Monolithic architecture allows for faster deployment as all the services can be deployed together, which can help to reduce the time and effort required to deploy new features.
+
+Disadvantages:
+
+1. Scalability: Monolithic architecture is not as scalable as microservices architecture, as it is difficult to scale individual services independently.
+
+2. Security: Monolithic architecture can be more vulnerable to security threats, as all the services are integrated into a single application, which can make it easier for attackers to exploit vulnerabilities.
+
+3. Integration challenges: Monolithic architecture requires more integration between services, which can be challenging to manage and maintain.
+
+4. Innovation: Monolithic architecture can be less innovative, as it is difficult to develop and deploy new features independently, which can limit the ability to innovate.
+
+[Latency]
+      Prompt Mode: 319.446 tok/s
+  Generative Mode: 16.347 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.356818s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.356818s)
+=========== Processing the 9-th input. ===========
+Preformatted prompt with 'QwenNoInput'
+[llm_sdk][1] Preformatted prompt with 'QwenNoInput'
+Num prompt tokens: 35
+[llm_sdk][1] Num prompt tokens: 35
+
+[Prompt]
+<|im_start|>system
+You are a helpful assistant.<|im_end|>
+<|im_start|>user
+Describe the typical steps of the software development life cycle and the role of testing.<|im_end|>
+<|im_start|>assistant
+
+
+Done analyzing prompt in 0.397473s (322.034 tok/s)
+[llm_sdk][1] Done analyzing prompt in 0.397473s (322.034 tok/s)
+Hot swapping to 1t model...
+[llm_sdk][1] Hot swapping to 1t model...
+Done model hot swapping. (Time taken: 0.374571s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.374571s)
+
+Response [Max Length = 512]:
+The software development life cycle (SDLC) is a process that outlines the steps involved in creating and maintaining software. The typical steps of the SDLC include:
+
+1. Planning: This involves defining the project scope, objectives, and requirements. The project manager and stakeholders work together to create a project plan that outlines the goals, timelines, and resources needed to complete the project.
+
+2. Requirements Gathering: This involves collecting and documenting the requirements of the project. The requirements may include user needs, technical specifications, and design constraints.
+
+3. Design: This involves creating a detailed design of the software system. The design includes the architecture, data structures, algorithms, and interfaces.
+
+4. Development: This involves coding the software according to the design. The developers write the code and test it to ensure that it meets the requirements.
+
+5. Testing: This involves testing the software to ensure that it meets the requirements and is free of bugs. The testing process may include unit testing, integration testing, and system testing.
+
+6. Deployment: This involves deploying the software to the production environment. The software is installed on the target machines and made available to users.
+
+7. Maintenance: This involves ongoing maintenance of the software to ensure that it continues to meet the requirements and is free of bugs. The maintenance process may include bug fixing, feature enhancements, and updates.
+
+The role of testing in the SDLC is to ensure that the software meets the requirements and is free of bugs. Testing can be done at various stages of the SDLC, including requirements gathering, design, development, and deployment. The goal of testing is to identify and fix bugs early in the development process, which can save time and money in the long run.</eos></end>
+
+[Full Response]
+The software development life cycle (SDLC) is a process that outlines the steps involved in creating and maintaining software. The typical steps of the SDLC include:
+
+1. Planning: This involves defining the project scope, objectives, and requirements. The project manager and stakeholders work together to create a project plan that outlines the goals, timelines, and resources needed to complete the project.
+
+2. Requirements Gathering: This involves collecting and documenting the requirements of the project. The requirements may include user needs, technical specifications, and design constraints.
+
+3. Design: This involves creating a detailed design of the software system. The design includes the architecture, data structures, algorithms, and interfaces.
+
+4. Development: This involves coding the software according to the design. The developers write the code and test it to ensure that it meets the requirements.
+
+5. Testing: This involves testing the software to ensure that it meets the requirements and is free of bugs. The testing process may include unit testing, integration testing, and system testing.
+
+6. Deployment: This involves deploying the software to the production environment. The software is installed on the target machines and made available to users.
+
+7. Maintenance: This involves ongoing maintenance of the software to ensure that it continues to meet the requirements and is free of bugs. The maintenance process may include bug fixing, feature enhancements, and updates.
+
+The role of testing in the SDLC is to ensure that the software meets the requirements and is free of bugs. Testing can be done at various stages of the SDLC, including requirements gathering, design, development, and deployment. The goal of testing is to identify and fix bugs early in the development process, which can save time and money in the long run.
+
+[Latency]
+      Prompt Mode: 322.034 tok/s
+  Generative Mode: 16.3234 tok/s
+Hot swapping to 128t model...
+[llm_sdk][1] Hot swapping to 128t model...
+Done model hot swapping. (Time taken: 0.355161s)
+[llm_sdk][1] Done model hot swapping. (Time taken: 0.355161s)
+
+[Average Performance among the given 10 prompts]
+      Prompt Mode: 321.18 tok/s
+  Generative Mode: 16.1375 tok/s
