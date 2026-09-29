@@ -39,7 +39,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_pairs(dataset_root: Path) -> list[dict[str, str]]:
-    """核对完整十折 6000 对与全部原始图片。"""
+    """核对完整十折 6000 对与全部已对齐图片。"""
+    alignment_path = dataset_root / "alignment_summary.json"
+    if not alignment_path.is_file():
+        raise FileNotFoundError(f"缺少 LFW 对齐报告: {alignment_path}。")
+    alignment = json.loads(alignment_path.read_text(encoding="utf-8"))
+    if (alignment.get("status") != "complete" or
+            alignment.get("aligned_images") != 7701):
+        raise ValueError("LFW 对齐图未覆盖全部 7,701 张验证图。")
     with (dataset_root / "pairs.csv").open(
             newline="", encoding="utf-8") as stream:
         rows = list(csv.DictReader(stream))
@@ -225,8 +232,8 @@ def evaluate(args: argparse.Namespace) -> None:
         "status": "complete",
         "model": "mobilefacenet",
         "run_id": args.run_id,
-        "dataset": "LFW_original_non_aligned",
-        "input_protocol": "RGB_ImageNet_normalize_full_image_resize_112x112_no_landmark_alignment",
+        "dataset": "LFW_upstream_MTCNN_5_point_aligned",
+        "input_protocol": "RGB_ImageNet_normalize_aligned_112x112",
         "distinct_images": len(names),
         **verification,
         "cli_wall_mean_ms": float(np.mean(wall_times)),

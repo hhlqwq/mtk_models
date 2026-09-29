@@ -11,7 +11,7 @@ readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
 readonly BOARD_ROOT="/root/hailong.he/open_models/mobilefacenet"
 readonly BOARD_MODEL_DIR="${BOARD_ROOT}/models/${RUN_ID}"
 readonly BOARD_RUN="${BOARD_ROOT}/eval/${RUN_ID}"
-readonly BOARD_DATASET="/root/hailong.he/datasets/lfw"
+readonly BOARD_DATASET="/root/hailong.he/datasets/lfw_aligned"
 readonly INPUT_METADATA="${MODEL_ROOT}/examples/input/generated/metadata.json"
 readonly -a SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
@@ -45,6 +45,7 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" bash -s -- \
 set -euo pipefail
 test -s "$1/pairs.csv"
 test -s "$1/source_manifest.json"
+test -s "$1/alignment_summary.json"
 test -d "$1/images"
 python3 -c 'import cv2, numpy'
 if [[ "$3" == "1" ]]; then test -d "$2"; else test ! -e "$2"; fi

@@ -1,4 +1,4 @@
-"""按板端相同的非对齐 LFW 十折协议评测 FP32 ONNX。"""
+"""按板端相同的已对齐 LFW 十折协议评测 FP32 ONNX。"""
 
 import argparse
 import json
@@ -42,8 +42,8 @@ def main() -> None:
     report = {
         "status": "complete",
         "backend": "onnxruntime_cuda_fp32",
-        "dataset": "lfw_original_non_aligned_6000_pairs_10_folds",
-        "input_protocol": "RGB_ImageNet_normalize_full_image_resize_112x112_no_landmark_alignment",
+        "dataset": "lfw_upstream_mtcnn_aligned_6000_pairs_10_folds",
+        "input_protocol": "RGB_ImageNet_normalize_aligned_112x112",
         "unique_images": len(names),
         "model_sha256": sha256_file(args.model),
         "pairs_sha256": sha256_file(args.dataset_root / "pairs.csv"),

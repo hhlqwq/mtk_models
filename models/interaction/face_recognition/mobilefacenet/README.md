@@ -22,13 +22,29 @@
 | --- | --- | --- |
 | 固定第三方实现与权重 | 已锁定 | 源码提交和权重哈希见[来源和边界](#来源和边界) |
 | 自行导出 ONNX 与 INT8 DLA | 已完成 | 转换及板端冒烟见[流程](#转换和板端冒烟) |
-| LFW 全量验证 | 重测中 | 旧结果使用错误的颜色及归一化协议，见[精度报告](docs/accuracy.md) |
+| LFW 全量验证 | 重测中 | 固定上游五点对齐、RGB 归一化后执行 6,000 对十折，见[精度报告](docs/accuracy.md) |
 | 常驻实例性能 | 已完成 | 预热后 100 次 Neuron Runtime 调用及峰值 RSS，见[性能报告](docs/benchmark.md) |
 | 应用层识别 | 待补 | 检测、对齐、现场识别与多帧决策尚未评估 |
 
 ## LFW 正式验证入口
 
-本目录新增 `deploy/run_full_accuracy.sh`。在 Ubuntu89 宿主机设置新
+先将现有非对齐 LFW 数据按锁定的上游提交 `a687c71` 执行 MTCNN 五点对齐。
+`deploy/align_lfw.py` 接收原始 LFW 目录、固定提交源码目录与输出目录；运行环境需有
+PyTorch、OpenCV、Pillow 和 scikit-image。脚本会核对上游检测代码、对齐代码及三份
+MTCNN 权重的 SHA-256，只使用官方 6,000 对涉及的全部 7,701 张图片。输出
+`alignment_summary.json` 和逐图哈希，任何图片检测失败都会阻止正式评测。
+上游代码来源为 `https://github.com/foamliu/MobileFaceNet.git` 的固定提交，
+原始 LFW 图像和上游检测权重均不提交 Git。
+
+```bash
+python deploy/align_lfw.py \
+  --dataset-root /path/to/lfw \
+  --upstream-root /path/to/MobileFaceNet \
+  --output-root /path/to/lfw_aligned
+```
+
+将完整 `lfw_aligned` 放入板端 `/root/hailong.he/datasets/lfw_aligned/` 后，
+在 Ubuntu89 宿主机设置新
 `EVAL_RUN_ID` 后运行该脚本，92 板端对 LFW 完整 10 折、6,000 对人脸执行硬件特征提取，
 用其余 9 折选择余弦阈值，再计算留出折的验证准确率，同时记录逐图 CLI 耗时。
 中断后使用相同 ID 加 `EVAL_RESUME=1` 续跑；原始输出、逐图检查点与报告保留在
@@ -48,9 +64,9 @@ SHA-256 为 `7f540157be42f57ab5bb1d7ef53b7b379e0331b4842cbd32f4d1b625243e54fe`�
 `deploy/prepare_lfw_dataset.py` 使用 89 端 `pyarrow==17.0.0`，仅在临时目录还原图片并校验 13,233 图、
 6,000 对和十折划分；板端数据放在 `/root/hailong.he/datasets/lfw/`，原始人脸图片不提交 Git。
 
-**协议限制：**当前使用整理版的原始非对齐 250×250 图片，直接缩放至 112×112，
-没有运行人脸关键点检测和对齐。因此本次结果只能作为该固定输入协议的板端验证，
-不得与原作者或论文使用对齐人脸的 LFW 数值直接比较。`cli_wall_ms` 包含启动
+**协议限制：**旧结果使用整理版原始非对齐 250×250 图片，且颜色及归一化协议错误，
+不得与原作者或论文使用对齐人脸的 LFW 数值比较。新结果需先满足全部图片对齐门禁。
+`cli_wall_ms` 包含启动
 `neuronrt` 与模型加载，并非纯 NPU 延迟。LFW 原始图片的使用条款需按其来源核对。
 
 ## 来源和边界
