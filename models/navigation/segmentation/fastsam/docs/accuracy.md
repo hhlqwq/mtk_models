@@ -1,6 +1,7 @@
 # 精度与一致性
 
-当前状态：已完成同图 PyTorch 与板端 C++ NPU 冒烟比较；COCO val2017 全量精度正在按统一协议复评。
+当前状态：COCO val2017 全量 PyTorch、FP32 ONNX 与板端结果已按统一协议核对；
+主要报告类别无关 segm AR@100，逐图差异归因待补。
 
 ## COCO val2017 全量精度
 
@@ -16,12 +17,26 @@ segm AP50:95 `0.0611437061`，[板端原始报告](../results/full_accuracy/2026
 目前通过单张 COCO 图片核对，原始 PyTorch 与 FP32 ONNX 的前 10 个实例
 掩码 IoU 均大于 0.98。这仅验证该图片，不代替全量原始框架基线。
 
-新协议固定在 [`deploy/accuracy_protocol.json`](../deploy/accuracy_protocol.json)：
+统一协议固定在 [`deploy/accuracy_protocol.json`](../deploy/accuracy_protocol.json)：
 640×640 方形输入、置信度 0.001、NMS IoU 0.9、每图最多 100 个实例，
-COCO val2017 的 80 类标注合并为一个 `object` 类。下一步在同一数据集上
-运行原始 PyTorch、FP32 ONNX，并与已保留的板端 0.001 预测核对；
-分别报告三端 AP、AP50、实例数及逐图差异。该类别无关口径不能与
+COCO val2017 的 80 类标注合并为一个 `object` 类。三端使用同一 5,000 图标注文件：
+
+| 后端 | segm AR@100 | 预测实例 | 结果 |
+| --- | ---: | ---: | --- |
+| 官方 PyTorch FP32 | 0.391 | 499,881 | [结果摘要](../results/reference_accuracy/coco_pytorch_v2/summary.json) |
+| FP32 ONNX | 0.390 | 499,882 | [结果摘要](../results/reference_accuracy/coco_fp32_v2/summary.json) |
+| Genio 720 INT8 DLA | 0.370 | 499,974 | [COCOeval 日志](../results/full_accuracy/20260928_fastsam_full_v1/coco_summary.log) |
+
+原始模型与 ONNX 的 AR@100 接近，板端低约 0.020，仍需逐图检查预处理、
+掩码还原和量化输出。官方 FastSAM 的目标候选生成评测报告 AR10、AR100、AR1000；
+本表是 **segm AR@100**，与其 bbox 候选指标、FastSAM-x 权重和输入设置不同，
+不能直接比较数值。该类别无关口径也不能与
 标准 80 类 COCO segm AP、官方 FastSAM-x 的 1024 输入结果直接比较。
+
+旧脚本还计算出同协议 PyTorch / ONNX / 板端 segm AP50:95 分别为
+0.054621 / 0.054454 / 0.061144。这些数字保留在[原始 PyTorch 报告](../results/reference_accuracy/coco_pytorch_v2/summary.json)、
+[ONNX 报告](../results/reference_accuracy/coco_fp32_v2/summary.json)和[板端报告](../results/full_accuracy/20260928_fastsam_full_v1/summary.json)
+中供排查；类别无关目标候选的置信度排序会明显影响 AP，因此不作为此模型在总览中的主要精度结论。
 
 数据位于板端 `/root/hailong.he/datasets/coco/val2017/`，共 5,000 张；标注文件 `annotations/instances_val2017.json` 的 SHA-256 为 `e8c7f7908f1d7278341fae127d0da654f102f11bd7b21d8aeefa635b8c810b6f`。数据从 89 的 `/data/users/hailong.he/datasets/coco/` 复制；原始数据来源见 [COCO 2017 下载页](https://cocodataset.org/#download)。校准图片与正式评价图片的使用边界仍需以运行清单核对。
 
@@ -34,7 +49,7 @@ COCO val2017 的 80 类标注合并为一个 `object` 类。下一步在同一�
 
 单图匹配 IoU 是转换一致性证据,不等于正式数据集 mAP.
 FP32 原始头一致也不证明整个掩码后处理完全等价于所有版本的官方 Demo.
-原始官方 PyTorch 端与当前 FP32 ONNX 的全量逐图一致性、板端与参考端的逐图误差归因仍待分析。
+原始 PyTorch 与 FP32 ONNX 的全量总指标接近；逐图一致性、板端与参考端的逐图误差归因仍待分析。
 校准与正式评价样本必须分离,不能用校准集结果代替正式测试精度.
 
 2026-09-23 的 16 张 COCO 校准图与公共样例图的单图比较结果,

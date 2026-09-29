@@ -1,14 +1,35 @@
 # Whisper-Tiny
 
+## 模型信息
+
+```text
+模型: Whisper-Tiny
+任务: 多语言语音识别
+输入: 16 kHz 单声道、80×3000 Log-Mel
+输出: 贪心解码文本
+设备: MediaTek Genio 720 EVK
+部署格式: Encoder / Decoder FP16 DLA
+当前状态: 板端已验证；正式数据集为 LibriSpeech test-clean
+```
+
 本目录用于将 OpenAI 多语言 Whisper-Tiny 部署到 MT8189 / Genio 720。旧镜像已完成双 DLA
 冒烟测试和 AISHELL-1 test 正式评测。新镜像的 LibriSpeech `test-clean` 全量 WER
 已在 92 板端完成，见下方正式结果。历史结果与本次运行编号分开保存。
 
+## 交付状态
+
+| 环节 | 状态 | 证据 |
+| --- | --- | --- |
+| OpenAI 权重与图转换 | 已完成 | 版本、权重哈希和双 DLA 见[来源边界](#来源边界) |
+| 板端 Demo 与正式 WER | 已完成 | `test-clean` 2,620 条及[两端精度](docs/accuracy.md) |
+| 板端性能 | 已完成 | Encoder、Decoder、RTF 和峰值 RSS 见[性能报告](docs/benchmark.md) |
+| 文档状态 | 核查中 | 历史 AISHELL-1 与本轮 `test-clean` 分开记录，不将旧结果计入本轮 |
+
 ## 当前全量精度测试
 
 本轮只测 LibriSpeech `test-clean` 全部 2,620 条音频，不再运行 AISHELL-1。一次只测试这
-一个模型。89 负责交叉编译、导出固定 Mel 滤波器和部署；92 使用 C++ 完成音频预处理与双
-DLA 推理，Python 只计算 WER。不运行 89 端精度基线。
+一个模型。89 负责交叉编译、导出固定 Mel 滤波器、部署及 OpenAI CUDA 参考精度；
+92 使用 C++ 完成音频预处理与双 DLA 推理，Python 只计算板端 WER。
 
 `20260928_whisper_testclean_full_v1` 已完成全部 2,620 条，失败与缺失均为 0。
 [板端报告](results/full_accuracy/20260928_whisper_testclean_full_v1/summary.json)

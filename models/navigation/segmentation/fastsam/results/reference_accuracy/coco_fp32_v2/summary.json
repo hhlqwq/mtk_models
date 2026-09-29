@@ -1,0 +1,21 @@
+{
+  "status": "complete",
+  "backend": "onnxruntime_fp32_cuda_preferred",
+  "dataset": "coco_val2017_class_agnostic_segm",
+  "protocol": {
+    "dataset": "coco_val2017_class_agnostic_segm",
+    "images": 5000,
+    "input_size": 640,
+    "confidence": 0.001,
+    "nms_iou": 0.9,
+    "max_detections": 100
+  },
+  "images": 5000,
+  "predictions": 499882,
+  "ap50_95": 0.05445433798222324,
+  "ap50": 0.09739800971051897,
+  "ar100_rounded": 0.390,
+  "model_sha256": "1f5757f92c71874330f74d4dfd722ac6b93d27590ce94ec6231558d274f4143d",
+  "annotations_sha256": "e8c7f7908f1d7278341fae127d0da654f102f11bd7b21d8aeefa635b8c810b6f",
+  "predictions_sha256": "495ff0567ff263248add2dc70aa253f9f04651a825b1019a71ab2886788131a1"
+}

@@ -165,6 +165,8 @@ def evaluate(args: argparse.Namespace) -> None:
         "AP_50_95": float(evaluator.stats[0]),
         "AP_50": float(evaluator.stats[1]),
         "AP_75": float(evaluator.stats[2]),
+        "AR_10": float(evaluator.stats[7]),
+        "AR_100": float(evaluator.stats[8]),
         "npu_mean_ms": statistics.fmean(npu_times),
         "npu_p95_ms": float(np.percentile(npu_times, 95)),
         "end_to_end_mean_ms": statistics.fmean(end_to_end_times),

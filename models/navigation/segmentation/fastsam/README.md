@@ -9,13 +9,13 @@
 输出: 检测头与掩码原型
 设备: MediaTek Genio 720 EVK
 部署格式: INT8 TFLite → DLA
-当前状态: 板端已验证；全量精度复评中
+当前状态: 板端已验证；三端全量精度已核对，稳定性能待补
 ```
 
 官方 FastSAM-s 权重已完成原始前向、ONNX 导出、16 张校准图 INT8 转换、
 Genio 720 DLA 编译和 C++ 硬件推理。旧版 COCO 全量评测的参考端与板端置信度
-阈值不一致，原有 AP 暂不作为正式的三后端精度对照；原因与新协议见
-[精度报告](docs/accuracy.md)。预热后常驻实例的稳定性能仍待测。
+阈值不一致；现已补齐同协议的 PyTorch、ONNX 参考端，并与旧板端输出核对。
+三端 AP 和剩余差异见[精度报告](docs/accuracy.md)。预热后常驻实例的稳定性能仍待测。
 
 ## 交付状态
 
@@ -25,7 +25,7 @@ Genio 720 DLA 编译和 C++ 硬件推理。旧版 COCO 全量评测的参考端�
 | 自行导出 ONNX | 已完成 | FP32 产物、原始头数值检查见 `models/` |
 | MTK INT8 TFLite / DLA | 已完成 | 16 张校准图版本；产物哈希见模型清单 |
 | 板端 Demo 与耗时 | 已完成 | C++ 硬件推理与计时见[板端记录](docs/board_smoke_20260923.md) |
-| COCO val2017 全量精度 | 复评中 | 旧参考端阈值 0.4、板端阈值 0.001；待统一协议与原始框架对照 |
+| COCO val2017 全量精度 | 已完成 | 三端同协议结果见[精度报告](docs/accuracy.md)；逐图差异仍待归因 |
 
 采用 FastSAM-s、batch=1、640×640.模型生成类别无关实例掩码,
 支持全图输出与轻量点/框提示,暂不接入文本提示所需的 CLIP.
@@ -135,8 +135,8 @@ Python 可导入 OpenCV 4.9.0、NumPy 1.26.4 和 ONNX Runtime 1.20.2;
 ## 静态检查记录
 
 2026-09-22: 6 个 Python 文件通过 AST 语法解析,4 个 Shell 脚本通过 `bash -n`.
-FastSAM 注册条目和目录必需文件检查通过.全仓 `tools/check_registry.py` 仍因已有
-Whisper 条目的 `board_validated` 不在允许状态列表中失败; 本次未修改其他模型状态.
+FastSAM 注册条目和目录必需文件检查通过。当时全仓 `tools/check_registry.py` 因
+Whisper 历史状态 `board_validated` 不在允许集合中失败；该状态现已修正为 `board_verified`。
 这些检查本身不代表模型执行;真实模型证据见上述冒烟报告.
 
 ## 新镜像全量复测入口
@@ -147,12 +147,13 @@ Whisper 条目的 `board_validated` 不在允许状态列表中失败; 本次未
 直接比较。报告保留在 `/root/hailong.he/open_models/fastsam/eval/<新ID>/report/`。
 `20260928_fastsam_full_v1` 已在 92 完成 5000 张全量评测，结果见
 [板端报告](results/full_accuracy/20260928_fastsam_full_v1/summary.json)：
-类别无关 AP50:95 为 0.06114，AP50 为 0.10565，NPU 平均 14.88 ms/张，
+类别无关 segm AR@100 为 0.370，NPU 平均 14.88 ms/张，
 逐图端到端平均 142.97 ms/张。端到端计时包含逐图重新加载模型，
 不可当作常驻模型吞吐。用户手动保存并上传报告后，
 再以相同 `EVAL_RUN_ID` 执行 `CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
-同数据集与类别无关协议的 FP32 ONNX 参考 AP50:95 为 0.05210，
-两端后处理实现边界和结果见[精度报告](docs/accuracy.md)。
+同协议的官方 PyTorch、FP32 ONNX 和板端 segm AR@100 分别为 0.391、0.390、
+0.370；旧 ONNX 阈值 0.4 的 AP 0.05210 保留为历史诊断记录。
+各端后处理边界和剩余差异见[精度报告](docs/accuracy.md)。
 测试和清理是两次独立执行，测试脚本不自动清理本次模型及报告。
 
 FastSAM 全量数据由用户放在 92 的

@@ -9,7 +9,7 @@
 输出: 三尺度类别 logits 与四方向框距离
 设备: MediaTek Genio 720 EVK
 部署格式: ONNX Runtime + Neuron Execution Provider
-当前状态: 板端 Neuron EP 已验证,COCO val2017 全量 bbox mAP 已完成
+当前状态: 混合 Neuron/CPU EP 已验证；纯 NPU 正确性未通过
 ```
 
 本交付实现用户指定的 MediaTek IoT AI Hub 官方 Model Zoo ONNX,而不是把其他平台的
@@ -17,6 +17,15 @@
 `4f70adbaacf5685bd9ec5bea85f1f91057f6fc0b`；MediaTek 官方 ONNX 是本次明确指定的
 板端部署资产.官方文件没有携带自定义 metadata,因此仓库不会声称已经证明该二进制由
 哪个上游 checkpoint 导出.
+
+## 交付状态
+
+| 环节 | 状态 | 证据 |
+| --- | --- | --- |
+| 官方 Model Zoo ONNX | 已锁定 | 地址、大小及哈希见[官方模型下载](#官方模型下载) |
+| 混合 EP 板端 Demo 与 COCO 全量精度 | 已完成 | [精度报告](docs/accuracy.md)和[性能报告](docs/benchmark.md) |
+| 纯 NPU 正确性 | 待解决 | 低分组阈值配置出现检测饱和，不能发布为有效结果 |
+| 后续全量测试 | 暂停 | 按当前要求，先通过纯 NPU 正确性验证，再重新启动全量评测 |
 
 ## 官方模型下载
 

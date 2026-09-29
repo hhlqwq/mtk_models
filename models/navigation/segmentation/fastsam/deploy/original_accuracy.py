@@ -109,13 +109,15 @@ def main() -> None:
         "predictions": len(predictions),
         "ap50_95": float(evaluator.stats[0]),
         "ap50": float(evaluator.stats[1]),
+        "ar10": float(evaluator.stats[7]),
+        "ar100": float(evaluator.stats[8]),
         "weights_sha256": sha256_file(args.weights),
         "annotations_sha256": sha256_file(args.annotations),
         "predictions_sha256": sha256_file(prediction_path),
     }
     (args.output_dir / "summary.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"[RESULT] FastSAM 原始端 AP50:95 {report['ap50_95']:.6f}。",
+    print(f"[RESULT] FastSAM 原始端 AR@100 {report['ar100']:.6f}。",
           flush=True)
 
 

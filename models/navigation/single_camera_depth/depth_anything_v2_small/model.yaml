@@ -22,7 +22,7 @@ output:
   type: relative_depth
   shape: [1, 518, 518]
 metrics:
-  accuracy: pending
+  accuracy: da2k_pairwise_accuracy
   performance: latency_ms
 targets:
   genio_720:
