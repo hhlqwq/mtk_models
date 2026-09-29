@@ -8,42 +8,35 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 ## 部署总览
 
 > 数据快照：2026-09-29。已注册模型统计来自 `registry/models.yaml` 和
-> `registry/target_models.yaml`；未注册实现另按模型目录中的 `model.yaml` 与板端报告列出。
+> `registry/target_models.yaml`。
 
 | 指标 | 数量 | 说明 |
 | --- | ---: | --- |
-| 已进入实现注册表 | 7 / 46（15.2%） | 7 个注册实现相对于 46 个目标候选的规模比；存在模型变体映射和额外 Model Zoo 模型，不等同于严格完成率 |
-| 已有模型目录但未注册 | 1 | MobileFaceNet 已完成 LFW 全量验证，尚未加入 `registry/models.yaml` |
-| Genio 720 完整交付 | 3 / 7（42.9%） | 精度、性能、Demo 和文档均已闭环 |
-| Genio 720 已注册模型的板端运行证据 | 7 / 7（100%） | Depth Anything V2 Small、FastSAM-s、YOLO-World XL 和 Whisper-Tiny 已完成各自数据集的全量评测；注册状态仍包括 `complete`、`board_verified` 和 Whisper 的历史非规范值 `board_validated` |
-| Genio 720 未注册模型的板端运行证据 | 1 / 1 | MobileFaceNet 已完成 LFW 6,000 对十折验证，纯 NPU 延迟仍待测 |
-| Genio 5100 已开始 | 0 / 7（0.0%） | 当前所有注册模型均为 `not_started` |
+| 已进入实现注册表 | 8 / 46（17.4%） | 8 个注册实现相对于 46 个目标候选的规模比；存在模型变体映射和额外 Model Zoo 模型，不等同于严格完成率 |
+| Genio 720 完整交付 | 3 / 8（37.5%） | 精度、性能、Demo 和文档均已闭环 |
+| Genio 720 已注册模型的板端运行证据 | 8 / 8（100%） | Depth Anything V2 Small、FastSAM-s、MobileFaceNet、YOLO-World XL 和 Whisper-Tiny 已完成各自数据集的全量评测；注册状态仍包括 `complete`、`board_verified` 和 Whisper 的历史非规范值 `board_validated` |
+| Genio 5100 已开始 | 0 / 8（0.0%） | 当前所有注册模型均为 `not_started` |
 
 ### Genio 720 状态分布
 
 | 状态 | 数量 | 占已注册模型比例 |
 | --- | ---: | ---: |
-| 完整交付 `complete` | 3 | 42.9% |
-| 板端验证 `board_verified` | 3 | 42.9% |
-| 历史状态 `board_validated` | 1 | 14.3% |
+| 完整交付 `complete` | 3 | 37.5% |
+| 板端验证 `board_verified` | 4 | 50.0% |
+| 历史状态 `board_validated` | 1 | 12.5% |
 
 ## 已注册模型状态
 
-| 模型 | 机器人能力 | 官方来源 | Genio 720 | Genio 5100 | Inference Time | Reference Metric | On-device Metric | 当前缺口与下一步 |
-| --- | --- | --- | --- | --- | ---: | --- | --- | --- |
-| [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | 单目相对深度与空间结构 | DepthAnything/Depth-Anything-V2 | 🔵 `board_verified` | ⚪ `not_started` | [CLI 墙钟均值 194.70 ms/图](navigation/single_camera_depth/depth_anything_v2_small/docs/benchmark.md) | [FP32 ONNX DA-2K 点对准确率 94.83%](navigation/single_camera_depth/depth_anything_v2_small/docs/accuracy.md) | [NPU DA-2K 点对准确率 85.78%](navigation/single_camera_depth/depth_anything_v2_small/docs/accuracy.md) | 同协议全量对照已完成；板端低 9.04 个百分点，需分析量化误差与常驻实例性能 |
-| [FastSAM-s](navigation/segmentation/fastsam/README.md) | 目标分割、交互式区域选择 | CASIA-LMC-Lab/FastSAM | 🔵 `board_verified` | ⚪ `not_started` | [NPU 调用均值 14.88 ms/图](navigation/segmentation/fastsam/docs/benchmark.md) | [FP32 ONNX 类别无关 segm AP50:95 0.05210](navigation/segmentation/fastsam/docs/accuracy.md) | [NPU 类别无关 segm AP50:95 0.06114](navigation/segmentation/fastsam/docs/accuracy.md) | COCO val2017 5,000 图全量完成；需逐图核查两端后处理差异及常驻实例性能 |
-| [YOLOv5s](perception/object_detection/yolov5s/README.md) | 通用目标检测 | Ultralytics/YOLOv5 | 🟢 `complete` | ⚪ `not_started` | [9.629 ms/图](perception/object_detection/yolov5s/docs/benchmark.md) | [FP32 ONNX mAP@0.5:0.95 0.3709](perception/object_detection/yolov5s/docs/accuracy.md) | [INT8 mAP@0.5:0.95 0.3586](perception/object_detection/yolov5s/docs/accuracy.md) | 作为 Genio 5100 首个迁移基线，复用已完成的全链路验收协议 |
-| [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | 图像分类 | PyTorch Vision | 🟢 `complete` | ⚪ `not_started` | [51.7129 ms/图](perception/image_classification/vit_base_patch16_224/docs/benchmark.md) | [FP32 ONNX Top-1 80.64%](perception/image_classification/vit_base_patch16_224/docs/accuracy.md) | [INT8 Top-1 79.38%](perception/image_classification/vit_base_patch16_224/docs/accuracy.md) | Genio 720 已闭环；后续按平台需求迁移 Genio 5100 |
-| [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | 人体姿态和人机交互 | OpenMMLab/MMPose | 🟢 `complete` | ⚪ `not_started` | [3.8527 ms/人体框](interaction/pose_detection/rtmpose_body2d/docs/benchmark.md) | [FP32 ONNX WholeBody AP 0.5703](interaction/pose_detection/rtmpose_body2d/docs/accuracy.md) | [INT8 WholeBody AP 0.5324](interaction/pose_detection/rtmpose_body2d/docs/accuracy.md) | 单框耗时不含上游人体检测器；后续可组合动作识别 |
-| [YOLO-World XL](perception/object_detection/yoloworld_xl/README.md) | 开放词汇目标检测 | AILab-CVC/YOLO-World | 🔵 `board_verified` | ⚪ `not_started` | [混合 EP `session.Run` 均值 3864.08 ms/图](perception/object_detection/yoloworld_xl/docs/benchmark.md) | [FP32 ONNX COCO bbox AP50:95 0.472953](perception/object_detection/yoloworld_xl/docs/accuracy.md) | [混合 EP COCO bbox AP50:95 0.472952](perception/object_detection/yoloworld_xl/docs/accuracy.md) | COCO val2017 5,000 图全量对照完成；分类 MatMul 的纯 NPU 正确性问题仍待解决 |
-| [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | 中英文语音识别 | OpenAI/Whisper | 🟣 `board_validated`¹ | ⚪ `not_started` | [NPU 调用均值 460.05 ms/段音频](audio/stt/whisper_tiny/docs/benchmark.md) | [OpenAI CUDA `test-clean` WER 7.5546%](audio/stt/whisper_tiny/docs/accuracy.md) | [NPU `test-clean` WER 7.5603%](audio/stt/whisper_tiny/docs/accuracy.md) | `test-clean` 2,620 条全量对照完成；AISHELL-1 CER 为历史结果，注册表状态仍需统一 |
-
-### 未进入注册表的实现
-
-| 模型 | 机器人能力 | Genio 720 | Genio 5100 | Inference Time | Reference Metric | On-device Metric | 注册与评测缺口 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | 人脸特征提取与身份匹配 | 🔵 `board_verified`（`model.yaml`） | ⚪ `not_started` | [CLI 墙钟均值 36.21 ms/图](interaction/face_recognition/mobilefacenet/docs/benchmark.md) | [FP32 ONNX 非对齐 LFW 十折准确率 70.95%](interaction/face_recognition/mobilefacenet/docs/accuracy.md) | [NPU 非对齐 LFW 十折准确率 71.17%](interaction/face_recognition/mobilefacenet/docs/accuracy.md) | LFW 6,000 对全量对照完成；尚未注册，检测对齐、应用精度和常驻实例性能待补 |
+| 模型 | 机器人能力 | 开源实现来源 | Genio 720 | Genio 5100 | Inference Time | 评测数据集 | Reference Metric | On-device Metric | 当前缺口与下一步 |
+| --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- |
+| [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | 单目相对深度与空间结构 | DepthAnything/Depth-Anything-V2 | 🔵 `board_verified` | ⚪ `not_started` | [CLI 墙钟均值 194.70 ms/图](navigation/single_camera_depth/depth_anything_v2_small/docs/benchmark.md) | DA-2K，1,033 图、2,068 点对 | [FP32 ONNX DA-2K 点对准确率 94.83%](navigation/single_camera_depth/depth_anything_v2_small/docs/accuracy.md) | [NPU DA-2K 点对准确率 85.78%](navigation/single_camera_depth/depth_anything_v2_small/docs/accuracy.md) | 同协议全量对照已完成；板端低 9.04 个百分点，需分析量化误差与常驻实例性能 |
+| [FastSAM-s](navigation/segmentation/fastsam/README.md) | 目标分割、交互式区域选择 | CASIA-LMC-Lab/FastSAM | 🔵 `board_verified` | ⚪ `not_started` | [NPU 调用均值 14.88 ms/图](navigation/segmentation/fastsam/docs/benchmark.md) | COCO val2017，5,000 图；类别无关分割 | [FP32 ONNX 类别无关 segm AP50:95 0.05210](navigation/segmentation/fastsam/docs/accuracy.md) | [NPU 类别无关 segm AP50:95 0.06114](navigation/segmentation/fastsam/docs/accuracy.md) | COCO val2017 5,000 图全量完成；需逐图核查两端后处理差异及常驻实例性能 |
+| [YOLOv5s](perception/object_detection/yolov5s/README.md) | 通用目标检测 | Ultralytics/YOLOv5 | 🟢 `complete` | ⚪ `not_started` | [9.629 ms/图](perception/object_detection/yolov5s/docs/benchmark.md) | COCO val2017，5,000 图；bbox | [FP32 ONNX mAP@0.5:0.95 0.3709](perception/object_detection/yolov5s/docs/accuracy.md) | [INT8 mAP@0.5:0.95 0.3586](perception/object_detection/yolov5s/docs/accuracy.md) | 作为 Genio 5100 首个迁移基线，复用已完成的全链路验收协议 |
+| [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | 图像分类 | PyTorch Vision | 🟢 `complete` | ⚪ `not_started` | [51.7129 ms/图](perception/image_classification/vit_base_patch16_224/docs/benchmark.md) | ILSVRC2012 val，50,000 图 | [FP32 ONNX Top-1 80.64%](perception/image_classification/vit_base_patch16_224/docs/accuracy.md) | [INT8 Top-1 79.38%](perception/image_classification/vit_base_patch16_224/docs/accuracy.md) | Genio 720 已闭环；后续按平台需求迁移 Genio 5100 |
+| [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | 人体姿态和人机交互 | OpenMMLab/MMPose | 🟢 `complete` | ⚪ `not_started` | [3.8527 ms/人体框](interaction/pose_detection/rtmpose_body2d/docs/benchmark.md) | COCO-WholeBody V1.0 val，5,000 图、104,125 人体框 | [FP32 ONNX WholeBody AP 0.5703](interaction/pose_detection/rtmpose_body2d/docs/accuracy.md) | [INT8 WholeBody AP 0.5324](interaction/pose_detection/rtmpose_body2d/docs/accuracy.md) | 单框耗时不含上游人体检测器；后续可组合动作识别 |
+| [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | 人脸特征提取与身份匹配 | foamliu/MobileFaceNet | 🔵 `board_verified` | ⚪ `not_started` | [CLI 墙钟均值 36.21 ms/图](interaction/face_recognition/mobilefacenet/docs/benchmark.md) | LFW 原始非对齐图，6,000 对、10 折 | [FP32 ONNX 非对齐 LFW 十折准确率 70.95%](interaction/face_recognition/mobilefacenet/docs/accuracy.md) | [NPU 非对齐 LFW 十折准确率 71.17%](interaction/face_recognition/mobilefacenet/docs/accuracy.md) | LFW 全量对照完成；检测对齐、应用精度和常驻实例性能待补 |
+| [YOLO-World XL](perception/object_detection/yoloworld_xl/README.md) | 开放词汇目标检测 | AILab-CVC/YOLO-World | 🔵 `board_verified` | ⚪ `not_started` | [混合 EP `session.Run` 均值 3864.08 ms/图](perception/object_detection/yoloworld_xl/docs/benchmark.md) | COCO val2017，5,000 图；bbox | [FP32 ONNX COCO bbox AP50:95 0.472953](perception/object_detection/yoloworld_xl/docs/accuracy.md) | [混合 EP COCO bbox AP50:95 0.472952](perception/object_detection/yoloworld_xl/docs/accuracy.md) | COCO val2017 5,000 图全量对照完成；分类 MatMul 的纯 NPU 正确性问题仍待解决 |
+| [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | 中英文语音识别 | OpenAI/Whisper | 🟣 `board_validated`¹ | ⚪ `not_started` | [NPU 调用均值 460.05 ms/段音频](audio/stt/whisper_tiny/docs/benchmark.md) | LibriSpeech `test-clean`，2,620 条 | [OpenAI CUDA `test-clean` WER 7.5546%](audio/stt/whisper_tiny/docs/accuracy.md) | [NPU `test-clean` WER 7.5603%](audio/stt/whisper_tiny/docs/accuracy.md) | `test-clean` 2,620 条全量对照完成；AISHELL-1 CER 为历史结果，注册表状态仍需统一 |
 
 `Inference Time` 列列出各报告实际测得的计时口径，并非统一的纯 NPU 延迟。YOLOv5s 和 RTMPose
 取板端常驻 C++ 流程中的 NPU 阶段；ViT 为连续 100 次纯 NPU 推理；FastSAM 与 Whisper-Tiny

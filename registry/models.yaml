@@ -55,6 +55,16 @@ models:
     platforms:
       genio_720: complete
       genio_5100: not_started
+  - id: mobilefacenet
+    batch: first_batch
+    pilot: false
+    scenario: interaction
+    category: face_recognition
+    path: models/interaction/face_recognition/mobilefacenet
+    source: foamliu/MobileFaceNet
+    platforms:
+      genio_720: board_verified
+      genio_5100: not_started
   - id: yoloworld_xl
     batch: mediatek_model_zoo
     pilot: false

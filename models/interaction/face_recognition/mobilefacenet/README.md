@@ -2,6 +2,7 @@
 
 本目录面向 Genio 720 上的机器人熟人识别。模型接收已检测、已对齐的人脸，输出特征向量；
 检测、对齐、人员登记、阈值设定和多帧身份确认均属于应用流水线的其他环节。
+模型已列入 [`registry/models.yaml`](../../../../registry/models.yaml)，Genio 720 状态为 `board_verified`。
 
 ## LFW 正式验证入口
 

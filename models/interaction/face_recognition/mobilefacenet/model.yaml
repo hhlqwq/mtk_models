@@ -16,7 +16,7 @@ input:
 output:
   type: face_embedding
 metrics:
-  accuracy: pending
+  accuracy: lfw_verification_accuracy
   performance: latency_ms
 targets:
   genio_720:
