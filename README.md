@@ -50,7 +50,7 @@ ImageNet 或 COCO 原图的情况下直接展示"已经完成测试".公开样�
 | [YOLO-World XL](models/perception/object_detection/yoloworld_xl/README.md) | Perception / Object detection | 640×640 RGB | AILab-CVC / MediaTek Model Zoo ONNX | 混合 Neuron/CPU EP 已验证；纯 NPU 正确性未通过，暂停后续全量测试 |
 | [Whisper-Tiny](models/audio/stt/whisper_tiny/README.md) | Audio / STT | 16 kHz 单声道、最长 30 秒 | OpenAI Whisper v20250625 | 板端已验证；LibriSpeech test-clean 全量 WER 已完成 |
 
-公开三图结果分别位于各模型的 `examples/output/public/`,可通过模型 README 直接查看.
+公开示例结果见各模型 README；YOLOv5s 当前位于 `examples/output/`,其他模型可能使用 `examples/output/public/`.
 
 各模型的正式数据集、板端与同协议参考精度、耗时口径分别记录在其 `docs/accuracy.md` 与
 `docs/benchmark.md`，机器可读报告保存在各自的 `results/full_accuracy/<run_id>/` 和
@@ -163,6 +163,8 @@ models/scenario_name/category_name/model_name/
     ├── accuracy.md
     └── benchmark.md
 ```
+
+YOLOv5s 使用简化目录：离线源码包、补丁包和 `source_url.txt` 位于 `models/`，`deploy/` 以 `prepare.sh` 和 `test_board.sh` 为公开入口；具体结构见其模型 README。
 
 仓库通过 `registry/models.yaml` 维护模型索引,避免扫描上百个目录才能了解交付状态.
 

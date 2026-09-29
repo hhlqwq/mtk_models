@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
+# 板端统一测试入口. smoke: 三张公开图片; full: COCO val2017 全量精度.
 
 set -euo pipefail
 
+readonly MODE="${1:-smoke}"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 readonly BOARD_HOST="${MTK_BOARD_HOST:-root@192.168.0.92}"
@@ -10,12 +12,69 @@ readonly BOARD_DATASET="${MTK_BOARD_DATASETS_ROOT:-/root/hailong.he/datasets}/co
 readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)}"
 readonly BOARD_OUTPUT="${BOARD_MODEL_ROOT}/eval/${RUN_ID}"
 readonly BOARD_MODEL_DIR="${BOARD_MODEL_ROOT}/models/${RUN_ID}"
-readonly BOARD_RESULT="${BOARD_MODEL_ROOT}/results/${RUN_ID}"
-readonly BINARY="${SCRIPT_DIR}/inference_demo/yolov5s_board_eval"
-readonly EVALUATOR="${SCRIPT_DIR}/inference_demo/evaluate_coco.py"
+readonly BINARY="${SCRIPT_DIR}/cpp/yolov5s_board_eval"
+readonly EVALUATOR="${SCRIPT_DIR}/python/evaluate_coco.py"
 readonly ANNOTATIONS="${BOARD_DATASET}/annotations/instances_val2017.json"
 readonly SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
+if [[ "${MODE}" != "smoke" && "${MODE}" != "full" ]]; then
+    echo "用法: bash deploy/test_board.sh [smoke|full]" >&2
+    exit 2
+fi
+
+# 使用板端 C++ 推理器处理三张公开图片,并生成可查看的检测结果.
+run_smoke() {
+    local run_id="$(date +%Y%m%d_%H%M%S)_$$"
+    local board_dir="${BOARD_MODEL_ROOT}/demo/public/${run_id}"
+    local input_dir="${MODEL_ROOT}/examples/input"
+    local output_dir="${MODEL_ROOT}/examples/output"
+    local container="${MTK_G720_CONTAINER:-hhl_g720_8011}"
+
+    test -f "${MODEL_ROOT}/models/model_int8.dla"
+    test "$(find "${input_dir}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 3
+    docker exec "${container}" true
+    ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" true
+    echo "[1/6] 交叉编译 Genio 720 C++ 推理器."
+    bash "${SCRIPT_DIR}/scripts/build_board_cpp.sh"
+    echo "[2/6] 准备本次板端目录."
+    ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+        "mkdir -p '${board_dir}/images' '${board_dir}/output' '${BOARD_MODEL_ROOT}/models'"
+    echo "[3/6] 部署 DLA、程序和三张图片."
+    scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/models/model_int8.dla" \
+        "${BOARD_HOST}:${BOARD_MODEL_ROOT}/models/"
+    scp "${SSH_OPTIONS[@]}" "${BINARY}" "${BOARD_HOST}:${board_dir}/"
+    scp "${SSH_OPTIONS[@]}" "${input_dir}"/*.jpg \
+        "${BOARD_HOST}:${board_dir}/images/"
+    echo "[4/6] 执行三图板端推理."
+    ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+        "'${board_dir}/yolov5s_board_eval' \
+          --model '${BOARD_MODEL_ROOT}/models/model_int8.dla' \
+          --images '${board_dir}/images' --output-dir '${board_dir}/output' \
+          --limit 3 --warmup 2 --progress-interval 1 --confidence 0.25 \
+          --iou 0.45 --max-det 100"
+    echo "[5/6] 回收板端检测和耗时结果."
+    mkdir -p "${output_dir}"
+    scp "${SSH_OPTIONS[@]}" \
+        "${BOARD_HOST}:${board_dir}/output/predictions.jsonl" \
+        "${output_dir}/predictions.jsonl"
+    scp "${SSH_OPTIONS[@]}" \
+        "${BOARD_HOST}:${board_dir}/output/timing_summary_current_run.json" \
+        "${output_dir}/smoke_timing_summary.json"
+    echo "[6/6] 生成检测框图片和单图 JSON."
+    docker exec "${container}" python3 \
+        "${SCRIPT_DIR}/python/render_examples.py" \
+        --input-dir "${input_dir}" \
+        --predictions "${output_dir}/predictions.jsonl" \
+        --output-dir "${output_dir}" --count 3
+    echo "[OK] YOLOv5s 三图板端测试结果: ${output_dir}"
+}
+
+if [[ "${MODE}" == "smoke" ]]; then
+    run_smoke
+    exit 0
+fi
+
+test -f "${MODEL_ROOT}/models/model_int8.dla"
 if [[ ! "${RUN_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
     echo "[ERROR] EVAL_RUN_ID 只能包含字母、数字、点、下划线和连字符." >&2
     exit 1
@@ -58,7 +117,7 @@ BOARD_STATE
 }
 
 echo "[1/8] 交叉编译板端 C++ 评测程序."
-bash "${SCRIPT_DIR}/build_board_cpp.sh"
+bash "${SCRIPT_DIR}/scripts/build_board_cpp.sh"
 
 echo "[2/8] 检查板端数据集及全新运行目录."
 image_count="$(ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
@@ -79,7 +138,7 @@ scp "${SSH_OPTIONS[@]}" "${BINARY}" "${MODEL_ROOT}/models/model_int8.dla" \
 echo "[4/8] 固化运行输入、数据集和板端环境证据."
 readonly GIT_COMMIT="$(git -C "${MODEL_ROOT}" rev-parse HEAD)"
 readonly SOURCE_SHA256="$(sha256sum \
-    "${SCRIPT_DIR}/inference_demo/yolov5s_board_eval.cpp" | awk '{print $1}')"
+    "${SCRIPT_DIR}/cpp/yolov5s_board_eval.cpp" | awk '{print $1}')"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" bash -s -- \
     "${BOARD_MODEL_DIR}" "${BOARD_DATASET}" "${BOARD_OUTPUT}" \
     "${RUN_ID}" "${GIT_COMMIT}" "${SOURCE_SHA256}" <<'BOARD_MANIFEST'

@@ -48,7 +48,7 @@
 
 ![板端相对深度预览](../examples/output/public/depth_anything_v2_small_sample_1.png)
 
-预览对单图深度值做了 2%–98% 分位数拉伸，仅用于检查输出结构；原图来源和 CC0 许可见 [公共输入说明](../../../../perception/object_detection/yolov5s/examples/input/public/ASSET_LICENSE.md)。
+预览对单图深度值做了 2%–98% 分位数拉伸，仅用于检查输出结构；原图来源和 CC0 许可见 [公共输入说明](../../../../perception/object_detection/yolov5s/examples/README.md)。
 
 ## 证据位置与边界
 

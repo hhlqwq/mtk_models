@@ -35,7 +35,7 @@ G5100 保持未开始状态.
 
 ## 公开三图示例
 
-复用 [YOLOv5s 的三张 CC0 公共输入](../../perception/object_detection/yolov5s/examples/input/public/ASSET_LICENSE.md)，
+复用 [YOLOv5s 的三张 CC0 公共输入](../../perception/object_detection/yolov5s/examples/README.md)，
 在 Genio 720 上运行 C++、DLA 与 Neuron Runtime。Demo 使用置信度 0.4、NMS IoU 0.9，
 每张最多展示 30 个实例；该展示参数与正式 AP 评测不同，图片不代替 COCO 全量精度。
 `examples/output/public/` 平铺保存三张叠加图及对应 JSON；JSON 内含每个掩码的 COCO RLE。
@@ -76,7 +76,7 @@ D:\code\github\mtk_models\models\navigation\segmentation\fastsam\original\FastSA
 ```bash
 cd /data/users/hailong.he/github/mtk_models
 export FASTSAM_WEIGHTS_SHA256='e9034d7478a8e9d1bfb57b51592e521a253287c7cdcf79258f61ea6d68584a0d'
-export FASTSAM_IMAGE='/data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s/examples/input/public/000000000001.jpg'
+export FASTSAM_IMAGE='/data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s/examples/input/000000000001.jpg'
 export FASTSAM_CALIBRATION_DIR='/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ILSVRC2012/val'
 bash models/navigation/segmentation/fastsam/deploy/download_original.sh
 bash models/navigation/segmentation/fastsam/deploy/convert.sh
@@ -106,7 +106,7 @@ bash models/navigation/segmentation/fastsam/deploy/build_board_cpp.sh
 
 ```bash
 cd /data/users/hailong.he/github/mtk_models
-export FASTSAM_IMAGE='/data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s/examples/input/public/000000000001.jpg'
+export FASTSAM_IMAGE='/data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s/examples/input/000000000001.jpg'
 export FASTSAM_RUN_ID="$(date +%Y%m%d_%H%M%S)"
 bash models/navigation/segmentation/fastsam/deploy/deploy_board.sh
 ```

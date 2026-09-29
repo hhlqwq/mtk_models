@@ -7,7 +7,7 @@ readonly RUN_ID="${DEPTH_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
 readonly BOARD_HOST="root@192.168.0.92"
 readonly BOARD_DIR="/root/hailong.he/open_models/depth_anything_v2_small/smoke/${RUN_ID}"
 readonly RUN_DIR="${MODEL_ROOT}/examples/output/runs/${RUN_ID}"
-readonly IMAGE_ROOT="/data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s/examples/input/public"
+readonly IMAGE_ROOT="/data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s/examples/input"
 
 if [[ ! "${RUN_ID}" =~ ^[A-Za-z0-9_-]+$ ]]; then
     echo "运行编号仅允许字母、数字、下划线和连字符。" >&2

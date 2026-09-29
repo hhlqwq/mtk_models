@@ -47,7 +47,7 @@ initialize_run() {
         "${MODEL_DIR}/models/model_int8.tflite"
         "${MODEL_DIR}/models/model_int8.dla"
         "${PROJECT_ROOT}/tools/accuracy/yolov5s_val_coco.py"
-        "${MODEL_DIR}/deploy/inference_demo/board_eval_loop.sh"
+        "${MODEL_DIR}/archive/legacy_deploy/board_eval_loop.sh"
     )
     local model_file
     mkdir -p "${WORK}"
@@ -89,7 +89,7 @@ run_npu() {
     ssh "${BOARD_HOST}" "mkdir -p '${BOARD_MODEL_DIR}' '${BOARD_INPUT}' '${BOARD_EVAL}/outputs'"
     scp -q "${MODEL_DIR}/models/model_int8.dla" \
         "${BOARD_HOST}:${BOARD_MODEL_DIR}/model_int8.dla"
-    scp -q "${MODEL_DIR}/deploy/inference_demo/board_eval_loop.sh" \
+    scp -q "${MODEL_DIR}/archive/legacy_deploy/board_eval_loop.sh" \
         "${BOARD_HOST}:${BOARD_EVAL}/board_eval_loop.sh"
     tar -C "${WORK}/npu_bins" -cf - . | ssh "${BOARD_HOST}" \
         "tar -C '${BOARD_INPUT}' -xf -"

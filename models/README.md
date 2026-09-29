@@ -145,7 +145,7 @@ models/
 
 ## 单模型交付要求
 
-每个模型目录至少应包含：
+每个模型目录至少应包含下列内容；YOLOv5s 将来源记录和离线包放在 `models/`，无需单独的 `original/`：
 
 ```text
 <model>/
@@ -153,7 +153,7 @@ models/
 ├── model_card.md
 ├── model.yaml
 ├── LICENSE
-├── original/
+├── original/             # 或在 models/ 内保存来源记录与离线包.
 ├── models/
 ├── deploy/
 ├── examples/

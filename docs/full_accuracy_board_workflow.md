@@ -2,7 +2,7 @@
 
 本工作流用于板端重刷镜像后的重新验证。**一次只选择并测试一个模型**,不得使用循环或总入口连续启动六个模型；前一个模型的报告应先检查并按需清理,再启动下一个。下述六个模型各有两个独立入口：
 
-1. `deploy/run_full_accuracy.sh`：用户在 Ubuntu89 宿主机手动启动一次。89 只负责模型/程序编译和部署调度；92 负责数据准备、C++ NPU 推理和 Python 指标计算。新镜像全量测试不运行 89 端精度基线。成功后**保留模型、逐样本检查点和报告**。
+1. 各模型的全量测试入口：YOLOv5s 使用 `deploy/test_board.sh full`，其他模型使用 `deploy/run_full_accuracy.sh`。用户在 Ubuntu89 宿主机手动启动一次。89 只负责模型/程序编译和部署调度；92 负责数据准备、C++ NPU 推理和 Python 指标计算。新镜像全量测试不运行 89 端精度基线。成功后**保留模型、逐样本检查点和报告**。
 2. `deploy/cleanup_full_accuracy.sh`：用户从 92 手动取走 `report/`、上传到 Git 并核验后，另一次手动执行。它校验报告完整性和 SHA-256，保留小体积报告到 92 的 `results/<run_id>/`，删除该 run 的 `eval/<run_id>/` 大文件、`models/<run_id>/` 专属模型副本及 `/root/hailong.he/datasets/<model>/<run_id>/` 专属缓存。不会删除共享原始数据集或官方 `/root/hailong.he/MTK_G720_DLA`。
 
 **任何脚本都不执行 Git 提交、推送或结果回传。** 在用户上传 Git 之前，92 是结果的唯一保存位置。下一次刷机前，务必先自行备份结果。清理需要显式设置 `CONFIRM_RESULTS_UPLOADED=1`，脚本仅信任用户确认，不会替用户查询 Git 远端。
@@ -43,7 +43,7 @@
 
 代码迁移状态：六个模型的新入口均以 C++ 完成板端预处理和推理、Python 仅用于指标阶段。Whisper-Tiny 的 LibriSpeech `test-clean`、FastSAM 的 COCO val2017 类别无关分割及 YOLO-World XL 的 COCO val2017 bbox 全量测试已在 92 完成，报告分别保存在模型的 `results/full_accuracy/` 目录。RTMPose 与 ViT 的新入口仍需按各自运行报告核对，不可把交叉编译或静态检查当作板端验证。旧的 Python 推理脚本只供历史复现，不由本工作流调用。
 
-所有模型使用新镜像对应的全新 `EVAL_RUN_ID`。**只验完整的官方 test/val split，不抽取 500、1000 张等部分子集；覆盖数量不符就不能生成 `complete` 报告。** 中断或前置检查失败时不自动清理；先查看该 run 的日志和状态。不要把历史旧镜像结果复用为新镜像验证。`run_full_accuracy.sh` 只处理全量精度；单图冒烟脚本仍可分开运行。
+所有模型使用新镜像对应的全新 `EVAL_RUN_ID`。**只验完整的官方 test/val split，不抽取 500、1000 张等部分子集；覆盖数量不符就不能生成 `complete` 报告。** 中断或前置检查失败时不自动清理；先查看该 run 的日志和状态。不要把历史旧镜像结果复用为新镜像验证。YOLOv5s 的 `test_board.sh full` 与其他模型的 `run_full_accuracy.sh` 只处理全量精度；YOLOv5s 的三图冒烟可使用 `test_board.sh smoke`。
 
 ## 手动执行
 
@@ -52,7 +52,7 @@
 ```bash
 cd /data/users/hailong.he/github/mtk_models
 EVAL_RUN_ID=20260923_yolov5s_new_bsp_v1 \
-  bash models/perception/object_detection/yolov5s/deploy/run_full_accuracy.sh
+  bash models/perception/object_detection/yolov5s/deploy/test_board.sh full
 ```
 
 其他模型使用相同入口。Whisper-Tiny、FastSAM 和 YOLO-World XL 已完成本轮全量评测；其他模型以各自报告的 `status`、覆盖数量和哈希为准：

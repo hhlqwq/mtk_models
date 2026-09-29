@@ -3,8 +3,8 @@
 set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly SOURCE="${SCRIPT_DIR}/inference_demo/yolov5s_board_eval.cpp"
-readonly OUTPUT="${SCRIPT_DIR}/inference_demo/yolov5s_board_eval"
+readonly SOURCE="${SCRIPT_DIR}/../cpp/yolov5s_board_eval.cpp"
+readonly OUTPUT="${SCRIPT_DIR}/../cpp/yolov5s_board_eval"
 readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT:-/data/users/hailong.he/data/MTKG720/cpp_toolchain}"
 readonly OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"

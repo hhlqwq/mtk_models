@@ -69,7 +69,7 @@ C++ `lround` 与 Python `round` 使上下填充相差 1 个模型像素.
 ![FastSAM-s 板端分割叠加图](../examples/output/public/fastsam_s_sample_1_overlay.jpg)
 
 原始图片与 CC0 来源说明见
-[YOLOv5s 公共输入](../../../../perception/object_detection/yolov5s/examples/input/public/ASSET_LICENSE.md).
+[YOLOv5s 公共输入](../../../../perception/object_detection/yolov5s/examples/README.md).
 
 ## 范围
 

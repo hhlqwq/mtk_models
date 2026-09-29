@@ -8,7 +8,7 @@ readonly NCC_LIB="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build202602
 # MT8189 (Genio 720) 的 NPU 为 MDLA 5.3, 板端 neuronrt 8.2.16 不支持 mdla3.0.
 # --suppress-output: MT8189 无 EDPA 硬件, NCC 的 MDLA->Output 数据转换桥默认
 # 落在 EDPA_1_2 上会导致加载失败; 抑制桥接后输出为 MDLA 原生 NCHW INT8,
-# 行 stride 按 16 元素对齐 (见 postprocess_outputs.py 的 deinterleave).
+# 行 stride 按 16 元素对齐,板端 C++ 推理器负责还原布局.
 readonly NCC_ARCH="${NCC_ARCH:-mdla5.3}"
 readonly OUTPUT_DLA="${OUTPUT_DLA:-${MODEL_ROOT}/models/model_int8.dla}"
 

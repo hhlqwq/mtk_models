@@ -37,19 +37,17 @@ PyTorch 基线 0.3708 与上游公布的 0.374 接近；是否接受 INT8 精度
 
 ## 证据
 
-- 评测命令：`bash deploy/accuracy_eval.sh all`（89 宿主机）.
+- 历史三后端评测入口已归档在 `archive/legacy_deploy/accuracy_eval.sh`；当前板端全量入口为 `EVAL_RUN_ID=<新ID> bash deploy/test_board.sh full`.
 - 数据集：`/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017`.
 - 本次原始产物：`.eval/yolov5s/{npu,torch,onnx}_results.jsonl`、`*_summary.json`、
   `full_eval` 日志 `/tmp/hailongcodex/2026-09-07/full_eval.log`.
 - 后续评测脚本使用 `.eval/yolov5s/runs/<run_id>/` 隔离每次运行,避免旧结果污染.
 - 样本数：5000/5000 图片；NPU、PyTorch、ONNX 分别为 718,881、709,477、709,518 条检测结果.
 - 最终交付运行 ID：`20260908_cpp_delivery_v3`；5000/5000 图片,718,891 条检测结果.
-- 板端原始证据：
-  `/root/hailong.he/yolov5s/eval/20260908_cpp_delivery_v3/`；89 回传的完整证据：
-  `examples/output/board_cpp_accuracy/20260908_cpp_delivery_v3/`.逐图 NPU 原始输出未回传.
+- 当时的板端运行目录为 `/root/hailong.he/yolov5s/eval/20260908_cpp_delivery_v3/`；
+  89 端原始报告目录已从当前工作树移除,本节数值属于历史结果摘要.逐图 NPU 原始输出未回传.
 - 输入清单绑定 Git 提交 `1dcadbe4a5dec82b2e95efd3e0ffea90354a6bfc`、源码、板端二进制、
   DLA、评测器、COCO 标注和 5000 张图片哈希清单；输出清单记录正式结果文件 SHA-256.
 - 板端 C++ 精确 AP@0.5:0.95 为 `0.35859860348732847`,评测脚本会先验证
   `processed_ids.txt` 与 COCO 标注中的 5000 个 image_id 完全一致,再运行 COCOeval.
-- 五个模型产物的 SHA-256 见 `model_card.md`,板端 DLA 记录见
-  `examples/output/SHA256SUMS`.后续转换和编译脚本会重新生成 `models/SHA256SUMS`.
+- 五个历史模型产物的 SHA-256 见 `model_card.md`；后续转换和编译脚本会重新生成 `models/SHA256SUMS`.

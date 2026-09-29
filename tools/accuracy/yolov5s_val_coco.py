@@ -412,7 +412,7 @@ def parse_args() -> argparse.Namespace:
                         "object_detection/yolov5s/models/yolov5s.pt")
     parser.add_argument("--source-dir", type=Path,
                         default=PROJECT_ROOT / "models/perception/"
-                        "object_detection/yolov5s/original/yolov5")
+                        "object_detection/yolov5s/models/yolov5")
     parser.add_argument("--work-dir", type=Path,
                         default=PROJECT_ROOT / ".eval/yolov5s")
     parser.add_argument("--bins-dir", type=Path, default=None)

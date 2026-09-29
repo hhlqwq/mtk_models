@@ -6,7 +6,7 @@
 NCC 将 "MDLA → Output 数据转换桥" 派发到 EDPA_1_2 且 MT8189 无 EDPA 硬件而加载失败.
 改用 `--arch=mdla5.3 --suppress-output --disallow-bridge` 后板端推理成功,
 输出为 MDLA 原生 NCHW INT8 (行 stride 16 对齐),由后处理还原布局.
-详见模型 README "MT8189 编译约束".
+编译约束现固化在 `deploy/build.sh`.
 
 | 项目 | 数值 |
 | --- | --- |
@@ -25,12 +25,12 @@ NCC 将 "MDLA → Output 数据转换桥" 派发到 EDPA_1_2 且 MT8189 无 EDPA
 | CPU 调频 | `policy0`、`policy6` 运行前后均为 `schedutil`；频率范围分别为 500 MHz–2.0 GHz、550 MHz–2.6 GHz |
 | DLA SHA-256 | `cf5b66c3fc1c24c9ef1d5c579d20f8d145cbd15d3a5be874b114f7f270c824c6` |
 
-2026-09-08 使用 `deploy/accuracy_board_cpp.sh` 在 92 上完整处理 COCO val2017 5000 张图片.
+2026-09-08 使用当时的 `deploy/accuracy_board_cpp.sh` 在 92 上完整处理 COCO val2017 5000 张图片；当前对应入口为 `deploy/test_board.sh full`.
 C++ 程序常驻加载 DLA,20 次预热后逐图记录耗时；预处理包含板端 JPEG 文件读取、letterbox、
 RGB 转换和 INT8 量化,后处理包含输出还原、解码、NMS 和坐标回映.稳态端到端统计不包含
 一次性模型加载、最终 JSON 序列化及 COCOeval.最终交付运行 ID 为
-`20260908_cpp_delivery_v3`,逐图 CSV 和汇总 JSON 位于 89 的
-`examples/output/board_cpp_accuracy/20260908_cpp_delivery_v3/`.输入清单绑定运行提交、源码、
+`20260908_cpp_delivery_v3`.当时的逐图 CSV 已从当前工作树移除；5000 张汇总 JSON 保留在
+`examples/output/timing_summary_current_run.json`.输入清单绑定运行提交、源码、
 板端二进制、DLA、评测器、标注和图片清单哈希；输出清单绑定全部正式结果.
 
 板端 RTC 未同步,`system_before.txt` 和 `system_after.txt` 内的采集时间错误显示为

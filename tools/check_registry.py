@@ -14,7 +14,6 @@ REQUIRED_FILES = (
     "model_card.md",
     "LICENSE",
     "model.yaml",
-    "original/source_url.txt",
     "models/README.md",
     "deploy/convert.sh",
     "deploy/build.sh",
@@ -69,6 +68,11 @@ def check_model(entry: dict[str, Any]) -> list[str]:
     for required_file in REQUIRED_FILES:
         if not (model_root / required_file).is_file():
             errors.append(f"{model_id}: 缺少文件: {required_file}")
+
+    # 兼容模型来源记录放在 original/ 或 models/ 的两种目录结构.
+    source_records = ("original/source_url.txt", "models/source_url.txt")
+    if not any((model_root / path).is_file() for path in source_records):
+        errors.append(f"{model_id}: 缺少来源记录: {source_records}")
 
     model_yaml_path = model_root / "model.yaml"
     if model_yaml_path.is_file():

@@ -39,5 +39,5 @@ Genio 720 最终交付运行 ID 为 `20260908_cpp_delivery_v3`,运行提交为
 `daf756b4553c8ba07d36e0fa3761d9e6ce60651871b5a9a4d633aa0bdfffffaf`,COCO 标注
 SHA-256 为 `e8c7f7908f1d7278341fae127d0da654f102f11bd7b21d8aeefa635b8c810b6f`,
 5000 张图片哈希清单的 SHA-256 为
-`1bc0eca834162aace33aac3b67e9e5dc47a12aadc7f5e92108b4134161358f48`.详细清单见
-`examples/output/board_cpp_accuracy/20260908_cpp_delivery_v3/`.
+`1bc0eca834162aace33aac3b67e9e5dc47a12aadc7f5e92108b4134161358f48`.该次运行的历史指标见
+`docs/accuracy.md` 和 `docs/benchmark.md`；原始运行目录已不在当前工作树中.
