@@ -202,9 +202,3 @@ python tools/create_model.py \
 ```bash
 python tools/check_registry.py
 ```
-
-## 历史工程迁移
-
-旧工程 `D:\code\gitee\mtk` 仅作为只读迁移来源.已有 YOLOv5n/YOLOv8s 转换经验、板端
-推理命令及精度评估方法将逐项迁入当前结构,迁移记录见
-[migration_from_gitee.md](docs/migration_from_gitee.md).
