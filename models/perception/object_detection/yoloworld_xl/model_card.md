@@ -32,4 +32,4 @@ MediaTek 文件没有提供上游 checkpoint 名称、导出配置或内置文�
 - 当前模型只能使用导出时固化的 80 类文本,板端不能动态输入任意开放词汇.
 - Neuron EP 允许不支持的节点回退 CPU,因此性能报告必须附 profiling 节点归属.
 - 官方参考性能不能代替本项目板端实测.
-- 正式 COCO 精度尚未完成时,交付状态最高为"板端已验证".
+- COCO val2017 全量 bbox 精度已完成；因仍含 CPU fallback 且纯 NPU 正确性问题未解决,交付状态保持"板端已验证".结果见 [精度报告](docs/accuracy.md) 与 [性能报告](docs/benchmark.md).

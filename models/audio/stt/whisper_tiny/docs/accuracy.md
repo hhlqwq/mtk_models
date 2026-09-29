@@ -38,7 +38,12 @@
 
 结论：板端正式 Run 已完整执行,整体 CER 与同协议 OpenAI Tiny 基线接近,但绝对 CER 较高、
 大规模 Token 完全一致率未达到 100%,且存在 14 条重复解码。当前结果用于如实记录
-Whisper-Tiny FP16/Greedy Search 的部署表现,不标记为精度验收通过。LibriSpeech
-`test-clean` WER 仍未运行.
+Whisper-Tiny FP16/Greedy Search 的部署表现,不标记为精度验收通过。
 
 完整机器可读证据见 [`formal_eval_20260918_aishell1.json`](formal_eval_20260918_aishell1.json).
+
+## LibriSpeech test-clean 全量 WER
+
+新镜像正式精度仅使用 LibriSpeech `test-clean`。运行编号 `20260928_whisper_testclean_full_v1` 在 Genio 720 完成 2,620/2,620 条，失败 0、缺失 0，WER `0.0756029947`。[完整报告](../results/full_accuracy/20260928_whisper_testclean_full_v1/summary.json)。音频统一转 16 kHz 单声道，按 Whisper 固定 30 秒输入窗口截断或补零；略长于 30 秒的样例仍计入 WER。指标使用原版 OpenAI Whisper Token 解码和英文文本规范化。此次未重新评测 AISHELL-1，也没有同协议框架基线。
+
+数据源为 [OpenSLR SLR12](https://www.openslr.org/12/)，原始压缩包地址为 [test-clean.tar.gz](https://www.openslr.org/resources/12/test-clean.tar.gz)；NAS 已有副本复制至板端 `/root/hailong.he/datasets/librispeech/test-clean/`。原版 Tokenizer、规范化代码及词表的版本和 SHA-256 见报告中的 `vendor_manifest.json`。

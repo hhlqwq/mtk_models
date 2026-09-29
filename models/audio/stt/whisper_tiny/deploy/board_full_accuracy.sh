@@ -11,6 +11,7 @@ readonly BOARD_CACHE="${BOARD_DATASETS_ROOT}/whisper_tiny/${RUN_ID}"
 readonly MODEL_DIR="${MTK_BOARD_OPEN_MODELS_ROOT:-/root/hailong.he/open_models}/whisper_tiny/models/${RUN_ID}"
 readonly TOOL_DIR="${BOARD_RUN}/tools"
 readonly REPORT_DIR="${BOARD_RUN}/report"
+export PYTHONPATH="${TOOL_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
 
 # 执行单数据集全量流程,板端非指标计算均由 C++ 完成.
 run_dataset() {
@@ -81,6 +82,7 @@ if (summary.get("status") != "complete" or
     raise SystemExit("[ERROR] LibriSpeech 全量报告不完整.")
 summary["model"] = "whisper_tiny"
 summary["run_id"] = sys.argv[2]
+summary["host_preprocessing"]["host"] = "genio720_board"
 path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8")
 PY
@@ -91,11 +93,19 @@ sha256sum "${MODEL_DIR}/encoder_fp32.dla" \
     "${MODEL_DIR}/mel_filters_f32.bin" \
     "${MODEL_DIR}/decode_config.txt" \
     > "${REPORT_DIR}/model_sha256.txt"
+cp "${TOOL_DIR}/vendor_manifest.json" "${REPORT_DIR}/vendor_manifest.json"
+sha256sum "${TOOL_DIR}/whisper/tokenizer.py" \
+    "${TOOL_DIR}/whisper/assets/multilingual.tiktoken" \
+    "${TOOL_DIR}/whisper/normalizers/english.py" \
+    "${TOOL_DIR}/whisper/normalizers/basic.py" \
+    "${TOOL_DIR}/whisper/normalizers/english.json" \
+    > "${REPORT_DIR}/metric_dependency_sha256.txt"
 find "${LIBRISPEECH_ROOT}" -type f -name '*.flac' -print0 \
     | sort -z | xargs -0 sha256sum > "${REPORT_DIR}/dataset_audio_sha256.txt"
 test "$(wc -l < "${REPORT_DIR}/dataset_audio_sha256.txt")" -eq 2620
 sha256sum "${BOARD_CACHE}/librispeech/source_manifest.jsonl" \
     "${BOARD_CACHE}/librispeech/board_manifest.tsv" \
     "${REPORT_DIR}/dataset_audio_sha256.txt" \
+    "${REPORT_DIR}/vendor_manifest.json" \
     > "${REPORT_DIR}/run_inputs_sha256.txt"
 echo "[OK] 板端 LibriSpeech 全量报告: ${REPORT_DIR}"

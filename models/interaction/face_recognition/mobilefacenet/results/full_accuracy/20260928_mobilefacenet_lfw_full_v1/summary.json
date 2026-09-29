@@ -1,0 +1,95 @@
+{
+  "status": "complete",
+  "model": "mobilefacenet",
+  "run_id": "20260928_mobilefacenet_lfw_full_v1",
+  "dataset": "LFW_original_non_aligned",
+  "input_protocol": "BGR_full_image_resize_112x112_no_landmark_alignment",
+  "distinct_images": 7701,
+  "metric_protocol": "lfw_10_fold_train_9_test_1_cosine_threshold",
+  "pairs": 6000,
+  "positive_pairs": 3000,
+  "negative_pairs": 3000,
+  "correct_pairs": 4270,
+  "verification_accuracy": 0.7116666666666667,
+  "fold_mean_accuracy": 0.7116666666666667,
+  "fold_std_accuracy": 0.027386127875258303,
+  "folds": [
+    {
+      "fold": 1,
+      "pairs": 600,
+      "correct": 424,
+      "accuracy": 0.7066666666666667,
+      "threshold": 0.6713451445102692
+    },
+    {
+      "fold": 2,
+      "pairs": 600,
+      "correct": 432,
+      "accuracy": 0.72,
+      "threshold": 0.6718915402889252
+    },
+    {
+      "fold": 3,
+      "pairs": 600,
+      "correct": 440,
+      "accuracy": 0.7333333333333333,
+      "threshold": 0.6713607907295227
+    },
+    {
+      "fold": 4,
+      "pairs": 600,
+      "correct": 422,
+      "accuracy": 0.7033333333333334,
+      "threshold": 0.6713607907295227
+    },
+    {
+      "fold": 5,
+      "pairs": 600,
+      "correct": 399,
+      "accuracy": 0.665,
+      "threshold": 0.6713607907295227
+    },
+    {
+      "fold": 6,
+      "pairs": 600,
+      "correct": 450,
+      "accuracy": 0.75,
+      "threshold": 0.6713607907295227
+    },
+    {
+      "fold": 7,
+      "pairs": 600,
+      "correct": 448,
+      "accuracy": 0.7466666666666667,
+      "threshold": 0.6717023253440857
+    },
+    {
+      "fold": 8,
+      "pairs": 600,
+      "correct": 436,
+      "accuracy": 0.7266666666666667,
+      "threshold": 0.6713839173316956
+    },
+    {
+      "fold": 9,
+      "pairs": 600,
+      "correct": 406,
+      "accuracy": 0.6766666666666666,
+      "threshold": 0.6713607907295227
+    },
+    {
+      "fold": 10,
+      "pairs": 600,
+      "correct": 413,
+      "accuracy": 0.6883333333333334,
+      "threshold": 0.6713607907295227
+    }
+  ],
+  "cli_wall_mean_ms": 36.21414179013699,
+  "cli_wall_p95_ms": 45.461075962521136,
+  "timing_scope": "per-image neuronrt CLI including process startup and model load",
+  "model_sha256": "ff0735dc157f478c5ceed564352c031749bd5d74fa97fb8afca22b3233af3e89",
+  "metadata_sha256": "0a2cd179027e8dfc9616f1f4f7e63e63b6463edd33746cfff62bfd3295df88e1",
+  "pairs_sha256": "7f540157be42f57ab5bb1d7ef53b7b379e0331b4842cbd32f4d1b625243e54fe",
+  "source_manifest_sha256": "e781d7c0be1b844ed26f02dedfbedbacd57b6165a4a5cb4629f1bf24b7263655"
+}

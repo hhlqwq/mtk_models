@@ -1,7 +1,12 @@
 # 精度与一致性
 
-当前状态: 已完成同图 PyTorch 与板端 C++ NPU 冒烟比较;
-正式数据集精度仍未执行.
+当前状态: 已完成同图 PyTorch 与板端 C++ NPU 冒烟比较，以及 COCO val2017 全量类别无关实例分割评测。
+
+## COCO val2017 全量精度
+
+运行编号 `20260928_fastsam_full_v1`，Genio 720 板端处理 5,000/5,000 张图片，报告状态为 `complete`。将标注中的 80 个类别合并为 `object`，类别无关 segm AP50:95 为 `0.0611437061`，AP50 为 `0.1056471507`。该口径不能与标准 80 类 COCO segm AP 直接比较。[完整报告](../results/full_accuracy/20260928_fastsam_full_v1/summary.json)保留运行配置、哈希及逐图证据。
+
+数据位于板端 `/root/hailong.he/datasets/coco/val2017/`，共 5,000 张；标注文件 `annotations/instances_val2017.json` 的 SHA-256 为 `e8c7f7908f1d7278341fae127d0da654f102f11bd7b21d8aeefa635b8c810b6f`。数据从 89 的 `/data/users/hailong.he/datasets/coco/` 复制；原始数据来源见 [COCO 2017 下载页](https://cocodataset.org/#download)。校准图片与正式评价图片的使用边界仍需以运行清单核对。
 
 1. 导出时比较官方模型前向与拆分输出头后 CPU 解码结果,检查框、分数、系数和原型.
 2. 在 89 的独立评测环境执行 ONNX CPU 推理,比较同图 PyTorch 与 ONNX 原始张量,
@@ -12,7 +17,7 @@
 
 单图匹配 IoU 是转换一致性证据,不等于正式数据集 mAP.
 FP32 原始头一致也不证明整个掩码后处理完全等价于所有版本的官方 Demo.
-正式数据集长评测、类别无关 AP 协议和可接受的量化损失需要单独确认.
+量化损失与原始框架的同协议全量对照尚未完成。
 校准与正式评价样本必须分离,不能用校准集结果代替正式测试精度.
 
 2026-09-23 的 16 张 COCO 校准图与公共样例图的单图比较结果,

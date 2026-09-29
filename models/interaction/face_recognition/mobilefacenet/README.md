@@ -3,6 +3,32 @@
 本目录面向 Genio 720 上的机器人熟人识别。模型接收已检测、已对齐的人脸，输出特征向量；
 检测、对齐、人员登记、阈值设定和多帧身份确认均属于应用流水线的其他环节。
 
+## LFW 正式验证入口
+
+本目录新增 `deploy/run_full_accuracy.sh`。在 Ubuntu89 宿主机设置新
+`EVAL_RUN_ID` 后运行该脚本，92 板端对 LFW 完整 10 折、6,000 对人脸执行硬件特征提取，
+用其余 9 折选择余弦阈值，再计算留出折的验证准确率，同时记录逐图 CLI 耗时。
+中断后使用相同 ID 加 `EVAL_RESUME=1` 续跑；原始输出、逐图检查点与报告保留在
+`/root/hailong.he/open_models/mobilefacenet/eval/<新ID>/`。
+
+`20260928_mobilefacenet_lfw_full_v1` 已完成 7,701 张不同图片的特征提取及全部
+6,000 对十折验证，正确 4,270 对，准确率 71.17%；每张图的 `neuronrt` 命令平均
+耗时 36.21 ms。详细十折阈值和哈希见[板端报告](results/full_accuracy/20260928_mobilefacenet_lfw_full_v1/summary.json)。
+
+数据使用 [LFW 图像与官方验证对的 Hugging Face 整理版](https://huggingface.co/datasets/marcelohaps/lfw)，
+图像来自 `original_non_aligned` 变体，13,233 张。实际 Parquet 获取地址为
+`https://hf-mirror.com/api/datasets/marcelohaps/lfw/parquet/default/train/0.parquet`，
+SHA-256 为 `85ff8ac9530a935d2dc6f9e2933cfd72c79089b2f1c403c996b808ba5c07abcf`；
+验证对来自该数据集提交 `12a61458b56d0433d07269dc1d64368abf4f6b4d` 的 `pairs.csv`，
+SHA-256 为 `7f540157be42f57ab5bb1d7ef53b7b379e0331b4842cbd32f4d1b625243e54fe`。
+`deploy/prepare_lfw_dataset.py` 使用 89 端 `pyarrow==17.0.0`，仅在临时目录还原图片并校验 13,233 图、
+6,000 对和十折划分；板端数据放在 `/root/hailong.he/datasets/lfw/`，原始人脸图片不提交 Git。
+
+**协议限制：**当前使用整理版的原始非对齐 250×250 图片，直接缩放至 112×112，
+没有运行人脸关键点检测和对齐。因此本次结果只能作为该固定输入协议的板端验证，
+不得与原作者或论文使用对齐人脸的 LFW 数值直接比较。`cli_wall_ms` 包含启动
+`neuronrt` 与模型加载，并非纯 NPU 延迟。LFW 原始图片的使用条款需按其来源核对。
+
 ## 来源和边界
 
 - 模型设计：[MobileFaceNets 论文](https://arxiv.org/abs/1804.07573)。
@@ -47,4 +73,4 @@ DLA、人脸校准图片和板端原始输出均由 `.gitignore` 排除，留在
 Genio 720 板端冒烟于 2026-09-24 完成，运行编号 `20260924T020219Z`。
 三次 `neuronrt -m hw` 推理均生成 128 元素 INT8 特征，重复输入输出一致。
 PyTorch 与 ONNX 单图输出最大绝对差约 `5.13e-6`，ONNX 与板端反量化输出余弦相似度约 `0.9901`。
-详见 [冒烟记录](docs/smoke.md)。正式人脸验证精度、机器人现场误识率、活体防护和延迟仍待评测。
+详见 [冒烟记录](docs/smoke.md)。LFW 全量验证见[精度报告](docs/accuracy.md)，逐图 CLI 耗时见[性能报告](docs/benchmark.md)；机器人现场误识率、活体防护和纯 NPU 延迟仍待评测。

@@ -1,0 +1,23 @@
+captured_at_utc=2026-09-28T06:34:52Z
+kernel=Linux genio-720-evk 6.6.137-mtk+ga246e0c68c39-g429091ed5965 #1 SMP PREEMPT Fri Jul 24 08:02:12 UTC 2026 aarch64 GNU/Linux
+[os_release]
+ID=rity-demo
+NAME="Rity Demo Layer"
+VERSION="26.0-release (scarthgap)"
+VERSION_ID=26.0-release
+VERSION_CODENAME="scarthgap"
+PRETTY_NAME="Rity Demo Layer 26.0-release (scarthgap)"
+CPE_NAME="cpe:/o:openembedded:rity-demo:26.0-release"
+[memory]
+               total        used        free      shared  buff/cache   available
+Mem:           7.6Gi       589Mi       415Mi       100Mi       6.9Gi       7.1Gi
+Swap:             0B          0B          0B
+[disk]
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root        58G   23G   32G  42% /
+[runtime_libraries]
+	libopencv_core.so.409 (libc6,AArch64) => /usr/lib/libopencv_core.so.409
+	libonnxruntime_providers_shared.so (libc6,AArch64) => /usr/lib/libonnxruntime_providers_shared.so
+	libonnxruntime_provider_neuron_wrapper.so (libc6,AArch64) => /usr/lib/libonnxruntime_provider_neuron_wrapper.so
+	libonnxruntime.so.1 (libc6,AArch64) => /usr/lib/libonnxruntime.so.1
+	libneuronusdk_runtime.mtk.so.8 (libc6,AArch64) => /usr/lib/libneuronusdk_runtime.mtk.so.8

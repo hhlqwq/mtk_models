@@ -1,0 +1,4 @@
+6a8cf39426f3bfd9595ab68dceb148cb1d72b4d2c3147ae1ddc382211b97b6e8  /root/hailong.he/open_models/yoloworld_xl/eval/20260928_yoloworld_coco_full_v3/raw/results.jsonl
+336273342a21cf4cc4480260720d9db5386ce70a62b56fc004fcd0d3ce00a12b  /root/hailong.he/open_models/yoloworld_xl/eval/20260928_yoloworld_coco_full_v3/raw/profile_path.txt
+f067282e4631a5b3e34594f03feda4dbda619586b1b1cbe540d28385705072cb  /root/hailong.he/open_models/yoloworld_xl/eval/20260928_yoloworld_coco_full_v3/raw/ort_neuron_2026-09-28_07-13-04.json
+27434555f1cdd7c8f5c6aaa995c28c57ed8df734795bdab7d72868555eb8a460  /root/hailong.he/open_models/yoloworld_xl/eval/20260928_yoloworld_coco_full_v3/coco_predictions.json

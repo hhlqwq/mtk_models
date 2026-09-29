@@ -1,6 +1,30 @@
 # Depth Anything V2 Small 单目相对深度
 
-本目录用于 Genio 720 的单图硬件冒烟。官方 Small 权重已完成 518×518 转换、MDLA 5.3 无桥接编译与三次板端硬件推理，当前状态为 `board_verified`。输出是**相对深度**，不能直接当作米制距离或安全避障阈值。
+本目录用于 Genio 720 的单目相对深度验证。官方 Small 权重已完成 518×518 转换、MDLA 5.3 无桥接编译、板端硬件冒烟和 DA-2K 全量点对评测。输出是**相对深度**，不能直接当作米制距离或安全避障阈值。
+
+## DA-2K 正式精度入口
+
+本目录新增 `deploy/run_full_accuracy.sh`，在 Ubuntu89 宿主机以
+`EVAL_RUN_ID=<新ID> bash deploy/run_full_accuracy.sh` 启动。它调用 92 上的硬件 DLA，
+按官方 DA-2K 压缩包的全部 1,033 张标注图片、2,068 个点对计算相对深度排序准确率。
+评测输入复用冒烟时验证的 518×518 正方形缩放和 INT8 行补齐；输出双线性还原到原图尺寸，
+再读取官方标注点坐标。点对中 `point1` 的深度数值严格大于 `point2` 时计为正确。
+此协议是本项目固定输入形状的板端评测，不能直接与官方保留宽高比的推理配置横比。
+报告保留在板端 `open_models/depth_anything_v2_small/eval/<新ID>/report/`，
+中断后以同一 ID 加 `EVAL_RESUME=1` 续跑；脚本不删除数据、原始输出或报告。
+
+`20260928_depth_da2k_full_v1` 已完成 1,033 张图、2,068 个点对，正确 1,774 对，
+点对准确率 85.78%；每图 `neuronrt` 命令平均耗时 194.70 ms。
+详细数据与哈希见[板端报告](results/full_accuracy/20260928_depth_da2k_full_v1/summary.json)。
+
+数据来源为 [官方 DA-2K 数据集](https://huggingface.co/datasets/depth-anything/DA-2K/tree/main)，
+实际获取地址为
+`https://hf-mirror.com/datasets/depth-anything/DA-2K/resolve/main/DA-2K.zip`；
+压缩包 SHA-256 为 `ff0e48e7cc53273efd1312610e51f1ec87bea0b8a22daf37125fd81246592b81`，
+与[官方文件页](https://huggingface.co/datasets/depth-anything/DA-2K/blob/main/DA-2K.zip)一致。
+数据集许可见官方页面的 Apache-2.0 声明。板端数据路径固定为
+`/root/hailong.he/datasets/da2k/`。运行前需准备完整数据，入口不会下载或解压。
+报告中的 `cli_wall_ms` 包含每张图片启动 `neuronrt` 与模型加载，不表示纯 NPU 延迟。
 
 ## 官方来源
 
@@ -10,7 +34,7 @@
 
 ## 冒烟配置
 
-采用固定 518×518 RGB 输入，按 ImageNet 均值和标准差归一化，输出 518×518 相对深度。518 是官方默认推理边长；本次固定方形缩放用于验证转换和硬件推理，官方实现会保留宽高比，正式精度评估须重新确定协议。
+采用固定 518×518 RGB 输入，按 ImageNet 均值和标准差归一化，输出 518×518 相对深度。518 是官方默认推理边长；本次固定方形缩放用于转换、硬件推理及 DA-2K 评测，官方实现会保留宽高比，两种协议的精度不能直接横比。
 
 转换在 Ubuntu 89 的 `hhl_g720_8011` 容器执行，板端推理在 Genio 720 `192.168.0.92` 执行。原始权重、中间模型及运行输出保留在测试机，不提交 Git。源码位置编码在固定形状下预计算，注意力改写为四维张量，复用官方参数；导出脚本先检查改写前后的 PyTorch 输出。`--suppress-input` 的 INT8 输入每行须从 518 补齐到 528 字节，准备脚本负责补齐。
 
@@ -42,6 +66,6 @@ bash deploy/deploy_board.sh
 
 ## 本次结果
 
-运行编号 `20260924T092605Z`。两张图片的板端相对深度图分别与同输入 PyTorch 参考达到 0.995495、0.990525 的逐像素 Pearson 相关系数；重复输入的原始输出逐字节一致。板端绝对输出幅值与 PyTorch 有差别，正式精度、稳定延迟和 Genio 5100 仍待评估。具体命令参数、哈希和原始证据见 [冒烟记录](docs/smoke.md)。
+运行编号 `20260924T092605Z`。两张图片的板端相对深度图分别与同输入 PyTorch 参考达到 0.995495、0.990525 的逐像素 Pearson 相关系数；重复输入的原始输出逐字节一致。板端绝对输出幅值与 PyTorch 有差别；全量精度见[精度报告](docs/accuracy.md)，稳定延迟和 Genio 5100 仍待评估。冒烟证据见 [smoke.md](docs/smoke.md)，全量耗时见[性能报告](docs/benchmark.md)。
 
 ![板端相对深度预览](examples/output/public/depth_anything_v2_small_sample_1.png)

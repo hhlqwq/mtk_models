@@ -88,7 +88,7 @@ std::string ShellQuote(const fs::path& path) {
   return result + "'";
 }
 
-// 用系统 ffmpeg 解码为 16 kHz 单声道 PCM16,保持原始 FLAC 不变.
+// 用系统 ffmpeg 解码为 16 kHz 单声道 PCM16,按 Whisper 输入窗口截取前 30 秒.
 std::pair<std::vector<float>, size_t> DecodeAudio(const fs::path& path) {
   const std::string command =
       "ffmpeg -hide_banner -loglevel error -nostdin -i " + ShellQuote(path) +
@@ -109,9 +109,10 @@ std::pair<std::vector<float>, size_t> DecodeAudio(const fs::path& path) {
       break;
     }
   }
-  if (pclose(process) != 0 || pcm.empty() || pcm.size() > 480000) {
-    throw std::runtime_error("FLAC 解码失败或音频超过 30 秒: " + path.string());
+  if (pclose(process) != 0 || pcm.empty()) {
+    throw std::runtime_error("FLAC 解码失败: " + path.string());
   }
+  pcm.resize(std::min(pcm.size(), static_cast<size_t>(480000)));
   std::vector<float> audio(480000, 0.0F);
   for (size_t index = 0; index < pcm.size(); ++index) {
     audio[index] = static_cast<float>(pcm[index]) / 32768.0F;

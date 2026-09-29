@@ -147,7 +147,7 @@ class BoardSession {
           "1", "100", "--opt=3 --num-mdla=1 --reshape-to-4d "
                       "--interval-coloring-converage=1.0"};
       CheckOrt(api_, api_->SessionOptionsAppendExecutionProvider(
-                   options_, "NeuronExecutionProvider", keys.data(),
+                   options_, "Neuron", keys.data(),
                    values.data(), keys.size()), "Append Neuron EP");
       CheckOrt(api_, api_->CreateSession(env_, model.c_str(), options_,
                                          &session_), "CreateSession");

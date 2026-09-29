@@ -52,6 +52,10 @@ AISHELL-1 test 本次没有 15 秒以上音频,因此本 Run 不能作为近 30 
 
 板端批量进程墙钟时间为 `39:19.99`,退出码 0.程序内 `getrusage` 报告峰值 RSS
 `112,292 KB`；板端 `/usr/bin/time -v` 的 Maximum resident set size 返回 0,因此不作为
-内存证据。LibriSpeech 与 15–30 秒音频性能仍待补.
+内存证据。15–30 秒音频的分桶性能仍需结合本次 LibriSpeech 报告分析。
 
 完整机器可读证据见 [`formal_eval_20260918_aishell1.json`](formal_eval_20260918_aishell1.json).
+
+## LibriSpeech test-clean 全量耗时
+
+运行编号 `20260928_whisper_testclean_full_v1` 在板端完成 2,620 条。Encoder 与 Decoder 的 Neuron Runtime 调用总耗时平均 `460.0531919847 ms/条`，平均 NPU RTF `0.0714900012`。[完整报告](../results/full_accuracy/20260928_whisper_testclean_full_v1/summary.json)。此口径不包含模型加载、FLAC 解码、Log-Mel 和文本解码；长于 30 秒的输入使用固定窗口。

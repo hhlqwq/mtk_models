@@ -1,15 +1,22 @@
 # Whisper-Tiny
 
 本目录用于将 OpenAI 多语言 Whisper-Tiny 部署到 MT8189 / Genio 720。旧镜像已完成双 DLA
-冒烟测试和 AISHELL-1 test 正式评测；**新镜像的 LibriSpeech `test-clean` 全量 WER 尚未
-在 92 板端验证**。历史结果不等于新镜像验收结果。
+冒烟测试和 AISHELL-1 test 正式评测。新镜像的 LibriSpeech `test-clean` 全量 WER
+已在 92 板端完成，见下方正式结果。历史结果与本次运行编号分开保存。
 
 ## 当前全量精度测试
 
 本轮只测 LibriSpeech `test-clean` 全部 2,620 条音频，不再运行 AISHELL-1。一次只测试这
 一个模型。89 负责交叉编译、导出固定 Mel 滤波器和部署；92 使用 C++ 完成音频预处理与双
-DLA 推理，Python 只计算 WER。不运行 89 端精度基线。新 C++ 音频流程目前仅通过静态检查，
-**不能将其视为板端运行或精度验证通过**。
+DLA 推理，Python 只计算 WER。不运行 89 端精度基线。
+
+`20260928_whisper_testclean_full_v1` 已完成全部 2,620 条，失败与缺失均为 0。
+[板端报告](results/full_accuracy/20260928_whisper_testclean_full_v1/summary.json)
+记录 WER 为 0.075603、平均 NPU 总耗时 460.05 ms/条、平均 NPU RTF 0.07149。
+
+输入统一解码为 16 kHz 单声道，再按 Whisper 的 30 秒窗口截断或补零。`test-clean`
+中存在略长于 30 秒的原始音频，例如 `121-123859-0002.flac` 为 30.04 秒；评测仍计入
+全部 2,620 条转录，并在固定输入窗口内推理。
 
 数据集来源为 [OpenSLR SLR12](https://www.openslr.org/12/)，下载文件为
 [test-clean.tar.gz](https://www.openslr.org/resources/12/test-clean.tar.gz)，许可证为
@@ -17,8 +24,14 @@ CC BY 4.0。数据集由用户手动下载并放置，测试脚本不会联网�
 
 运行前确认：89 的本模型目录已有 `models/encoder_fp32.dla`、`models/decoder_step_fp32.dla` 和运行中的
 `hhl_g720_8011` 容器；92 已有完整的
-`/root/hailong.he/datasets/librispeech/test-clean/`、`ffmpeg` 和 OpenAI Whisper 的指标依赖，
+`/root/hailong.he/datasets/librispeech/test-clean/`、`ffmpeg` 和指标依赖 `tiktoken==0.11.0`、
+`regex==2025.9.18`、`more-itertools==10.7.0`，
 且 89/92 系统时间正确。入口会检查这些前提，不会下载或解压数据集。
+评测入口从 89 的 `hhl_g720_8011` 容器导出 `openai-whisper==20250625` 原版
+`tokenizer.py`、`normalizers/` 与 `multilingual.tiktoken`，并把版本和 SHA-256 写入
+`vendor_manifest.json`。板端只运行 Token 解码与英文文本规范化，不安装 PyTorch；
+这不会改变 WER 的计算口径。来源为
+[OpenAI Whisper](https://github.com/openai/whisper)，许可见本目录 [LICENSE](LICENSE)。
 
 在 **Ubuntu89 宿主机的仓库根目录** 手动启动；每次测试使用新的 `EVAL_RUN_ID`：
 
@@ -105,7 +118,7 @@ NCC_MODE=strict bash models/audio/stt/whisper_tiny/deploy/build.sh
 不能用来证明新镜像通过验证。2026-09-16 的板端证据见
 `docs/board_smoke_20260916.json`、`docs/accuracy.md` 和
 `docs/benchmark.md`.AISHELL-1 正式结果见 `docs/accuracy.md`、`docs/benchmark.md` 和
-`docs/formal_eval_20260918_aishell1.json`；完整交付仍要求 LibriSpeech WER 和近 30 秒样例.
+`docs/formal_eval_20260918_aishell1.json`；LibriSpeech WER 已完成，详见现有精度和性能文档。
 
 ## 2026-09-18 AISHELL-1 正式结果
 
@@ -129,4 +142,5 @@ Neuron Runtime 的 Encoder 和自回归 Decoder,不包含音频读取、Log-Mel�
   输出 1 个 Token `291`（文本 `you`）,与 OpenAI FP32 基线一致且不同于 JFK 输出.
 - 已验证：AISHELL-1 test `7,176/7,176` 完整运行、同协议 OpenAI/NPU CER、文本与 Token
   一致率、NPU 延迟/RTF/Tokens/s、主机预处理耗时和进程峰值 RSS.
-- 未验证：LibriSpeech WER、15–30 秒正式样例、噪声鲁棒性和跨多次 Run 的性能方差.
+- 已验证：LibriSpeech `test-clean` `2,620/2,620` 完整运行、WER 与 NPU 延迟/RTF。
+- 未验证：噪声鲁棒性和跨多次 Run 的性能方差。

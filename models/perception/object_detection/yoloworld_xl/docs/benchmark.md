@@ -11,7 +11,11 @@ MediaTek IoT AI Hub Model Zoo 记录的输入为 `3×640×640`、Float32：
 
 官方数据由 `onnxruntime_perf_test` 测量,不能作为本项目实测结果.
 
-## 本项目实测
+## COCO val2017 全量耗时
+
+运行编号 `20260928_yoloworld_coco_full_v3`，同一常驻 ORT 会话处理 5,000 张图片，`session.Run` 平均 `3864.081546464 ms/张`，P95 `5730.3923515 ms/张`。[完整报告](../results/full_accuracy/20260928_yoloworld_coco_full_v3/summary.json)。三次预热 profiling 记录到 30 个 Neuron EP 节点事件和 576 个 CPU 节点事件；因此这是混合会话的模型运行耗时，不是纯 NPU 耗时。逐图输入预处理与后处理不计入 `session.Run`。
+
+## 早期三图实测
 
 2026-09-16 在 Genio 720 上使用官方 v26.0 rootfs 提取的 Neuron `8.2.16` adapter/runtime
 隔离运行.最终采用完整 opset 13 模型和 `NEURON_FLAG_MIN_GROUP_SIZE=100`,保留 CPU
@@ -34,8 +38,7 @@ fallback 以保证检测正确性.本轮为三张公开图片的小样本验证�
 
 当 `MIN_GROUP_SIZE=0` 时,完整 opset 13 模型可达到 `401.500 ms` mean,与官网 `403.15 ms`
 接近,但三张图片都触及 300 个检测上限且高分结果饱和到 `1.0`,未通过正确性门禁,不得作为
-有效性能结果发布.正式性能轮次仍需使用正确性通过的配置、固定性能模式、至少 3 次预热和
-每图 10 次以上重复.
+有效性能结果发布。全量运行已经使用正确性通过的配置；固定性能模式和多轮重复分布仍待补充。
 
 ## 运行时诊断
 

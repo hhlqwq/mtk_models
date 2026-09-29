@@ -9,7 +9,7 @@
 输出: 三尺度类别 logits 与四方向框距离
 设备: MediaTek Genio 720 EVK
 部署格式: ONNX Runtime + Neuron Execution Provider
-当前状态: 板端 Neuron EP 小样本已验证,正式 COCO mAP 待执行
+当前状态: 板端 Neuron EP 已验证,COCO val2017 全量 bbox mAP 已完成
 ```
 
 本交付实现用户指定的 MediaTek IoT AI Hub 官方 Model Zoo ONNX,而不是把其他平台的
@@ -179,8 +179,9 @@ Sigmoid、距离框解码、逐类别 NMS 和原图坐标恢复.
 MediaTek 官网的 Genio 720 Neuron EP `403.15 ms` 和 CPU EP `11214.33 ms` 是官方
 `onnxruntime_perf_test` 纯模型参考值,不是本项目实测,也不包含前后处理.本项目只有在
 隔离官方运行库已完成真实图片 NPU 小样本推理；当前实测与边界见 `docs/benchmark.md` 和
-`docs/accuracy.md`,正式运行摘要见 `docs/board_validation_20260916.json`.当前标记为
-"板端已验证",正式 COCO mAP 完成前不会标记为"完整交付".
+`docs/accuracy.md`,正式运行摘要见 `docs/board_validation_20260916.json`。本次
+COCO val2017 全量测试结果见下方独立运行编号；混合 EP 会话中仍有 CPU 节点，
+不能将其耗时称为纯 NPU 耗时。
 
 ## 新镜像全量复测入口
 
@@ -188,10 +189,16 @@ MediaTek 官网的 Genio 720 Neuron EP `403.15 ms` 和 CPU EP `11214.33 ms` 是�
 89 校验官方 ONNX、生成兼容图并交叉编译 C++ 程序；92 使用 ONNX Runtime 1.20.2
 C API 的 Neuron EP 对完整 5000 张 COCO val2017 图片推理，Python 仅计算 bbox AP，
 并核对同一常驻会话的三次预热 profiling 中确有 Neuron 节点；其余 5000 张
-不继续记录逐节点事件，避免耗尽板端空间。C++ 程序和指标流程尚未在 92 实测，
-静态检查不能视作精度验证。报告保留在
+不继续记录逐节点事件，避免耗尽板端空间。C API 注册名称按
+[MediaTek 文档](https://genio.mediatek.com/doc/iot-aihub/ai_hub/supported_os/yocto/onnxruntime/accelerating_ort.html)
+使用 `Neuron`；首次两次错误名称的运行在首图前退出，失败目录保留。
+`20260928_yoloworld_coco_full_v3` 已在 92 完成 5,000 张全量测试：
+bbox AP50:95 为 0.47295，AP50 为 0.63688；常驻会话 `session.Run` 平均
+3,864.08 ms/张、P95 为 5,730.39 ms。三次预热的 profiling 记录
+30 个 Neuron EP 节点事件及 576 个 CPU 节点事件。
+详细结果见[板端报告](results/full_accuracy/20260928_yoloworld_coco_full_v3/summary.json)。
+板端运行目录保留在
 `/root/hailong.he/open_models/yoloworld_xl/eval/<新ID>/report/`。
-脚本不回传、不自动清理、不提交 Git。用户手动上传报告后，再运行
+脚本不自动清理。报告已复制到本仓库结果目录；用户审阅并保存后，再运行
 `EVAL_RUN_ID=<新ID> CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
-该协议尚未在新镜像运行，不能把脚本落地视为 mAP 已验证。
 详见[全量板端复测工作流](../../../../docs/full_accuracy_board_workflow.md)。

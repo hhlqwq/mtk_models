@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-正式 COCO bbox mAP 尚未执行,不能用三张公开样例替代.
+COCO val2017 全量 bbox mAP 已完成。运行编号 `20260928_yoloworld_coco_full_v3`，Genio 720 使用正确性优先的混合 Neuron/CPU EP 处理 5,000/5,000 张图片，bbox AP50:95 `0.4729515582`，AP50 `0.6368820482`。[完整报告](../results/full_accuracy/20260928_yoloworld_coco_full_v3/summary.json)。标注 SHA-256 为 `e8c7f7908f1d7278341fae127d0da654f102f11bd7b21d8aeefa635b8c810b6f`，板端路径 `/root/hailong.he/datasets/coco/val2017/`；原始数据来源见 [COCO 2017 下载页](https://cocodataset.org/#download)。该结果不代表全图纯 NPU 执行，也没有同协议 CPU 全量指标对照。
 
 三张公开图片的混合 Neuron EP 推理已通过 CPU 一致性门禁.固定配置为完整 opset 13 模型、
 `NEURON_FLAG_USE_FP16=1` 和 `NEURON_FLAG_MIN_GROUP_SIZE=100`：
@@ -21,6 +21,4 @@
 兼容模型已通过 `deploy/verify_onnx_equivalence.py`,证明 opset 11 到 opset 13 转换没有
 改变六个 CPU EP 输出；Raw DFL 重建最大绝对差小于 `3.82e-6`.
 
-正式精度计划使用板端已有 COCO val2017 5,000 张图片及 `instances_val2017.json`,固定
-score threshold、IoU threshold、最大检测数和 COCO 80 类映射.只有完整处理清单、预测
-JSON、模型/数据集/代码哈希和 pycocotools 指标齐全后,才更新本报告.
+全量运行保存完整处理清单、预测 JSON、模型/数据集/代码哈希和 pycocotools 指标。前两次运行因 C API provider 名称错误在第一张图片前退出，正式结果为 `v3`；注册名按 [MediaTek 文档](https://genio.mediatek.com/doc/iot-aihub/ai_hub/supported_os/yocto/onnxruntime/accelerating_ort.html)使用 `Neuron`。

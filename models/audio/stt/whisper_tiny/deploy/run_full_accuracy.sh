@@ -38,7 +38,7 @@ test -d "${librispeech_root}"
 test ! -e "${run_dir}/report/summary.json"
 command -v ffmpeg
 command -v /usr/bin/time
-python3 -c 'from whisper.normalizers import EnglishTextNormalizer; from whisper.tokenizer import get_tokenizer'
+python3 -c 'import more_itertools, regex, tiktoken'
 BOARD_PREFLIGHT
 
 echo "[2/4] 在 89 编译 C++ 程序并导出静态滤波器和解码规则."
@@ -47,9 +47,13 @@ test "$(docker inspect -f '{{.State.Running}}' "${CONTAINER}" 2>/dev/null)" = tr
 docker exec "${CONTAINER}" mkdir -p "${ASSETS_DIR}"
 docker exec "${CONTAINER}" python3 "${SCRIPT_DIR}/export_board_assets.py" \
     --output-dir "${ASSETS_DIR}"
+docker exec "${CONTAINER}" python3 "${SCRIPT_DIR}/export_eval_vendor.py" \
+    --output-dir "${ASSETS_DIR}/whisper_eval_vendor"
 mkdir -p "${ASSETS_DIR}"
 docker cp "${CONTAINER}:${ASSETS_DIR}/mel_filters_f32.bin" "${ASSETS_DIR}/mel_filters_f32.bin"
 docker cp "${CONTAINER}:${ASSETS_DIR}/decode_config.txt" "${ASSETS_DIR}/decode_config.txt"
+docker cp "${CONTAINER}:${ASSETS_DIR}/whisper_eval_vendor" \
+    "${ASSETS_DIR}/whisper_eval_vendor"
 test "$(stat -c %s "${ASSETS_DIR}/mel_filters_f32.bin")" -eq 64320
 
 echo "[3/4] 只部署代码、权重和 DLA,不在 89 处理测试数据."
@@ -65,8 +69,15 @@ scp "${SSH_OPTIONS[@]}" \
     "${BOARD_HOST}:${BOARD_MODEL_DIR}/"
 scp "${SSH_OPTIONS[@]}" \
     "${SCRIPT_DIR}/evaluate_accuracy.py" \
+    "${SCRIPT_DIR}/check_eval_vendor.py" \
     "${SCRIPT_DIR}/board_full_accuracy.sh" \
     "${BOARD_HOST}:${BOARD_RUN}/tools/"
+scp "${SSH_OPTIONS[@]}" -r "${ASSETS_DIR}/whisper_eval_vendor/whisper" \
+    "${BOARD_HOST}:${BOARD_RUN}/tools/"
+scp "${SSH_OPTIONS[@]}" "${ASSETS_DIR}/whisper_eval_vendor/vendor_manifest.json" \
+    "${MODEL_ROOT}/LICENSE" "${BOARD_HOST}:${BOARD_RUN}/tools/"
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "python3 '${BOARD_RUN}/tools/check_eval_vendor.py'"
 
 echo "[4/4] 在 92 执行 LibriSpeech 全量测试."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" bash -s -- \

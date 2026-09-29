@@ -2,7 +2,7 @@
 
 当前为 **板端已验证**: 官方 FastSAM-s 权重已完成原始前向、ONNX 导出、
 16 张校准图 INT8 转换、Genio 720 DLA 编译和 C++ 单图硬件冒烟.
-正式数据集精度和预热后稳定性能尚未完成.
+COCO val2017 全量类别无关分割精度已完成，预热后常驻实例的稳定性能仍待测。
 
 采用 FastSAM-s、batch=1、640×640.模型生成类别无关实例掩码,
 支持全图输出与轻量点/框提示,暂不接入文本提示所需的 CLIP.
@@ -78,7 +78,7 @@ bash models/navigation/segmentation/fastsam/deploy/deploy_board.sh
 
 ## 正式交付待办
 
-- 使用独立标注数据集完成正式类别无关精度评测.
+- 补充原始框架与板端同协议全量精度对照.
 - 在板端同一 C++ Runtime 实例中完成预热和重复性能测试.
 - 需要时扩展文本提示所用 CLIP,并单独验证 G5100.
 
@@ -105,7 +105,11 @@ Whisper 条目的 `board_validated` 不在允许状态列表中失败; 本次未
 89 编译 DLA 和 C++ 程序，92 对 COCO val2017 全部 5000 张图片计算**类别无关**
 实例分割 AP：把标注中 80 个类别合并为一个 `object` 类，不与标准 80 类 segm AP
 直接比较。报告保留在 `/root/hailong.he/open_models/fastsam/eval/<新ID>/report/`。
-该全量协议尚未实跑，原先单图冒烟结果不能代替它。用户手动保存并上传报告后，
+`20260928_fastsam_full_v1` 已在 92 完成 5000 张全量评测，结果见
+[板端报告](results/full_accuracy/20260928_fastsam_full_v1/summary.json)：
+类别无关 AP50:95 为 0.06114，AP50 为 0.10565，NPU 平均 14.88 ms/张，
+逐图端到端平均 142.97 ms/张。端到端计时包含逐图重新加载模型，
+不可当作常驻模型吞吐。用户手动保存并上传报告后，
 再以相同 `EVAL_RUN_ID` 执行 `CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
 测试和清理是两次独立执行，测试脚本不自动清理本次模型及报告。
 

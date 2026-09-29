@@ -1,0 +1,28 @@
+{
+  "status": "complete",
+  "model": "yoloworld_xl",
+  "run_id": "20260928_yoloworld_coco_full_v3",
+  "dataset": "coco_val2017",
+  "images": 5000,
+  "prediction_records": 735846,
+  "accuracy": {
+    "AP_50_95": 0.4729515582094901,
+    "AP_50": 0.6368820481994797,
+    "AP_75": 0.5117631554979964
+  },
+  "timing_scope": "C++ ONNX Runtime Neuron EP session.Run only",
+  "timing": {
+    "count": 5000,
+    "mean_ms": 3864.081546464,
+    "p50_ms": 3732.7785400000002,
+    "p90_ms": 3770.906634,
+    "p95_ms": 5730.392351500001
+  },
+  "profile": {
+    "scope": "three warmup runs in the same persistent Neuron EP session",
+    "provider_node_events": {
+      "NeuronExecutionProvider": 30,
+      "CPUExecutionProvider": 576
+    }
+  }
+}

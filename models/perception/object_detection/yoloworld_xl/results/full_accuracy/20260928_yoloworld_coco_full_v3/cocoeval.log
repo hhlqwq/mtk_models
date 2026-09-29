@@ -1,0 +1,19 @@
+loading annotations into memory...
+Done (t=0.53s)
+creating index...
+index created!
+[METRIC] COCO 500/5000 张.
+[METRIC] COCO 1000/5000 张.
+[METRIC] COCO 1500/5000 张.
+[METRIC] COCO 2000/5000 张.
+[METRIC] COCO 2500/5000 张.
+[METRIC] COCO 3000/5000 张.
+[METRIC] COCO 3500/5000 张.
+[METRIC] COCO 4000/5000 张.
+[METRIC] COCO 4500/5000 张.
+[METRIC] COCO 5000/5000 张.
+Loading and preparing results...
+DONE (t=3.83s)
+creating index...
+index created!
+[OK] YOLO-World XL 全量 COCO mAP: /root/hailong.he/open_models/yoloworld_xl/eval/20260928_yoloworld_coco_full_v3/report.
