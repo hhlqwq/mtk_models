@@ -1,0 +1,39 @@
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[1;31m2026-09-30 08:58:18.971606975 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[1;31m2026-09-30 08:58:18.971864283 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[1;31m2026-09-30 08:58:18.972062590 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[1;31m2026-09-30 08:58:18.989652590 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[1;31m2026-09-30 08:58:18.989945360 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[1;31m2026-09-30 08:58:18.990174283 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[0;93m2026-09-30 08:58:27.426572053 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:58:27.426620437 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  images: shape=[1, 3, 640, 640], type=tensor(float)
+Run 1: 454.43 ms
+Run 2: 439.65 ms
+Run 3: 444.22 ms
+Run 4: 435.65 ms
+Run 5: 443.96 ms
+Run 6: 435.92 ms
+Run 7: 440.43 ms
+Run 8: 432.40 ms
+Run 9: 438.98 ms
+Run 10: 440.74 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/YoloWorld/yoloworld_xl/yoloworld_xl.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 440.64 ms
+Min Inference Time: 432.40 ms
+Max Inference Time: 454.43 ms

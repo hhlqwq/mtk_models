@@ -1,0 +1,1541 @@
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/EfficientNet/efficientnet_b0_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_EfficientNet_efficientnet_b0_fp32.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 2.81 ms
+Run 2: 2.79 ms
+Run 3: 2.79 ms
+Run 4: 2.77 ms
+Run 5: 2.77 ms
+Run 6: 2.74 ms
+Run 7: 2.78 ms
+Run 8: 2.74 ms
+Run 9: 2.75 ms
+Run 10: 2.75 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/EfficientNet/efficientnet_b0_fp32.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 2.77 ms
+Min Inference Time: 2.74 ms
+Max Inference Time: 2.81 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/EfficientNet/efficientnet_b0_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_EfficientNet_efficientnet_b0_quant.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:57:32.013955357 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:57:32.014002818 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 49.18 ms
+Run 2: 49.01 ms
+Run 3: 48.46 ms
+Run 4: 48.41 ms
+Run 5: 48.97 ms
+Run 6: 48.86 ms
+Run 7: 48.44 ms
+Run 8: 48.45 ms
+Run 9: 48.43 ms
+Run 10: 49.17 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/EfficientNet/efficientnet_b0_quant.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 48.74 ms
+Min Inference Time: 48.41 ms
+Max Inference Time: 49.18 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV2_mobilenet_v2_fp32.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 1.62 ms
+Run 2: 1.55 ms
+Run 3: 1.53 ms
+Run 4: 1.52 ms
+Run 5: 1.50 ms
+Run 6: 1.60 ms
+Run 7: 1.52 ms
+Run 8: 1.52 ms
+Run 9: 1.52 ms
+Run 10: 1.51 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_fp32.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 1.54 ms
+Min Inference Time: 1.50 ms
+Max Inference Time: 1.62 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV2_mobilenet_v2_quant.log
+============================================================
+[0;93m2026-09-30 08:57:36.253972665 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.17/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254034357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.17/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254041896 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.16/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254045973 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.16/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254049357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.14/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254052511 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.13/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254055973 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.13/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254059203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.12/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254062357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.11/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254065665 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.11/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254068588 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.10/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254071588 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.10/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254074511 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.9/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254077511 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.9/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254080665 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.8/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254083434 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.6/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254093896 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.6/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254098203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.4/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254101357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.4/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254104357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.4/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254107203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.3/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254110203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.17/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254113049 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.3/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254115819 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.2/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254118665 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.2/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254121434 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.2/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254124203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.2/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254127203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.1/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254130357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.1/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254133357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.3/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254136357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.0/features.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254139588 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.12/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254148434 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.10/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254153973 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.15/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254159049 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.18/features.18.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254163511 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.8/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254166819 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.9/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254170588 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.15/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254173357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.5/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254178280 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.12/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254183126 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.11/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254191819 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.15/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254195742 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.8/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254204588 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.12/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254211203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.7/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254215511 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.9/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254225126 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.6/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254230203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.5/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254238896 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.5/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254243973 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.4/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254248203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.16/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254254511 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.15/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254257973 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.7/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254261511 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.13/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254264973 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.11/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254268357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.17/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254272896 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.6/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254280203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.16/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254283665 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.5/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254288126 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.10/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254294819 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.3/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254298742 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.14/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254304434 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.8/conv/conv.0/conv.0.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254307896 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.14/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254324203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.7/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254336357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.7/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254341203 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.13/conv/conv.1/conv.1.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254345280 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.0/features.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254349742 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.14/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
+[0;93m2026-09-30 08:57:36.254352819 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.18/features.18.2/Constant_output_0'. It is not used by any node and should be removed from the model.[m
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:57:36.890037050 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:57:36.890095050 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 1.38 ms
+Run 2: 1.22 ms
+Run 3: 1.27 ms
+Run 4: 7.33 ms
+Run 5: 1.29 ms
+Run 6: 1.24 ms
+Run 7: 1.23 ms
+Run 8: 1.32 ms
+Run 9: 7.09 ms
+Run 10: 1.24 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_quant.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 2.46 ms
+Min Inference Time: 1.22 ms
+Max Inference Time: 7.33 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV3/mobilenet_v3_small_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV3_mobilenet_v3_small_fp32.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:57:38.425533742 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:57:38.425575511 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 19.41 ms
+Run 2: 20.89 ms
+Run 3: 21.99 ms
+Run 4: 24.93 ms
+Run 5: 21.26 ms
+Run 6: 21.78 ms
+Run 7: 25.04 ms
+Run 8: 21.56 ms
+Run 9: 22.80 ms
+Run 10: 21.89 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/MobileNetV3/mobilenet_v3_small_fp32.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 22.15 ms
+Min Inference Time: 19.41 ms
+Max Inference Time: 25.04 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV3/mobilenet_v3_small_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV3_mobilenet_v3_small_quant.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+ERROR: Target report:
+ERROR: NIR[2]: Conv2DLayer<2>{CONV_2D}
+ ├ EDMA: unsupported operation
+ ├ GPU: unsupport data type: Int8
+ ├ GPU: Failed to load openCL or GLES_Mali or armnn_ndk libraries.
+ ├ MDLA: invalid constant data
+
+[1;31m2026-09-30 08:57:39.807675973 [E:neuron:neuron, neuron_model_builder.cc:1075 Compile] The model cannot run using the current set of target devices: [ [Name: [mtk-gpu]], [Name: [mtk-mdla]] ][m
+Traceback (most recent call last):
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 242, in <module>
+    main()
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 203, in main
+    session = ort.InferenceSession(args.model, sess_options, providers=providers)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 465, in __init__
+    self._create_inference_session(providers, provider_options, disabled_optimizers)
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 537, in _create_inference_session
+    sess.initialize_session(providers, provider_options, disabled_optimizers)
+onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/ResNet/resnet18_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_ResNet_resnet18_fp32.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 3.57 ms
+Run 2: 3.52 ms
+Run 3: 3.48 ms
+Run 4: 3.48 ms
+Run 5: 3.47 ms
+Run 6: 3.47 ms
+Run 7: 3.53 ms
+Run 8: 3.47 ms
+Run 9: 3.47 ms
+Run 10: 3.48 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/ResNet/resnet18_fp32.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 3.49 ms
+Min Inference Time: 3.47 ms
+Max Inference Time: 3.57 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/ResNet/resnet18_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_ResNet_resnet18_quant.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:57:43.590169588 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:57:43.590207588 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 1.93 ms
+Run 2: 1.86 ms
+Run 3: 1.78 ms
+Run 4: 1.86 ms
+Run 5: 1.79 ms
+Run 6: 1.80 ms
+Run 7: 1.79 ms
+Run 8: 1.80 ms
+Run 9: 1.78 ms
+Run 10: 1.81 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/ResNet/resnet18_quant.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 1.82 ms
+Min Inference Time: 1.78 ms
+Max Inference Time: 1.93 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/SqueezeNet/squeezenet_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_SqueezeNet_squeezenet_fp32.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:57:45.446071204 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:57:45.446111435 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 12.78 ms
+Run 2: 19.34 ms
+Run 3: 15.96 ms
+Run 4: 14.54 ms
+Run 5: 13.65 ms
+Run 6: 15.73 ms
+Run 7: 15.97 ms
+Run 8: 13.17 ms
+Run 9: 12.39 ms
+Run 10: 11.56 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/SqueezeNet/squeezenet_fp32.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 14.51 ms
+Min Inference Time: 11.56 ms
+Max Inference Time: 19.34 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/SqueezeNet/squeezenet_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_SqueezeNet_squeezenet_quant.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:57:46.648594665 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:57:46.648637204 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 23.11 ms
+Run 2: 14.73 ms
+Run 3: 15.43 ms
+Run 4: 12.15 ms
+Run 5: 12.01 ms
+Run 6: 11.52 ms
+Run 7: 11.39 ms
+Run 8: 11.43 ms
+Run 9: 11.18 ms
+Run 10: 11.21 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/SqueezeNet/squeezenet_quant.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 13.42 ms
+Min Inference Time: 11.18 ms
+Max Inference Time: 23.11 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/VGG/vgg16_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_VGG_vgg16_fp32.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 32.62 ms
+Run 2: 32.73 ms
+Run 3: 32.88 ms
+Run 4: 32.62 ms
+Run 5: 32.53 ms
+Run 6: 32.70 ms
+Run 7: 32.80 ms
+Run 8: 33.01 ms
+Run 9: 32.87 ms
+Run 10: 32.99 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/VGG/vgg16_fp32.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 32.78 ms
+Min Inference Time: 32.53 ms
+Max Inference Time: 33.01 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/VGG/vgg16_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_VGG_vgg16_quant.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 11.89 ms
+Run 2: 11.91 ms
+Run 3: 11.80 ms
+Run 4: 11.92 ms
+Run 5: 12.02 ms
+Run 6: 11.96 ms
+Run 7: 12.03 ms
+Run 8: 12.00 ms
+Run 9: 11.94 ms
+Run 10: 11.92 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/VGG/vgg16_quant.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 11.94 ms
+Min Inference Time: 11.80 ms
+Max Inference Time: 12.03 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/DiffusionPolicy/model_diffusion_sampling/model_diffusion_sampling.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_DiffusionPolicy_model_diffusion_sampling_model_diffusion_sampling.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:57:59.190169666 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:57:59.190214205 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  trajectory: shape=[1, 16, 12], type=tensor(float)
+  t: shape=[1], type=tensor(int64)
+  global_cond: shape=[1, 800], type=tensor(float)
+Run 1: 104.09 ms
+Run 2: 103.15 ms
+Run 3: 105.46 ms
+Run 4: 103.74 ms
+Run 5: 103.62 ms
+Run 6: 105.50 ms
+Run 7: 103.08 ms
+Run 8: 103.30 ms
+Run 9: 103.12 ms
+Run 10: 104.56 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/DiffusionPolicy/model_diffusion_sampling/model_diffusion_sampling.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 103.96 ms
+Min Inference Time: 103.08 ms
+Max Inference Time: 105.50 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/MobileSam/mobilesam_encoder/transformed_mobilesam_encoder_tiny.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_MobileSam_mobilesam_encoder_transformed_mobilesam_encoder_tiny.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+ERROR: Target report:
+ERROR: NIR[0]: ReshapeLayer<0>{RESHAPE}
+ ├ EDMA: unsupported operation
+ ├ GPU: Rank > 5 is not supported.
+ ├ GPU: Failed to load openCL or GLES_Mali or armnn_ndk libraries.
+ ├ MDLA: the rank of shape should be in range [0, 5]
+
+[1;31m2026-09-30 08:58:01.491518282 [E:neuron:neuron, neuron_model_builder.cc:1075 Compile] The model cannot run using the current set of target devices: [ [Name: [mtk-gpu]], [Name: [mtk-mdla]] ][m
+Traceback (most recent call last):
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 242, in <module>
+    main()
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 203, in main
+    session = ort.InferenceSession(args.model, sess_options, providers=providers)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 465, in __init__
+    self._create_inference_session(providers, provider_options, disabled_optimizers)
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 537, in _create_inference_session
+    sess.initialize_session(providers, provider_options, disabled_optimizers)
+onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Omni6DPose/scale_policy/ScalePolicy.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Omni6DPose_scale_policy_ScalePolicy.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+ERROR: Target report:
+ERROR: NIR[1]: ElementWiseMulLayer<1>{MUL}
+ ├ EDMA: unsupported operation
+ ├ GPU: Failed to load openCL or GLES_Mali or armnn_ndk libraries.
+ ├ MDLA: Dimensions of input1 and input2 are not compatible, input1: <1 x 1 x 10>, input2: <1 x 9 x 1>
+
+[1;31m2026-09-30 08:58:02.317276051 [E:neuron:neuron, neuron_model_builder.cc:1075 Compile] The model cannot run using the current set of target devices: [ [Name: [mtk-gpu]], [Name: [mtk-mdla]] ][m
+Traceback (most recent call last):
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 242, in <module>
+    main()
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 203, in main
+    session = ort.InferenceSession(args.model, sess_options, providers=providers)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 465, in __init__
+    self._create_inference_session(providers, provider_options, disabled_optimizers)
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 537, in _create_inference_session
+    sess.initialize_session(providers, provider_options, disabled_optimizers)
+onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Recognition/VGGFace/vggface_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Recognition_VGGFace_vggface_fp32.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 33.24 ms
+Run 2: 33.21 ms
+Run 3: 33.31 ms
+Run 4: 33.49 ms
+Run 5: 33.44 ms
+Run 6: 33.47 ms
+Run 7: 33.43 ms
+Run 8: 33.47 ms
+Run 9: 33.53 ms
+Run 10: 33.43 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Recognition/VGGFace/vggface_fp32.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 33.40 ms
+Min Inference Time: 33.21 ms
+Max Inference Time: 33.53 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Recognition/VGGFace/vggface_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Recognition_VGGFace_vggface_quant.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[1;31m2026-09-30 08:58:10.197114513 [E:neuron:neuron, conv_op_builder.cc:426 IsOpSupportedImpl] Conv bias scales[0]: [0.00347117] is not equal to input_scale * weight_scales[0]: [0.00547632][m
+[1;31m2026-09-30 08:58:10.197243667 [E:neuron:neuron, conv_op_builder.cc:426 IsOpSupportedImpl] Conv bias scales[0]: [0.101171] is not equal to input_scale * weight_scales[0]: [0.14429][m
+[1;31m2026-09-30 08:58:10.197328898 [E:neuron:neuron, conv_op_builder.cc:426 IsOpSupportedImpl] Conv bias scales[0]: [0.338074] is not equal to input_scale * weight_scales[0]: [0.27054][m
+[1;31m2026-09-30 08:58:10.197368128 [E:neuron:neuron, conv_op_builder.cc:426 IsOpSupportedImpl] Conv bias scales[0]: [0.338074] is not equal to input_scale * weight_scales[0]: [0.359387][m
+[1;31m2026-09-30 08:58:10.197443667 [E:neuron:neuron, conv_op_builder.cc:426 IsOpSupportedImpl] Conv bias scales[0]: [0.332933] is not equal to input_scale * weight_scales[0]: [0.109625][m
+[1;31m2026-09-30 08:58:10.197480975 [E:neuron:neuron, conv_op_builder.cc:426 IsOpSupportedImpl] Conv bias scales[0]: [0.332933] is not equal to input_scale * weight_scales[0]: [0.0531219][m
+[1;31m2026-09-30 08:58:10.197532205 [E:neuron:neuron, conv_op_builder.cc:426 IsOpSupportedImpl] Conv bias scales[0]: [0.332933] is not equal to input_scale * weight_scales[0]: [0.0165908][m
+[1;31m2026-09-30 08:58:10.197568282 [E:neuron:neuron, conv_op_builder.cc:426 IsOpSupportedImpl] Conv bias scales[0]: [0.332933] is not equal to input_scale * weight_scales[0]: [0.00373021][m
+[1;31m2026-09-30 08:58:10.197601975 [E:neuron:neuron, conv_op_builder.cc:426 IsOpSupportedImpl] Conv bias scales[0]: [0.332933] is not equal to input_scale * weight_scales[0]: [0.001774][m
+[0;93m2026-09-30 08:58:11.823782821 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:58:11.823823898 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 146.87 ms
+Run 2: 141.80 ms
+Run 3: 158.89 ms
+Run 4: 121.55 ms
+Run 5: 136.72 ms
+Run 6: 127.59 ms
+Run 7: 130.95 ms
+Run 8: 149.94 ms
+Run 9: 135.28 ms
+Run 10: 122.14 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Recognition/VGGFace/vggface_quant.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 137.17 ms
+Min Inference Time: 121.55 ms
+Max Inference Time: 158.89 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/RegionNormalizedGrasp/anchornet/anchornet.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_RegionNormalizedGrasp_anchornet_anchornet.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:58:14.818122436 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:58:14.818179206 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  x: shape=[1, 4, 640, 360], type=tensor(float)
+Run 1: 17.79 ms
+Run 2: 15.90 ms
+Run 3: 18.57 ms
+Run 4: 21.33 ms
+Run 5: 19.99 ms
+Run 6: 19.97 ms
+Run 7: 19.96 ms
+Run 8: 20.01 ms
+Run 9: 19.98 ms
+Run 10: 19.94 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/RegionNormalizedGrasp/anchornet/anchornet.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 19.34 ms
+Min Inference Time: 15.90 ms
+Max Inference Time: 21.33 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/RegionNormalizedGrasp/localnet/localnet.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_RegionNormalizedGrasp_localnet_localnet.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:58:16.127972667 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:58:16.128012975 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  local_patches: shape=['batch_size', 64, 64, 6], type=tensor(float)
+Run 1: 21.36 ms
+Run 2: 20.35 ms
+Run 3: 20.58 ms
+Run 4: 23.17 ms
+Run 5: 23.23 ms
+Run 6: 23.80 ms
+Run 7: 23.97 ms
+Run 8: 23.98 ms
+Run 9: 27.53 ms
+Run 10: 24.04 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/RegionNormalizedGrasp/localnet/localnet.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 23.20 ms
+Min Inference Time: 20.35 ms
+Max Inference Time: 27.53 ms
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/YoloWorld/yoloworld_xl/yoloworld_xl.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_YoloWorld_yoloworld_xl_yoloworld_xl.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[1;31m2026-09-30 08:58:18.971606975 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[1;31m2026-09-30 08:58:18.971864283 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[1;31m2026-09-30 08:58:18.972062590 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[1;31m2026-09-30 08:58:18.989652590 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[1;31m2026-09-30 08:58:18.989945360 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[1;31m2026-09-30 08:58:18.990174283 [E:neuron:neuron, softmax_op_builder.cc:160 IsOpSupportedImpl] SoftMaxOpBuilder::IsOpSupportedImpl node_unit.SinceVersion() < 13[m
+[0;93m2026-09-30 08:58:27.426572053 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:58:27.426620437 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  images: shape=[1, 3, 640, 640], type=tensor(float)
+Run 1: 454.43 ms
+Run 2: 439.65 ms
+Run 3: 444.22 ms
+Run 4: 435.65 ms
+Run 5: 443.96 ms
+Run 6: 435.92 ms
+Run 7: 440.43 ms
+Run 8: 432.40 ms
+Run 9: 438.98 ms
+Run 10: 440.74 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/YoloWorld/yoloworld_xl/yoloworld_xl.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 440.64 ms
+Min Inference Time: 432.40 ms
+Max Inference Time: 454.43 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Classification/PoseClassification/st-gcn_3dbp_nvidia.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Classification_PoseClassification_st-gcn_3dbp_nvidia.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:58:34.785407591 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:58:34.785451053 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input: shape=[1, 3, 300, 34, 1], type=tensor(float)
+Run 1: 288.73 ms
+Run 2: 287.96 ms
+Run 3: 291.96 ms
+Run 4: 287.98 ms
+Run 5: 277.56 ms
+Run 6: 282.34 ms
+Run 7: 280.03 ms
+Run 8: 279.93 ms
+Run 9: 287.94 ms
+Run 10: 288.00 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/Classification/PoseClassification/st-gcn_3dbp_nvidia.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 285.24 ms
+Min Inference Time: 277.56 ms
+Max Inference Time: 291.96 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_640x640.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_model_ocdnet_640x640.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input: shape=[1, 3, 640, 640], type=tensor(float)
+Run 1: 68.90 ms
+Run 2: 69.08 ms
+Run 3: 69.18 ms
+Run 4: 69.03 ms
+Run 5: 69.02 ms
+Run 6: 69.46 ms
+Run 7: 69.11 ms
+Run 8: 69.35 ms
+Run 9: 69.38 ms
+Run 10: 69.33 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_640x640.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 69.18 ms
+Min Inference Time: 68.90 ms
+Max Inference Time: 69.46 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_736x1280.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_model_ocdnet_736x1280.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input: shape=[1, 3, 736, 1280], type=tensor(float)
+Run 1: 151.48 ms
+Run 2: 150.96 ms
+Run 3: 151.08 ms
+Run 4: 151.31 ms
+Run 5: 151.78 ms
+Run 6: 151.09 ms
+Run 7: 151.19 ms
+Run 8: 151.64 ms
+Run 9: 151.78 ms
+Run 10: 151.80 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_736x1280.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 151.41 ms
+Min Inference Time: 150.96 ms
+Max Inference Time: 151.80 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_ocrnet_resnet50.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:58:52.779844208 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:58:52.779884592 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input: shape=[1, 1, 32, 100], type=tensor(float)
+Run 1: 21.15 ms
+Run 2: 22.43 ms
+Run 3: 23.73 ms
+Run 4: 21.53 ms
+Run 5: 26.22 ms
+Run 6: 23.91 ms
+Run 7: 23.95 ms
+Run 8: 21.08 ms
+Run 9: 22.77 ms
+Run 10: 27.43 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 23.42 ms
+Min Inference Time: 21.08 ms
+Max Inference Time: 27.43 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50_pruned.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_ocrnet_resnet50_pruned.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:58:56.422566669 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:58:56.422605746 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input: shape=[1, 1, 32, 100], type=tensor(float)
+Run 1: 18.33 ms
+Run 2: 23.39 ms
+Run 3: 22.11 ms
+Run 4: 17.59 ms
+Run 5: 17.55 ms
+Run 6: 17.43 ms
+Run 7: 17.51 ms
+Run 8: 17.84 ms
+Run 9: 17.56 ms
+Run 10: 17.59 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50_pruned.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 18.69 ms
+Min Inference Time: 17.43 ms
+Max Inference Time: 23.39 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/OCR/ocdnet_mixnet/ocdnet_mixnet_640x640.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_ocdnet_mixnet_ocdnet_mixnet_640x640.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input: shape=[1, 3, 640, 640], type=tensor(float)
+Run 1: 342.58 ms
+Run 2: 341.05 ms
+Run 3: 341.19 ms
+Run 4: 341.15 ms
+Run 5: 340.93 ms
+Run 6: 341.18 ms
+Run 7: 341.48 ms
+Run 8: 341.84 ms
+Run 9: 341.55 ms
+Run 10: 341.69 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/OCR/ocdnet_mixnet/ocdnet_mixnet_640x640.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 341.46 ms
+Min Inference Time: 340.93 ms
+Max Inference Time: 342.58 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/ObjectDetection/LPDNet/LPDNet_CCPD_pruned_tao5.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_LPDNet_LPDNet_CCPD_pruned_tao5.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input_1:0: shape=[1, 3, 1168, 720], type=tensor(float)
+Run 1: 7.09 ms
+Run 2: 7.11 ms
+Run 3: 7.02 ms
+Run 4: 7.14 ms
+Run 5: 7.04 ms
+Run 6: 7.11 ms
+Run 7: 7.02 ms
+Run 8: 7.01 ms
+Run 9: 7.00 ms
+Run 10: 7.07 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/ObjectDetection/LPDNet/LPDNet_CCPD_pruned_tao5.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 7.06 ms
+Min Inference Time: 7.00 ms
+Max Inference Time: 7.14 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/ObjectDetection/LPDNet/LPDNet_usa_pruned_tao5.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_LPDNet_LPDNet_usa_pruned_tao5.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input_1:0: shape=[1, 3, 480, 640], type=tensor(float)
+Run 1: 3.53 ms
+Run 2: 3.45 ms
+Run 3: 3.44 ms
+Run 4: 3.42 ms
+Run 5: 3.43 ms
+Run 6: 3.40 ms
+Run 7: 3.41 ms
+Run 8: 3.46 ms
+Run 9: 3.42 ms
+Run 10: 3.39 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/ObjectDetection/LPDNet/LPDNet_usa_pruned_tao5.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 3.44 ms
+Min Inference Time: 3.39 ms
+Max Inference Time: 3.53 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_PeopleNet_resnet34_peoplenet.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input_1:0: shape=[1, 3, 544, 960], type=tensor(float)
+Run 1: 78.04 ms
+Run 2: 77.94 ms
+Run 3: 77.67 ms
+Run 4: 77.94 ms
+Run 5: 77.77 ms
+Run 6: 78.27 ms
+Run 7: 78.07 ms
+Run 8: 78.36 ms
+Run 9: 78.34 ms
+Run 10: 78.26 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 78.07 ms
+Min Inference Time: 77.67 ms
+Max Inference Time: 78.36 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet_int8.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_PeopleNet_resnet34_peoplenet_int8.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input_1:0: shape=[1, 3, 544, 960], type=tensor(float)
+Run 1: 19.76 ms
+Run 2: 19.73 ms
+Run 3: 19.75 ms
+Run 4: 19.67 ms
+Run 5: 19.70 ms
+Run 6: 19.83 ms
+Run 7: 19.88 ms
+Run 8: 19.77 ms
+Run 9: 19.84 ms
+Run 10: 19.94 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet_int8.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 19.79 ms
+Min Inference Time: 19.67 ms
+Max Inference Time: 19.94 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/BodyPoseNet/bodypose.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_BodyPoseNet_bodypose.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input_1:0: shape=[1, 224, 320, 3], type=tensor(float)
+Run 1: 41.20 ms
+Run 2: 41.52 ms
+Run 3: 41.52 ms
+Run 4: 41.32 ms
+Run 5: 40.86 ms
+Run 6: 41.19 ms
+Run 7: 41.27 ms
+Run 8: 41.38 ms
+Run 9: 41.25 ms
+Run 10: 41.54 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/PoseEstimation/BodyPoseNet/bodypose.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 41.31 ms
+Min Inference Time: 40.86 ms
+Max Inference Time: 41.54 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/Centerpose/camera_FAN_small.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_Centerpose_camera_FAN_small.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+ERROR: Target report:
+ERROR: NIR[17]: AvgPool2DLayer<19>{AVERAGE_POOL_2D}
+ ├ EDMA: unsupported operation
+ ├ GPU: Failed to load openCL or GLES_Mali or armnn_ndk libraries.
+ ├ MDLA: filter size or stride is not valid
+
+[1;31m2026-09-30 08:59:20.015365748 [E:neuron:neuron, neuron_model_builder.cc:1075 Compile] The model cannot run using the current set of target devices: [ [Name: [mtk-gpu]], [Name: [mtk-mdla]] ][m
+Traceback (most recent call last):
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 242, in <module>
+    main()
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 203, in main
+    session = ort.InferenceSession(args.model, sess_options, providers=providers)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 465, in __init__
+    self._create_inference_session(providers, provider_options, disabled_optimizers)
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 537, in _create_inference_session
+    sess.initialize_session(providers, provider_options, disabled_optimizers)
+onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/Centerpose/chair_DLA34.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_Centerpose_chair_DLA34.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+ERROR: Target report:
+ERROR: NIR[0]: PowLayer<0>{POW}
+ ├ EDMA: unsupported operation
+ ├ GPU: unsupported operation
+ ├ MDLA: MDLA only accepts integer exponent.
+
+[1;31m2026-09-30 08:59:23.635706748 [E:neuron:neuron, neuron_model_builder.cc:1075 Compile] The model cannot run using the current set of target devices: [ [Name: [mtk-gpu]], [Name: [mtk-mdla]] ][m
+Traceback (most recent call last):
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 242, in <module>
+    main()
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 203, in main
+    session = ort.InferenceSession(args.model, sess_options, providers=providers)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 465, in __init__
+    self._create_inference_session(providers, provider_options, disabled_optimizers)
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 537, in _create_inference_session
+    sess.initialize_session(providers, provider_options, disabled_optimizers)
+onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/refiner_net.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_FoundationPose_refiner_net.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:59:26.442149364 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:59:26.442187825 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  inputA: shape=[1, 6, 160, 160], type=tensor(float)
+  inputB: shape=[1, 6, 160, 160], type=tensor(float)
+Run 1: 64.10 ms
+Run 2: 59.68 ms
+Run 3: 56.32 ms
+Run 4: 56.06 ms
+Run 5: 59.50 ms
+Run 6: 60.51 ms
+Run 7: 63.99 ms
+Run 8: 60.06 ms
+Run 9: 58.72 ms
+Run 10: 66.98 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/refiner_net.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 60.59 ms
+Min Inference Time: 56.06 ms
+Max Inference Time: 66.98 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/score_net.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_FoundationPose_score_net.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:59:29.516334748 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:59:29.516374441 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  inputA: shape=[1, 6, 160, 160], type=tensor(float)
+  inputB: shape=[1, 6, 160, 160], type=tensor(float)
+Run 1: 35.76 ms
+Run 2: 29.25 ms
+Run 3: 38.94 ms
+Run 4: 31.98 ms
+Run 5: 30.39 ms
+Run 6: 31.96 ms
+Run 7: 31.07 ms
+Run 8: 36.48 ms
+Run 9: 35.74 ms
+Run 10: 36.20 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/score_net.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 33.78 ms
+Min Inference Time: 29.25 ms
+Max Inference Time: 38.94 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/Multi3DCenterpose/Multiclass_CenterPose_DLA34.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_Multi3DCenterpose_Multiclass_CenterPose_DLA34.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+ERROR: Target report:
+ERROR: NIR[0]: PowLayer<0>{POW}
+ ├ EDMA: unsupported operation
+ ├ GPU: unsupported operation
+ ├ MDLA: MDLA only accepts integer exponent.
+
+[1;31m2026-09-30 08:59:34.168952287 [E:neuron:neuron, neuron_model_builder.cc:1075 Compile] The model cannot run using the current set of target devices: [ [Name: [mtk-gpu]], [Name: [mtk-mdla]] ][m
+Traceback (most recent call last):
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 242, in <module>
+    main()
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 203, in main
+    session = ort.InferenceSession(args.model, sess_options, providers=providers)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 465, in __init__
+    self._create_inference_session(providers, provider_options, disabled_optimizers)
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 537, in _create_inference_session
+    sess.initialize_session(providers, provider_options, disabled_optimizers)
+onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Re-Identification/ReIdentificationNet/resnet50_market1501_aicity156.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Re-Identification_ReIdentificationNet_resnet50_market1501_aicity156.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input: shape=[1, 3, 256, 128], type=tensor(float)
+Run 1: 7.01 ms
+Run 2: 6.94 ms
+Run 3: 7.00 ms
+Run 4: 7.07 ms
+Run 5: 7.09 ms
+Run 6: 6.98 ms
+Run 7: 6.94 ms
+Run 8: 7.02 ms
+Run 9: 7.09 ms
+Run 10: 7.00 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/Re-Identification/ReIdentificationNet/resnet50_market1501_aicity156.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 7.01 ms
+Min Inference Time: 6.94 ms
+Max Inference Time: 7.09 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Recognition/ActionRecognitionNet/resnet18_2d_rgb_hmdb5_32.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Recognition_ActionRecognitionNet_resnet18_2d_rgb_hmdb5_32.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input_rgb: shape=[1, 96, 224, 224], type=tensor(float)
+Run 1: 14.86 ms
+Run 2: 15.02 ms
+Run 3: 14.97 ms
+Run 4: 14.83 ms
+Run 5: 14.82 ms
+Run 6: 14.98 ms
+Run 7: 14.88 ms
+Run 8: 14.91 ms
+Run 9: 14.97 ms
+Run 10: 14.95 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/Recognition/ActionRecognitionNet/resnet18_2d_rgb_hmdb5_32.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 14.92 ms
+Min Inference Time: 14.82 ms
+Max Inference Time: 15.02 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_amr_rel.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_amr_rel.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:59:41.628520903 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:59:41.628560518 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input_2:0: shape=[1, 3, 544, 960], type=tensor(float)
+Run 1: 16.38 ms
+Run 2: 11.45 ms
+Run 3: 15.73 ms
+Run 4: 11.36 ms
+Run 5: 13.95 ms
+Run 6: 11.26 ms
+Run 7: 15.39 ms
+Run 8: 15.88 ms
+Run 9: 11.38 ms
+Run 10: 16.57 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_amr_rel.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 13.93 ms
+Min Inference Time: 11.26 ms
+Max Inference Time: 16.57 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_shuffleseg.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_shuffleseg.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:59:43.793486442 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:59:43.793529134 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input_2:0: shape=[1, 3, 544, 960], type=tensor(float)
+Run 1: 13.73 ms
+Run 2: 14.93 ms
+Run 3: 14.01 ms
+Run 4: 11.24 ms
+Run 5: 16.69 ms
+Run 6: 12.08 ms
+Run 7: 13.45 ms
+Run 8: 13.88 ms
+Run 9: 12.96 ms
+Run 10: 13.03 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_shuffleseg.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 13.60 ms
+Min Inference Time: 11.24 ms
+Max Inference Time: 16.69 ms
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.log
+============================================================
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:59:48.158709903 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:59:48.158748826 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  input_1:0: shape=[1, 3, 544, 960], type=tensor(float)
+Run 1: 163.25 ms
+Run 2: 163.41 ms
+Run 3: 166.83 ms
+Run 4: 163.64 ms
+Run 5: 166.35 ms
+Run 6: 165.89 ms
+Run 7: 162.57 ms
+Run 8: 165.42 ms
+Run 9: 162.71 ms
+Run 10: 162.14 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 164.22 ms
+Min Inference Time: 162.14 ms
+Max Inference Time: 166.83 ms

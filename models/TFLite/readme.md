@@ -70,31 +70,72 @@
 
 ### 3. ONNX Runtime - Analytical AI
 
+##### 3.1. ONNX 批量测试
+```bash
+cd /root/hailong.he/ort
+tar -xzf onnx_benchmark_autorun.tar.gz
+```
+##### 3.2 安装并启动服务
+```bash
+chmod +x benchmark_onnx_watchdog.sh
+
+cp onnx-benchmark.service /etc/systemd/system/onnx-benchmark.service
+
+systemctl daemon-reload
+systemctl enable onnx-benchmark.service
+systemctl restart onnx-benchmark.service
+```
+##### 3.3. 查看运行状态
+```bash
+systemctl status onnx-benchmark.service
+```
+##### 3.4. 查看实时日志
+```bash
+tail -f /root/hailong.he/ort/benchmark_onnx_service.log
+```
+##### 3.5. 查看测试结果
+```bash
+cat /root/hailong.he/ort/benchmark_onnx_summary.csv
+```
+##### 3.6. 查看异常模型
+```bash
+cat /root/hailong.he/ort/.benchmark_state/kernel_oops_models.txt
+```
+##### 3.7. 停止自动测试
+```bash
+systemctl disable --now onnx-benchmark.service
+```
+说明
+- 默认每个模型测试 10 次。
+- 普通卡住超过 120 秒会超时跳过。
+- 如果出现 Kernel Oops，会记录该模型并自动重启。
+- 重启后服务会自动继续测试后续模型
+
 TAO Related Models: TAO相关模型源自NVIDIA TAO工具包或使用基于TAO的预训练权重
 | task | name | source | type | inputsize | npu_Infer(ms) | 实测 |
 | ------ | ------ | ------ | ------ | ------ | ------ |  ------ |
-| 检测 | PeopleNet (ResNet34) | [resnet34_peoplenet](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/resnet34_peoplenet.onnx) | Float32 | 3x544x960 | 77.63 | todo |
-| 检测 | PeopleNet (ResNet34) | [resnet34_peoplenet_int8](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/resnet34_peoplenet_int8.onnx) | Quant8 | 3x544x960 | 19.44 | todo |
-| 识别 | Action Recognition Net (ResNet18) | [resnet18_2d_rgb_hmdb5_32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/resnet18_2d_rgb_hmdb5_32.onnx) | Float32 | 96x224x224 | 14.75 | todo |
-| 姿态估计 | BodyPoseNet | [bodypose](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/bodypose.onnx) | Float32 | 224x320x3 | 40.56 | todo |
-| 检测 | LPDNet (USA Pruned) | [LPDNet_usa_pruned_tao5](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/LPDNet_usa_pruned_tao5.onnx) | Float32 | 3x480x640 | 3.42 | todo |
+| 检测 | PeopleNet (ResNet34) | [resnet34_peoplenet](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/resnet34_peoplenet.onnx) | Float32 | 3x544x960 | 77.63 | 78.36 |
+| 检测 | PeopleNet (ResNet34) | [resnet34_peoplenet_int8](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/resnet34_peoplenet_int8.onnx) | Quant8 | 3x544x960 | 19.44 | 19.94 |
+| 识别 | Action Recognition Net (ResNet18) | [resnet18_2d_rgb_hmdb5_32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/resnet18_2d_rgb_hmdb5_32.onnx) | Float32 | 96x224x224 | 14.75 | 15.02 |
+| 姿态估计 | BodyPoseNet | [bodypose](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/bodypose.onnx) | Float32 | 224x320x3 | 40.56 | 41.54 |
+| 检测 | LPDNet (USA Pruned) | [LPDNet_usa_pruned_tao5](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/LPDNet_usa_pruned_tao5.onnx) | Float32 | 3x480x640 | 3.42 | 3.53 |
 | 分割 | PeopleSemSegNet_AMR | [peoplesemsegnet_amr](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/peoplesemsegnet_amr.onnx) | Float32 | 3x576x960 | X | todo |
-| 分割 | PeopleSemSegNet_AMR (Rel) | [peoplesemsegnet_amr_rel](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/peoplesemsegnet_amr_rel.onnx) | Float32 | 3x544x960 | 13.29 | todo |
-| 分割 | PeopleSemSegNet (ShuffleSeg) | [peoplesemsegnet_shuffleseg](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/peoplesemsegnet_shuffleseg.onnx) | Float32 | 3x544x960 | 13.41 | todo |
-| 分割 | PeopleSemSegNet (Vanilla Unet) | [peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.onnx) | Float32 | 3x544x960 | 163.45 | todo |
-| 重识别 | ReIdentificationNet (ResNet50) | [resnet50_market1501_aicity15](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/resnet50_market1501_aicity156.onnx) | Float32 | 3x256x128 | 6.87 | todo |
-| OCR | Ocrnet_resnet50 | [ocrnet_resnet50](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/ocrnet_resnet50.onnx) | Float32 | 1x32x100 | 18.16 | todo |
-| OCR | Ocrnet_resnet50 (Pruned) | [ocrnet_resnet50_pruned](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/ocrnet_resnet50_pruned.onnx) | Float32 | 1x32x100 | 13.94 | todo |
-| OCR | ocd_resnet50 | [model_ocdnet_736x1280](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/model_ocdnet_736x1280.onnx) | Float32 | 3x736x1280 | 149.85 | todo |
-| OCR | ocd_resnet50 | [model_ocdnet_640x640](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/model_ocdnet_640x640.onnx) | Float32 | 3x640x640 | 68.10 | todo |
-| OCR | ocdnet_mixnet | [ocdnet_mixnet_640x640](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/ocdnet_mixnet_640x640.onnx) | Float32 | 3x640x640 | 340.09 | todo |
-| 分类 | Pose Classification (ST-GCN) | [st-gcn_3dbp_nvidia](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/st-gcn_3dbp_nvidia.onnx) | Float32 | 3x300x34x1 | 207.00 | todo |
-| 姿态估计 | Centerpose (Chair DLA34) | [chair_DLA34](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/chair_DLA34.onnx) | Float32 | 3x512x512 | X | todo |
-| 姿态估计 | Centerpose (Camera FAN) | [camera_FAN_small](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/camera_FAN_small.onnx) | Float32 | 3x512x512 | X | todo |
-| 检测 | LPDNet (CCPD Pruned) | [LPDNet_CCPD_pruned_tao5](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/LPDNet_CCPD_pruned_tao5.onnx) | Float32 | 3x1168x720 | 6.73 | todo |
-| 姿态估计 | Foundation Pose (Refiner) | [refiner_net](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/refiner_net.onnx) | Float32 | 6x160x160 | 60.97 | todo |
-| 姿态估计 | Foundation Pose (Score) | [score_net](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/score_net.onnx) | Float32 | 6x160x160 | 34.63 | todo |
-| 姿态估计 | Multi 3D Centerpose | [Multiclass_CenterPose_DLA34](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/Multiclass_CenterPose_DLA34.onnx) | Float32 | 3x512x512 | X | todo |
+| 分割 | PeopleSemSegNet_AMR (Rel) | [peoplesemsegnet_amr_rel](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/peoplesemsegnet_amr_rel.onnx) | Float32 | 3x544x960 | 13.29 | 16.57 |
+| 分割 | PeopleSemSegNet (ShuffleSeg) | [peoplesemsegnet_shuffleseg](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/peoplesemsegnet_shuffleseg.onnx) | Float32 | 3x544x960 | 13.41 | 16.69 |
+| 分割 | PeopleSemSegNet (Vanilla Unet) | [peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.onnx) | Float32 | 3x544x960 | 163.45 | 166.83 |
+| 重识别 | ReIdentificationNet (ResNet50) | [resnet50_market1501_aicity15](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/resnet50_market1501_aicity156.onnx) | Float32 | 3x256x128 | 6.87 | 7.09 |
+| OCR | Ocrnet_resnet50 | [ocrnet_resnet50](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/ocrnet_resnet50.onnx) | Float32 | 1x32x100 | 18.16 | 27.43 |
+| OCR | Ocrnet_resnet50 (Pruned) | [ocrnet_resnet50_pruned](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/ocrnet_resnet50_pruned.onnx) | Float32 | 1x32x100 | 13.94 | 23.39 |
+| OCR | ocd_resnet50 | [model_ocdnet_736x1280](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/model_ocdnet_736x1280.onnx) | Float32 | 3x736x1280 | 149.85 | 151.80 |
+| OCR | ocd_resnet50 | [model_ocdnet_640x640](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/model_ocdnet_640x640.onnx) | Float32 | 3x640x640 | 68.10 | 69.46 |
+| OCR | ocdnet_mixnet | [ocdnet_mixnet_640x640](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/ocdnet_mixnet_640x640.onnx) | Float32 | 3x640x640 | 340.09 | 342.58 |
+| 分类 | Pose Classification (ST-GCN) | [st-gcn_3dbp_nvidia](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/st-gcn_3dbp_nvidia.onnx) | Float32 | 3x300x34x1 | 207.00 | 291.96 |
+| 姿态估计 | Centerpose (Chair DLA34) | [chair_DLA34](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/chair_DLA34.onnx) | Float32 | 3x512x512 | X | X |
+| 姿态估计 | Centerpose (Camera FAN) | [camera_FAN_small](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/camera_FAN_small.onnx) | Float32 | 3x512x512 | X | X |
+| 检测 | LPDNet (CCPD Pruned) | [LPDNet_CCPD_pruned_tao5](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/LPDNet_CCPD_pruned_tao5.onnx) | Float32 | 3x1168x720 | 6.73 | 7.14 |
+| 姿态估计 | Foundation Pose (Refiner) | [refiner_net](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/refiner_net.onnx) | Float32 | 6x160x160 | 60.97 | 66.98 |
+| 姿态估计 | Foundation Pose (Score) | [score_net](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/score_net.onnx) | Float32 | 6x160x160 | 34.63 | 38.94 |
+| 姿态估计 | Multi 3D Centerpose | [Multiclass_CenterPose_DLA34](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/tao/Multiclass_CenterPose_DLA34.onnx) | Float32 | 3x512x512 | X | X |
 
 
 Legacy Analytical Models: 传统分析模型是经典的视觉骨干和网络，仅广泛用于基准测试和参考。模型的准确性没有得到解决。
@@ -104,27 +145,27 @@ Legacy Analytical Models: 传统分析模型是经典的视觉骨干和网络，
 | 检测 | yolov5s | FAE | Float32 | 640x640 | 32.37 | todo |
 | 检测 | yolov8s | FAE | Quant8 | 640x640 | 80.57 | todo |
 | 检测 | yolov11s | FAE | Quant8 | 640x640 | 90.99 | todo |
-| 分类 | ConvNeXt | [convnext_base_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/convnext_base_quant.onnx) | Quant8 | 224x224 | X | todo |
-| 分类 | ConvNeXt | [convnext_base_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/convnext_base_fp32.onnx) | Float32 | 224x224 | X | todo |
-| 分类 | DenseNet | [densenet121_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/densenet121_quant.onnx) | Quant8 | 224x224 | X | todo |
-| 分类 | DenseNet | [densenet121_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/densenet121_fp32.onnx) | Float32 | 224x224 | 7.49 | todo |
-| 分类 | EfficientNet | [efficientnet_b0_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/efficientnet_b0_quant.onnx) | Quant8 | 224x224 | 30.52 | todo |
-| 分类 | EfficientNet | [efficientnet_b0_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/efficientnet_b0_fp32.onnx) | Float32 | 224x224 | 2.81 | todo |
-| 分类 | MobileNetV2 | [mobilenet_v2_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/mobilenet_v2_quant.onnx) | Quant8 | 224x224 | 1.26 | todo |
-| 分类 | MobileNetV2 | [mobilenet_v2_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/mobilenet_v2_fp32.onnx) | Float32 | 224x224 | 1.47 | todo |
-| 分类 | MobileNetV3 | [mobilenet_v3_small_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/mobilenet_v3_small_quant.onnx) | Quant8 | 224x224 | X | todo |
-| 分类 | MobileNetV3 | [mobilenet_v3_small_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/mobilenet_v3_small_fp32.onnx) | Float32 | 224x224 | 12.81 | todo |
-| 分类 | ResNet | [resnet18_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/resnet18_quant.onnx) | Quant8 | 224x224 | 1.78 | todo |
-| 分类 | ResNet | [resnet18_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/resnet18_fp32.onnx) | Float32 | 224x224 | 3.49 | todo |
-| 分类 | SqueezeNet | [squeezenet_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/squeezenet_quant.onnx) | Quant8 | 224x224 | 8.38 | todo |
-| 分类 | SqueezeNet | [squeezenet_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/squeezenet_fp32.onnx) | Float32 | 224x224 | 8.81 | todo |
-| 分类 | VGG | [vgg16_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/vgg16_quant.onnx) | Quant8 | 224x224 | 11.62 | todo |
-| 分类 | VGG | [vgg16_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/vgg16_fp32.onnx) | Float32 | 224x224 | 32.24 | todo |
-| 识别 | VGGFace | [vggface_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/vggface_quant.onnx) | Quant8 | 224x224 | 291.22 | todo |
-| 识别 | VGGFace | [vggface_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/vggface_fp32.onnx) | Float32 | 224x224 | 32.84 | todo |
-| Omni6DPose | scale_policy | [ScalePolicy](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/ScalePolicy.onnx) | Float32 | 1x3x3 | X | todo |
-| Diffusion Policy(扩散策略) | model_diffusion_sampling | [model_diffusion_sampling](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/model_diffusion_sampling.onnx) | Float32 | trajectory:1x16x12, global_cond:1x800 | 57.68 | todo |
-| MobileSam(SAM轻量版) | mobilesam_encoder | [transformed_mobilesam_encoder_tiny](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/transformed_mobilesam_encoder_tiny.onnx) | Float32 | 3x448x448 | X | todo |
-| RegionNormalizedGrasp(抓取检测) | anchornet | [anchornet](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/anchornet.onnx) | Float32 | 4x640x360 | 12.13 | todo |
-| RegionNormalizedGrasp | localnet | [localnet](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/localnet.onnx) | Float32 | 64x64x6 | 19.78 | todo |
-| YoloWorld | yoloworld_xl | [yoloworld_xl](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/yoloworld_xl.onnx) | Float32 | 3x640x640 | 403.15 | todo |
+| 分类 | ConvNeXt | [convnext_base_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/convnext_base_quant.onnx) | Quant8 | 224x224 | X | X |
+| 分类 | ConvNeXt | [convnext_base_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/convnext_base_fp32.onnx) | Float32 | 224x224 | X | X |
+| 分类 | DenseNet | [densenet121_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/densenet121_quant.onnx) | Quant8 | 224x224 | X | X |
+| 分类 | DenseNet | [densenet121_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/densenet121_fp32.onnx) | Float32 | 224x224 | 7.49 | 7.67 |
+| 分类 | EfficientNet | [efficientnet_b0_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/efficientnet_b0_quant.onnx) | Quant8 | 224x224 | 30.52 | 48.74 |
+| 分类 | EfficientNet | [efficientnet_b0_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/efficientnet_b0_fp32.onnx) | Float32 | 224x224 | 2.81 | 2.77 |
+| 分类 | MobileNetV2 | [mobilenet_v2_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/mobilenet_v2_quant.onnx) | Quant8 | 224x224 | 1.26 | 2.46 |
+| 分类 | MobileNetV2 | [mobilenet_v2_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/mobilenet_v2_fp32.onnx) | Float32 | 224x224 | 1.47 | 1.54 |
+| 分类 | MobileNetV3 | [mobilenet_v3_small_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/mobilenet_v3_small_quant.onnx) | Quant8 | 224x224 | X | X |
+| 分类 | MobileNetV3 | [mobilenet_v3_small_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/mobilenet_v3_small_fp32.onnx) | Float32 | 224x224 | 12.81 | 22.15 |
+| 分类 | ResNet | [resnet18_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/resnet18_quant.onnx) | Quant8 | 224x224 | 1.78 | 1.82 |
+| 分类 | ResNet | [resnet18_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/resnet18_fp32.onnx) | Float32 | 224x224 | 3.49 | 3.49 |
+| 分类 | SqueezeNet | [squeezenet_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/squeezenet_quant.onnx) | Quant8 | 224x224 | 8.38 | 13.42 |
+| 分类 | SqueezeNet | [squeezenet_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/squeezenet_fp32.onnx) | Float32 | 224x224 | 8.81 | 14.51 |
+| 分类 | VGG | [vgg16_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/vgg16_quant.onnx) | Quant8 | 224x224 | 11.62 | 11.94 |
+| 分类 | VGG | [vgg16_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/vgg16_fp32.onnx) | Float32 | 224x224 | 32.24 | 32.78 |
+| 识别 | VGGFace | [vggface_quant](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/vggface_quant.onnx) | Quant8 | 224x224 | 291.22 | 137.17 |
+| 识别 | VGGFace | [vggface_fp32](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/analytical/vggface_fp32.onnx) | Float32 | 224x224 | 32.84 | 33.40 |
+| Omni6DPose | scale_policy | [ScalePolicy](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/ScalePolicy.onnx) | Float32 | 1x3x3 | X | X |
+| Diffusion Policy(扩散策略) | model_diffusion_sampling | [model_diffusion_sampling](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/model_diffusion_sampling.onnx) | Float32 | trajectory:1x16x12, global_cond:1x800 | 57.68 | 103.96 |
+| MobileSam(SAM轻量版) | mobilesam_encoder | [transformed_mobilesam_encoder_tiny](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/transformed_mobilesam_encoder_tiny.onnx) | Float32 | 3x448x448 | X | X |
+| RegionNormalizedGrasp(抓取检测) | anchornet | [anchornet](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/anchornet.onnx) | Float32 | 4x640x360 | 12.13 | 19.34 |
+| RegionNormalizedGrasp | localnet | [localnet](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/localnet.onnx) | Float32 | 64x64x6 | 19.78 | 27.53 |
+| YoloWorld | yoloworld_xl | [yoloworld_xl](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/onnx/robotic/yoloworld_xl.onnx) | Float32 | 3x640x640 | 403.15 | 454.43 |

@@ -1,0 +1,34 @@
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+INFO: Multiplier is out of range, may exist accuracy issue !
+ERROR: Target report:
+ERROR: NIR[2]: Conv2DLayer<2>{CONV_2D}
+ ├ EDMA: unsupported operation
+ ├ GPU: unsupport data type: Int8
+ ├ GPU: Failed to load openCL or GLES_Mali or armnn_ndk libraries.
+ ├ MDLA: invalid constant data
+
+[1;31m2026-09-30 08:57:39.807675973 [E:neuron:neuron, neuron_model_builder.cc:1075 Compile] The model cannot run using the current set of target devices: [ [Name: [mtk-gpu]], [Name: [mtk-mdla]] ][m
+Traceback (most recent call last):
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 242, in <module>
+    main()
+  File "/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py", line 203, in main
+    session = ort.InferenceSession(args.model, sess_options, providers=providers)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 465, in __init__
+    self._create_inference_session(providers, provider_options, disabled_optimizers)
+  File "/usr/lib/python3.12/site-packages/onnxruntime/capi/onnxruntime_inference_collection.py", line 537, in _create_inference_session
+    sess.initialize_session(providers, provider_options, disabled_optimizers)
+onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.

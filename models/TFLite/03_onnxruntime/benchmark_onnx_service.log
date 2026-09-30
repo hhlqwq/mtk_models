@@ -1,0 +1,257 @@
+[SKIP-KERNEL-OOPS] /root/hailong.he/ort/Legacy/Classification/ConvNeXt/convnext_base_fp32.onnx
+[SKIP-KERNEL-OOPS] /root/hailong.he/ort/Legacy/Classification/ConvNeXt/convnext_base_quant.onnx
+[DONE] /root/hailong.he/ort/Legacy/Classification/DenseNet/densenet121_fp32.onnx
+[SKIP-KERNEL-OOPS] /root/hailong.he/ort/Legacy/Classification/DenseNet/densenet121_quant.onnx
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/EfficientNet/efficientnet_b0_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_EfficientNet_efficientnet_b0_fp32.log
+============================================================
+[RESULT] PASS avg=2.77 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/EfficientNet/efficientnet_b0_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_EfficientNet_efficientnet_b0_quant.log
+============================================================
+[RESULT] PASS avg=48.74 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV2_mobilenet_v2_fp32.log
+============================================================
+[RESULT] PASS avg=1.54 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV2_mobilenet_v2_quant.log
+============================================================
+[RESULT] PASS avg=2.46 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV3/mobilenet_v3_small_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV3_mobilenet_v3_small_fp32.log
+============================================================
+[RESULT] PASS avg=22.15 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV3/mobilenet_v3_small_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV3_mobilenet_v3_small_quant.log
+============================================================
+[RESULT] FAIL avg=N/A ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/ResNet/resnet18_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_ResNet_resnet18_fp32.log
+============================================================
+[RESULT] PASS avg=3.49 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/ResNet/resnet18_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_ResNet_resnet18_quant.log
+============================================================
+[RESULT] PASS avg=1.82 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/SqueezeNet/squeezenet_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_SqueezeNet_squeezenet_fp32.log
+============================================================
+[RESULT] PASS avg=14.51 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/SqueezeNet/squeezenet_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_SqueezeNet_squeezenet_quant.log
+============================================================
+[RESULT] PASS avg=13.42 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/VGG/vgg16_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_VGG_vgg16_fp32.log
+============================================================
+[RESULT] PASS avg=32.78 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Classification/VGG/vgg16_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_VGG_vgg16_quant.log
+============================================================
+[RESULT] PASS avg=11.94 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/DiffusionPolicy/model_diffusion_sampling/model_diffusion_sampling.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_DiffusionPolicy_model_diffusion_sampling_model_diffusion_sampling.log
+============================================================
+[RESULT] PASS avg=103.96 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/MobileSam/mobilesam_encoder/transformed_mobilesam_encoder_tiny.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_MobileSam_mobilesam_encoder_transformed_mobilesam_encoder_tiny.log
+============================================================
+[RESULT] FAIL avg=N/A ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Omni6DPose/scale_policy/ScalePolicy.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Omni6DPose_scale_policy_ScalePolicy.log
+============================================================
+[RESULT] FAIL avg=N/A ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Recognition/VGGFace/vggface_fp32.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Recognition_VGGFace_vggface_fp32.log
+============================================================
+[RESULT] PASS avg=33.40 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/Recognition/VGGFace/vggface_quant.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_Recognition_VGGFace_vggface_quant.log
+============================================================
+[RESULT] PASS avg=137.17 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/RegionNormalizedGrasp/anchornet/anchornet.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_RegionNormalizedGrasp_anchornet_anchornet.log
+============================================================
+[RESULT] PASS avg=19.34 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/RegionNormalizedGrasp/localnet/localnet.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_RegionNormalizedGrasp_localnet_localnet.log
+============================================================
+[RESULT] PASS avg=23.20 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/Legacy/YoloWorld/yoloworld_xl/yoloworld_xl.onnx
+LOG  : /root/hailong.he/ort/benchmark_Legacy_YoloWorld_yoloworld_xl_yoloworld_xl.log
+============================================================
+[RESULT] PASS avg=440.64 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Classification/PoseClassification/st-gcn_3dbp_nvidia.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Classification_PoseClassification_st-gcn_3dbp_nvidia.log
+============================================================
+[RESULT] PASS avg=285.24 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_640x640.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_model_ocdnet_640x640.log
+============================================================
+[RESULT] PASS avg=69.18 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_736x1280.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_model_ocdnet_736x1280.log
+============================================================
+[RESULT] PASS avg=151.41 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_ocrnet_resnet50.log
+============================================================
+[RESULT] PASS avg=23.42 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50_pruned.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_ocrnet_resnet50_pruned.log
+============================================================
+[RESULT] PASS avg=18.69 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/OCR/ocdnet_mixnet/ocdnet_mixnet_640x640.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_ocdnet_mixnet_ocdnet_mixnet_640x640.log
+============================================================
+[RESULT] PASS avg=341.46 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/ObjectDetection/LPDNet/LPDNet_CCPD_pruned_tao5.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_LPDNet_LPDNet_CCPD_pruned_tao5.log
+============================================================
+[RESULT] PASS avg=7.06 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/ObjectDetection/LPDNet/LPDNet_usa_pruned_tao5.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_LPDNet_LPDNet_usa_pruned_tao5.log
+============================================================
+[RESULT] PASS avg=3.44 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_PeopleNet_resnet34_peoplenet.log
+============================================================
+[RESULT] PASS avg=78.07 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet_int8.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_PeopleNet_resnet34_peoplenet_int8.log
+============================================================
+[RESULT] PASS avg=19.79 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/BodyPoseNet/bodypose.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_BodyPoseNet_bodypose.log
+============================================================
+[RESULT] PASS avg=41.31 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/Centerpose/camera_FAN_small.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_Centerpose_camera_FAN_small.log
+============================================================
+[RESULT] FAIL avg=N/A ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/Centerpose/chair_DLA34.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_Centerpose_chair_DLA34.log
+============================================================
+[RESULT] FAIL avg=N/A ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/refiner_net.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_FoundationPose_refiner_net.log
+============================================================
+[RESULT] PASS avg=60.59 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/score_net.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_FoundationPose_score_net.log
+============================================================
+[RESULT] PASS avg=33.78 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/PoseEstimation/Multi3DCenterpose/Multiclass_CenterPose_DLA34.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_Multi3DCenterpose_Multiclass_CenterPose_DLA34.log
+============================================================
+[RESULT] FAIL avg=N/A ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Re-Identification/ReIdentificationNet/resnet50_market1501_aicity156.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Re-Identification_ReIdentificationNet_resnet50_market1501_aicity156.log
+============================================================
+[RESULT] PASS avg=7.01 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Recognition/ActionRecognitionNet/resnet18_2d_rgb_hmdb5_32.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Recognition_ActionRecognitionNet_resnet18_2d_rgb_hmdb5_32.log
+============================================================
+[RESULT] PASS avg=14.92 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_amr_rel.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_amr_rel.log
+============================================================
+[RESULT] PASS avg=13.93 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_shuffleseg.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_shuffleseg.log
+============================================================
+[RESULT] PASS avg=13.60 ms
+
+============================================================
+MODEL: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.onnx
+LOG  : /root/hailong.he/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.log
+============================================================
+[RESULT] PASS avg=164.22 ms
+
+============================================================
+ALL AVAILABLE MODELS FINISHED
+Summary : /root/hailong.he/ort/benchmark_onnx_summary.csv
+All log : /root/hailong.he/ort/benchmark_onnx_all.log
+Skip    : /root/hailong.he/ort/.benchmark_state/kernel_oops_models.txt
+============================================================

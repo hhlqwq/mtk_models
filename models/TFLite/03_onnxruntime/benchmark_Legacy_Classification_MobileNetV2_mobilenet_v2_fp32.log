@@ -1,0 +1,31 @@
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+Model Inputs:
+  input.1: shape=[1, 3, 224, 224], type=tensor(float)
+Run 1: 1.62 ms
+Run 2: 1.55 ms
+Run 3: 1.53 ms
+Run 4: 1.52 ms
+Run 5: 1.50 ms
+Run 6: 1.60 ms
+Run 7: 1.52 ms
+Run 8: 1.52 ms
+Run 9: 1.52 ms
+Run 10: 1.51 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_fp32.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 1.54 ms
+Min Inference Time: 1.50 ms
+Max Inference Time: 1.62 ms

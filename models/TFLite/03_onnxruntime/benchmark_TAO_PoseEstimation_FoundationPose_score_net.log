@@ -1,0 +1,34 @@
+INFO: Android SDK version: 31
+INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
+INFO: NeuronApi error: unable to open library libneuron_adapter.mtk.so, dllerror: 
+INFO: dlopen libneuronusdk_adapter.mtk.so
+INFO: Num devices: 2
+INFO: Got device name: mtk-gpu
+INFO: Got device name: mtk-mdla
+INFO: NeuronApi version: 8.2.16
+[0;93m2026-09-30 08:59:29.516334748 [W:onnxruntime:, session_state.cc:1168 VerifyEachNodeIsAssignedToAnEp] Some nodes were not assigned to the preferred execution providers which may or may not have an negative impact on performance. e.g. ORT explicitly assigns shape related ops to CPU to improve perf.[m
+[0;93m2026-09-30 08:59:29.516374441 [W:onnxruntime:, session_state.cc:1170 VerifyEachNodeIsAssignedToAnEp] Rerunning with verbose output on a non-minimal build will show node assignments.[m
+Model Inputs:
+  inputA: shape=[1, 6, 160, 160], type=tensor(float)
+  inputB: shape=[1, 6, 160, 160], type=tensor(float)
+Run 1: 35.76 ms
+Run 2: 29.25 ms
+Run 3: 38.94 ms
+Run 4: 31.98 ms
+Run 5: 30.39 ms
+Run 6: 31.96 ms
+Run 7: 31.07 ms
+Run 8: 36.48 ms
+Run 9: 35.74 ms
+Run 10: 36.20 ms
+
+Benchmark Results:
+Provider: NeuronExecutionProvider
+Model: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/score_net.onnx
+Runs: 10
+Threads: 1
+Thread Mode: sequential
+Optimization Level: ENABLE_ALL
+Average Inference Time: 33.78 ms
+Min Inference Time: 29.25 ms
+Max Inference Time: 38.94 ms
