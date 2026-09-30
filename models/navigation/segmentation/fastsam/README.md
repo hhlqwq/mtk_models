@@ -9,15 +9,15 @@
 输出: 检测头与掩码原型
 设备: MediaTek Genio 720 EVK
 部署格式: INT8 TFLite → DLA
-当前状态: 板端已验证；旧 DLA 校准集重叠，独立校准全量复评中
+当前状态: 板端已验证；独立校准 DLA 的 COCO 全量精度和常驻性能已完成
 ```
 
-官方 FastSAM-s 权重已完成原始前向、ONNX 导出、16 张校准图 INT8 转换、
+官方 FastSAM-s 权重已完成原始前向、ONNX 导出、100 张独立校准图 INT8 转换、
 Genio 720 DLA 编译和 C++ 硬件推理。旧版 COCO 全量评测的参考端与板端置信度
 阈值不一致；现已补齐同协议的 PyTorch、ONNX 参考端，并与旧板端输出核对。
 旧 DLA 的 16 张校准图片来自 COCO val2017，旧板端结果只作为历史诊断；
-独立校准模型正在全量复评。各端指标见[精度报告](docs/accuracy.md)，
-旧 DLA 的常驻性能见[性能报告](docs/benchmark.md)。
+独立校准模型已完成 COCO val2017 的 5,000 张全量复评与常驻性能测试。
+各端指标见[精度报告](docs/accuracy.md)和[性能报告](docs/benchmark.md)。
 
 ## 交付状态
 
@@ -25,9 +25,9 @@ Genio 720 DLA 编译和 C++ 硬件推理。旧版 COCO 全量评测的参考端�
 | --- | --- | --- |
 | 官方权重与原始框架 | 已锁定 | `FastSAM-s.pt` 及源码、权重哈希见下文 |
 | 自行导出 ONNX | 已完成 | FP32 产物、原始头数值检查见 `models/` |
-| MTK INT8 TFLite / DLA | 已完成 | 16 张校准图版本；产物哈希见模型清单 |
+| MTK INT8 TFLite / DLA | 已完成 | 独立 ImageNet 图片 100 张校准；产物哈希见[全量报告](results/full_accuracy/20260929_fastsam_imagenet100_full_v2/summary.json) |
 | 板端 Demo 与耗时 | 已完成 | C++ 硬件推理及常驻计时见[性能报告](docs/benchmark.md) |
-| COCO val2017 全量精度 | 复评中 | PyTorch、ONNX 全量已完成；旧 DLA 校准集重叠，独立校准 DLA 正在复评 |
+| COCO val2017 全量精度 | 已完成 | 同协议 PyTorch、ONNX 与独立校准 DLA 均已覆盖 5,000 张，见[精度报告](docs/accuracy.md) |
 
 采用 FastSAM-s、batch=1、640×640.模型生成类别无关实例掩码,
 支持全图输出与轻量点/框提示,暂不接入文本提示所需的 CLIP.
@@ -36,7 +36,7 @@ G5100 保持未开始状态.
 ## 公开三图示例
 
 复用 [YOLOv5s 的三张 CC0 公共输入](../../perception/object_detection/yolov5s/examples/README.md)，
-在 Genio 720 上运行 C++、DLA 与 Neuron Runtime。Demo 使用置信度 0.4、NMS IoU 0.9，
+在 Genio 720 上使用独立校准 DLA 运行 C++ 与 Neuron Runtime。Demo 使用置信度 0.4、NMS IoU 0.9，
 每张最多展示 30 个实例；该展示参数与正式 AP 评测不同，图片不代替 COCO 全量精度。
 `examples/output/public/` 平铺保存三张叠加图及对应 JSON；JSON 内含每个掩码的 COCO RLE。
 
@@ -147,16 +147,18 @@ Whisper 历史状态 `board_validated` 不在允许集合中失败；该状态�
 
 在 Ubuntu89 宿主机运行 `EVAL_RUN_ID=<新ID> bash deploy/run_full_accuracy.sh`。
 89 编译 DLA 和 C++ 程序，92 对 COCO val2017 全部 5000 张图片计算**类别无关**
-实例分割 AP：把标注中 80 个类别合并为一个 `object` 类，不与标准 80 类 segm AP
+实例分割：把标注中 80 个类别合并为一个 `object` 类，主要报告 segm AR@100，不与标准 80 类 segm AP
 直接比较。报告保留在 `/root/hailong.he/open_models/fastsam/eval/<新ID>/report/`。
-`20260928_fastsam_full_v1` 已在 92 完成 5000 张全量评测，结果见
-[板端报告](results/full_accuracy/20260928_fastsam_full_v1/summary.json)：
-类别无关 segm AR@100 为 0.370，NPU 平均 14.88 ms/张，
-逐图端到端平均 142.97 ms/张。端到端计时包含逐图重新加载模型，
-不可当作常驻模型吞吐。用户手动保存并上传报告后，
-再以相同 `EVAL_RUN_ID` 执行 `CONFIRM_RESULTS_UPLOADED=1 bash deploy/cleanup_full_accuracy.sh`。
-同协议的官方 PyTorch、FP32 ONNX 和板端 segm AR@100 分别为 0.391、0.390、
-0.370；旧 ONNX 阈值 0.4 的 AP 0.05210 保留为历史诊断记录。
+`20260929_fastsam_imagenet100_full_v2` 已在 92 完成 5,000 张全量评测，结果见
+[板端报告](results/full_accuracy/20260929_fastsam_imagenet100_full_v2/summary.json)：
+类别无关 segm AR@100 为 0.376384；同协议官方 PyTorch、FP32 ONNX 参考分别为
+0.391、0.390。新 DLA 的逐图 Runtime 调用平均 14.2883 ms，
+逐图端到端平均 143.0013 ms；常驻预热后 100 次的平均调用耗时 14.0536 ms，
+见[性能报告](docs/benchmark.md)。端到端计时包含逐图重新加载模型。
+本次独立校准全量预测与日志保留在板端
+`/tmp/hailongcodex/20260929/fastsam_calib_imagenet100/full_eval/`。
+旧运行 `20260928_fastsam_full_v1` 的 DLA 使用了与评测集重叠的校准图，
+其 AR@100 0.370 和旧 ONNX 阈值 0.4 的 AP 0.05210 均保留为历史诊断。
 各端后处理边界和剩余差异见[精度报告](docs/accuracy.md)。
 测试和清理是两次独立执行，测试脚本不自动清理本次模型及报告。
 

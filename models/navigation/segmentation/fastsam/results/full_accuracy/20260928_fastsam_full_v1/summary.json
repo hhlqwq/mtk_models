@@ -12,5 +12,7 @@
   "npu_mean_ms": 14.8848309588,
   "npu_p95_ms": 14.58017705,
   "end_to_end_mean_ms": 142.9671195278,
-  "timing_scope": "C++ per-image model reload; NPU time reported separately"
+  "timing_scope": "C++ per-image model reload; NPU time reported separately",
+  "AR_100_rounded_from_cocoeval_log": 0.37,
+  "calibration_overlap_with_coco_val2017": true
 }

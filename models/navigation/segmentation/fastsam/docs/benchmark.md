@@ -1,6 +1,24 @@
 # Genio 720 性能
 
-COCO val2017 全量评测已记录逐图耗时；预热后常驻 Runtime 的稳定性能也已测得。
+独立校准 DLA 的 COCO val2017 全量评测已记录逐图耗时；预热后常驻 Runtime 性能也已测得。
+
+运行编号 `20260929_fastsam_imagenet100_full_v2` 对 5,000 张图执行真实 C++ 板端推理，
+单次 `NeuronRuntime_inference` 平均 `14.2883 ms/张`，逐图端到端平均 `143.0013 ms/张`。
+每张图重新启动程序并加载模型，端到端数值包含该开销。[全量报告](../results/full_accuracy/20260929_fastsam_imagenet100_full_v2/summary.json)。
+
+运行编号 `20260930_board_persistent_imagenet100_v2` 使用同一 DLA 和真实量化输入，
+板端常驻 C++ Neuron Runtime 预热 10 次、正式推理 100 次。
+[机器可读报告](../results/benchmark/20260930_board_persistent_imagenet100_v2/summary.json)。
+
+| 计时范围 | Mean | P50 | P95 | 峰值 RSS |
+| --- | ---: | ---: | ---: | ---: |
+| 新 DLA `NeuronRuntime_inference` API 调用 | 14.0536 ms | 14.0501 ms | 14.0874 ms | 21,540 KiB |
+
+新 DLA SHA-256 为 `6aa12c1c68d0eb13ee7669c83c36e838581a1a4ab917e2f73f37378edc13b7e5`，
+本次输入 SHA-256 为 `8310f7e5117547b4211c8aa792d41ec006f22ae9485925ec80c9938357030b5f`。
+常驻计时只覆盖 Runtime API 调用，不含预处理、模型加载、CPU 掩码后处理及写文件。
+
+## 旧 DLA 历史性能
 
 运行编号 `20260928_fastsam_full_v1` 处理 5,000 张图片，`NeuronRuntime_inference` 平均 `14.8848309588 ms/张`，逐图端到端平均 `142.9671195278 ms/张`。[完整报告](../results/full_accuracy/20260928_fastsam_full_v1/summary.json)。shell 对每张图片重新启动 C++ 程序并加载模型，端到端数值包含该开销，不能换算成常驻实例吞吐量。
 
