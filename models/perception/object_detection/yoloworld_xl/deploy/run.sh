@@ -97,7 +97,7 @@ python3 "${MODEL_ROOT}/deploy/prepare_onnx.py" \
     --output "${MODEL_OUTPUT_DIR}/model_fp32_opset13.onnx" \
     --raw-output "${MODEL_OUTPUT_DIR}/model_fp32_raw.onnx"
 python3 "${MODEL_ROOT}/deploy/prepare_pure_npu_onnx.py" \
-    --input "${MODEL_OUTPUT_DIR}/model_fp32_opset13.onnx" \
+    --input "${MODEL_OUTPUT_DIR}/model_fp32_raw.onnx" \
     --output "${MODEL_OUTPUT_DIR}/model_fp32_pure_npu.onnx"
 python3 "${MODEL_ROOT}/deploy/verify_onnx_equivalence.py" \
     --source "${SOURCE_ONNX}" \

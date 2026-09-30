@@ -18,6 +18,7 @@ MediaTek 文件没有提供上游 checkpoint 名称、导出配置或内置文�
 - 兼容问题：三个 `axis=3` Softmax 被板端 Neuron EP 以 `SinceVersion() < 13` 拒绝.
 - 修改方法：ONNX version converter 将完整模型转换为 opset 13.
 - 等价门槛：ONNX checker 通过,六个 CPU EP 输出逐元素完全一致.
+- 纯 NPU 修改：从 Raw ONNX 将四处固定文本注意力和三处分类矩阵乘法改写为卷积，将八处通道 Split 改写为 Slice，并将注意力门控改为四维池化与卷积。DFL 留在 C++ CPU 后处理。
 
 ## 目标平台
 
@@ -29,6 +30,6 @@ MediaTek 文件没有提供上游 checkpoint 名称、导出配置或内置文�
 ## 限制
 
 - 当前模型只能使用导出时固化的 80 类文本,板端不能动态输入任意开放词汇.
-- Neuron EP 允许不支持的节点回退 CPU,因此性能报告必须附 profiling 节点归属.
+- Neuron EP 允许不支持的节点回退 CPU,板端 C++ 在正式处理图片前检查 profiling；发现 CPU 模型节点即停止。
 - 官方参考性能不能代替本项目板端实测.
-- COCO val2017 全量 bbox AP50:95：FP32 ONNX `0.472953`、板端混合 EP `0.472952`；因仍含 CPU fallback 且纯 NPU 正确性问题未解决,交付状态保持"板端已验证".结果见 [精度报告](docs/accuracy.md) 与 [性能报告](docs/benchmark.md).
+- 历史 COCO val2017 全量 bbox AP50:95：FP32 ONNX `0.472953`、板端混合 EP `0.472952`。新纯 NPU ONNX 已完成三图 FP32/板端一致性验证，COCO 全量精度尚未运行。结果见 [精度报告](docs/accuracy.md) 与 [性能报告](docs/benchmark.md).

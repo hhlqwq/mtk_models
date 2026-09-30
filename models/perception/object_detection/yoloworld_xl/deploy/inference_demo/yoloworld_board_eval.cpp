@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <numeric>
 #include <stdexcept>
 #include <string>
@@ -63,7 +64,7 @@ Options ParseArgs(int argc, char** argv) {
   return options;
 }
 
-// 以官方图片编号排序,不允许仅对 COCO 子集测试.
+// 以官方图片编号排序,仅允许三张公开样例或完整 COCO val2017.
 std::vector<fs::path> ListImages(const fs::path& directory) {
   std::vector<fs::path> images;
   for (const fs::directory_entry& entry : fs::directory_iterator(directory)) {
@@ -72,8 +73,8 @@ std::vector<fs::path> ListImages(const fs::path& directory) {
     }
   }
   std::sort(images.begin(), images.end());
-  if (images.size() != 5000) {
-    throw std::runtime_error("COCO val2017 图片数量不是 5000.");
+  if (images.size() != 3 && images.size() != 5000) {
+    throw std::runtime_error("图片数量必须为 3 张样例或 5000 张 COCO val2017.");
   }
   for (const fs::path& image : images) {
     const std::string name = image.stem().string();
@@ -224,7 +225,7 @@ class BoardSession {
         CheckOrt(api_, type_status, "GetTensorElementType");
         CheckOrt(api_, count_status, "GetTensorShapeElementCount");
         const size_t width = widths[index / 2];
-        const size_t channels = index % 2 == 0 ? 80 : 4;
+        const size_t channels = index % 2 == 0 ? 80 : 64;
         if (type != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT ||
             count != channels * width * width) {
           throw std::runtime_error("ORT 输出元素数量不匹配: " +
@@ -294,9 +295,28 @@ float IoU(const Detection& left, const Detection& right) {
   return intersection / std::max(area_left + area_right - intersection, 1e-12F);
 }
 
+// 在 CPU 后处理中将 16 桶 DFL logits 解码为单侧距离.
+float DecodeDflDistance(const std::vector<float>& logits, int cells,
+                        int cell, int side) {
+  float maximum = -std::numeric_limits<float>::infinity();
+  for (int bin = 0; bin < 16; ++bin) {
+    maximum = std::max(maximum, logits[(side * 16 + bin) * cells + cell]);
+  }
+  float total = 0.0F;
+  float weighted = 0.0F;
+  for (int bin = 0; bin < 16; ++bin) {
+    const float probability =
+        std::exp(logits[(side * 16 + bin) * cells + cell] - maximum);
+    total += probability;
+    weighted += probability * static_cast<float>(bin);
+  }
+  return weighted / total;
+}
+
 // 解码三尺度距离框、类别 Sigmoid 和逐类别 NMS.
 std::vector<Detection> Decode(const std::array<std::vector<float>, 6>& outputs,
-                              const Transform& transform) {
+                              const Transform& transform,
+                              float score_threshold) {
   constexpr std::array<int, 3> widths = {80, 40, 20};
   constexpr std::array<int, 3> strides = {8, 16, 32};
   std::array<std::vector<Detection>, 80> by_class;
@@ -304,20 +324,20 @@ std::vector<Detection> Decode(const std::array<std::vector<float>, 6>& outputs,
     const int width = widths[level];
     const int cells = width * width;
     const auto& classes = outputs[level * 2];
-    const auto& distances = outputs[level * 2 + 1];
+    const auto& box_logits = outputs[level * 2 + 1];
     for (int cell = 0; cell < cells; ++cell) {
       const float center_x = (cell % width + 0.5F) * strides[level];
       const float center_y = (cell / width + 0.5F) * strides[level];
       const std::array<float, 4> box = {
-          center_x - distances[cell] * strides[level],
-          center_y - distances[cells + cell] * strides[level],
-          center_x + distances[2 * cells + cell] * strides[level],
-          center_y + distances[3 * cells + cell] * strides[level]};
+          center_x - DecodeDflDistance(box_logits, cells, cell, 0) * strides[level],
+          center_y - DecodeDflDistance(box_logits, cells, cell, 1) * strides[level],
+          center_x + DecodeDflDistance(box_logits, cells, cell, 2) * strides[level],
+          center_y + DecodeDflDistance(box_logits, cells, cell, 3) * strides[level]};
       for (int category = 0; category < 80; ++category) {
         const float logit = classes[category * cells + cell];
         const float score = 1.0F / (1.0F +
             std::exp(-std::clamp(logit, -30.0F, 30.0F)));
-        if (score > 0.001F) {
+        if (score > score_threshold) {
           by_class[category].push_back({category, score, box});
         }
       }
@@ -388,6 +408,7 @@ int main(int argc, char** argv) {
   try {
     const Options options = ParseArgs(argc, argv);
     const std::vector<fs::path> images = ListImages(options.images);
+    const float score_threshold = images.size() == 3 ? 0.25F : 0.001F;
     fs::create_directories(options.output_dir);
     BoardSession session(options.model, options.output_dir / "ort_neuron");
     const cv::Mat first = cv::imread(images.front().string());
@@ -421,7 +442,7 @@ int main(int argc, char** argv) {
       }
       auto [input, transform] = Preprocess(image);
       const auto [raw, inference_ms] = session.Infer(input);
-      const auto detections = Decode(raw, transform);
+      const auto detections = Decode(raw, transform, score_threshold);
       WritePrediction(output, images[index], inference_ms, detections);
       output.flush();
       if (!output) throw std::runtime_error("预测文件写入失败.");

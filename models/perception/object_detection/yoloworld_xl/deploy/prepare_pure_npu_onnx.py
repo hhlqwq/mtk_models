@@ -77,31 +77,9 @@ def rewrite_model(model: onnx.ModelProto) -> onnx.ModelProto:
     if text.shape != (1, 80, 512) or class_matrix.shape != (1, 512, 80):
         raise ValueError("文本嵌入或分类矩阵形状不匹配,不能改写.")
     class_weight = np.ascontiguousarray(class_matrix[0].T.reshape(80, 512, 1, 1))
-    dfl_node = producers["onnx::MatMul_1582"]
-    dfl_bins = numpy_helper.to_array(
-        next(attribute.t for attribute in dfl_node.attribute if attribute.name == "value")
-    )
-    if dfl_bins.shape != (16, 1):
-        raise ValueError("DFL 加权矩阵形状不匹配,不能改写.")
-    dfl_weight = np.ascontiguousarray(
-        np.tile(dfl_bins.reshape(1, 16, 1, 1), (4, 1, 1, 1))
-    )
-    dfl_outputs = {
-        f"/baseModel/head_module/MatMul{suffix}": producers[
-            f"/baseModel/head_module/Reshape{output_suffix}_output_0"
-        ]
-        for suffix, output_suffix in ()
-    }
-    dfl_outputs = {
-        suffix: next(
-            node.output[0]
-            for node in original_nodes
-            if node.name == f"/baseModel/head_module/Reshape_{2 * index + 1}"
-        )
-        for index, suffix in enumerate(("", "_1", "_2"))
-    }
 
     attention: dict[str, tuple[int, int, int, int, int]] = {}
+    attention_features: dict[str, str] = {}
     for node in original_nodes:
         if node.op_type != "MatMul" or "/attn_block/MatMul" not in node.name:
             continue
@@ -135,16 +113,13 @@ def rewrite_model(model: onnx.ModelProto) -> onnx.ModelProto:
         weight_name = key + "_groupconv_weight"
         graph.initializer.append(numpy_helper.from_array(weights, name=weight_name))
         attention[prefix] = (heads, depth, classes, height, width)
-        attention[prefix + "/features"] = features
+        attention_features[prefix] = features
 
-    if len(attention) != 8:
+    if len(attention) != 4:
         raise ValueError("期望四个固定文本注意力模块.")
 
     new_nodes = []
-    counts = {
-        "attention": 0, "pool": 0, "repeat": 0, "split": 0,
-        "class": 0, "dfl": 0,
-    }
+    counts = {"attention": 0, "pool": 0, "repeat": 0, "split": 0, "class": 0}
     for node in original_nodes:
         name = node.name
         if node.op_type == "MatMul" and "/attn_block/MatMul" in name:
@@ -154,7 +129,7 @@ def rewrite_model(model: onnx.ModelProto) -> onnx.ModelProto:
             new_nodes.append(
                 helper.make_node(
                     "Conv",
-                    [attention[prefix + "/features"], key + "_groupconv_weight"],
+                    [attention_features[prefix], key + "_groupconv_weight"],
                     [key + "_conv"],
                     name=key + "_groupconv",
                     group=heads,
@@ -234,46 +209,6 @@ def rewrite_model(model: onnx.ModelProto) -> onnx.ModelProto:
                 ]
             )
             counts["repeat"] += 1
-        elif node.op_type == "MatMul" and name.startswith(
-            "/baseModel/head_module/MatMul"
-        ):
-            suffix = name.removeprefix("/baseModel/head_module/MatMul")
-            if suffix not in dfl_outputs:
-                raise ValueError(f"未知 DFL 分支: {name}.")
-            _, positions, directions, bins = shapes[node.input[0]]
-            height = width = int(positions**0.5)
-            if directions != 4 or bins != 16 or height * width != positions:
-                raise ValueError(f"DFL 张量形状不匹配: {name}.")
-            key = "codex_dfl" + suffix
-            shape_name = add_shape(graph, key + "_shape", [1, 64, height, width])
-            weight_name = key + "_weight"
-            graph.initializer.append(
-                numpy_helper.from_array(dfl_weight, name=weight_name)
-            )
-            new_nodes.extend(
-                [
-                    helper.make_node(
-                        "Transpose", [node.input[0]], [key + "_transposed"],
-                        name=key + "_transpose", perm=[0, 2, 3, 1],
-                    ),
-                    helper.make_node(
-                        "Reshape", [key + "_transposed", shape_name],
-                        [key + "_reshaped"], name=key + "_reshape",
-                    ),
-                    helper.make_node(
-                        "Conv", [key + "_reshaped", weight_name],
-                        [dfl_outputs[suffix]], name=key + "_conv", group=4,
-                        kernel_shape=[1, 1],
-                    ),
-                ]
-            )
-            counts["dfl"] += 1
-        elif name in {
-            "/baseModel/head_module/Reshape_1",
-            "/baseModel/head_module/Reshape_3",
-            "/baseModel/head_module/Reshape_5",
-        }:
-            continue
         elif node.op_type == "Split" and (
             "/image_model/" in name or "/neck/" in name
         ):
@@ -336,10 +271,7 @@ def rewrite_model(model: onnx.ModelProto) -> onnx.ModelProto:
             else:
                 new_nodes.append(node)
 
-    expected = {
-        "attention": 4, "pool": 4, "repeat": 4, "split": 8,
-        "class": 3, "dfl": 3,
-    }
+    expected = {"attention": 4, "pool": 4, "repeat": 4, "split": 8, "class": 3}
     if counts != expected:
         raise ValueError(f"算子数量不匹配: {counts}.")
     del graph.node[:]
