@@ -17,7 +17,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 补丁文件: MTK 模型转换补丁压缩包.
     PATCH_ARCHIVE="${MODEL_ROOT}/models/model_conversion_YOLOv5s_example_20240916.zip"
     # 校准数据: 89 和 Docker 都能访问的图片目录,必须填写.
-    CALIBRATION_DIR=""
+    CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images"
     # 输出目录: ONNX、TFLite 和 DLA 放在这里.
     MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
     # DLA 文件: 编译后的完整路径.
