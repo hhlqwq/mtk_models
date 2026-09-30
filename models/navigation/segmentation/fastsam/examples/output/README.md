@@ -10,4 +10,8 @@
 `sample_1_segmentation.jpg` 至 `sample_3_segmentation.jpg`，以及同名 JSON。
 三张输入复用 YOLOv5s 公共样例目录中的 CC0 图片；JSON 内保存分数、框、
 掩码 COCO RLE 和逐图耗时。三图仅用于输出展示，不替代完整 COCO AP。
+同一三图的 FP32 ONNX 结果保存为 `sample_1_fp32_segmentation.jpg` 至
+`sample_3_fp32_segmentation.jpg` 及同名 JSON。两端均使用置信度 `0.4`、NMS IoU `0.9`、
+最多 30 个实例。三图各有 30 个输出实例；按掩码 IoU 最优配对，IoU 不低于 `0.5` 的
+实例数分别为 28、29、27。尾部低分实例存在差异，不能把三图称为逐实例完全一致。
 旧精选叠加图 `public/fastsam_s_sample_1_overlay.jpg` 作为历史冒烟示例保留。
