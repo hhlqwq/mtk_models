@@ -6,19 +6,17 @@ COCO 80 类目标检测，输入为 `1×3×640×640` RGB。模型来自 Ultralyt
 
 先把官方 [yolov5s.pt](https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.pt) 手动放到 `models/yolov5s.pt`。YOLOv5 源码包与 MTK 补丁包也放在 `models/`，固定下载地址见 [source_url.txt](models/source_url.txt)。转换脚本只展开本地压缩包并应用补丁，不联网下载；Python 依赖由 89 的 Docker 环境管理。校准图片须在 89 的 `/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images`。
 
-在 **89 宿主机**进入 `hhl_g720_8011`，然后在容器内执行一次：
+在 **89 宿主机**运行以下单条命令。它会直接在 `hhl_g720_8011` 容器内执行准备流程，无需进入交互式 Shell：
 
 ```bash
-docker exec -it hhl_g720_8011 bash
-cd /data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s
-bash deploy/prepare.sh
+docker exec hhl_g720_8011 bash -c 'cd /data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s && bash deploy/prepare.sh'
 ```
 
 该入口依次完成本地源码准备、ONNX 与 INT8 TFLite 转换、`mdla5.3` DLA 编译。所用 `--suppress-output --disallow-bridge` 避开板端不支持的 EDPA 桥接。已有正确 DLA 时，无需为重跑测试再次转换。
 
 ## 板端测试
 
-退出容器，在 **89 宿主机**的同一仓库目录执行。两种测试共用一个入口：
+仍在 **89 宿主机**的同一仓库目录执行。两种测试共用一个入口：
 
 ```bash
 cd /data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s
