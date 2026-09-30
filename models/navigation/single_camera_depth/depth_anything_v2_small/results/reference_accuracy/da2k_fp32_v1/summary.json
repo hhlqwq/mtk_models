@@ -5,7 +5,5 @@
   "images": 1033,
   "pairs": 2068,
   "correct_pairs": 1961,
-  "pair_accuracy": 0.9482591876208898,
-  "model_sha256": "cddc4399ad9155dc4380cb533aa7032520d91a19cff72e2bbd121f9318e1829e",
-  "annotations_sha256": "830d51c1145198593a0f59e19b0f3c3b53cea725deaf6494e25f9b3ab35320cb"
+  "pair_accuracy": 0.9482591876208898
 }

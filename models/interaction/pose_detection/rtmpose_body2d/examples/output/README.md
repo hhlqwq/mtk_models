@@ -9,6 +9,6 @@
 - `board_raw/`:三张样例的双路 SimCC 原始输出,不提交 Git.
 
 `public/` 纳入 Git,用于公开展示 Genio 720 测试结果.此外,
-- `board_cpp_accuracy/<run_id>/`: 正式 WholeBody 板端逐框预测、AP/AR、耗时和输入输出哈希；
-  目录默认不提交 Git,正式 v2 证据保存在 89 服务器的
+- `board_cpp_accuracy/<run_id>/`: 正式 WholeBody 板端逐框预测、AP 和耗时；
+  目录默认不提交 Git,正式 v2 证据保存在 编译主机 服务器的
   `20260909_wholebody_int8_v2` 运行目录.

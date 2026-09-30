@@ -6,14 +6,13 @@
 mkdir -p /usr/share/llm
 
 ln -sfn \
-/root/hailong.he/MTK_G720_DLA/02_Generative/LLM/gemma3-1b \
+$(pwd) \
 /usr/share/llm/gemma3-1b
 ```
 
 ## 2. 开启 Performance Mode
 
 ```bash
-cd /root/hailong.he/MTK_G720_DLA/02_Generative/LLM/gemma3-1b
 
 chmod +x scripts/set_performance.sh
 ./scripts/set_performance.sh

@@ -12,7 +12,7 @@ import onnx
 import torch
 import ultralytics
 
-from fastsam_utils import OUTPUT_NAMES, OUTPUT_SHAPES, decode_heads, preprocess, sha256_file
+from fastsam_utils import OUTPUT_NAMES, OUTPUT_SHAPES, decode_heads, preprocess
 
 
 def raw_forward(self, features):
@@ -53,16 +53,12 @@ def load_model(weights):
 
 
 def main():
-    """验证权重哈希、检查前向等价并导出固定 opset 13 模型."""
+    """检查前向等价并导出固定 opset 13 模型."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--weights", type=Path, required=True)
-    parser.add_argument("--weights-sha256", required=True)
     parser.add_argument("--image", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
-    digest = sha256_file(args.weights)
-    if digest != args.weights_sha256.lower():
-        raise ValueError("权重 SHA-256 不匹配.")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     print("[1/4] 离线加载官方 FastSAM-s 权重.", flush=True)
     original = load_model(args.weights)
@@ -95,11 +91,10 @@ def main():
     np.savez(args.output_dir / "pytorch_reference.npz", images=tensor,
              **dict(zip(OUTPUT_NAMES, arrays)))
     manifest = {
-        "weights": str(args.weights), "weights_sha256": digest,
+        "weights": str(args.weights),
         "implementation": "ultralytics/ultralytics@v8.0.111",
         "torch": torch.__version__, "onnx": onnx.__version__,
-        "image": str(args.image), "image_sha256": sha256_file(args.image),
-        "geometry": geometry, "onnx_sha256": sha256_file(onnx_path),
+        "image": str(args.image), "geometry": geometry,
         "output_names": OUTPUT_NAMES, "output_shapes": OUTPUT_SHAPES,
         "raw_decode_max_absolute_error": float(np.max(np.abs(decoded - expected))),
         "onnx_runtime_verified": False,

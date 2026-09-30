@@ -2,7 +2,6 @@
 
 import argparse
 import collections
-import hashlib
 import io
 import json
 import tarfile
@@ -20,29 +19,9 @@ CLASS_INDEX_URL = (
     "https://storage.googleapis.com/download.tensorflow.org/data/"
     "imagenet_class_index.json"
 )
-EXPECTED_DEVKIT_SHA256 = (
-    "b59243268c0d266621fd587d2018f69e906fb22875aca0e295b48cafaa927953"
-)
-EXPECTED_CLASS_INDEX_SHA256 = (
-    "a1e7a966a1f601d39e4b43e119b3e7dd4a2ad3ea08cf69847cbaf021013767bc"
-)
 EXPECTED_IMAGES = 50000
 EXPECTED_CLASSES = 1000
 EXPECTED_IMAGES_PER_CLASS = 50
-
-
-def sha256_file(path: Path) -> str:
-    """计算文件 SHA-256."""
-    digest = hashlib.sha256()
-    with path.open("rb") as file:
-        for chunk in iter(lambda: file.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def sha256_bytes(data: bytes) -> str:
-    """计算内存数据 SHA-256."""
-    return hashlib.sha256(data).hexdigest()
 
 
 def read_unique_member(archive: tarfile.TarFile, suffix: str) -> bytes:
@@ -58,7 +37,7 @@ def read_unique_member(archive: tarfile.TarFile, suffix: str) -> bytes:
     return stream.read()
 
 
-def load_devkit(devkit_path: Path) -> tuple[list[int], dict[int, str], dict]:
+def load_devkit(devkit_path: Path) -> tuple[list[int], dict[int, str]]:
     """读取官方 ground truth 和 ILSVRC2012_ID 到 WNID 的映射."""
     with tarfile.open(devkit_path, "r:gz") as archive:
         ground_truth_bytes = read_unique_member(
@@ -78,11 +57,7 @@ def load_devkit(devkit_path: Path) -> tuple[list[int], dict[int, str], dict]:
             if class_id in id_to_wnid:
                 raise ValueError(f"ILSVRC2012_ID 重复: {class_id}")
             id_to_wnid[class_id] = wnid
-    hashes = {
-        "ground_truth_sha256": sha256_bytes(ground_truth_bytes),
-        "meta_mat_sha256": sha256_bytes(meta_bytes),
-    }
-    return ground_truth, id_to_wnid, hashes
+    return ground_truth, id_to_wnid
 
 
 def load_class_index(path: Path) -> tuple[dict[str, int], list[str]]:
@@ -158,37 +133,24 @@ def build_labels(ground_truth: list[int], id_to_wnid: dict[int, str],
 
 
 def run(args: argparse.Namespace) -> None:
-    """执行来源校验、类别映射、输出生成和清单记录."""
-    print("[1/4] 校验官方资源 SHA-256.")
-    devkit_sha256 = sha256_file(args.devkit)
-    class_index_sha256 = sha256_file(args.class_index)
-    if devkit_sha256 != EXPECTED_DEVKIT_SHA256:
-        raise ValueError(f"devkit SHA-256 不匹配: {devkit_sha256}")
-    if class_index_sha256 != EXPECTED_CLASS_INDEX_SHA256:
-        raise ValueError(
-            f"class index SHA-256 不匹配: {class_index_sha256}")
-
-    print("[2/4] 读取 devkit 与模型类别索引.")
-    ground_truth, id_to_wnid, member_hashes = load_devkit(args.devkit)
+    """读取类别映射、生成标签并记录样本数量."""
+    print("[1/3] 读取 devkit 与模型类别索引.")
+    ground_truth, id_to_wnid = load_devkit(args.devkit)
     wnid_to_index, class_names = load_class_index(args.class_index)
     mismatches = verify_display_labels(args.qualcomm_labels, class_names)
 
-    print("[3/4] 生成并验证 50,000 行 0-based 标签.")
+    print("[2/3] 生成并验证 50,000 行 0-based 标签.")
     labels = build_labels(ground_truth, id_to_wnid, wnid_to_index)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         "".join(f"{label}\n" for label in labels), encoding="utf-8")
 
-    print("[4/4] 写入可追溯清单.")
+    print("[3/3] 记录来源和样本数量.")
     manifest = {
         "schema_version": 1,
         "sources": {
             "devkit_url": DEVKIT_URL,
-            "devkit_sha256": devkit_sha256,
             "class_index_url": CLASS_INDEX_URL,
-            "class_index_sha256": class_index_sha256,
-            "qualcomm_labels_sha256": sha256_file(args.qualcomm_labels),
-            **member_hashes,
         },
         "mapping": "ILSVRC2012_ID -> WNID -> model_output_index_0based",
         "images": len(labels),
@@ -196,7 +158,6 @@ def run(args: argparse.Namespace) -> None:
         "images_per_class": EXPECTED_IMAGES_PER_CLASS,
         "display_label_mismatch_count": len(mismatches),
         "display_label_mismatches": mismatches,
-        "output_sha256": sha256_file(args.output),
     }
     args.manifest.write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",

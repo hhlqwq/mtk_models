@@ -13,7 +13,6 @@ MDLA 5.3 编译.92 开发板的 C++ 程序通过 Neuron Runtime API 加载 DLA,
 | --- | --- |
 | 模型权重 | 官方 README 链接的 FastSAM-s.pt,用户本机下载并同步至 89 |
 | 权重大小 | 23,832,055 bytes |
-| 权重 SHA-256 | `e9034d7478a8e9d1bfb57b51592e521a253287c7cdcf79258f61ea6d68584a0d` |
 | 导出实现 | 89 容器 Ultralytics 8.0.111,PyTorch 2.0.0+cu118 |
 | 校准 | 89 已有 COCO 图片,按文件名排序取 16 张;只用于冒烟 |
 | MTK 工具 | Converter 8.16.0,NeuroPilot SDK 8.0.11,`ncc-tflite --arch=mdla5.3 --suppress-output --disallow-bridge` |
@@ -22,17 +21,7 @@ MDLA 5.3 编译.92 开发板的 C++ 程序通过 Neuron Runtime API 加载 DLA,
 | 测试图 | 复用 YOLOv5s 公共 CC0 图 `000000000001.jpg`,1280×853 |
 | 运行 ID | `20260923_cpp_fastsam_smoke_v2` |
 
-## 产物绑定
-
-| 文件 | SHA-256 |
-| --- | --- |
-| `model_fp32.onnx` | `1f5757f92c71874330f74d4dfd722ac6b93d27590ce94ec6231558d274f4143d` |
-| `model_int8.tflite` | `146fba63ec8ccca1103df260033429f93d720feb340d540e7cd150ec1c2cb2cf` |
-| `model_int8.dla` | `fecbd8f07d9d943d34692fae3447b578eb57a3e2234f2b36ed5ed4a10d1e41ae` |
-| `runtime_config.csv` | `2771cb1a79e90be9ef69fd6773614b2b3cd3eba47f914d3e76cbf2f7e4ee504e` |
-| `fastsam_board` | `d4f571e9f7de3411d236640fb02e8e7c1a31eae8e5c81aac20fe13e8afd51d0c` |
-| 测试图 | `e17697994ed44c9d67280f16063eb05c58b85cd1f1761ffcb6b2fec6fafa9405` |
-| 公共叠加图 | `969185af085e9590c4fcf5006f0ade1a51c6df76d4a78d69f6744b86ef9e60ae` |
+## 产物与记录
 
 导出和量化来源清单位于 89 的单模型 `models/` 目录.
 板端原始证据位于
@@ -69,11 +58,11 @@ C++ `lround` 与 Python `round` 使上下填充相差 1 个模型像素.
 ![FastSAM-s 板端分割叠加图](../examples/output/public/fastsam_s_sample_1_overlay.jpg)
 
 原始图片与 CC0 来源说明见
-[YOLOv5s 公共输入](../../../../perception/object_detection/yolov5s/examples/README.md).
+[YOLOv5s 公共输入](../../../../perception/object_detection/yolov5s/README.md#示例图片).
 
 ## 范围
 
 本次只执行一张图片、一次 C++ 硬件推理;单次 API 墙钟不等于稳定纯 NPU 延迟.
 没有预热后多轮统计、正式标注数据集 mAP 或 G5100 验证.
 后续正式评测应保持同一预处理、阈值和来源版本,
-记录独立数据集、运行 ID、模型哈希及全量未匹配实例.
+记录独立数据集、运行 ID 及全量未匹配实例.

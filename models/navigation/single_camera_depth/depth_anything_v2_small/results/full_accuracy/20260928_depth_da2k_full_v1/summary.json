@@ -60,8 +60,5 @@
   },
   "cli_wall_mean_ms": 194.70041887771558,
   "cli_wall_p95_ms": 204.104369180277,
-  "timing_scope": "per-image neuronrt CLI including process startup and model load",
-  "model_sha256": "8319d41c803e37e50d249fc3a729b007ffe27e214e8af1d4997e4849692e3dce",
-  "metadata_sha256": "7a48e5f2234a29301ce294816129902662767c84a0834a23916b109231544849",
-  "annotations_sha256": "830d51c1145198593a0f59e19b0f3c3b53cea725deaf6494e25f9b3ab35320cb"
+  "timing_scope": "per-image neuronrt CLI including process startup and model load"
 }

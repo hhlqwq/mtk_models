@@ -5,8 +5,6 @@
 正式权重：https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192-cd5e845c_20230123.pth
 权重文件名：rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192-cd5e845c_20230123.pth
 权重大小：72010049 bytes
-权重 SHA-256：3da02694cd6479d3b333ff42ebd0723f96bfa06adac1db1e2e815ed2e9e1b02d
-权重 MD5：f9e98931f38c2ef2acff811f479197a2
 官方服务器 ETag：f9e98931f38c2ef2acff811f479197a2
 正式许可证：https://github.com/open-mmlab/mmpose/blob/v1.3.2/LICENSE
 

@@ -109,8 +109,6 @@ Neuron Runtime: 8.2.16
 | 文件 | `scarthgap_k6.6_v26.0_genio-720-evk_private_260729015554.tar.gz` |
 | 下载地址 | https://download.mediatek.com/aiot/download/prebuilt/v26.0/scarthgap_k6.6_v26.0_genio-720-evk_private_260729015554.tar.gz |
 | 文件大小 | 约 1.9 GB |
-| 官网 MD5 | `507f111167fadf707c12d77e0b96e337` |
-| 实际校验 | `OK` |
 | 解包目录 | `image/genio-720-evk/`,约 4.4 GB |
 | Genio Tools | 1.7.1,安装于 `/data/users/hailong.he/data/MTKG720/genio-tools-v1.7.1/` |
 
@@ -120,7 +118,7 @@ Neuron Runtime: 8.2.16
 
 板端升级前备份保存于
 `/data/users/hailong.he/data/MTKG720/migration_20260907/board_root_hailong.he_before_v26.0.tar.gz`,
-并附有 MD5.截至 2026-09-07,89 的 USB 枚举尚无 MediaTek `0e8d:0003` 设备,而且
+截至 2026-09-07,89 的 USB 枚举尚无 MediaTek `0e8d:0003` 设备,而且
 开发板无法通过 USB 接入 89,因此当时实际刷写未开始.
 
 板端只读检查确认 `/dev/mmcblk0p10` 是唯一 `rootfs`,并正挂载为 `/`；启动参数直接使用

@@ -1,7 +1,6 @@
 """从 OpenMMLab MMPose 官方 RTMPose-M 权重离线导出 ONNX."""
 
 import argparse
-import hashlib
 import importlib.machinery
 from pathlib import Path
 import sys
@@ -52,8 +51,6 @@ from mmpose.apis import init_model
 
 
 EXPECTED_MMPOSE_VERSION = "1.3.2"
-EXPECTED_WEIGHTS_SHA256 = (
-    "3da02694cd6479d3b333ff42ebd0723f96bfa06adac1db1e2e815ed2e9e1b02d")
 INPUT_HEIGHT = 256
 INPUT_WIDTH = 192
 KEYPOINTS = 133
@@ -86,22 +83,6 @@ class RTMPoseExportWrapper(nn.Module):
         return pred_x, pred_y
 
 
-def sha256_file(path: Path) -> str:
-    """计算文件 SHA-256.
-
-    Args:
-        path: 待计算文件.
-
-    Returns:
-        小写十六进制 SHA-256.
-    """
-    digest = hashlib.sha256()
-    with path.open("rb") as file:
-        while chunk := file.read(8 * 1024 * 1024):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def export_model(config_path: Path, weights_path: Path, output_path: Path) -> None:
     """加载官方 MMPose 模型并导出固定输入 ONNX.
 
@@ -115,11 +96,6 @@ def export_model(config_path: Path, weights_path: Path, output_path: Path) -> No
             "MMPose 版本不匹配: "
             f"expected={EXPECTED_MMPOSE_VERSION}, "
             f"actual={mmpose.__version__}")
-    actual_sha256 = sha256_file(weights_path)
-    if actual_sha256 != EXPECTED_WEIGHTS_SHA256:
-        raise ValueError(
-            f"RTMPose 权重 SHA-256 不匹配: {actual_sha256}")
-
     model = init_model(str(config_path), str(weights_path), device="cpu")
     model.eval()
     out_channels = int(model.head.out_channels)

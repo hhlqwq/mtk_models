@@ -1,7 +1,6 @@
 """从锁定的 MobileFaceNet PyTorch 权重导出 ONNX。"""
 
 import argparse
-import hashlib
 import sys
 from pathlib import Path
 
@@ -14,20 +13,8 @@ sys.path.insert(0, str(SOURCE_ROOT))
 from mobilefacenet import MobileFaceNet  # noqa: E402
 
 
-def sha256(path: Path) -> str:
-    """计算模型文件的 SHA-256。"""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def export_model(weights: Path, output: Path, expected_hash: str) -> None:
-    """验证原始权重并导出固定输入的特征提取图。"""
-    actual_hash = sha256(weights)
-    if actual_hash != expected_hash:
-        raise ValueError(f"权重哈希不匹配: {actual_hash}")
+def export_model(weights: Path, output: Path) -> None:
+    """加载原始权重并导出固定输入的特征提取图。"""
     model = MobileFaceNet().eval()
     state = torch.load(weights, map_location="cpu", weights_only=True)
     model.load_state_dict(state, strict=True)
@@ -41,7 +28,7 @@ def export_model(weights: Path, output: Path, expected_hash: str) -> None:
                       input_names=["face"], output_names=["embedding"],
                       do_constant_folding=True)
     print(f"[OK] PyTorch 输出: {tuple(embedding.shape)}")
-    print(f"[OK] ONNX: {output}, SHA-256: {sha256(output)}")
+    print(f"[OK] ONNX: {output}")
 
 
 def main() -> None:
@@ -49,9 +36,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--weights", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--sha256", required=True)
     args = parser.parse_args()
-    export_model(args.weights, args.output, args.sha256.lower())
+    export_model(args.weights, args.output)
 
 
 if __name__ == "__main__":

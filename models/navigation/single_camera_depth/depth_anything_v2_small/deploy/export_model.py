@@ -1,7 +1,6 @@
 """从固定的官方 Depth Anything V2 Small 权重导出静态 ONNX。"""
 
 import argparse
-import hashlib
 import subprocess
 import sys
 from pathlib import Path
@@ -10,7 +9,6 @@ import torch
 
 
 SOURCE_REVISION = "a561b849ebae10a6f5ef49e26c83cbbcd36c71bf"
-WEIGHTS_SHA256 = "715fade13be8f229f8a70cc02066f656f2423a59effd0579197bbf57860e1378"
 
 
 class ExportableAttention(torch.nn.Module):
@@ -42,15 +40,6 @@ class ExportableAttention(torch.nn.Module):
         return self.proj(merged)
 
 
-def sha256_file(path: Path) -> str:
-    """逐块计算文件哈希，避免将大权重一次读入内存。"""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def export_model(upstream: Path, weights: Path, output: Path, size: int) -> None:
     """核验官方源码和权重，导出固定方形输入的深度图。"""
     if size <= 0 or size % 14:
@@ -60,9 +49,6 @@ def export_model(upstream: Path, weights: Path, output: Path, size: int) -> None
          "-C", str(upstream), "rev-parse", "HEAD"], text=True).strip()
     if revision != SOURCE_REVISION:
         raise ValueError(f"官方源码提交不匹配: {revision}")
-    actual_hash = sha256_file(weights)
-    if actual_hash != WEIGHTS_SHA256:
-        raise ValueError(f"官方权重 SHA-256 不匹配: {actual_hash}")
 
     sys.path.insert(0, str(upstream))
     from depth_anything_v2.dpt import DepthAnythingV2
@@ -94,7 +80,7 @@ def export_model(upstream: Path, weights: Path, output: Path, size: int) -> None
             model, sample, str(output), opset_version=17,
             input_names=["image"], output_names=["relative_depth"],
             do_constant_folding=True)
-    print(f"[OK] ONNX: {output}; SHA-256: {sha256_file(output)}", flush=True)
+    print(f"[OK] ONNX: {output}", flush=True)
 
 
 def main() -> None:

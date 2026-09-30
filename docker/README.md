@@ -24,10 +24,9 @@ setup_container.sh 即通过 pip check、Torch CUDA、ONNX Runtime CUDA 与 NCC 
 
 ## 构建与创建
 
-在 89 的指定仓库执行:
+在编译主机的仓库根目录执行:
 
 ```bash
-cd /data/users/hailong.he/github/mtk_models
 bash docker/build_image.sh
 bash docker/create_container.sh
 ```
@@ -38,9 +37,7 @@ Ubuntu 系统包保留基础镜像的官方软件源, 避免第三方镜像索�
 Python 3.11.11 源码默认从可达的阿里云镜像获取, 可通过 `PYTHON_SOURCE_URL` 构建参数覆盖.
 宿主机 SDK, 创建和模型转换均不再安装 pip 包.构建日志和 GPU 校验通过后才视为环境就绪.
 
-项目目录在宿主机和容器内使用完全一致的绝对路径:
-`/data/users/hailong.he/github/mtk_models`.数据集同样以原绝对路径只读挂载:
-`/data/users/hailong.he/nas_smb/Datasets/open_source/raw`.不再使用 `/workspace` 别名.
+项目目录在宿主机和容器内使用相同的绝对路径。数据集以用户指定的原绝对路径挂载。
 创建脚本会把项目挂载目录加入容器 root 的 Git `safe.directory`,避免宿主机用户与容器
 root 所有权不同导致 Git 拒绝访问.
 容器支持 GPU, 启动校验执行 Torch Conv2d 和 ONNX Runtime CUDA 运算.
@@ -48,14 +45,14 @@ root 所有权不同导致 Git 拒绝访问.
 
 旧同名容器不会被脚本自动删除, 镜像不匹配时明确报错.2026-09-07 的迁移由人工留存证据后
 停止并删除旧容器,再使用既有创建脚本建立目标容器；备份位于
-`/data/users/hailong.he/data/MTKG720/migration_20260907/`.
-SDK 属于本地供应商资料, 镜像仅保存在 89, 不推送公共镜像仓库.
+用户环境中的迁移备份目录。
+SDK 属于本地供应商资料，镜像保存在编译主机，不推送公共镜像仓库。
 GitHub 仅提交构建代码, 模型和数据集继续由用户下载.
 
 ## GPU 证据边界
 
 此前"MTK PTQ 必然只使用 CPU"的结论证据不足: 没有显式 CUDA 参数不能证明内部执行设备.
 已观察到 GPU 导出后 PTQ 加快, 具体原因需通过运行时 GPU 进程监测验证.
-板端正式性能以 92 的 NPU 结果为准.
+板端正式性能以开发板 NPU 结果为准.
 
 ONNX GPU 兼容依据: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html

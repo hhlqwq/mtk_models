@@ -6,14 +6,13 @@
 mkdir -p /usr/share/llm
 
 ln -sfn \
-/root/hailong.he/MTK_G720_DLA/02_Generative/LLM/qwen2.5-1.5b \
+$(pwd) \
 /usr/share/llm/qwen2.5-1.5b
 ```
 
 ## 2. 开启 Performance Mode
 
 ```bash
-cd /root/hailong.he/MTK_G720_DLA/02_Generative/LLM/qwen2.5-1.5b
 
 chmod +x scripts/set_performance.sh
 ./scripts/set_performance.sh

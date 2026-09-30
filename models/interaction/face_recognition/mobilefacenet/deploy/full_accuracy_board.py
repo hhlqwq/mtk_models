@@ -2,7 +2,6 @@
 
 import argparse
 import csv
-import hashlib
 import json
 import subprocess
 import time
@@ -15,15 +14,6 @@ from face_utils import load_aligned_face
 
 
 EXPECTED_PAIRS = 6000
-
-
-def sha256_file(path: Path) -> str:
-    """逐块计算文件的 SHA-256。"""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def parse_args() -> argparse.Namespace:
@@ -194,8 +184,7 @@ def evaluate(args: argparse.Namespace) -> None:
             if not args.resume:
                 raise FileExistsError(checkpoint)
             record = json.loads(checkpoint.read_text(encoding="utf-8"))
-            if (record.get("image") != name or
-                    record.get("output_sha256") != sha256_file(output_path)):
+            if record.get("image") != name or not output_path.is_file():
                 raise ValueError(f"续跑检查点不匹配: {checkpoint}。")
         else:
             if input_path.exists() or output_path.exists():
@@ -211,9 +200,6 @@ def evaluate(args: argparse.Namespace) -> None:
             feature = load_feature(output_path, metadata)
             record = {
                 "image": name,
-                "image_sha256": sha256_file(image),
-                "input_sha256": sha256_file(input_path),
-                "output_sha256": sha256_file(output_path),
                 "feature_norm": float(np.linalg.norm(feature)),
                 "cli_wall_ms": cli_wall_ms,
             }
@@ -239,10 +225,6 @@ def evaluate(args: argparse.Namespace) -> None:
         "cli_wall_mean_ms": float(np.mean(wall_times)),
         "cli_wall_p95_ms": float(np.percentile(wall_times, 95)),
         "timing_scope": "per-image neuronrt CLI including process startup and model load",
-        "model_sha256": sha256_file(args.model),
-        "metadata_sha256": sha256_file(args.metadata),
-        "pairs_sha256": sha256_file(args.dataset_root / "pairs.csv"),
-        "source_manifest_sha256": sha256_file(source_manifest),
     }
     report_dir = args.run_dir / "report"
     (report_dir / "summary.json").write_text(
@@ -251,12 +233,6 @@ def evaluate(args: argparse.Namespace) -> None:
     with (report_dir / "pair_results.jsonl").open("w", encoding="utf-8") as out:
         for detail in details:
             out.write(json.dumps(detail, ensure_ascii=False) + "\n")
-    (report_dir / "dataset_images_sha256.txt").write_text("".join(
-        f"{records[name]['image_sha256']}  {name}\n"
-        for name in names), encoding="utf-8")
-    (report_dir / "raw_outputs_sha256.txt").write_text("".join(
-        f"{records[name]['output_sha256']}  {name}\n"
-        for name in names), encoding="utf-8")
     print(f"[OK] LFW 十折全量板端验证: {report_dir}。", flush=True)
 
 

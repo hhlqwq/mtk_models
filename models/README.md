@@ -29,9 +29,9 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | 模型 | 机器人能力 | 开源实现来源 | Genio 720 | Genio 5100 | Inference Time | 评测数据集 | Reference Metric | On-device Metric | 当前缺口与下一步 |
 | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- |
 | [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | 单目相对深度与空间结构 | DepthAnything/Depth-Anything-V2 | 🔵 `board_verified` | ⚪ `not_started` | [常驻 Runtime 调用均值 133.902 ms/图](navigation/single_camera_depth/depth_anything_v2_small/docs/benchmark.md) | DA-2K，1,033 图、2,068 点对 | [FP32 ONNX DA-2K 点对准确率 94.83%](navigation/single_camera_depth/depth_anything_v2_small/docs/accuracy.md) | [NPU DA-2K 点对准确率 85.78%](navigation/single_camera_depth/depth_anything_v2_small/docs/accuracy.md) | 同协议全量对照与常驻性能已测；板端低 9.04 个百分点，需分析量化误差 |
-| [FastSAM-s](navigation/segmentation/fastsam/README.md) | 目标分割、交互式区域选择 | CASIA-LMC-Lab/FastSAM | 🔵 `board_verified` | ⚪ `not_started` | [独立校准 DLA 常驻 Runtime 调用均值 14.0536 ms/图](navigation/segmentation/fastsam/docs/benchmark.md) | COCO val2017，5,000 图；类别无关分割 | [PyTorch segm AR@100 0.391；ONNX 0.390](navigation/segmentation/fastsam/docs/accuracy.md) | [独立校准 DLA AR@100 0.376384](navigation/segmentation/fastsam/docs/accuracy.md) | 100 张 ImageNet 校准图与 COCO 评测集哈希零重叠；仍有约 0.014 的参考端差距 |
-| [YOLOv5s](perception/object_detection/yolov5s/README.md) | 通用目标检测 | Ultralytics/YOLOv5 | 🟢 `complete` | ⚪ `not_started` | [9.629 ms/图](perception/object_detection/yolov5s/docs/benchmark.md) | COCO val2017，5,000 图；bbox | [FP32 ONNX mAP@0.5:0.95 0.3709](perception/object_detection/yolov5s/docs/accuracy.md) | [INT8 mAP@0.5:0.95 0.3586](perception/object_detection/yolov5s/docs/accuracy.md) | 作为 Genio 5100 首个迁移基线，复用已完成的全链路验收协议 |
-| [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | 图像分类 | PyTorch Vision | 🟢 `complete` | ⚪ `not_started` | [51.7129 ms/图](perception/image_classification/vit_base_patch16_224/docs/benchmark.md) | ILSVRC2012 val，50,000 图 | [FP32 ONNX Top-1 80.64%](perception/image_classification/vit_base_patch16_224/docs/accuracy.md) | [INT8 Top-1 79.38%](perception/image_classification/vit_base_patch16_224/docs/accuracy.md) | Genio 720 已闭环；后续按平台需求迁移 Genio 5100 |
+| [FastSAM-s](navigation/segmentation/fastsam/README.md) | 目标分割、交互式区域选择 | CASIA-LMC-Lab/FastSAM | 🔵 `board_verified` | ⚪ `not_started` | [独立校准 DLA 常驻 Runtime 调用均值 14.0536 ms/图](navigation/segmentation/fastsam/docs/benchmark.md) | COCO val2017，5,000 图；类别无关分割 | [PyTorch segm AR@100 0.391；ONNX 0.390](navigation/segmentation/fastsam/docs/accuracy.md) | [独立校准 DLA AR@100 0.376384](navigation/segmentation/fastsam/docs/accuracy.md) | 独立校准结果较参考端低约 0.014 |
+| [YOLOv5s](perception/object_detection/yolov5s/README.md) | 通用目标检测 | Ultralytics/YOLOv5 | 🟢 `complete` | ⚪ `not_started` | [9.629 ms/图](perception/object_detection/yolov5s/README.md#历史性能) | COCO val2017，5,000 图；bbox | [FP32 ONNX mAP@0.5:0.95 0.3709](perception/object_detection/yolov5s/README.md#历史精度) | [INT8 mAP@0.5:0.95 0.3586](perception/object_detection/yolov5s/README.md#历史精度) | 作为 Genio 5100 首个迁移基线，复用已完成的全链路验收协议 |
+| [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | 图像分类 | PyTorch Vision | 🟢 `complete` | ⚪ `not_started` | [51.7129 ms/图](perception/image_classification/vit_base_patch16_224/README.md#历史性能) | ILSVRC2012 val，50,000 图 | [FP32 ONNX Top-1 80.64%](perception/image_classification/vit_base_patch16_224/README.md#历史精度) | [INT8 Top-1 79.38%](perception/image_classification/vit_base_patch16_224/README.md#历史精度) | Genio 720 已闭环；后续按平台需求迁移 Genio 5100 |
 | [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | 人体姿态和人机交互 | OpenMMLab/MMPose | 🟢 `complete` | ⚪ `not_started` | [3.8527 ms/人体框](interaction/pose_detection/rtmpose_body2d/docs/benchmark.md) | COCO-WholeBody V1.0 val，5,000 图、104,125 人体框 | [FP32 ONNX WholeBody AP 0.5703](interaction/pose_detection/rtmpose_body2d/docs/accuracy.md) | [INT8 WholeBody AP 0.5324](interaction/pose_detection/rtmpose_body2d/docs/accuracy.md) | 单框耗时不含上游人体检测器；后续可组合动作识别 |
 | [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | 人脸特征提取与身份匹配 | foamliu/MobileFaceNet | 🔵 `board_verified` | ⚪ `not_started` | [旧 DLA 常驻 Runtime 调用均值 0.476406 ms/图](interaction/face_recognition/mobilefacenet/docs/benchmark.md) | LFW，6,000 对、10 折；对齐协议重测中 | [FP32 ONNX 待重测](interaction/face_recognition/mobilefacenet/docs/accuracy.md) | [NPU 待重测](interaction/face_recognition/mobilefacenet/docs/accuracy.md) | 旧结果输入协议错误；修正后全量精度与性能待完成 |
 | [YOLO-World XL](perception/object_detection/yoloworld_xl/README.md) | 开放词汇目标检测 | AILab-CVC/YOLO-World | 🔵 `board_verified` | ⚪ `not_started` | [混合 EP `session.Run` 均值 3864.08 ms/图](perception/object_detection/yoloworld_xl/docs/benchmark.md) | COCO val2017，5,000 图；bbox | [FP32 ONNX COCO bbox AP50:95 0.472953](perception/object_detection/yoloworld_xl/docs/accuracy.md) | [混合 EP COCO bbox AP50:95 0.472952](perception/object_detection/yoloworld_xl/docs/accuracy.md) | 历史全量结果为混合 EP；纯 NPU 正确性未通过，暂停后续全量测试 |
@@ -51,7 +51,7 @@ ImageNet val 50,000 图，RTMPose 使用 COCO-WholeBody；Whisper-Tiny 本轮正
 LibriSpeech `test-clean` 2,620 条，旧 AISHELL-1 CER 另见其模型精度文档。FastSAM 的类别无关
 分割、Depth Anything 的固定方形缩放及 MobileFaceNet 的非对齐 LFW 均有各自协议限制，见对应模型文档。
 本轮参考端的 COCO 5,000 张、DA-2K 1,033 张、LFW 用到的 7,701 张及 LibriSpeech
-2,620 条音频，已逐文件对照对应板端报告的 SHA-256 清单；四组均一致。
+2,620 条音频，四组结果均已记录在对应板端报告中。
 
 ### 标准状态说明
 
@@ -151,7 +151,6 @@ models/
 <model>/
 ├── README.md
 ├── model_card.md
-├── model.yaml
 ├── LICENSE
 ├── original/             # 或在 models/ 内保存来源记录与离线包.
 ├── models/
@@ -162,9 +161,9 @@ models/
 
 完整交付必须形成以下证据链：
 
-1. 使用官方或原作者源码与权重，并记录版本、下载地址、许可证、文件大小和 SHA-256。
+1. 使用官方或原作者源码与权重，并记录版本、下载地址、许可证和文件大小。
 2. 保存原始框架推理结果，自行导出 ONNX 或 TFLite，并完成数值一致性比较。
-3. 完成 MTK 量化和 NPU 编译，记录工具链、命令、输入输出、量化配置和产物哈希。
+3. 完成 MTK 量化和 NPU 编译，记录工具链、命令、输入输出及量化配置。
 4. 在目标开发板执行真实模型推理和可复现 Demo，而不是只检查 Runtime 或模型文件。
 5. 使用正式数据集比较原始框架、ONNX/TFLite 和 MTK NPU 的同协议精度。
 6. 报告模型耗时、端到端耗时、P50/P90/P95、FPS、峰值 RSS 和 NPU/CPU 执行边界。

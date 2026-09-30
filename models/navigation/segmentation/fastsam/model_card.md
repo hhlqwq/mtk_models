@@ -6,7 +6,6 @@
 | 模型来源 | CASIA-LMC-Lab/FastSAM 官方 FastSAM-s.pt |
 | 官方源码参考提交 | b4ed20c2fed75eadc5aa7d8b09fedd137b873b52 |
 | 实际导出实现 | 容器预装 Ultralytics 8.0.111,已验证真实权重前向和 ONNX 导出 |
-| 权重 SHA-256 | `e9034d7478a8e9d1bfb57b51592e521a253287c7cdcf79258f61ea6d68584a0d`,本次文件实测值 |
 | 输入 | RGB, float32, NCHW, [1,3,640,640], /255 |
 | 缩放 | 保持比例,居中 letterbox,填充值 114 |
 | NPU 输出 | stride 8/16/32 的 64 通道框 logits、1 通道分数 logits、32 通道掩码系数,以及 [1,32,160,160] 原型 |
@@ -22,6 +21,5 @@ FastSAM 不输出 COCO 80 类语义标签.本次正式精度采用类别无关�
 不能把所有预测随意设置为某个 COCO 类别后宣称完成标准实例分割 mAP.
 640 输入是本项目端侧配置,不直接比较官方 1024 输入结果.
 
-记录和哈希由 `export_manifest.json`、`model_int8.json`、`SHA256SUMS`、
-`DLA_SHA256SUMS` 和板端 `results.json` 承载.本次证据见
+导出和量化参数分别记录在 `export_manifest.json`、`model_int8.json`；本次结果见
 [精度报告](docs/accuracy.md)与[2026-09-23 板端冒烟报告](docs/board_smoke_20260923.md).

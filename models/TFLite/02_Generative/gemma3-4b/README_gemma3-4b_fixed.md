@@ -6,14 +6,13 @@
 mkdir -p /usr/share/llm
 
 ln -sfn \
-/root/hailong.he/MTK_G720_DLA/02_Generative/LLM/gemma3-4b \
+$(pwd) \
 /usr/share/llm/gemma3-4b
 ```
 
 ## 2. 修正 YAML 中的 DLA 文件名
 
 ```bash
-cd /root/hailong.he/MTK_G720_DLA/02_Generative/LLM/gemma3-4b
 
 sed -i \
 's/Overall_128t1024c_0\.dla/Overall_hessian_128t1024c_0.dla/' \

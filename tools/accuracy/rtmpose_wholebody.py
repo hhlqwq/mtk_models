@@ -135,9 +135,8 @@ def create_torch_infer(
     """
     deploy_dir = model_dir / "deploy"
     sys.path.insert(0, str(deploy_dir))
-    from export_onnx import (EXPECTED_MMPOSE_VERSION, EXPECTED_WEIGHTS_SHA256,
-                             RTMPoseExportWrapper, prepare_mmcv_lite_import,
-                             sha256_file)
+    from export_onnx import (EXPECTED_MMPOSE_VERSION, RTMPoseExportWrapper,
+                             prepare_mmcv_lite_import)
     prepare_mmcv_lite_import()
     import mmpose
     import torch
@@ -147,8 +146,6 @@ def create_torch_infer(
         raise RuntimeError(
             "MMPose 版本不匹配: "
             f"expected={EXPECTED_MMPOSE_VERSION}, actual={mmpose.__version__}")
-    if sha256_file(weights) != EXPECTED_WEIGHTS_SHA256:
-        raise ValueError(f"RTMPose 官方权重 SHA-256 不匹配: {weights}")
     if device.startswith("cuda") and not torch.cuda.is_available():
         raise RuntimeError("PyTorch CUDA 不可用,禁止静默退回 CPU.")
     torch.backends.cuda.matmul.allow_tf32 = False

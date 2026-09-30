@@ -13,10 +13,7 @@ REQUIRED_FILES = (
     "README.md",
     "model_card.md",
     "LICENSE",
-    "model.yaml",
     "models/README.md",
-    "deploy/convert.sh",
-    "deploy/build.sh",
     "docs/accuracy.md",
     "docs/benchmark.md",
 )
@@ -65,7 +62,22 @@ def check_model(entry: dict[str, Any]) -> list[str]:
     if not model_root.is_dir():
         return [f"{model_id}: 模型目录不存在: {relative_path}"]
 
-    for required_file in REQUIRED_FILES:
+    model_required_files = REQUIRED_FILES
+    if model_id in {"yolov5s", "vit_base_patch16_224"}:
+        model_required_files = tuple(
+            path for path in REQUIRED_FILES if not path.startswith("docs/"))
+    for required_file in model_required_files:
+        if not (model_root / required_file).is_file():
+            errors.append(f"{model_id}: 缺少文件: {required_file}")
+
+    # 所有模型只保留模型卡,结构化身份由注册表维护.
+    model_yaml_path = model_root / "model.yaml"
+    if model_yaml_path.exists():
+        errors.append(f"{model_id}: 仅保留 model_card.md,不应存在 model.yaml")
+
+    # 所有模型使用同一个 Shell 入口.
+    deploy_files = ("deploy/run.sh",)
+    for required_file in deploy_files:
         if not (model_root / required_file).is_file():
             errors.append(f"{model_id}: 缺少文件: {required_file}")
 
@@ -73,17 +85,6 @@ def check_model(entry: dict[str, Any]) -> list[str]:
     source_records = ("original/source_url.txt", "models/source_url.txt")
     if not any((model_root / path).is_file() for path in source_records):
         errors.append(f"{model_id}: 缺少来源记录: {source_records}")
-
-    model_yaml_path = model_root / "model.yaml"
-    if model_yaml_path.is_file():
-        model_yaml = load_yaml(model_yaml_path)
-        if model_yaml.get("id") != model_id:
-            errors.append(
-                f"{model_id}: model.yaml id 不一致: {model_yaml.get('id')}")
-        if model_yaml.get("scenario") != entry.get("scenario"):
-            errors.append(f"{model_id}: model.yaml scenario 与注册表不一致.")
-        if model_yaml.get("category") != entry.get("category"):
-            errors.append(f"{model_id}: model.yaml category 与注册表不一致.")
 
     platforms = entry.get("platforms", {})
     if not isinstance(platforms, dict):

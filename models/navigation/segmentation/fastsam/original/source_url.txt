@@ -8,9 +8,6 @@ FastSAM-s.pt 官方 README 链接:
 https://drive.google.com/file/d/10XmSj6mmpmRb8NhXbtiuO9cTTBwR_9SV/view?usp=sharing
 状态: 用户于 2026-09-23 下载并放入本机项目目录,随后复制到 89.
 实测大小: 23,832,055 bytes.
-本机和 89 文件 SHA-256 一致:
-e9034d7478a8e9d1bfb57b51592e521a253287c7cdcf79258f61ea6d68584a0d
-说明: 这是本次取得文件的哈希,官方页面没有提供可独立核对的公布哈希.
 
 实际加载与导出实现,复用 89 容器预装版本:
 https://github.com/ultralytics/ultralytics/tree/v8.0.111

@@ -1,7 +1,6 @@
 """在 LibriSpeech test-clean 全量数据上评测 OpenAI Whisper-Tiny 参考 WER。"""
 
 import argparse
-import hashlib
 import json
 import wave
 from pathlib import Path
@@ -14,15 +13,6 @@ from evaluate_accuracy import metric_summary
 
 
 EXPECTED_SAMPLES = 2620
-
-
-def sha256_file(path: Path) -> str:
-    """逐块计算权重或记录文件的 SHA-256。"""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def load_sources(dataset_root: Path) -> dict[str, dict]:
@@ -105,8 +95,6 @@ def main() -> None:
               "dataset": "librispeech_test_clean_30s_window",
               "expected_samples": EXPECTED_SAMPLES,
               "successful_samples": len(predictions),
-              "weights_sha256": sha256_file(args.weights),
-              "predictions_sha256": sha256_file(prediction_path),
               "accuracy": accuracy}
     (args.output_dir / "summary.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

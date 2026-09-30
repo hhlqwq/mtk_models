@@ -2,7 +2,6 @@
 """为 Genio Neuron EP 生成等价的 YOLO-World opset 13 模型."""
 
 import argparse
-import hashlib
 from pathlib import Path
 
 import onnx
@@ -52,15 +51,6 @@ def parse_args() -> argparse.Namespace:
 def tensor_shape(value_info: onnx.ValueInfoProto) -> list[int]:
     """读取静态张量形状."""
     return [dim.dim_value for dim in value_info.type.tensor_type.shape.dim]
-
-
-def sha256_file(path: Path) -> str:
-    """分块计算文件 SHA-256."""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        while chunk := stream.read(1024 * 1024):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def validate_source_model(model: onnx.ModelProto) -> None:
@@ -133,11 +123,8 @@ def main() -> None:
     raw_model = create_raw_head_model(args.input, args.raw_output)
     onnx.checker.check_model(raw_model, full_check=True)
 
-    print("[5/5] 输出模型校验值.")
-    print(f"source_sha256={sha256_file(args.input)}")
-    print(f"output_sha256={sha256_file(args.output)}")
+    print("[5/5] 输出模型文件大小.")
     print(f"output_size={args.output.stat().st_size}")
-    print(f"raw_output_sha256={sha256_file(args.raw_output)}")
     print(f"raw_output_size={args.raw_output.stat().st_size}")
 
 

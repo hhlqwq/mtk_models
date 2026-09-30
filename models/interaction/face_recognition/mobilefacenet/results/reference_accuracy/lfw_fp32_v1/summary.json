@@ -3,8 +3,6 @@
   "backend": "onnxruntime_cuda_fp32",
   "dataset": "lfw_original_non_aligned_6000_pairs_10_folds",
   "unique_images": 7701,
-  "model_sha256": "5d046c1f6cc3b9cc69600f750d67e5ba6f1b6d115c47fa0c0fa7151cd605b7cb",
-  "pairs_sha256": "7f540157be42f57ab5bb1d7ef53b7b379e0331b4842cbd32f4d1b625243e54fe",
   "metric_protocol": "lfw_10_fold_train_9_test_1_cosine_threshold",
   "pairs": 6000,
   "positive_pairs": 3000,

@@ -6,14 +6,13 @@
 mkdir -p /usr/share/llm
 
 ln -sfn \
-/root/hailong.he/MTK_G720_DLA/02_Generative/LLM/phi-3-mini-4k-instruct \
+$(pwd) \
 /usr/share/llm/phi-3-mini-4k-instruct
 ```
 
 ## 2. 开启 Performance Mode
 
 ```bash
-cd /root/hailong.he/MTK_G720_DLA/02_Generative/LLM/phi-3-mini-4k-instruct
 bash scripts/set_performance.sh
 ```
 

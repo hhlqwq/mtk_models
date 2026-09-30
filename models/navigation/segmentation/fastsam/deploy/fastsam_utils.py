@@ -1,7 +1,5 @@
 """FastSAM-s 的固定输入预处理、原始头解码与掩码后处理."""
 
-import hashlib
-from pathlib import Path
 
 import cv2
 import numpy as np
@@ -16,15 +14,6 @@ OUTPUT_SHAPES = [
     [1, channels, 640 // stride, 640 // stride]
     for stride in (8, 16, 32) for channels in (64, 1, 32)
 ] + [[1, 32, 160, 160]]
-
-
-def sha256_file(path):
-    """分块计算资源指纹."""
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def preprocess(image):

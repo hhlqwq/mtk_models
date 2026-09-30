@@ -6,7 +6,6 @@
 - 固定提交：`4f70adbaacf5685bd9ec5bea85f1f91057f6fc0b`.
 - 上游许可证：GPL-3.0,许可证原文保存在 `LICENSE`.
 - 部署资产：MediaTek IoT AI Hub Model Zoo 的 `yoloworld_xl.onnx`.
-- 官方 ONNX SHA-256：`6d5b231425200f0426b73967c33a69ce5af83e993426d4fc64dc1709571d6174`.
 
 MediaTek 文件没有提供上游 checkpoint 名称、导出配置或内置文本清单.根据固定输入、六个
 输出形状和 80 个类别通道,可确认它是重参数化的 80 类三尺度检测图；结合 YOLO-World

@@ -8,8 +8,6 @@
 - 官方配置：`configs/wholebody_2d_keypoint/rtmpose/coco-wholebody/rtmpose-m_8xb64-270e_coco-wholebody-256x192.py`.
 - 官方权重：<https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192-cd5e845c_20230123.pth>
 - 文件大小：72,010,049 bytes.
-- SHA-256：`3da02694cd6479d3b333ff42ebd0723f96bfa06adac1db1e2e815ed2e9e1b02d`.
-- MD5：`f9e98931f38c2ef2acff811f479197a2`,与官方服务器 `ETag` 一致.
 - 许可证：MMPose Apache-2.0；正式发布时仍需保留权重附带的第三方声明.
 
 `deploy/export_onnx.py` 从本地官方 `.pth` 自行导出双 SimCC 输出 ONNX.原始框架、
@@ -36,12 +34,12 @@ SimCC 解码配置.
 
 ## 正式 Genio 720 交付结果
 
-| 产物 | 大小 (bytes) | SHA-256 |
-| --- | ---: | --- |
-| `model_fp32.onnx` | 71,832,505 | `0b4a8d276efc93b95da46b3f05c30a253ce19b83aa51e4b9c46d6f957d448684` |
-| `model_mtk_compatible.onnx` | 71,967,810 | `ff148b50ae3dd610bc5f4a5c22d547ad621e031cb66090c6ef2c29ed882873d3` |
-| `model_int8.tflite` | 18,741,240 | `28e96c3e0c18d127d9216d55a43fcf3300738553b52df0137910684e45e41c10` |
-| `model_int8.dla` | 19,144,561 | `a5851c2e9602a17f703dbcaa2a80fd01e13bd99c11d7b2437a1e286374ed1461` |
+| 产物 | 大小 (bytes) |
+| --- | ---: |
+| `model_fp32.onnx` | 71,832,505 |
+| `model_mtk_compatible.onnx` | 71,967,810 |
+| `model_int8.tflite` | 18,741,240 |
+| `model_int8.dla` | 19,144,561 |
 
 COCO-WholeBody 正式板端结果为 WholeBody AP/AR 0.5324/0.6413,平均 NPU 延迟
 3.8527 ms/框.同协议 PyTorch FP32、ONNX FP32 和 MTK NPU INT8 的 WholeBody AP

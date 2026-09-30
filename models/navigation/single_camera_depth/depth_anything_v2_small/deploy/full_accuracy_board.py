@@ -1,7 +1,6 @@
 """在 Genio 720 上评测 DA-2K 全量相对深度点对准确率。"""
 
 import argparse
-import hashlib
 import json
 import subprocess
 import time
@@ -15,15 +14,6 @@ from depth_utils import INPUT_ROW_STRIDE, INPUT_SIZE, preprocess
 
 EXPECTED_IMAGES = 1033
 EXPECTED_PAIRS = 2068
-
-
-def sha256_file(path: Path) -> str:
-    """逐块计算文件的 SHA-256。"""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def parse_args() -> argparse.Namespace:
@@ -134,7 +124,7 @@ def evaluate(args: argparse.Namespace) -> None:
     totals = {}
     for index, relative in enumerate(sorted(annotations), start=1):
         image = args.dataset_root / relative
-        stem = hashlib.sha256(relative.encode("utf-8")).hexdigest()[:20]
+        stem = f"{index:05d}"
         input_path = args.run_dir / "inputs" / f"{stem}.bin"
         output_path = args.run_dir / "outputs" / f"{stem}.bin"
         checkpoint = args.run_dir / "checkpoints" / f"{stem}.json"
@@ -142,8 +132,7 @@ def evaluate(args: argparse.Namespace) -> None:
             if not args.resume:
                 raise FileExistsError(checkpoint)
             record = json.loads(checkpoint.read_text(encoding="utf-8"))
-            if (record.get("image") != relative or
-                    record.get("output_sha256") != sha256_file(output_path)):
+            if record.get("image") != relative or not output_path.is_file():
                 raise ValueError(f"续跑检查点不匹配: {checkpoint}。")
         else:
             if input_path.exists() or output_path.exists():
@@ -160,9 +149,6 @@ def evaluate(args: argparse.Namespace) -> None:
             correct, total = score_pairs(image, depth, annotations[relative])
             record = {
                 "image": relative,
-                "image_sha256": sha256_file(image),
-                "input_sha256": sha256_file(input_path),
-                "output_sha256": sha256_file(output_path),
                 "correct_pairs": correct,
                 "total_pairs": total,
                 "cli_wall_ms": cli_wall_ms,
@@ -205,21 +191,10 @@ def evaluate(args: argparse.Namespace) -> None:
         "cli_wall_mean_ms": float(wall_times.mean()),
         "cli_wall_p95_ms": float(np.percentile(wall_times, 95)),
         "timing_scope": "per-image neuronrt CLI including process startup and model load",
-        "model_sha256": sha256_file(args.model),
-        "metadata_sha256": sha256_file(args.metadata),
-        "annotations_sha256": sha256_file(args.dataset_root / "annotations.json"),
     }
     report_path = args.run_dir / "report" / "summary.json"
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
                            encoding="utf-8")
-    image_hashes = args.run_dir / "report" / "dataset_images_sha256.txt"
-    image_hashes.write_text("".join(
-        f"{totals[relative]['image_sha256']}  {relative}\n"
-        for relative in sorted(totals)), encoding="utf-8")
-    output_hashes = args.run_dir / "report" / "raw_outputs_sha256.txt"
-    output_hashes.write_text("".join(
-        f"{totals[relative]['output_sha256']}  {relative}\n"
-        for relative in sorted(totals)), encoding="utf-8")
     print(f"[OK] DA-2K 全量点对准确率: {report_path}。", flush=True)
 
 

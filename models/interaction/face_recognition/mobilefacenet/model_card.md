@@ -8,7 +8,6 @@
 | 固定提交 | `a687c71bea830e70d05fb3b38ddc7c68e1687e94` |
 | 权重下载 | https://github.com/foamliu/MobileFaceNet/releases/download/v1.0/mobilefacenet.pt |
 | 权重大小 | 4,135,271 字节 |
-| 权重 SHA-256 | `90a00ba1d8b0b688af3deb731ed53dca582e6106805d1bc3cfdef55f570493f4` |
 | 源码许可 | Apache-2.0，见 `LICENSE` |
 | 输入 | 对齐人脸，RGB、112×112、NCHW FP32、ImageNet 均值及标准差归一化 |
 | 输出 | 128 维特征向量；后续 L2 归一化及余弦相似度由应用实现 |

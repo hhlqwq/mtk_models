@@ -1,0 +1,21 @@
+{
+  "images": [
+    {
+      "image": "000000000001.jpg",
+      "detection_count": 10
+    },
+    {
+      "image": "000000000002.jpg",
+      "detection_count": 13
+    },
+    {
+      "image": "000000000003.jpg",
+      "detection_count": 4
+    }
+  ],
+  "max_score_delta": 0.0053427815437316895,
+  "max_bbox_delta_px": 0.1551513671875,
+  "max_score_delta_limit": 0.01,
+  "max_bbox_delta_px_limit": 0.5,
+  "passed": true
+}

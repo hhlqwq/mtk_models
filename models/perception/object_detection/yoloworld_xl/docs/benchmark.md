@@ -1,52 +1,5 @@
-# 性能报告
+# 性能
 
-## 官方参考
+历史板端运行 `20260928_yoloworld_coco_full_v3` 处理 5,000 张图片，常驻 ONNX Runtime 会话的 `session.Run` 平均耗时 **3864.08 ms/张**。[原始报告](../results/full_accuracy/20260928_yoloworld_coco_full_v3/summary.json)。
 
-MediaTek IoT AI Hub Model Zoo 记录的输入为 `3×640×640`、Float32：
-
-| 平台 | 执行后端 | 官方纯模型延迟 |
-| --- | --- | ---: |
-| Genio 720 | Neuron EP | 403.15 ms |
-| Genio 720 | CPU EP | 11214.33 ms |
-
-官方数据由 `onnxruntime_perf_test` 测量,不能作为本项目实测结果.
-
-## COCO val2017 全量耗时
-
-运行编号 `20260928_yoloworld_coco_full_v3`，同一常驻 ORT 会话处理 5,000 张图片，`session.Run` 平均 `3864.081546464 ms/张`，P95 `5730.3923515 ms/张`。[完整报告](../results/full_accuracy/20260928_yoloworld_coco_full_v3/summary.json)。三次预热 profiling 记录到 30 个 Neuron EP 节点事件和 576 个 CPU 节点事件；因此这是混合会话的模型运行耗时，不是纯 NPU 耗时。逐图输入预处理与后处理不计入 `session.Run`。
-
-## 早期三图实测
-
-2026-09-16 在 Genio 720 上使用官方 v26.0 rootfs 提取的 Neuron `8.2.16` adapter/runtime
-隔离运行.最终采用完整 opset 13 模型和 `NEURON_FLAG_MIN_GROUP_SIZE=100`,保留 CPU
-fallback 以保证检测正确性.本轮为三张公开图片的小样本验证：Neuron 每张图预热 1 次后
-重复 3 次,共 9 次；CPU 每张图运行 1 次,共 3 次.
-
-| 项目 | CPU EP | 混合 Neuron EP |
-| --- | ---: | ---: |
-| mean | `8334.186 ms` | `3720.758 ms` |
-| min | `8319.619 ms` | `3699.040 ms` |
-| max | `8350.524 ms` | `3743.153 ms` |
-| P50 | `8332.416 ms` | `3719.365 ms` |
-| P90 | `8346.902 ms` | `3735.285 ms` |
-| P95 | `8348.713 ms` | `3738.382 ms` |
-| 峰值 RSS | `830908 KiB` | `1126744 KiB` |
-
-混合路径相对本轮 CPU mean 加速 `2.2399×`.30 次正式推理 profiling 记录 330 个 Neuron
-节点事件和 6336 个 CPU 节点事件,因此该结果不能表述为全模型 NPU.完整结构化证据见
-`board_validation_20260916.json`.
-
-当 `MIN_GROUP_SIZE=0` 时,完整 opset 13 模型可达到 `401.500 ms` mean,与官网 `403.15 ms`
-接近,但三张图片都触及 300 个检测上限且高分结果饱和到 `1.0`,未通过正确性门禁,不得作为
-有效性能结果发布。全量运行已经使用正确性通过的配置；固定性能模式和多轮重复分布仍待补充。
-
-## 运行时诊断
-
-板端原 `/usr/lib` 中的同名 Neuron `8.2.16` 库会让 YOLO-World 和系统自带
-`squeezenet_quant.onnx` 同样在建图阶段失败.换用官方 v26.0 rootfs 内的隔离库后,
-SqueezeNet 单次 NPU 推理为 `12.62 ms`,YOLO-World 也成功执行.因此此前
-`unregistered target: NEON` 是板端运行库混装/构建差异,不是 YOLO-World 专属算子问题.
-
-日志仍会打印缺少 `libnir_neon_driver.so` 及若干 `unregistered target: NEON` 警告,但官方
-adapter 能将可执行子图分配到 MDLA 并完成会话；不能仅凭这些警告判定 NPU 失败,应以进程
-退出码、非空结果和 ORT profiling 的 Neuron 节点为准.
+该会话同时执行 Neuron EP 与 CPU 节点，计时不包含逐图预处理和后处理，不能作为纯 NPU 耗时。当前单脚本流程尚未重新实测。

@@ -7,7 +7,7 @@ from pathlib import Path
 import mtk_converter
 import numpy as np
 
-from depth_utils import INPUT_SIZE, preprocess, sha256_file
+from depth_utils import INPUT_SIZE, preprocess
 
 
 def tensor_metadata(detail: dict) -> dict:
@@ -36,7 +36,7 @@ def convert_model(onnx: Path, image_dir: Path, output: Path,
                    if path.suffix.lower() in {".jpg", ".jpeg", ".png"})[:samples]
     if samples <= 0 or len(paths) != samples:
         raise ValueError(f"校准图片不足 {samples} 张: {image_dir}")
-    calibration = [{"path": str(path), "sha256": sha256_file(path)}
+    calibration = [{"path": str(path)}
                    for path in paths]
 
     def calibration_data():
@@ -66,15 +66,12 @@ def convert_model(onnx: Path, image_dir: Path, output: Path,
         raise ValueError(f"输出元素数异常: {output_meta}")
     metadata = {
         "input": input_meta, "output": output_meta,
-        "onnx_sha256": sha256_file(onnx),
-        "tflite_sha256": sha256_file(output),
         "calibration": calibration,
         "converter": mtk_converter.__version__,
     }
     output.with_suffix(".json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[OK] TFLite: {output}; SHA-256: {metadata['tflite_sha256']}",
-          flush=True)
+    print(f"[OK] TFLite: {output}", flush=True)
 
 
 def main() -> None:

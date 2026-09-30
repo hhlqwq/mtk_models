@@ -24,20 +24,10 @@
   "end_to_end_mean_ms": 143.001252955,
   "timing_scope": "C++ per-image model reload; NPU time reported separately",
   "backend": "cpp_neuron_runtime_hw_int8_dla",
-  "annotations_sha256": "e8c7f7908f1d7278341fae127d0da654f102f11bd7b21d8aeefa635b8c810b6f",
-  "evaluation_image_hashes_sha256": "1bc0eca834162aace33aac3b67e9e5dc47a12aadc7f5e92108b4134161358f48",
-  "protocol_sha256": "aa26ebd18337069cecad9251dc2688f1d8d4ea8661321815aba6d9c723a396d0",
-  "predictions_sha256": "856eabc695a2befeb5eb5a9371a9c24b85623b0aebc558becb9e221e1e9f055d",
-  "onnx_sha256": "1f5757f92c71874330f74d4dfd722ac6b93d27590ce94ec6231558d274f4143d",
-  "tflite_sha256": "7e2f417bee8df5df1ff875a11fd21892df9c6a8603f92d8228edba1d74cf9577",
-  "dla_sha256": "6aa12c1c68d0eb13ee7669c83c36e838581a1a4ab917e2f73f37378edc13b7e5",
-  "cpp_binary_sha256": "f478f45c2f12794e44b20e9955c01aa7380fd2898df7afdda610efdde83656ea",
   "calibration": {
     "source": "ILSVRC2012_val",
     "images": 100,
-    "distinct_image_hashes": 100,
     "overlap_with_coco_val2017_images": 0,
-    "converter_version": "8.16.0",
-    "metadata_sha256": "722f5db18e5bd9f9b1b7d4090a89b2c36a047aef0e0511a3014b9b4a14c22bd7"
+    "converter_version": "8.16.0"
   }
 }

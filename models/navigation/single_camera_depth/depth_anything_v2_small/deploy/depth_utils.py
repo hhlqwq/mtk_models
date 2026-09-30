@@ -1,6 +1,5 @@
-"""Depth Anything V2 Small 冒烟用的固定输入与文件校验工具。"""
+"""Depth Anything V2 Small 的固定输入预处理工具。"""
 
-import hashlib
 from pathlib import Path
 
 import cv2
@@ -11,15 +10,6 @@ INPUT_SIZE = 518
 INPUT_ROW_STRIDE = ((INPUT_SIZE + 15) // 16) * 16
 MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-
-
-def sha256_file(path: Path) -> str:
-    """逐块计算文件的 SHA-256。"""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def preprocess(path: Path) -> np.ndarray:

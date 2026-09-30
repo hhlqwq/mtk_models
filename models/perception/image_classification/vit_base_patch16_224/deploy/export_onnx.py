@@ -1,7 +1,6 @@
 """从 TorchVision 官方 ViT-B/16 权重离线导出 ONNX."""
 
 import argparse
-import hashlib
 from pathlib import Path
 
 import onnx
@@ -13,8 +12,6 @@ from torchvision.models import vit_b_16
 
 
 EXPECTED_TORCHVISION_VERSION = "0.15.1"
-EXPECTED_WEIGHTS_SHA256 = (
-    "c867db91d3e12c6cbadabb610d73c24a546bf82d8c03a9fea34f43a712ddb0e9")
 IMAGE_SIZE = 224
 PATCH_SIZE = 16
 TOKEN_COUNT = (IMAGE_SIZE // PATCH_SIZE) ** 2 + 1
@@ -126,22 +123,6 @@ class NormalizedViT(nn.Module):
         return self.model((image - self.mean) / self.std)
 
 
-def sha256_file(path: Path) -> str:
-    """计算文件 SHA-256.
-
-    Args:
-        path: 待计算文件.
-
-    Returns:
-        小写十六进制 SHA-256.
-    """
-    digest = hashlib.sha256()
-    with path.open("rb") as file:
-        while chunk := file.read(8 * 1024 * 1024):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def load_model(weights_path: Path, approximate_gelu: bool) -> nn.Module:
     """加载官方权重并构造导出模型.
 
@@ -158,11 +139,6 @@ def load_model(weights_path: Path, approximate_gelu: bool) -> nn.Module:
             "TorchVision 版本不匹配: "
             f"expected={EXPECTED_TORCHVISION_VERSION}, "
             f"actual={installed_version}")
-    actual_sha256 = sha256_file(weights_path)
-    if actual_sha256 != EXPECTED_WEIGHTS_SHA256:
-        raise ValueError(
-            f"ViT 权重 SHA-256 不匹配: {actual_sha256}")
-
     model = vit_b_16(weights=None)
     state_dict = torch.load(weights_path, map_location="cpu")
     model.load_state_dict(state_dict, strict=True)

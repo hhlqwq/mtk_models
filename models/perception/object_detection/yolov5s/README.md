@@ -1,34 +1,53 @@
 # YOLOv5s · Genio 720
 
-COCO 80 类目标检测，输入为 `1×3×640×640` RGB。模型来自 Ultralytics YOLOv5s v7.0；Qualcomm 页面仅作交付形式参考。Genio 720 已有板端交付证据，Genio 5100 尚未验证。来源、许可证和产物哈希见 [模型卡](model_card.md)，历史精度与性能见 [accuracy.md](docs/accuracy.md) 和 [benchmark.md](docs/benchmark.md)。
+COCO 80 类目标检测。模型来源和许可证见[模型卡](model_card.md)。
 
-## 准备
+## 第一步：编译并上传
 
-先把官方 [yolov5s.pt](https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5s.pt) 手动放到 `models/yolov5s.pt`。YOLOv5 源码包与 MTK 补丁包也放在 `models/`，固定下载地址见 [source_url.txt](models/source_url.txt)。转换脚本只展开本地压缩包并应用补丁，不联网下载；Python 依赖由 89 的 Docker 环境管理。校准图片须在 89 的 `/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images`。
+在 [run.sh](deploy/run.sh) 顶部填写路径。通常只需确认 `MODEL_WEIGHTS`、填写 `CALIBRATION_DIR` 和 `BOARD_DEPLOY_DIR`，并按需调整 `MODEL_OUTPUT_DIR`、`OUTPUT_DLA`。全量测试再填写 `BOARD_DATASET_DIR`。其余配置仅在 Docker、SDK 或交叉编译环境变化时修改。资源地址见 [source_url.txt](models/source_url.txt)。模型、校准集及产物路径必须同时对编译主机和 Docker 容器可见。
 
-在 **89 宿主机**运行以下单条命令。它会直接在 `hhl_g720_8011` 容器内执行准备流程，无需进入交互式 Shell：
-
-```bash
-docker exec hhl_g720_8011 bash -c 'cd /data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s && bash deploy/prepare.sh'
-```
-
-该入口依次完成本地源码准备、ONNX 与 INT8 TFLite 转换、`mdla5.3` DLA 编译。所用 `--suppress-output --disallow-bridge` 避开板端不支持的 EDPA 桥接。已有正确 DLA 时，无需为重跑测试再次转换。
-
-## 板端测试
-
-仍在 **89 宿主机**的同一仓库目录执行。两种测试共用一个入口：
+在**编译主机的仓库根目录**运行：
 
 ```bash
-cd /data/users/hailong.he/github/mtk_models/models/perception/object_detection/yolov5s
-bash deploy/test_board.sh smoke
-EVAL_RUN_ID="$(date +%Y%m%d_%H%M%S)_yolov5s" bash deploy/test_board.sh full
+bash models/perception/object_detection/yolov5s/deploy/run.sh
 ```
 
-| 模式 | 用途 | 前提与结果 |
-| --- | --- | --- |
-| `smoke` | `examples/input/` 中三张图片的 C++ 板端推理 | 结果在 `examples/output/`；只证明当前板端链路可运行。 |
-| `full` | 5000 张 COCO val2017 的 C++ 板端推理、bbox AP 与耗时 | 92 须有 `/root/hailong.he/datasets/coco/val2017/images`、`annotations/instances_val2017.json` 和 `pycocotools`；使用每次唯一的 `EVAL_RUN_ID`，报告留在 `/root/hailong.he/open_models/yolov5s/eval/<run_id>/report/`。 |
+脚本在 Docker 中生成 DLA，在编译主机交叉编译板端 C++ 程序，然后上传 DLA、程序、本脚本及三张示例图。脚本不下载模型或数据。
 
-默认模式为 `smoke`。两种模式都需要 `models/model_int8.dla`，并在 89 交叉编译板端 C++ 程序；`smoke` 还需要 `hhl_g720_8011` 容器来绘制检测框。脚本默认连接 `root@192.168.0.92`。若 SSH 提示主机密钥变化，应先通过可信渠道核对板端新指纹，再更新执行脚本用户的 `~/.ssh/known_hosts`；不要关闭主机密钥校验。
+## 第二步：开发板测试
 
-`full` 不自动回传、提交或清理报告。确认报告已备份并上传后，按 [全量复测工作流](../../../../docs/full_accuracy_board_workflow.md) 单独执行 `cleanup_full_accuracy.sh`。脚本与 Python/C++ 代码的目录说明见 [deploy/README.md](deploy/README.md)；历史三后端对照入口归档在 `archive/legacy_deploy/`。
+使用脚本中配置的 `BOARD_HOST` 登录开发板，并执行第一步打印的 `[NEXT]` 命令。
+
+默认测试三张示例图；在板端命令末尾加 `full` 执行 COCO 全量测试。结果写入 `BOARD_RESULTS_DIR`，默认位于 `BOARD_DEPLOY_DIR/results`。全量测试要求 `BOARD_DATASET_DIR/images/` 中有 5000 张 COCO val2017 图片、`BOARD_DATASET_DIR/annotations/instances_val2017.json`，板端还需 `pycocotools`。若 SSH 提示主机密钥变化，先核对板端指纹，再更新编译主机上执行脚本用户的 `known_hosts`。
+
+## 历史精度
+
+2026-09-08 在 COCO val2017 全量 5000 张图片上完成评测。PyTorch、ONNX 和 NPU 使用同一 letterbox 640×640、YOLOv5 解码、逐类 NMS 和 COCOeval 协议，阈值为 conf 0.001、IoU 0.6、max_det 300。NPU 使用 MDLA 5.3 的原生 NCHW INT8 输出，行 stride 为 16，后处理负责反量化。该协议的 NMS IoU 与上游公布结果的 0.65 不同，因此下表适用于后端间对照。
+
+| 后端 | mAP@0.5:0.95 |
+| --- | ---: |
+| PyTorch FP32 | 0.3708 |
+| ONNX FP32 | 0.3709 |
+| MTK NPU INT8，编译主机后处理 | 0.3588 |
+| MTK NPU INT8，板端 C++ 前后处理 | **0.3586** |
+
+板端 C++ INT8 相对 ONNX 的 mAP@0.5:0.95 下降 0.0123，即 1.23 个百分点；相对编译主机后处理路径下降 0.0002。历史交付运行 ID 为 `20260908_cpp_delivery_v3`，板端处理 5000/5000 张图片，得到 718891 条检测结果，精确 AP@0.5:0.95 为 `0.35859860348732847`。当时的原始运行目录已不在当前工作树中；以上数值是历史记录，不代表本次改脚本后已经重测。
+
+## 历史性能
+
+2026-09-08 在 Genio 720 EVK、NeuroPilot SDK 8.0.11、ncc-tflite 8.2.31、neuronrt 8.2.16 上完成板端 C++ 测量。编译使用 `--arch=mdla5.3 --suppress-output --disallow-bridge`；板端预热 20 次，再统计 5000 张图片。稳态端到端包含 JPEG 读取、letterbox、RGB 转换、INT8 量化、NPU 推理、解码和 NMS，不含模型加载、最终 JSON 写入和 COCOeval。
+
+| 项目 | 历史结果 |
+| --- | ---: |
+| 纯 NPU，100 次连续推理 | 平均 9.957 ms，99.2 FPS |
+| C++ 预处理 | 平均 7.716 ms；P50/P90/P95 为 7.196/10.189/11.039 ms |
+| C++ NPU | 平均 9.629 ms；P50/P90/P95 为 9.629/9.687/9.696 ms |
+| C++ 后处理 | 平均 16.173 ms；P50/P90/P95 为 16.058/17.208/17.662 ms |
+| C++ 稳态端到端 | 平均 33.662 ms，约 29.71 FPS；P50/P90/P95 为 33.116/36.628/38.009 ms |
+| 进程峰值内存 | 33224 KiB，约 32.45 MiB |
+
+CPU 调频策略为 `schedutil`，`policy0` 范围 500 MHz–2.0 GHz，`policy6` 范围 550 MHz–2.6 GHz。历史板端 RTC 未同步，原系统快照显示 2025-08-01；评测日期以运行 ID 和编译主机发起日期为准。历史汇总保留在 `examples/output/timing_summary_current_run.json`。
+
+## 示例图片
+
+`examples/input/` 中的三张图片由项目维护者于 2026-09-11 使用 OpenAI 图像生成工具生成，不取自 COCO 或 ImageNet。项目维护者按 [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) 发布，仅用于板端展示，不参与正式精度评测。

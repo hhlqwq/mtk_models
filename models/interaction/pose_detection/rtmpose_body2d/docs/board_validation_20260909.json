@@ -16,14 +16,6 @@
       "--disallow-bridge"
     ]
   },
-  "sha256": {
-    "official_archive": "a08534f492d0064ba4a84cb801f6bfeefc3b4762320efe9576b25777bf32f052",
-    "model_fp32_onnx": "f2f68ac46c6b28d8c7a1b771e17023c6ad71568ccfef9a16903e7cca90c7768d",
-    "rtmpose_body2d_data": "bfe2b8c7705ea837a0ab9939cd695a04a958a9fe4cf925312ca456858bc922b3",
-    "model_mtk_compatible_onnx": "c1aa58f39c9142a54c1123395310cd71caab1fde4ac371a43c108ac119c87ba1",
-    "model_int8_tflite": "9c83be2cf4cde756ea94e454e586361a33782745259474d22d854b7f4fd6cb32",
-    "model_int8_dla": "0b440fb98f7a39ee8c25b7251beb96651c2f54c177bf3d6ef80e81525fcb99c1"
-  },
   "onnx_compatibility": {
     "source_ir": 10,
     "source_opset": 21,
@@ -86,8 +78,6 @@
     "preprocess_mean_ms": 2.774012,
     "npu_mean_ms": 3.849972,
     "postprocess_mean_ms": 1.052351,
-    "peak_rss_kb": 35756,
-    "predictions_sha256": "19e8a8d6003050797a6cb3039cf7e884e6d41bb82fdfa027cadbdf19be2ac0ea",
-    "metrics_sha256": "a56ba932ca0828be0ebb26ed7646e4c30c82101a8ffbe38d257a2c61c393b1c2"
+    "peak_rss_kb": 35756
   }
 }

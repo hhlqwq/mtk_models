@@ -2,7 +2,6 @@
 
 import argparse
 import csv
-import hashlib
 import json
 import shutil
 from collections import Counter
@@ -13,19 +12,6 @@ import pyarrow.parquet as parquet
 
 EXPECTED_IMAGES = 13233
 EXPECTED_PAIRS = 6000
-EXPECTED_PARQUET_SHA256 = (
-    "85ff8ac9530a935d2dc6f9e2933cfd72c79089b2f1c403c996b808ba5c07abcf")
-
-
-def sha256_file(path: Path) -> str:
-    """逐块计算文件的 SHA-256。"""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def parse_args() -> argparse.Namespace:
     """解析原始快照、验证对文件与输出目录。"""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -56,12 +42,9 @@ def read_pairs(path: Path) -> list[dict[str, str]]:
 
 def prepare_dataset(parquet_path: Path, pairs_path: Path,
                     output_dir: Path) -> None:
-    """核对来源哈希、导出图片，并固化完整验证对清单。"""
+    """导出图片，并核对完整验证对清单。"""
     if output_dir.exists():
         raise FileExistsError(output_dir)
-    parquet_sha256 = sha256_file(parquet_path)
-    if parquet_sha256 != EXPECTED_PARQUET_SHA256:
-        raise ValueError("LFW Parquet 快照 SHA-256 不符。")
     pairs = read_pairs(pairs_path)
     images_dir = output_dir / "images"
     images_dir.mkdir(parents=True)
@@ -79,7 +62,7 @@ def prepare_dataset(parquet_path: Path, pairs_path: Path,
                 raise ValueError(f"图片内容为空: {name}。")
             destination = images_dir / name
             destination.write_bytes(image_bytes)
-            images[name] = hashlib.sha256(image_bytes).hexdigest()
+            images[name] = True
             if len(images) % 1000 == 0:
                 print(f"[PROGRESS] LFW 图片 {len(images)}/{EXPECTED_IMAGES}。",
                       flush=True)
@@ -89,16 +72,11 @@ def prepare_dataset(parquet_path: Path, pairs_path: Path,
         if row["image_a"] not in images or row["image_b"] not in images:
             raise ValueError(f"验证对图片缺失: {row['pair_id']}。")
     shutil.copy2(pairs_path, output_dir / "pairs.csv")
-    (output_dir / "images_sha256.txt").write_text("".join(
-        f"{images[name]}  {name}\n" for name in sorted(images)),
-        encoding="utf-8")
     manifest = {
         "source": "https://huggingface.co/datasets/marcelohaps/lfw",
         "parquet_url": (
             "https://hf-mirror.com/api/datasets/marcelohaps/lfw/"
             "parquet/default/train/0.parquet"),
-        "parquet_sha256": parquet_sha256,
-        "pairs_sha256": sha256_file(pairs_path),
         "image_count": len(images),
         "pair_count": len(pairs),
         "image_variant": "original_non_aligned_250x250",

@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <numeric>
 #include <stdexcept>
 #include <string>
@@ -144,7 +145,7 @@ class BoardSession {
           "NEURON_FLAG_USE_FP16", "NEURON_FLAG_MIN_GROUP_SIZE",
           "NEURON_FLAG_OPTIMIZATION_STRING"};
       const std::array<const char*, 3> values = {
-          "1", "100", "--opt=3 --num-mdla=1 --reshape-to-4d "
+          "1", "0", "--opt=3 --num-mdla=1 --reshape-to-4d "
                       "--interval-coloring-converage=1.0"};
       CheckOrt(api_, api_->SessionOptionsAppendExecutionProvider(
                    options_, "Neuron", keys.data(),
@@ -398,6 +399,15 @@ int main(int argc, char** argv) {
     }
     // 仅预热阶段开启 profiling,避免 5000 张的事件文件耗尽板端空间.
     const fs::path profile = session.FinishProfiling();
+    std::ifstream profile_input(profile);
+    if (!profile_input) throw std::runtime_error("无法读取 ORT profiling 文件.");
+    const std::string profile_text(
+        (std::istreambuf_iterator<char>(profile_input)),
+        std::istreambuf_iterator<char>());
+    if (profile_text.find("NeuronExecutionProvider") == std::string::npos ||
+        profile_text.find("CPUExecutionProvider") != std::string::npos) {
+      throw std::runtime_error("模型未实现纯 Neuron 执行,已停止测试.");
+    }
     std::ofstream profile_path(options.output_dir / "profile_path.txt");
     profile_path << profile.string() << '\n';
     if (!profile_path) throw std::runtime_error("profiling 路径写入失败.");

@@ -1,2 +1,0 @@
-ffbb141f2bad8632eec3134e0ac9a80ac1dd1e765a284ccb87bf3cb890997e98  /root/hailong.he/open_models/fastsam/eval/20260928_fastsam_full_v1/coco_segm_predictions.json
-ea37cee007069bde6d45a67186cc6c2591d0c6d7effd3c481996b6b367e060b6  /root/hailong.he/open_models/fastsam/eval/20260928_fastsam_full_v1/processed_ids.txt

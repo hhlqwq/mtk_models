@@ -1,7 +1,6 @@
 """为板端推理生成量化人脸输入和张量元数据。"""
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 
@@ -12,15 +11,6 @@ from face_utils import load_aligned_face
 
 
 INPUT_PROTOCOL = "RGB_ImageNet_normalize_aligned_112x112"
-
-
-def sha256_file(path: Path) -> str:
-    """逐块计算当前 TFLite 文件的 SHA-256。"""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def tensor_metadata(detail: dict) -> dict:
@@ -56,7 +46,7 @@ def prepare_inputs(tflite: Path, image_dir: Path, output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     metadata = {"input": input_meta, "output": output_meta,
                 "input_protocol": INPUT_PROTOCOL,
-                "tflite_sha256": sha256_file(tflite), "samples": []}
+                "samples": []}
     for index, path in enumerate((images[0], images[1], images[0]), start=1):
         tensor = load_aligned_face(path)
         scale = input_meta["scale"]

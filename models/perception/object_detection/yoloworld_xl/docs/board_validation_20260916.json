@@ -11,12 +11,9 @@
     "onnxruntime": "1.20.2"
   },
   "model": {
-    "file": "model_fp32_opset13.onnx",
-    "sha256": "76aae089a9bec2d1b920de0814a6981d4016904a2750799d77099da947c60d88"
+    "file": "model_fp32_opset13.onnx"
   },
   "neuron_runtime": {
-    "adapter_sha256": "225f70c7fc5fb6fefa1ef8b662df7036ed36431b57252379ce0dd4b9e2210bcb",
-    "runtime_sha256": "38d74829a50d802eba0539d9c37273e7743e60d692b2af3fb6054805d08a85de",
     "min_group_size": 100
   },
   "cpu": {
@@ -54,7 +51,11 @@
     }
   },
   "parity": {
-    "detection_counts": [10, 13, 4],
+    "detection_counts": [
+      10,
+      13,
+      4
+    ],
     "same_class_order": true,
     "max_score_delta": 0.001625657081604,
     "max_score_delta_limit": 0.01,

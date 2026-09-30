@@ -16,7 +16,7 @@ NMS,直接在开发板生成 COCO 预测与耗时证据,不回传 5000 张原始
 
 ## 模型来源原则
 
-- `source` 只记录模型作者或官方开源项目发布的实现与权重,必须锁定版本、许可证和 SHA-256.
+- `source` 只记录模型作者或官方开源项目发布的实现与权重,并记录版本、下载地址和许可证.
 - `delivery_reference` 仅记录目录组织、文档和结果展示的参考页面,不得作为模型输入产物.
 - 禁止以 Qualcomm 预导出的 ONNX、QNN、DLC 或其他转换产物作为正式移植起点.
 - 历史 Qualcomm 衍生结果可以保留用于工程对照,但必须明确标记,不得计入当前交付状态.
@@ -34,8 +34,7 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 YOLO-World XL.该模型使用板端 ONNX Runtime + Neuron Execution Provider 在线推理,
 不经过离线 TFLite/DLA 编译,其状态和性能口径与三个先行离线模型分开维护.
 
-三个先行模型各提供三张 CC0-1.0 典型图片及其 Genio 720 板端结果,便于在不分发
-ImageNet 或 COCO 原图的情况下直接展示"已经完成测试".公开样例不替代正式数据集精度.
+部分模型提供公开样例及板端结果,便于展示推理输出.公开样例不替代正式数据集精度.
 
 ## 先行实现模型
 
@@ -50,10 +49,9 @@ ImageNet 或 COCO 原图的情况下直接展示"已经完成测试".公开样�
 | [YOLO-World XL](models/perception/object_detection/yoloworld_xl/README.md) | Perception / Object detection | 640×640 RGB | AILab-CVC / MediaTek Model Zoo ONNX | 混合 Neuron/CPU EP 已验证；纯 NPU 正确性未通过，暂停后续全量测试 |
 | [Whisper-Tiny](models/audio/stt/whisper_tiny/README.md) | Audio / STT | 16 kHz 单声道、最长 30 秒 | OpenAI Whisper v20250625 | 板端已验证；LibriSpeech test-clean 全量 WER 已完成 |
 
-公开示例结果见各模型 README；YOLOv5s 当前位于 `examples/output/`,其他模型可能使用 `examples/output/public/`.
+公开示例结果见各模型 README；如模型没有样例图片,以历史精度报告为准.
 
-各模型的正式数据集、板端与同协议参考精度、耗时口径分别记录在其 `docs/accuracy.md` 与
-`docs/benchmark.md`，机器可读报告保存在各自的 `results/full_accuracy/<run_id>/` 和
+各模型的正式数据集、板端与同协议参考精度、耗时口径见各自 README 或历史报告；机器可读报告保存在各自的 `results/full_accuracy/<run_id>/` 和
 `results/reference_accuracy/<run_id>/`。
 Whisper-Tiny 本轮正式精度仅评测 LibriSpeech `test-clean` 全部 2,620 条音频。
 
@@ -68,23 +66,22 @@ Whisper-Tiny 本轮正式精度仅评测 LibriSpeech `test-clean` 全部 2,620 �
 
 | 项目 | 配置 |
 | --- | --- |
-| Ubuntu 编译服务器 | `ssh ubuntu89`；宿主 Ubuntu 24.04.4 LTS |
-| 服务器工作目录 | `/data/users/hailong.he/github/mtk_models` |
+| 编译主机 | Ubuntu 24.04；连接地址由用户配置 |
+| 仓库目录 | 用户在编译主机上放置本仓库的位置 |
 | Docker 镜像 | `openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11`；镜像 ID `9ac9238a70ec` |
 | 当前 Docker 容器 | `hhl_g720_8011`；已完成 ViT 与 RTMPose 转换和板端验证 |
 | Python | 当前容器 3.11.11 |
 | NeuroPilot SDK | 8.0.11 |
 | MTK Converter | 8.16.0 |
 | Neuron Compiler | 8.2.31 |
-| Genio 720 EVK | `root@192.168.0.92`,无密码 |
-| 板端目录 | 开源模型 `/root/hailong.he/open_models/<model>/{models,demo,eval}`；共享数据 `/root/hailong.he/datasets`；MTK 官方 Model Zoo `/root/hailong.he/MTK_G720_DLA` |
+| Genio 720 EVK | 连接地址由用户在模型脚本中配置 |
+| 板端目录 | 模型、数据集和结果位置由用户在模型脚本中配置 |
 | 板端系统 | Rity Demo 26.0-release / Scarthgap / Linux 6.6.137 |
 | 板端 Neuron Runtime | 8.2.16 |
 | 板端 ONNX Runtime | 1.20.2；包含 Neuron、XNNPACK 和 CPU Execution Provider |
 | 板端 GAI 工具 | `/usr/sbin/llm_cmdline_tool`；工具存在已验证，LLM/VLM 模型推理待验证 |
 
-89 宿主机和 G720 Docker 容器内的项目目录均固定为
-`/data/users/hailong.he/github/mtk_models`,路径完全一致.
+编译主机和 Docker 容器必须能以相同绝对路径访问模型输入与输出目录。
 
 详细说明见 [环境文档](docs/environment.md)、[Genio 720 板端规范](docs/genio_720.md) 和
 [2026-09-07 官网与实际环境核对记录](docs/genio_720_environment_audit_20260907.md).
@@ -97,21 +94,19 @@ Genio 720 EVK.当前平台基线和刷写证据见
 
 ## 快速开始
 
-所有编译和转换必须在 89 Ubuntu 服务器执行：
+在编译主机准备 Docker 环境：
 
 ```bash
-ssh ubuntu89
-cd /data/users/hailong.he/github/mtk_models
 source env.sh
 bash ./docker/create_container.sh
 bash ./docker/enter_container.sh
 ```
 
 当前同名容器已绑定目标 Ubuntu 22.04 镜像.旧容器与旧镜像已在留存迁移证据后删除；
-迁移备份位于 89 的 `/data/users/hailong.he/data/MTKG720/migration_20260907/`.
+迁移备份属于历史环境记录，具体位置由环境管理员保存。
 
-模型权重和数据集等大文件必须由用户下载到本机工作区,再由用户同步或放置到 89 服务器；
-89 服务器和 92 开发板禁止直接下载模型、数据集或补丁.允许由 Codex 在本机工作区下载并
+模型权重和数据集等大文件由用户准备并放置到编译主机可访问的位置；
+编译主机和开发板不在运行脚本时自动下载模型、数据集或补丁。允许在本机工作区下载并
 纳入 Git 的小型源码包、补丁和配置文件.服务器上的模型准备脚本只允许执行离线校验、解压
 和转换,不允许包含 `curl`、`wget`、`git clone` 或 Hugging Face 在线下载.
 
@@ -141,7 +136,6 @@ mtk_models/
 models/scenario_name/category_name/model_name/
 ├── README.md
 ├── model_card.md
-├── model.yaml
 ├── LICENSE
 ├── original/
 │   └── source_url.txt
@@ -151,10 +145,7 @@ models/scenario_name/category_name/model_name/
 │   ├── model_int8.tflite
 │   └── model_int8.dla
 ├── deploy/
-│   ├── download_original.sh  # 仅离线校验和展开,不执行网络下载.
-│   ├── convert.sh
-│   ├── build.sh
-│   ├── deploy_board.sh
+│   ├── run.sh               # 编译主机与开发板共用的入口.
 │   └── inference_demo/
 ├── examples/
 │   ├── input/
@@ -164,19 +155,19 @@ models/scenario_name/category_name/model_name/
     └── benchmark.md
 ```
 
-YOLOv5s 使用简化目录：离线源码包、补丁包和 `source_url.txt` 位于 `models/`，`deploy/` 以 `prepare.sh` 和 `test_board.sh` 为公开入口；具体结构见其模型 README。
+每个模型使用一个脚本完成两步流程：在编译主机运行 `deploy/run.sh` 编译并上传，再在开发板运行上传的同一脚本；路径在脚本中配置。具体命令见各模型 README。
 
 仓库通过 `registry/models.yaml` 维护模型索引,避免扫描上百个目录才能了解交付状态.
 
 大模型文件、转换产物、输入数据和输出数据默认不进入普通 Git 历史.正式发布模型文件时应使用
-Git LFS 或 Release,并在 `model_card.md` 中记录 SHA-256.用户放置的官方开源权重、历史
-Qualcomm 对照资产、标签副本和校验清单由 `.gitignore` 排除并保留在各自工作环境中.
+Git LFS 或 Release。用户放置的官方开源权重、历史
+Qualcomm 对照资产和标签副本由 `.gitignore` 排除并保留在各自工作环境中.
 
 ## 验收原则
 
 每个模型必须同时满足以下条件才可标记为"完整交付"：
 
-1. 锁定官方开源项目、源码版本、权重版本、许可证、下载地址和 SHA-256.
+1. 记录官方开源项目、源码版本、权重版本、许可证和下载地址.
 2. 从开源上游权重运行原始框架推理并保存可复现命令.
 3. 自行导出 ONNX 或 TFLite,并与原始框架完成数值或任务指标对比.
 4. 通过 MTK Converter 和 Neuron Compiler 生成板端模型.

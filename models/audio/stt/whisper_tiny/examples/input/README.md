@@ -10,4 +10,3 @@
 - 下载地址：
   `https://raw.githubusercontent.com/openai/whisper/v20250625/tests/jfk.flac`.
 - 用途：双 DLA 英文端到端 Smoke Test 与 OpenAI FP32 Greedy Search 精确文本对比.
-- SHA-256：`63a4b1e4c1dc655ac70961ffbf518acd249df237e5a0152faae9a4a836949715`.

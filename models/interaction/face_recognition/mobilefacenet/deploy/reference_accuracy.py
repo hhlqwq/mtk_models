@@ -8,7 +8,7 @@ import numpy as np
 import onnxruntime as ort
 
 from face_utils import load_aligned_face
-from full_accuracy_board import evaluate_pairs, load_pairs, sha256_file
+from full_accuracy_board import evaluate_pairs, load_pairs
 
 
 def main() -> None:
@@ -45,8 +45,6 @@ def main() -> None:
         "dataset": "lfw_upstream_mtcnn_aligned_6000_pairs_10_folds",
         "input_protocol": "RGB_ImageNet_normalize_aligned_112x112",
         "unique_images": len(names),
-        "model_sha256": sha256_file(args.model),
-        "pairs_sha256": sha256_file(args.dataset_root / "pairs.csv"),
         **verification,
     }
     (args.output_dir / "summary.json").write_text(
