@@ -1,6 +1,6 @@
 # FastSAM-s
 
-类别无关实例分割，输入为 640×640 RGB 图像。来源见[模型卡](model_card.md)。
+类别无关实例分割，输入为 640×640 RGB 图像。来源见[模型卡](model_card.md),资源下载地址见 [source_url.txt](models/source_url.txt)。
 
 量化方式: INT8 训练后量化 (PTQ),采用逐输出通道权重量化.
 
