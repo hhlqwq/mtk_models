@@ -5,7 +5,7 @@ ARG PYTHON_SOURCE_URL=https://mirrors.aliyun.com/python-release/source/Python-3.
 ENV PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 # 在 Ubuntu 内编译 Python, 保持 SDK 的 cp311 ABI.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential ca-certificates curl git patch unzip openssh-client procps time \
+    build-essential ca-certificates curl git patch unzip openssh-client procps time ffmpeg \
     libgl1 libglib2.0-0 libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
     libsqlite3-dev libffi-dev liblzma-dev uuid-dev \
     && rm -rf /var/lib/apt/lists/*

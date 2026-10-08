@@ -256,6 +256,10 @@ def load_sources(dataset_root: Path) -> dict[str, dict]:
 
 def evaluate_whisper(args, deploy: Path) -> tuple:
     """用双 ONNX 和板端相同的固定 Cache、英文 Greedy 规则计算 WER."""
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        raise RuntimeError(
+            "Whisper ONNX 评测需要 ffmpeg,请在编译 Docker 中安装该依赖.")
     import whisper
     from whisper.tokenizer import get_tokenizer
     helper = load_module("whisper_metrics", deploy / "evaluate_accuracy.py")
@@ -276,7 +280,7 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
     tokenizer = get_tokenizer(multilingual=True, language="en", task="transcribe")
     predictions = {}
     for sample_id in tqdm.tqdm(sorted(sources), desc="ONNX WER", unit="audio"):
-        decoded = subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-i",
+        decoded = subprocess.run([ffmpeg, "-nostdin", "-v", "error", "-i",
             str(sources[sample_id]["audio"]), "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],
             check=True, stdout=subprocess.PIPE).stdout
         audio = np.frombuffer(decoded, dtype="<i2").astype(np.float32) / 32768.0

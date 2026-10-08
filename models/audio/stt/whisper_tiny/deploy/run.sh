@@ -72,7 +72,10 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     test -s "${SCRIPT_DIR}/models/mel_filters_f32.bin"
     test -s "${SCRIPT_DIR}/models/decode_config.txt"
     test ! -e "${RESULT_DIR}"
-    command -v ffmpeg
+    if ! command -v ffmpeg >/dev/null 2>&1; then
+        echo "[ERROR] 板端缺少音频解码依赖 ffmpeg,请先安装." >&2
+        exit 2
+    fi
     python3 -c 'from whisper.normalizers import EnglishTextNormalizer; from whisper.tokenizer import get_tokenizer'
 
     echo "[开发板 1/4] 在板端整理 2620 条音频并生成 Mel 输入."
@@ -127,6 +130,12 @@ readonly CONTAINER="${MTK_G720_CONTAINER}"
 readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}"
 readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE}"
 readonly CXX="${CROSS_CXX}"
+
+# 编译前检查音频依赖,避免完成模型转换后才在全量评测中报错.
+if ! docker exec "${CONTAINER}" sh -c 'command -v ffmpeg >/dev/null 2>&1'; then
+    echo "[ERROR] Docker 容器 ${CONTAINER} 缺少 ffmpeg,请先安装音频解码依赖." >&2
+    exit 2
+fi
 
 mkdir -p "${BUILD_WORK_DIR}/tmp"
 export TMPDIR="${BUILD_WORK_DIR}/tmp"
