@@ -1,12 +1,15 @@
 """使用固定图片集合为 Depth Anything V2 Small 执行 MTK INT8 转换。"""
 
 import argparse
+import sys
 import json
 from pathlib import Path
 
 import mtk_converter
 import numpy as np
 
+# 复用板端预处理,保持校准与推理输入一致.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from depth_utils import INPUT_SIZE, preprocess
 
 

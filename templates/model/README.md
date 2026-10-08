@@ -18,10 +18,18 @@ bash deploy/run.sh
 bash run.sh
 ```
 
+## 数据与精度评测
+
+填写本模型的数据目录格式、全量样本数、核心指标和 ONNX 评测依赖.来源记录放在 `models/source_url.txt`,量化方式在本 README 中说明.
+
 ## 当前测试结果
 
 待上传 `results/summary.json` 后更新.记录 ONNX 核心精度、板端核心精度、精度变化、NPU 平均耗时和峰值 RSS.
 
+## 板端部署结构
+
+部署目录统一保留 `run.sh`、`board_paths.conf`、`models/`、`board/` 和测试结果.全量测试成功后只保留 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.
+
 ## 文件结构
 
-`deploy/` 仅保留 `run.sh`,Python 和 C++ 源码分别放在 `deploy/python/` 和 `deploy/cpp/`.模型产物放在 `models/`,示例按需保存在 `examples/`.
+`deploy/` 仅保留 `run.sh`,编译主机工具放在 `deploy/host/`,板端程序源码和评测代码放在 `deploy/board/`.模型产物放在 `models/`,示例按需保存在 `examples/`.

@@ -10,7 +10,7 @@
 - 文件大小：72,010,049 bytes.
 - 许可证：MMPose Apache-2.0；正式发布时仍需保留权重附带的第三方声明.
 
-`deploy/python/export_onnx.py` 从本地官方 `.pth` 自行导出双 SimCC 输出 ONNX.原始框架、
+`deploy/host/export_onnx.py` 从本地官方 `.pth` 自行导出双 SimCC 输出 ONNX.原始框架、
 ONNX 和 MTK NPU 必须使用同一个官方开源权重完成同协议精度对比.
 
 ## 正式模型规格

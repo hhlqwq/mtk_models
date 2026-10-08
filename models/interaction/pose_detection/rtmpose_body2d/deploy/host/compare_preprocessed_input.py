@@ -7,7 +7,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from rtmpose_utils import preprocess_image
 
 INPUT_SHAPE = (1, 3, 256, 192)

@@ -1,6 +1,7 @@
 """通过 MTK ONNX Converter 离线校准 FastSAM-s 并记录张量契约."""
 
 import argparse
+import sys
 import json
 from pathlib import Path
 
@@ -9,6 +10,8 @@ import mtk_converter
 import numpy as np
 from tqdm import tqdm
 
+# 复用板端预处理,保持校准与推理输入一致.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from fastsam_utils import OUTPUT_NAMES, OUTPUT_SHAPES, preprocess
 
 

@@ -1,6 +1,7 @@
 """将 RTMPose Body2d FP32 ONNX 量化为 MTK INT8 TFLite."""
 
 import argparse
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -9,6 +10,8 @@ import mtk_converter
 import numpy as np
 from tqdm import tqdm
 
+# 复用板端预处理,保持校准与推理输入一致.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from rtmpose_utils import load_person_samples, preprocess_image
 
 

@@ -59,7 +59,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
     readonly RUN_DIR="${RESULT_DIR}/work"
     readonly ANNOTATIONS="${BOARD_DATASET_DIR}/annotations/instances_val2017.json"
-    test -s "${SCRIPT_DIR}/model_fp32_pure_npu.onnx"
+    test -s "${SCRIPT_DIR}/models/model_fp32_pure_npu.onnx"
     test -s "${ANNOTATIONS}"
     test "$(find "${BOARD_DATASET_DIR}/images" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 5000
     test -s "${ORT_RUNTIME_LIB}"
@@ -68,20 +68,20 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     mkdir -p "${RUN_DIR}/raw" "${RUN_DIR}/report"
 
     echo "[开发板 1/3] 在板端执行 5000 张 Neuron EP 推理."
-    "${SCRIPT_DIR}/yoloworld_board_eval" \
-        --model "${SCRIPT_DIR}/model_fp32_pure_npu.onnx" \
+    "${SCRIPT_DIR}/board/yoloworld_board_eval" \
+        --model "${SCRIPT_DIR}/models/model_fp32_pure_npu.onnx" \
         --images "${BOARD_DATASET_DIR}/images" \
         --output-dir "${RUN_DIR}/raw" \
         2>&1 | tee "${RUN_DIR}/board_eval.log"
     echo "[开发板 2/3] 计算 COCO bbox AP."
-    python3 "${SCRIPT_DIR}/evaluate_full_coco.py" \
+    python3 "${SCRIPT_DIR}/board/evaluate_full_coco.py" \
         --annotations "${ANNOTATIONS}" \
         --results "${RUN_DIR}/raw/results.jsonl" \
         --profile "$(cat "${RUN_DIR}/raw/profile_path.txt")" \
         --output-dir "${RUN_DIR}/report" --run-id "${RUN_ID}" \
         2>&1 | tee "${RUN_DIR}/cocoeval.log"
     # 所有原始数据仅在本次 work 下生成; 汇总成功后由工具清理.
-    python3 "${SCRIPT_DIR}/summarize_board_result.py" \
+    python3 "${SCRIPT_DIR}/board/summarize_board_result.py" \
         --model "yoloworld_xl" --work-dir "${RUN_DIR}" \
         --output "${RESULT_DIR}/summary.json" --run-id "${RUN_ID}" \
         --reference "${REFERENCE_ACCURACY:-}" \
@@ -119,7 +119,7 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
     exit 2
 fi
 
-echo "[编译主机 1/3] 在 Docker 中准备兼容 ONNX 并验证等价性."
+echo "[编译主机 1] 在 Docker 中准备兼容 ONNX 并验证等价性."
 docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 -e MODEL_ROOT="${MODEL_ROOT}" \
     -e SOURCE_ONNX="${SOURCE_ONNX}" \
     -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
@@ -130,14 +130,14 @@ export TMPDIR="${BUILD_WORK_DIR}/tmp"
 export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 cd "${BUILD_WORK_DIR}"
-python3 "${MODEL_ROOT}/deploy/python/prepare_onnx.py" \
+python3 "${MODEL_ROOT}/deploy/host/prepare_onnx.py" \
     --input "${SOURCE_ONNX}" \
     --output "${MODEL_OUTPUT_DIR}/model_fp32_opset13.onnx" \
     --raw-output "${MODEL_OUTPUT_DIR}/model_fp32_raw.onnx"
-python3 "${MODEL_ROOT}/deploy/python/prepare_pure_npu_onnx.py" \
+python3 "${MODEL_ROOT}/deploy/host/prepare_pure_npu_onnx.py" \
     --input "${MODEL_OUTPUT_DIR}/model_fp32_raw.onnx" \
     --output "${MODEL_OUTPUT_DIR}/model_fp32_pure_npu.onnx"
-python3 "${MODEL_ROOT}/deploy/python/verify_onnx_equivalence.py" \
+python3 "${MODEL_ROOT}/deploy/host/verify_onnx_equivalence.py" \
     --source "${SOURCE_ONNX}" \
     --converted "${MODEL_OUTPUT_DIR}/model_fp32_opset13.onnx" \
     --raw "${MODEL_OUTPUT_DIR}/model_fp32_raw.onnx" \
@@ -168,7 +168,7 @@ REFERENCE_SOURCE="本次 ONNX 浮点全量实测,使用与板端相同的评测�
 test -s "${MODEL_OUTPUT_DIR}/model_fp32_opset13.onnx"
 test -s "${MODEL_OUTPUT_DIR}/model_fp32_pure_npu.onnx"
 
-echo "[编译主机 2/3] 在编译主机交叉编译板端 C++ 测试程序."
+echo "[编译主机 2] 在编译主机交叉编译板端 C++ 测试程序."
 readonly OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
@@ -180,27 +180,29 @@ mkdir -p "$(dirname "${BINARY_OUTPUT}")"
     -I"${OPENCV_SOURCE}/modules/core/include" \
     -I"${OPENCV_SOURCE}/modules/imgproc/include" \
     -I"${OPENCV_SOURCE}/modules/imgcodecs/include" \
-    "${SCRIPT_DIR}/cpp/yoloworld_board_eval.cpp" \
+    "${SCRIPT_DIR}/board/yoloworld_board_eval.cpp" \
     "${TARGET_LIBS}/libopencv_imgcodecs.so.409" \
     "${TARGET_LIBS}/libopencv_imgproc.so.409" \
     "${TARGET_LIBS}/libopencv_core.so.409" \
     -Wl,--allow-shlib-undefined -pthread -ldl -o "${BINARY_OUTPUT}"
 file "${BINARY_OUTPUT}"
 
-echo "[编译主机 3/3] 上传模型、程序、评测代码和路径配置到板端."
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
-scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_fp32_pure_npu.onnx" \
-    "${SCRIPT_DIR}/python/evaluate_full_coco.py" \
-    "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
-scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/yoloworld_board_eval"
+echo "[编译主机 上传] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "chmod 755 '${BOARD_DEPLOY_DIR}/yoloworld_board_eval'"
+    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board'"
 scp "${SSH_OPTIONS[@]}" \
-    "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/summarize_board_result.py"
+    "${MODEL_OUTPUT_DIR}/model_fp32_pure_npu.onnx" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/"
+scp "${SSH_OPTIONS[@]}" \
+    "${SCRIPT_DIR}/board/evaluate_full_coco.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
+scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/yoloworld_board_eval"
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/yoloworld_board_eval'"
+scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\nORT_RUNTIME_LIB=%q\n' \
     "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" "${ORT_RUNTIME_LIB}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
-echo "[OK] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"
+echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

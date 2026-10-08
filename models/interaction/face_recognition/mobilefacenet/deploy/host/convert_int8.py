@@ -1,12 +1,15 @@
 """使用对齐人脸校准 MobileFaceNet 并生成 MTK INT8 TFLite。"""
 
 import argparse
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
 import mtk_converter
 import numpy as np
 
+# 复用板端预处理,保持校准与推理输入一致.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from face_utils import load_aligned_face
 
 

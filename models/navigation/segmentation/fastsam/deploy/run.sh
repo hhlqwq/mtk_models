@@ -62,8 +62,8 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     readonly RUN_DIR="${RESULT_DIR}/work"
     readonly RESUME="${EVAL_RESUME:-0}"
     readonly ANNOTATIONS="${BOARD_DATASET_DIR}/annotations/instances_val2017.json"
-    test -s "${SCRIPT_DIR}/model_int8.dla"
-    test -s "${SCRIPT_DIR}/runtime_config.csv"
+    test -s "${SCRIPT_DIR}/models/model_int8.dla"
+    test -s "${SCRIPT_DIR}/models/runtime_config.csv"
     test -s "${ANNOTATIONS}"
     test "$(find "${BOARD_DATASET_DIR}/images" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 5000
     python3 -c 'import cv2, numpy, pycocotools'
@@ -74,7 +74,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     fi
     read -r CONFIDENCE NMS_IOU MAX_DETECTIONS < <(
         python3 -c 'import json,sys; p=json.load(open(sys.argv[1])); print(p["confidence"],p["nms_iou"],p["max_detections"])' \
-            "${SCRIPT_DIR}/accuracy_protocol.json")
+            "${SCRIPT_DIR}/board/accuracy_protocol.json")
     mkdir -p "${RUN_DIR}/raw" "${RUN_DIR}/predictions_by_image" \
         "${RUN_DIR}/report"
 
@@ -91,13 +91,13 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         else
             image_dir="${RUN_DIR}/raw/${image_name}"
             test ! -e "${image_dir}"
-            "${SCRIPT_DIR}/fastsam_board" \
-                --model "${SCRIPT_DIR}/model_int8.dla" \
-                --config "${SCRIPT_DIR}/runtime_config.csv" \
+            "${SCRIPT_DIR}/board/fastsam_board" \
+                --model "${SCRIPT_DIR}/models/model_int8.dla" \
+                --config "${SCRIPT_DIR}/models/runtime_config.csv" \
                 --image "${image}" --output-dir "${image_dir}" \
                 --confidence "${CONFIDENCE}" --iou "${NMS_IOU}" \
                 --max-det "${MAX_DETECTIONS}"
-            python3 "${SCRIPT_DIR}/full_accuracy_board.py" \
+            python3 "${SCRIPT_DIR}/board/full_accuracy_board.py" \
                 --mode encode-one --image "${image}" \
                 --images "${BOARD_DATASET_DIR}/images" \
                 --annotations "${ANNOTATIONS}" \
@@ -115,13 +115,13 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     test "${count}" -eq 5000
 
     echo "[开发板 2/3] 在板端计算类别无关 COCO segm AP."
-    python3 "${SCRIPT_DIR}/full_accuracy_board.py" \
+    python3 "${SCRIPT_DIR}/board/full_accuracy_board.py" \
         --mode evaluate --images "${BOARD_DATASET_DIR}/images" \
         --annotations "${ANNOTATIONS}" --work-dir "${RUN_DIR}" \
         --run-id "${RUN_ID}" 2>&1 | tee "${RUN_DIR}/board_eval.log"
 
     # 所有原始数据仅在本次 work 下生成; 汇总成功后由工具清理.
-    python3 "${SCRIPT_DIR}/summarize_board_result.py" \
+    python3 "${SCRIPT_DIR}/board/summarize_board_result.py" \
         --model "fastsam" --work-dir "${RUN_DIR}" \
         --output "${RESULT_DIR}/summary.json" --run-id "${RUN_ID}" \
         --reference "${REFERENCE_ACCURACY:-}" \
@@ -164,7 +164,7 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
     exit 2
 fi
 
-echo "[编译主机 1/3] 在 Docker 中导出、量化并编译 DLA."
+echo "[编译主机 1] 在 Docker 中导出、量化并编译 DLA."
 docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 -e MODEL_ROOT="${MODEL_ROOT}" -e WEIGHTS="${WEIGHTS}" \
     -e SAMPLE_IMAGE="${SAMPLE_IMAGE}" \
     -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
@@ -176,11 +176,11 @@ export TMPDIR="${BUILD_WORK_DIR}/tmp"
 export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 cd "${BUILD_WORK_DIR}"
-python "${MODEL_ROOT}/deploy/python/export_model.py" --weights "${WEIGHTS}" \
+python "${MODEL_ROOT}/deploy/host/export_model.py" --weights "${WEIGHTS}" \
     --image "${SAMPLE_IMAGE}" \
     --output-dir "${BUILD_WORK_DIR}/export"
 cp "${BUILD_WORK_DIR}/export/model_fp32.onnx" "${MODEL_OUTPUT_DIR}/model_fp32.onnx"
-python "${MODEL_ROOT}/deploy/python/convert_int8.py" \
+python "${MODEL_ROOT}/deploy/host/convert_int8.py" \
     --onnx "${MODEL_OUTPUT_DIR}/model_fp32.onnx" \
     --calibration-dir "${CALIBRATION_DIR}" --samples 100 \
     --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
@@ -213,7 +213,7 @@ REFERENCE_ACCURACY="$(docker exec "${CONTAINER}" python -c \
 REFERENCE_SOURCE="本次 ONNX 浮点全量实测,使用与板端相同的评测协议"
 test -s "${MODEL_OUTPUT_DIR}/runtime_config.csv"
 
-echo "[编译主机 2/3] 在编译主机交叉编译板端 C++ 测试程序."
+echo "[编译主机 2] 在编译主机交叉编译板端 C++ 测试程序."
 readonly OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
@@ -224,7 +224,7 @@ command -v "${CXX}" >/dev/null 2>&1
     -I"${OPENCV_SOURCE}/modules/imgproc/include" \
     -I"${OPENCV_SOURCE}/modules/imgcodecs/include" \
     -I"${NEURON_INCLUDE}" \
-    "${SCRIPT_DIR}/cpp/fastsam_board.cpp" \
+    "${SCRIPT_DIR}/board/fastsam_board.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
     "${TARGET_LIBS}/libopencv_imgcodecs.so.409" \
     "${TARGET_LIBS}/libopencv_imgproc.so.409" \
@@ -233,21 +233,26 @@ command -v "${CXX}" >/dev/null 2>&1
     -o "${BUILD_WORK_DIR}/fastsam_board"
 file "${BUILD_WORK_DIR}/fastsam_board"
 
-echo "[编译主机 3/3] 上传模型、程序、评测代码和路径配置到板端."
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
-scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
-    "${MODEL_OUTPUT_DIR}/runtime_config.csv" \
-    "${BUILD_WORK_DIR}/fastsam_board" \
-    "${SCRIPT_DIR}/python/full_accuracy_board.py" \
-    "${SCRIPT_DIR}/python/accuracy_protocol.json" "${SCRIPT_DIR}/run.sh" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
+echo "[编译主机 上传] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "chmod 755 '${BOARD_DEPLOY_DIR}/fastsam_board'"
+    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board'"
 scp "${SSH_OPTIONS[@]}" \
-    "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/summarize_board_result.py"
+    "${MODEL_OUTPUT_DIR}/model_int8.dla" \
+    "${MODEL_OUTPUT_DIR}/runtime_config.csv" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/"
+scp "${SSH_OPTIONS[@]}" \
+    "${SCRIPT_DIR}/board/full_accuracy_board.py" \
+    "${SCRIPT_DIR}/board/accuracy_protocol.json" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
+scp "${SSH_OPTIONS[@]}" \
+    "${BUILD_WORK_DIR}/fastsam_board" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/fastsam_board"
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/fastsam_board'"
+scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\n' \
     "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
-echo "[OK] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"
+echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

@@ -49,6 +49,7 @@ fi
 # 板端阶段: 使用上传的配置执行测试并汇总核心指标.
 if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     source "${SCRIPT_DIR}/board_paths.conf"
+    # 模型与参数位于 models/,板端程序与评测代码位于 board/.
     echo "[TODO] 在开发板执行模型测试,成功后仅保留 summary.json."
     exit 2
 fi

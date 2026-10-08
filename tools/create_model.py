@@ -37,8 +37,8 @@ def create_model(
 
     print(f"[1/2] 创建模型目录: {target}")
     shutil.copytree(TEMPLATE_ROOT, target)
-    # 源码按语言存放,不增加说明占位文件.
-    for directory in ("deploy/python", "deploy/cpp"):
+    # 源码按运行位置存放,不增加说明占位文件.
+    for directory in ("deploy/host", "deploy/board"):
         (target / directory).mkdir(parents=True, exist_ok=True)
     print("[2/2] 替换模板变量.")
     for path in target.rglob("*"):

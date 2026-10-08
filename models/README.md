@@ -100,21 +100,33 @@ models/
 来源、许可证、图结构和 MTK 算子预检查并进入实现阶段后，使用 `tools/create_model.py`
 创建完整交付目录，再加入 `registry/models.yaml`。
 
+## 统一运行流程
+
+1. 在模型 `deploy/run.sh` 顶部按五组配置模型、数据、输出与环境.
+2. 在编译主机的本模型目录运行 `bash deploy/run.sh`: 转换或准备模型、评测 ONNX 精度、交叉编译 C++ 程序,然后上传.
+3. 登录开发板,执行第一步打印的 `[NEXT]` 命令.在部署目录运行 `bash run.sh` 完成测试.
+4. 上传最新 `summary.json`,更新本模型 README 的核心指标.量化方式只在 README 说明.
+
+板端统一使用 `models/` 保存模型和参数、`board/` 保存板端程序、评测代码及必要依赖.全量结果写入 `BOARD_RESULTS_DIR/<运行编号>/summary.json`,成功后只保留汇总,失败时保留现场.
+
+YOLOv5s 的三图演示与全量模式、Whisper 的双模型、YOLO-World 的在线编译以及各任务的数据与指标属于必要差异,详见对应模型 README.
+
+`TFLite/` 是官方模型合集与通用基准工具,采用已有的模型格式,不作为上述单模型移植目录.
 ## 单模型交付要求
 
-每个模型目录至少应包含下列内容；YOLOv5s 将来源记录和离线包放在 `models/`，无需单独的 `original/`：
+每个模型目录至少应包含下列内容；YOLOv5s 将来源记录和离线包放在 `models/`：
 
 ```text
 <model>/
 ├── README.md
 ├── model_card.md
 ├── LICENSE
-├── original/             # 或在 models/ 内保存来源记录与离线包.
 ├── models/
+│   └── source_url.txt
 ├── deploy/
 │   ├── run.sh
-│   ├── python/
-│   └── cpp/
+│   ├── host/
+│   └── board/
 ├── examples/
 └── results/summary.json
 ```

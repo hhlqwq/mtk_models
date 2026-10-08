@@ -62,25 +62,25 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
     readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
     readonly RUN_DIR="${RESULT_DIR}/work"
-    test -s "${SCRIPT_DIR}/model_int8.dla"
-    test -s "${SCRIPT_DIR}/metadata.json"
+    test -s "${SCRIPT_DIR}/models/model_int8.dla"
+    test -s "${SCRIPT_DIR}/models/metadata.json"
     test -s "${BOARD_DATASET_DIR}/pairs.csv"
     test -d "${BOARD_DATASET_DIR}/images"
     test ! -e "${RESULT_DIR}"
     echo "[开发板 1/2] 在板端执行 LFW 十折全量人脸验证."
-    python3 "${SCRIPT_DIR}/full_accuracy_board.py" \
+    python3 "${SCRIPT_DIR}/board/full_accuracy_board.py" \
         --dataset-root "${BOARD_DATASET_DIR}" \
-        --model "${SCRIPT_DIR}/model_int8.dla" \
-        --metadata "${SCRIPT_DIR}/metadata.json" \
+        --model "${SCRIPT_DIR}/models/model_int8.dla" \
+        --metadata "${SCRIPT_DIR}/models/metadata.json" \
         --run-dir "${RUN_DIR}" --run-id "${RUN_ID}"
     echo "[开发板 2/2] 使用交叉编译的 C++ 程序测量常驻模型推理耗时."
     inputs=("${RUN_DIR}/inputs/"*.bin)
     test -f "${inputs[0]}"
-    "${SCRIPT_DIR}/benchmark_board" --model "${SCRIPT_DIR}/model_int8.dla" \
+    "${SCRIPT_DIR}/board/benchmark_board" --model "${SCRIPT_DIR}/models/model_int8.dla" \
         --input "${inputs[0]}" --report "${RUN_DIR}/report/benchmark.json" \
         --warmup 10 --repeats 100
     # 所有原始数据仅在本次 work 下生成; 汇总成功后由工具清理.
-    python3 "${SCRIPT_DIR}/summarize_board_result.py" \
+    python3 "${SCRIPT_DIR}/board/summarize_board_result.py" \
         --model "mobilefacenet" --work-dir "${RUN_DIR}" \
         --output "${RESULT_DIR}/summary.json" --run-id "${RUN_ID}" \
         --reference "${REFERENCE_ACCURACY:-}" \
@@ -119,7 +119,7 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
     exit 2
 fi
 
-echo "[编译主机 1/3] 在 Docker 中导出、量化、编译并生成输入元数据."
+echo "[编译主机 1] 在 Docker 中导出、量化、编译并生成输入元数据."
 docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 \
     -e MODEL_ROOT="${MODEL_ROOT}" -e WEIGHTS="${WEIGHTS}" \
     -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
@@ -133,10 +133,10 @@ export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 cd "${BUILD_WORK_DIR}"
 bash "${MTK_SETUP_SCRIPT}"
-python "${MODEL_ROOT}/deploy/python/export_onnx.py" \
+python "${MODEL_ROOT}/deploy/host/export_onnx.py" \
     --weights "${WEIGHTS}" \
     --output "${MODEL_OUTPUT_DIR}/model_fp32.onnx"
-python "${MODEL_ROOT}/deploy/python/convert_int8.py" \
+python "${MODEL_ROOT}/deploy/host/convert_int8.py" \
     --onnx "${MODEL_OUTPUT_DIR}/model_fp32.onnx" \
     --image-dir "${CALIBRATION_DIR}" \
     --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
@@ -144,7 +144,7 @@ export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 "${NCC_ROOT}/bin/ncc-tflite" --arch=mdla5.3 \
     --suppress-output --disallow-bridge \
     "${MODEL_OUTPUT_DIR}/model_int8.tflite" -o "${MODEL_OUTPUT_DIR}/model_int8.dla"
-python "${MODEL_ROOT}/deploy/python/prepare_input.py" \
+python "${MODEL_ROOT}/deploy/host/prepare_input.py" \
     --tflite "${MODEL_OUTPUT_DIR}/model_int8.tflite" \
     --image-dir "${CALIBRATION_DIR}" \
     --output-dir "${BUILD_WORK_DIR}/board_input"
@@ -176,32 +176,36 @@ test -s "${MODEL_OUTPUT_DIR}/model_int8.dla"
 docker cp "${CONTAINER}:${BUILD_WORK_DIR}/board_input/metadata.json" "${BUILD_WORK_DIR}/metadata.json"
 test -s "${BUILD_WORK_DIR}/metadata.json"
 
-echo "[编译主机 2/3] 在编译主机交叉编译 C++ 板端性能程序."
+echo "[编译主机 2] 在编译主机交叉编译 C++ 板端性能程序."
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
 command -v "${CXX}" >/dev/null 2>&1
 test -f "${NEURON_INCLUDE}/neuron/api/RuntimeAPI.h"
 test -f "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8"
 mkdir -p "$(dirname "${BINARY_OUTPUT}")"
 "${CXX}" -std=c++17 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
-    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/cpp/benchmark_board.cpp" \
+    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/board/benchmark_board.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
     -Wl,--allow-shlib-undefined -pthread -ldl -o "${BINARY_OUTPUT}"
 file "${BINARY_OUTPUT}"
 
-echo "[编译主机 3/3] 上传模型、程序、评测代码和路径配置到板端."
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
-scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
-    "${BUILD_WORK_DIR}/metadata.json" \
-    "${SCRIPT_DIR}/python/full_accuracy_board.py" \
-    "${SCRIPT_DIR}/python/face_utils.py" "${SCRIPT_DIR}/run.sh" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
-scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/benchmark_board"
+echo "[编译主机 上传] 上传模型、程序、评测代码和路径配置到板端."
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board'"
 scp "${SSH_OPTIONS[@]}" \
-    "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/summarize_board_result.py"
+    "${MODEL_OUTPUT_DIR}/model_int8.dla" \
+    "${BUILD_WORK_DIR}/metadata.json" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/"
+scp "${SSH_OPTIONS[@]}" \
+    "${SCRIPT_DIR}/board/full_accuracy_board.py" \
+    "${SCRIPT_DIR}/board/face_utils.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
+scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/benchmark_board"
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/benchmark_board'"
+scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\n' \
     "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
-echo "[OK] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"
+echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

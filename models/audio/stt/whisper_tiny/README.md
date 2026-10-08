@@ -1,10 +1,8 @@
 # Whisper-Tiny
 
-完整测试成功后只保留一个 `summary.json`。预测、缓存与日志在汇总成功后删除,失败时保留本次 `work/`。ONNX 浮点精度由编译主机自动实测,上传到板端后计算精度变化。
-
-模型产物写入 `MODEL_OUTPUT_DIR`,板端测试结果写入 `BOARD_RESULTS_DIR`。脚本不在代码目录生成 Python 字节码缓存。
-
 多语言语音识别。输入为 16 kHz 单声道音频，板端运行 Encoder 和 Decoder 两个 DLA。模型来源见[模型卡](model_card.md)。
+
+量化方式: 未进行整数定点量化,采用浮点模型部署.
 
 ## 第一步: 编译并上传
 
@@ -30,13 +28,11 @@ bash deploy/run.sh
 bash run.sh
 ```
 
-### 精度评测
+## 数据与精度评测
 
 在脚本顶部填写 `ONNX_DATASET_DIR`,必须与板端数据采用同一份样本、标注及评测协议。编译主机在 Docker 中自动评测 ONNX,只记录任务核心精度,不记录主机耗时或内存。
 
 数据目录要求: LibriSpeech test-clean: 保留官方目录下的 FLAC 音频和 *.trans.txt,2620 条音频.
-
-量化方式: 未进行整数定点量化,采用浮点模型部署.
 
 精度变化以百分点表示,正数为改善,负数为下降.
 
@@ -48,11 +44,25 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm、ffmpeg 和 OpenAI Whisper�
 
 主指标 WER 越低越好,差值为板端 WER 减参考 WER; 参考后端须如实记录。
 
+## 板端部署结构
+
+第一步上传到 `BOARD_DEPLOY_DIR` 后的布局统一为:
+
+```text
+部署目录/
+├── run.sh
+├── board_paths.conf
+├── models/              # 模型与推理所需参数.
+├── board/               # 板端程序、评测代码及必要依赖.
+└── results/             # 测试结果.
+```
+
+全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后只保留汇总文件,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
 ## 文件结构
 
 - `deploy/run.sh`: 编译上传和板端测试的唯一 Shell 入口.
-- `deploy/python/`: 模型导出、转换、评测与辅助代码.
-- `deploy/cpp/`: 板端 C++ 源码.
+- `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
+- `deploy/board/`: 板端程序源码、预处理和评测代码.
 - `models/`: 模型产物与来源说明.
 - `examples/`: 示例输入与输出,按需保留.
 - `results/summary.json`: 上传后的最新测试汇总.

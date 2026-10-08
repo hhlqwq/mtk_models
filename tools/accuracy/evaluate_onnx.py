@@ -259,7 +259,7 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
     import whisper
     from whisper.tokenizer import get_tokenizer
     helper = load_module("whisper_metrics", deploy / "evaluate_accuracy.py")
-    assets = load_module("whisper_assets", deploy / "export_board_assets.py")
+    assets = load_module("whisper_assets", deploy.parent / "host" / "export_board_assets.py")
     sources = load_sources(args.dataset_root)
     assets.export_assets(args.work_dir)
     config = dict(line.split("=", 1) for line in
@@ -337,7 +337,7 @@ def main() -> None:
     args = parser.parse_args()
     if args.model == "whisper_tiny" and args.decoder_onnx is None:
         parser.error("Whisper 精度评测需要 --decoder-onnx.")
-    deploy = ROOT / "models" / MODELS[args.model] / "deploy" / "python"
+    deploy = ROOT / "models" / MODELS[args.model] / "deploy" / "board"
     sys.path.insert(0, str(deploy))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     # 临时目录由工具创建,成功后仅清理此目录; 失败保留现场.

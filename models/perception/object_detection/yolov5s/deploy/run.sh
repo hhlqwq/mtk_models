@@ -74,9 +74,10 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     readonly DEPLOY_DIR="${SCRIPT_DIR}"
     source "${DEPLOY_DIR}/board_paths.conf"
     readonly MODEL="${DEPLOY_DIR}/models/model_int8.dla"
-    readonly BINARY="${DEPLOY_DIR}/bin/yolov5s_board_eval"
+    readonly BINARY="${DEPLOY_DIR}/board/yolov5s_board_eval"
     readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-    readonly RUN_DIR="${BOARD_RESULTS_DIR}/${MODE}/${RUN_ID}"
+    readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
+    readonly RUN_DIR="${RESULT_DIR}/work"
 
     if [[ "${MODE}" != "smoke" && "${MODE}" != "full" ]]; then
         echo "用法: bash run.sh [smoke|full]" >&2
@@ -88,8 +89,8 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     fi
     test -s "${MODEL}"
     test -x "${BINARY}"
-    if [[ -e "${RUN_DIR}" ]]; then
-        echo "[ERROR] 结果目录已存在: ${RUN_DIR}" >&2
+    if [[ -e "${RESULT_DIR}" ]]; then
+        echo "[ERROR] 结果目录已存在: ${RESULT_DIR}" >&2
         exit 2
     fi
 
@@ -125,24 +126,21 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         FP32_ARGS=(--fp32-map "${FP32_MAP}"
             --fp32-source "${FP32_BASELINE_SOURCE:-用户提供的同协议 FP32 基准}")
     fi
-    python3 "${DEPLOY_DIR}/python/evaluate_coco.py" \
+    python3 "${DEPLOY_DIR}/board/evaluate_coco.py" \
         --annotations "${ANNOTATIONS}" \
         --predictions "${RUN_DIR}/predictions.json" \
         --processed-ids "${RUN_DIR}/processed_ids.txt" \
         --timings "${RUN_DIR}/timing_summary_current_run.json" \
         "${FP32_ARGS[@]}" \
-        --metrics "${RUN_DIR}/summary.json" \
+        --metrics "${RESULT_DIR}/summary.json" \
         --run-id "${RUN_ID}" \
         2>&1 | tee "${RUN_DIR}/cocoeval.log"
 
     echo "[开发板 3/3] 保存汇总结果."
     # 仅在评测和汇总成功后清理本次中间文件; 失败时由 set -e 保留现场.
-    test -s "${RUN_DIR}/summary.json"
-    rm -f -- "${RUN_DIR}/predictions.json" "${RUN_DIR}/predictions.jsonl" \
-        "${RUN_DIR}/processed_ids.txt" "${RUN_DIR}/timings.csv" \
-        "${RUN_DIR}/timing_summary_current_run.json" \
-        "${RUN_DIR}/board_eval.log" "${RUN_DIR}/cocoeval.log"
-    echo "[OK] 全量测试结果: ${RUN_DIR}/summary.json"
+    test -s "${RESULT_DIR}/summary.json"
+    rm -rf -- "${RUN_DIR}"
+    echo "[OK] 全量测试结果: ${RESULT_DIR}/summary.json"
     exit 0
 fi
 
@@ -181,7 +179,7 @@ if [[ "${BOARD_BINARY}" != /* || "${BOARD_RESULTS_DIR}" != /* ]] ||
     exit 2
 fi
 
-echo "[编译主机 1/4] 在 Docker 中转换模型并编译 DLA: ${OUTPUT_DLA}"
+echo "[编译主机 1] 在 Docker 中转换模型并编译 DLA: ${OUTPUT_DLA}"
 docker exec -i \
     -e PYTHONDONTWRITEBYTECODE=1 \
     -e MODEL_ROOT="${MODEL_ROOT}" \
@@ -247,7 +245,7 @@ cd "${SOURCE_DIR}"
 python export.py --weights "${MODEL_OUTPUT_DIR}/yolov5s.pt" \
     --img-size 640 640 --batch-size 1 --device 0 --include torchscript onnx
 mv -f "${MODEL_OUTPUT_DIR}/yolov5s.onnx" "${MODEL_OUTPUT_DIR}/model_fp32.onnx"
-python "${MODEL_ROOT}/deploy/python/convert_int8.py" \
+python "${MODEL_ROOT}/deploy/host/convert_int8.py" \
     --torchscript "${MODEL_OUTPUT_DIR}/yolov5s.torchscript" \
     --calibration-dir "${CALIBRATION_DIR}" \
     --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
@@ -283,7 +281,7 @@ FP32_MAP="$(docker exec "${MTK_G720_CONTAINER}" python -c \
     "${BUILD_WORK_DIR}/fp32_accuracy/summary.json")"
 FP32_BASELINE_SOURCE="本次 ONNX FP32 全量实测,COCO val2017,conf=0.001,IoU=0.6,max_det=300"
 
-echo "[编译主机 2/4] 在编译主机 交叉编译板端 C++ 测试程序."
+echo "[编译主机 2] 在编译主机 交叉编译板端 C++ 测试程序."
 readonly OPENCV_SOURCE="${MTK_G720_CPP_TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${MTK_G720_CPP_TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${MTK_G720_CPP_TOOLCHAIN_ROOT}/genio720-libs"
@@ -299,7 +297,7 @@ mkdir -p "$(dirname "${BOARD_BINARY}")"
     -I"${OPENCV_SOURCE}/modules/imgproc/include" \
     -I"${OPENCV_SOURCE}/modules/imgcodecs/include" \
     -I"${MTK_NEURON_INCLUDE}" \
-    "${SCRIPT_DIR}/cpp/yolov5s_board_eval.cpp" \
+    "${SCRIPT_DIR}/board/yolov5s_board_eval.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
     "${TARGET_LIBS}/libopencv_imgcodecs.so.409" \
     "${TARGET_LIBS}/libopencv_imgproc.so.409" \
@@ -308,23 +306,23 @@ mkdir -p "$(dirname "${BOARD_BINARY}")"
 file "${BOARD_BINARY}"
 test -s "${BOARD_BINARY}"
 
-echo "[编译主机 3/4] 创建板端目录并上传 DLA、程序和三张示例图片."
+echo "[编译主机 3] 创建板端目录并上传 DLA、程序和三张示例图片."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/bin' '${BOARD_DEPLOY_DIR}/python' '${BOARD_DEPLOY_DIR}/examples/input'"
+    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board' '${BOARD_DEPLOY_DIR}/examples/input'"
 scp "${SSH_OPTIONS[@]}" "${OUTPUT_DLA}" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/model_int8.dla"
 scp "${SSH_OPTIONS[@]}" "${BOARD_BINARY}" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/bin/yolov5s_board_eval"
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/yolov5s_board_eval"
 scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/run.sh"
-scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/python/evaluate_coco.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/python/evaluate_coco.py"
+scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/board/evaluate_coco.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/evaluate_coco.py"
 scp "${SSH_OPTIONS[@]}" "${SMOKE_IMAGES_DIR}"/*.jpg \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "chmod 755 '${BOARD_DEPLOY_DIR}/bin/yolov5s_board_eval'"
+    "chmod 755 '${BOARD_DEPLOY_DIR}/board/yolov5s_board_eval'"
 
-echo "[编译主机 4/4] 写入板端数据集和结果路径."
+echo "[编译主机 4] 写入板端数据集和结果路径."
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nFP32_MAP=%q\nFP32_BASELINE_SOURCE=%q\n' \
     "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${FP32_MAP}" "${FP32_BASELINE_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \

@@ -1,10 +1,8 @@
 # Depth Anything V2 Small
 
-完整测试成功后只保留一个 `summary.json`。预测、缓存与日志在汇总成功后删除,失败时保留本次 `work/`。ONNX 浮点精度由编译主机自动实测,上传到板端后计算精度变化。
-
-模型产物写入 `MODEL_OUTPUT_DIR`,板端测试结果写入 `BOARD_RESULTS_DIR`。脚本不在代码目录生成 Python 字节码缓存。
-
 单目相对深度估计，输入为 518×518 RGB 图像。输出只表达单张图内的相对结构，不能直接用于米制测距。来源见[模型卡](model_card.md)。
+
+量化方式: INT8 训练后量化 (PTQ),采用逐输出通道权重量化.
 
 ## 第一步: 编译并上传
 
@@ -30,13 +28,11 @@ bash deploy/run.sh
 bash run.sh
 ```
 
-### 精度评测
+## 数据与精度评测
 
 在脚本顶部填写 `ONNX_DATASET_DIR`,必须与板端数据采用同一份样本、标注及评测协议。编译主机在 Docker 中自动评测 ONNX,只记录任务核心精度,不记录主机耗时或内存。
 
 数据目录要求: DA-2K: images/ 和 annotations.json,1033 张图片、2068 个点对.
-
-量化方式: INT8 训练后量化 (PTQ),采用逐输出通道权重量化.
 
 精度变化以百分点表示,正数为改善,负数为下降.
 
@@ -46,11 +42,25 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV 和 tqdm。
 
 待上传本模型的 `results/summary.json` 后更新。只记录板端 NPU 平均耗时、推理进程峰值 RSS (MiB)、任务核心精度、同协议 ONNX 参考精度和精度变化。峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存。
 
+## 板端部署结构
+
+第一步上传到 `BOARD_DEPLOY_DIR` 后的布局统一为:
+
+```text
+部署目录/
+├── run.sh
+├── board_paths.conf
+├── models/              # 模型与推理所需参数.
+├── board/               # 板端程序、评测代码及必要依赖.
+└── results/             # 测试结果.
+```
+
+全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后只保留汇总文件,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
 ## 文件结构
 
 - `deploy/run.sh`: 编译上传和板端测试的唯一 Shell 入口.
-- `deploy/python/`: 模型导出、转换、评测与辅助代码.
-- `deploy/cpp/`: 板端 C++ 源码.
+- `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
+- `deploy/board/`: 板端程序源码、预处理和评测代码.
 - `models/`: 模型产物与来源说明.
 - `examples/`: 示例输入与输出,按需保留.
 - `results/summary.json`: 上传后的最新测试汇总.

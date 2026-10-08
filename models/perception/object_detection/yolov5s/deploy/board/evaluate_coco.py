@@ -94,15 +94,17 @@ def evaluate(args: argparse.Namespace) -> None:
         "model": "yolov5s",
         "run_id": args.run_id or args.metrics.parent.name,
         "dataset": "coco_val2017",
-        "images": len(expected_ids),
+        "samples": len(expected_ids),
+        "metric": "mAP@0.5:0.95",
         "npu_mean_ms": npu_mean,
         "peak_rss_mib": peak_rss_mib,
         "memory_scope": "板端 C++ 全量推理进程峰值 RSS",
-        "board_map_50_95": board_map,
-        "onnx_map_50_95": fp32_map,
+        "board_accuracy": board_map,
+        "reference_accuracy": fp32_map,
+        "timing_scope": "常驻模型,5000 张图片的 NeuronRuntime_inference 调用",
         "accuracy_loss_percentage_points": loss_pp,
         "accuracy_change_percentage_points": None if loss_pp is None else -loss_pp,
-        "onnx_baseline_source": args.fp32_source if fp32_map is not None else None,
+        "reference_source": args.fp32_source if fp32_map is not None else None,
     }
     args.metrics.write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -63,27 +63,27 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
     readonly RUN_DIR="${RESULT_DIR}/work"
     readonly LABELS="${BOARD_DATASET_DIR}/val_labels_0based.txt"
-    test -s "${SCRIPT_DIR}/model_int8.dla"
-    test -s "${SCRIPT_DIR}/quantization.json"
+    test -s "${SCRIPT_DIR}/models/model_int8.dla"
+    test -s "${SCRIPT_DIR}/models/quantization.json"
     test -s "${LABELS}"
     test "$(find "${BOARD_DATASET_DIR}/val" -maxdepth 1 -type f -name '*.JPEG' | wc -l)" -eq 50000
     test ! -e "${RESULT_DIR}"
     mkdir -p "${RUN_DIR}/report"
     echo "[开发板 1/3] 在板端执行 50000 张 ImageNet 图片的 C++ NPU 推理."
-    "${SCRIPT_DIR}/vit_board_eval" \
-        --model "${SCRIPT_DIR}/model_int8.dla" \
+    "${SCRIPT_DIR}/board/vit_board_eval" \
+        --model "${SCRIPT_DIR}/models/model_int8.dla" \
         --images "${BOARD_DATASET_DIR}/val" \
-        --quantization "${SCRIPT_DIR}/quantization.json" \
+        --quantization "${SCRIPT_DIR}/models/quantization.json" \
         --predictions "${RUN_DIR}/predictions.jsonl" \
         2>&1 | tee "${RUN_DIR}/board_eval.log"
     echo "[开发板 2/3] 计算 Top-1 指标."
-    python3 "${SCRIPT_DIR}/evaluate_full_accuracy.py" \
+    python3 "${SCRIPT_DIR}/board/evaluate_full_accuracy.py" \
         --predictions "${RUN_DIR}/predictions.jsonl" \
         --labels "${LABELS}" --report "${RUN_DIR}/report" \
         --run-id "${RUN_ID}"
     echo "[开发板 3/3] 汇总核心指标."
     # 所有原始数据仅在本次 work 下生成; 汇总成功后由工具清理.
-    python3 "${SCRIPT_DIR}/summarize_board_result.py" \
+    python3 "${SCRIPT_DIR}/board/summarize_board_result.py" \
         --model "vit_base_patch16_224" --work-dir "${RUN_DIR}" \
         --output "${RESULT_DIR}/summary.json" --run-id "${RUN_ID}" \
         --reference "${REFERENCE_ACCURACY:-}" \
@@ -122,7 +122,7 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
     exit 2
 fi
 
-echo "[编译主机 1/3] 在 Docker 中量化、编译 DLA 并提取量化元数据."
+echo "[编译主机 1] 在 Docker 中量化、编译 DLA 并提取量化元数据."
 docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 -e MODEL_ROOT="${MODEL_ROOT}" -e MODEL_ONNX="${MODEL_ONNX}" \
     -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
     -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
@@ -135,7 +135,7 @@ export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 cd "${BUILD_WORK_DIR}"
 bash "${MTK_SETUP_SCRIPT}"
-python "${MODEL_ROOT}/deploy/python/convert_int8.py" \
+python "${MODEL_ROOT}/deploy/host/convert_int8.py" \
     --onnx "${MODEL_ONNX}" --calibration-dir "${CALIBRATION_DIR}" \
     --offset 1000 --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
 export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
@@ -178,7 +178,7 @@ REFERENCE_SOURCE="本次 ONNX 浮点全量实测,使用与板端相同的评测�
 test -s "${MODEL_OUTPUT_DIR}/model_int8.dla"
 test -s "${MODEL_OUTPUT_DIR}/quantization.json"
 
-echo "[编译主机 2/3] 在编译主机交叉编译板端 C++ 测试程序."
+echo "[编译主机 2] 在编译主机交叉编译板端 C++ 测试程序."
 readonly OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
@@ -190,7 +190,7 @@ mkdir -p "$(dirname "${BINARY_OUTPUT}")"
     -I"${OPENCV_SOURCE}/modules/core/include" \
     -I"${OPENCV_SOURCE}/modules/imgproc/include" \
     -I"${OPENCV_SOURCE}/modules/imgcodecs/include" \
-    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/cpp/vit_board_eval.cpp" \
+    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/board/vit_board_eval.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
     "${TARGET_LIBS}/libopencv_imgcodecs.so.409" \
     "${TARGET_LIBS}/libopencv_imgproc.so.409" \
@@ -198,19 +198,23 @@ mkdir -p "$(dirname "${BINARY_OUTPUT}")"
     -Wl,--allow-shlib-undefined -pthread -ldl -o "${BINARY_OUTPUT}"
 file "${BINARY_OUTPUT}"
 
-echo "[编译主机 3/3] 上传模型、程序、评测代码和路径配置到板端."
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
-scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
-    "${MODEL_OUTPUT_DIR}/quantization.json" \
-    "${SCRIPT_DIR}/python/evaluate_full_accuracy.py" "${SCRIPT_DIR}/run.sh" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
-scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/vit_board_eval"
+echo "[编译主机 上传] 上传模型、程序、评测代码和路径配置到板端."
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board'"
 scp "${SSH_OPTIONS[@]}" \
-    "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/summarize_board_result.py"
+    "${MODEL_OUTPUT_DIR}/model_int8.dla" \
+    "${MODEL_OUTPUT_DIR}/quantization.json" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/"
+scp "${SSH_OPTIONS[@]}" \
+    "${SCRIPT_DIR}/board/evaluate_full_accuracy.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
+scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/vit_board_eval"
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/vit_board_eval'"
+scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\n' \
     "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
-echo "[OK] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"
+echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

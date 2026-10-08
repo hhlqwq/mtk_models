@@ -1,6 +1,7 @@
 """离线导出 FastSAM-s 原始分割头,保留官方前向结果用于一致性检查."""
 
 import argparse
+import sys
 import copy
 import json
 import types
@@ -12,6 +13,8 @@ import onnx
 import torch
 import ultralytics
 
+# 复用板端预处理,保持校准与推理输入一致.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from fastsam_utils import OUTPUT_NAMES, OUTPUT_SHAPES, decode_heads, preprocess
 
 
