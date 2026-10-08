@@ -84,7 +84,21 @@ sha256sum "${MODEL_OUTPUT_DIR}/yolov8n.pt" "${MODEL_OUTPUT_DIR}/model_fp32.onnx"
     "${MODEL_OUTPUT_DIR}/runtime_config.csv" > "${MODEL_OUTPUT_DIR}/SHA256SUMS"
 BUILD
 
-echo "[编译主机 2/4] 评测同协议 PyTorch 和 ONNX 浮点基准."
+echo "[编译主机 2/4] 交叉编译 C++ 板端评测程序."
+OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
+OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
+TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
+aarch64-linux-gnu-g++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
+    -I"${OPENCV_BUILD}" -I"${OPENCV_SOURCE}/modules/core/include" \
+    -I"${OPENCV_SOURCE}/modules/imgproc/include" \
+    -I"${OPENCV_SOURCE}/modules/imgcodecs/include" -I"${NEURON_INCLUDE}" \
+    "${SCRIPT_DIR}/board/yolov8n_board_eval.cpp" \
+    "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
+    "${TARGET_LIBS}/libopencv_imgcodecs.so.409" \
+    "${TARGET_LIBS}/libopencv_imgproc.so.409" "${TARGET_LIBS}/libopencv_core.so.409" \
+    -Wl,--allow-shlib-undefined -pthread -ldl -o "${BUILD_WORK_DIR}/yolov8n_board_eval"
+
+echo "[编译主机 3/4] 评测同协议 PyTorch 和 ONNX 浮点基准."
 for backend in pytorch onnx; do
     if [[ "${backend}" == pytorch ]]; then
         INPUT_ARGS=(--weights "${MODEL_WEIGHTS}")
@@ -100,20 +114,6 @@ FP32_MAP="$(docker exec "${CONTAINER}" python -c \
     'import json,sys; print(json.load(open(sys.argv[1]))["map_50_95"])' \
     "${MODEL_ROOT}/results/onnx_summary.json")"
 FP32_SOURCE="本次 ONNX FP32 全量实测,COCO val2017,conf=0.001,IoU=0.6,max_det=300,单最佳类别"
-
-echo "[编译主机 3/4] 交叉编译 C++ 板端评测程序."
-OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
-OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
-TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
-aarch64-linux-gnu-g++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
-    -I"${OPENCV_BUILD}" -I"${OPENCV_SOURCE}/modules/core/include" \
-    -I"${OPENCV_SOURCE}/modules/imgproc/include" \
-    -I"${OPENCV_SOURCE}/modules/imgcodecs/include" -I"${NEURON_INCLUDE}" \
-    "${SCRIPT_DIR}/board/yolov8n_board_eval.cpp" \
-    "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
-    "${TARGET_LIBS}/libopencv_imgcodecs.so.409" \
-    "${TARGET_LIBS}/libopencv_imgproc.so.409" "${TARGET_LIBS}/libopencv_core.so.409" \
-    -Wl,--allow-shlib-undefined -pthread -ldl -o "${BUILD_WORK_DIR}/yolov8n_board_eval"
 
 echo "[编译主机 4/4] 上传模型、程序、示例和板端配置."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \

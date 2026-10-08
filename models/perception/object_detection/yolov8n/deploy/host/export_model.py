@@ -46,7 +46,7 @@ def load_model(weights):
             module.recompute_scale_factor = None
     head = model.model[-1]
     if (head.nc, head.reg_max, head.nl) != (80, 16, 3):
-        raise ValueError("权重不是预期的 FastSAM 检测结构.")
+        raise ValueError("权重不是预期的 YOLOv8n 检测结构.")
     parameters = sum(parameter.numel() for parameter in model.parameters())
     if not 3_000_000 < parameters < 3_500_000:
         raise ValueError(f"要求 YOLOv8n,参数量不匹配: {parameters}.")
