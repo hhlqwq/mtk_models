@@ -9,7 +9,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 待量化 ONNX: 留空则使用 models/model_mtk_compatible.onnx.
     MODEL_ONNX=""
     # ImageNet INT8 校准图片目录.
-    CALIBRATION_DIR=""
+    CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ImageNet/ILSVRC2012_img_val"
     # 临时构建目录: 辅助输入、缓存和程序放在仓库外.
     BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/vit_base_patch16_224"
     # 模型输出目录: 留空则使用 models/.
@@ -17,11 +17,11 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 板端 ImageNet 验证集目录.
     BOARD_DATASET_DIR=""
     # 板端部署目录.
-    BOARD_DEPLOY_DIR=""
+    BOARD_DEPLOY_DIR="/root/hailong.he/open_models/vit_base_patch16_224/"
     # 板端结果目录: 留空则位于部署目录下.
-    BOARD_RESULTS_DIR=""
+    BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # ONNX 精度数据: 编译主机与 Docker 都可访问的全量数据集根目录,必须填写.
-    ONNX_DATASET_DIR=""
+    ONNX_DATASET_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ImageNet"
     # 部署精度方案: 按实际编译信息填写,例如 w8a8、w8a16、fp16、fp32、mixed; 未确认用 unknown.
     DEPLOYMENT_PRECISION="unknown"
     # 实际权重类型: 例如 int8、fp16、mixed; 不根据输入输出或文件名推断.
@@ -146,9 +146,19 @@ export TMPDIR="${BUILD_WORK_DIR}/tmp"
 export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 REPO_ROOT="$(cd "${MODEL_ROOT}/../../../.." && pwd)"
+# 兼容直接解压得到的目录名,NAS 图片不移动、不复制.
+EVAL_DATASET_DIR="${ONNX_DATASET_DIR}"
+if [[ ! -d "${ONNX_DATASET_DIR}/val" ]]; then
+    test -d "${ONNX_DATASET_DIR}/ILSVRC2012_img_val"
+    test -s "${ONNX_DATASET_DIR}/val_labels_0based.txt"
+    EVAL_DATASET_DIR="${BUILD_WORK_DIR}/onnx_dataset"
+    mkdir -p "${EVAL_DATASET_DIR}"
+    ln -sfn "${ONNX_DATASET_DIR}/ILSVRC2012_img_val" "${EVAL_DATASET_DIR}/val"
+    ln -sfn "${ONNX_DATASET_DIR}/val_labels_0based.txt" "${EVAL_DATASET_DIR}/val_labels_0based.txt"
+fi
 python "${REPO_ROOT}/tools/accuracy/evaluate_onnx.py" \
     --model "vit_base_patch16_224" --onnx "${ONNX_REFERENCE}" \
-    --dataset-root "${ONNX_DATASET_DIR}" \
+    --dataset-root "${EVAL_DATASET_DIR}" \
     --output "${BUILD_WORK_DIR}/onnx_accuracy/summary.json"
 ONNX_ACCURACY
 # 将本次实测精度写入板端配置,不传递主机预测、耗时或内存.

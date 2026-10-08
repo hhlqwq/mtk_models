@@ -12,12 +12,14 @@ ImageNet-1K 图像分类，输入为 224×224 RGB 图像。正式上游为 PyTor
 | --- | --- |
 | `MODEL_ONNX` | 待量化 ONNX,留空使用 `models/model_mtk_compatible.onnx` |
 | `ONNX_DATASET_DIR` | 编译主机上的 ImageNet 验证集根目录 |
-| `CALIBRATION_DIR` | 校准图片目录,通常使用上述验证集的 `val/` |
+| `CALIBRATION_DIR` | 校准图片目录,使用验证集中的 `val/` 或 `ILSVRC2012_img_val/` |
 | `BOARD_HOST` | 板端 SSH 用户和地址 |
 | `BOARD_DATASET_DIR` | 板端 ImageNet 验证集根目录 |
 | `BOARD_DEPLOY_DIR` | 板端模型与程序部署目录 |
 
 模型、校准数据和 ONNX 评测数据必须同时对编译主机与 Docker 可见。模型产物写入 `MODEL_OUTPUT_DIR`,默认使用本模型的 `models/` 目录。当前校准从按文件名排序的第 1001 张图片开始使用 100 张图片。
+
+编译主机的验证集图片目录支持 `val/` 或解压后的 `ILSVRC2012_img_val/`,根目录需有 `val_labels_0based.txt`。标签由官方 devkit 的 `meta.mat` 和验证集标签映射为 TorchVision 的 0–999 类别编号,不能直接将官方编号减 1。
 
 在**编译主机的仓库根目录**运行:
 
