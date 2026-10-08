@@ -20,8 +20,6 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     PATCH_ARCHIVE="${MODEL_ROOT}/models/model_conversion_YOLOv5s_example_20240916.zip"
     # 校准数据: 编译主机和 Docker 都能访问的图片目录,必须填写.
     CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images"
-    # 示例图片: 恰好放三张 JPG 图片.
-    SMOKE_IMAGES_DIR="${MODEL_ROOT}/examples/input"
 
     # 2. 产物与临时目录.
     # 模型输出目录: 转换与编译产物保存在这里.
@@ -40,7 +38,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     BOARD_DEPLOY_DIR="/root/hailong.he/open_models/yolov5s"
     # 板端结果目录: 保存本次测试汇总.
     BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
-    # 全量数据: COCO val2017 根目录; 只跑三图时可以留空.
+    # 板端全量数据: COCO val2017 根目录,包含 images/ 和 annotations/.
     BOARD_DATASET_DIR="/root/hailong.he/datasets/coco/val2017"
 
     # 4. ONNX 精度数据.
@@ -70,7 +68,6 @@ fi
 
 if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 板端阶段: 使用已上传的模型、程序和路径配置执行推理.
-    readonly MODE="${1:-smoke}"
     readonly DEPLOY_DIR="${SCRIPT_DIR}"
     source "${DEPLOY_DIR}/board_paths.conf"
     readonly MODEL="${DEPLOY_DIR}/models/model_int8.dla"
@@ -79,8 +76,8 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
     readonly RUN_DIR="${RESULT_DIR}/work"
 
-    if [[ "${MODE}" != "smoke" && "${MODE}" != "full" ]]; then
-        echo "用法: bash run.sh [smoke|full]" >&2
+    if (( $# != 0 )); then
+        echo "[ERROR] 在板端直接运行 bash run.sh,无需参数,默认执行全量测试." >&2
         exit 2
     fi
     if [[ ! "${RUN_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
@@ -92,19 +89,6 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     if [[ -e "${RESULT_DIR}" ]]; then
         echo "[ERROR] 结果目录已存在: ${RESULT_DIR}" >&2
         exit 2
-    fi
-
-    if [[ "${MODE}" == "smoke" ]]; then
-        readonly IMAGES_DIR="${DEPLOY_DIR}/examples/input"
-        test "$(find "${IMAGES_DIR}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 3
-        mkdir -p "${RUN_DIR}"
-        echo "[开发板 1/1] 在板端运行三张图片的 C++ NPU 推理."
-        "${BINARY}" --model "${MODEL}" --images "${IMAGES_DIR}" \
-            --output-dir "${RUN_DIR}" --limit 3 --warmup 2 \
-            --progress-interval 1 --confidence 0.25 --iou 0.45 --max-det 100 \
-            2>&1 | tee "${RUN_DIR}/board_eval.log"
-        echo "[OK] 三图测试结果: ${RUN_DIR}"
-        exit 0
     fi
 
     : "${BOARD_DATASET_DIR:?全量测试需要在第一步设置 BOARD_DATASET_DIR}"
@@ -152,6 +136,7 @@ fi
 # 编译主机阶段: 检查配置,转换模型,交叉编译并上传.
 : "${CALIBRATION_DIR:?请在脚本顶部配置 CALIBRATION_DIR}"
 : "${BOARD_DEPLOY_DIR:?请在脚本顶部配置 BOARD_DEPLOY_DIR}"
+: "${BOARD_DATASET_DIR:?请在脚本顶部配置板端 COCO 全量数据集目录}"
 
 if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
     echo "[ERROR] BOARD_DEPLOY_DIR 必须是无空格的板端绝对路径." >&2
@@ -163,8 +148,6 @@ test -f "${PATCH_ARCHIVE}"
 test -d "${CALIBRATION_DIR}"
 test -d "${FP32_IMAGES_DIR}"
 test -f "${FP32_ANNOTATIONS}"
-test -d "${SMOKE_IMAGES_DIR}"
-test "$(find "${SMOKE_IMAGES_DIR}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 3
 if [[ "${MODEL_OUTPUT_DIR}" != /* || "${OUTPUT_DLA}" != /* ]]; then
     echo "[ERROR] MODEL_OUTPUT_DIR 和 OUTPUT_DLA 必须是宿主机与容器共用的绝对路径." >&2
     exit 2
@@ -174,7 +157,7 @@ if [[ "${BUILD_WORK_DIR}" != /* ]]; then
     exit 2
 fi
 if [[ "${BOARD_BINARY}" != /* || "${BOARD_RESULTS_DIR}" != /* ]] ||
-        [[ -n "${BOARD_DATASET_DIR}" && "${BOARD_DATASET_DIR}" != /* ]]; then
+        [[ "${BOARD_DATASET_DIR}" != /* ]]; then
     echo "[ERROR] C++ 程序、板端结果和板端数据集路径必须是绝对路径." >&2
     exit 2
 fi
@@ -306,9 +289,9 @@ mkdir -p "$(dirname "${BOARD_BINARY}")"
 file "${BOARD_BINARY}"
 test -s "${BOARD_BINARY}"
 
-echo "[编译主机 3] 创建板端目录并上传 DLA、程序和三张示例图片."
+echo "[编译主机 3] 创建板端目录并上传 DLA、程序和评测代码."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board' '${BOARD_DEPLOY_DIR}/examples/input'"
+    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board'"
 scp "${SSH_OPTIONS[@]}" "${OUTPUT_DLA}" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/model_int8.dla"
 scp "${SSH_OPTIONS[@]}" "${BOARD_BINARY}" \
@@ -317,8 +300,6 @@ scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/run.sh"
 scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/board/evaluate_coco.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/evaluate_coco.py"
-scp "${SSH_OPTIONS[@]}" "${SMOKE_IMAGES_DIR}"/*.jpg \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "chmod 755 '${BOARD_DEPLOY_DIR}/board/yolov5s_board_eval'"
 

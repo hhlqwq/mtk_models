@@ -8,7 +8,7 @@ COCO 80 类目标检测。模型来源和许可证见[模型卡](model_card.md)�
 
 所有配置均在脚本顶部,按模型与校准数据、产物与临时目录、板端地址与数据、ONNX 精度数据、编译环境分组.脚本已填写当前部署环境的路径,使用时按注释调整等号右侧的值; 编译主机和 Docker 须能访问相同数据,板端路径独立配置.
 
-在 [run.sh](deploy/run.sh) 顶部填写路径。通常只需确认 `MODEL_WEIGHTS`、填写 `CALIBRATION_DIR` 和 `BOARD_DEPLOY_DIR`，并按需调整 `MODEL_OUTPUT_DIR`、`OUTPUT_DLA`。全量测试再填写 `BOARD_DATASET_DIR`。其余配置仅在 Docker、SDK 或交叉编译环境变化时修改。资源地址见 [source_url.txt](models/source_url.txt)。模型、校准集及产物路径必须同时对编译主机和 Docker 容器可见。
+在 [run.sh](deploy/run.sh) 顶部确认 `MODEL_WEIGHTS`、`CALIBRATION_DIR`、`BOARD_DEPLOY_DIR` 和 `BOARD_DATASET_DIR`,按需调整 `MODEL_OUTPUT_DIR`、`OUTPUT_DLA`。其余配置仅在 Docker、SDK 或交叉编译环境变化时修改。资源地址见 [source_url.txt](models/source_url.txt)。模型、校准集及产物路径必须同时对编译主机和 Docker 容器可见。
 
 在编译主机的本模型目录运行:
 
@@ -32,10 +32,11 @@ bash deploy/run.sh
 bash run.sh
 ```
 
-默认执行三图演示; 全量测试运行 `bash run.sh full`.
+默认执行 COCO val2017 全量 5000 张图片测试,无需参数.
 
 ## 数据与精度评测
-默认测试三张示例图；在板端命令末尾加 `full` 执行 COCO 全量测试。结果写入 `BOARD_RESULTS_DIR`，默认位于 `BOARD_DEPLOY_DIR/results`。全量测试要求 `BOARD_DATASET_DIR/images/` 中有 5000 张 COCO val2017 图片、`BOARD_DATASET_DIR/annotations/instances_val2017.json`，板端还需 `pycocotools`。若 SSH 提示主机密钥变化，先核对板端指纹，再更新编译主机上执行脚本用户的 `known_hosts`。
+
+结果写入 `BOARD_RESULTS_DIR`，默认位于 `BOARD_DEPLOY_DIR/results`。测试要求 `BOARD_DATASET_DIR/images/` 中有 5000 张 COCO val2017 图片、`BOARD_DATASET_DIR/annotations/instances_val2017.json`，板端还需 `pycocotools`。若 SSH 提示主机密钥变化，先核对板端指纹，再更新编译主机上执行脚本用户的 `known_hosts`。
 
 ## 当前测试结果
 
