@@ -1,31 +1,59 @@
 #!/usr/bin/env bash
-# RTMPose 单脚本流程: 89 编译上传,开发板执行 WholeBody 全量测试.
+# 单脚本两步流程: 在编译主机编译并上传,在开发板执行测试.
 
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
+
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# 用户配置: 留空的可选项使用仓库内默认路径.
+
+# 编译主机配置区: 只修改等号右侧的路径或名称.板端使用上传的 board_paths.conf.
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
-    # 待量化 ONNX: 留空则使用 models/model_mtk_compatible.onnx.
-    MODEL_ONNX=""
+    # 模型目录: 根据本脚本的位置自动确定.
+    MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+    # 1. 模型与校准数据.
+    # 模型文件: 用于量化的 MTK 兼容 ONNX.
+    MODEL_ONNX="${MODEL_ROOT}/models/model_mtk_compatible.onnx"
     # INT8 校准图片目录.
     CALIBRATION_IMAGES=""
     # INT8 校准标注文件.
     CALIBRATION_ANNOTATIONS=""
-    # 临时构建目录: 辅助输入、缓存和程序放在仓库外.
+
+    # 2. 产物与临时目录.
+    # 模型输出目录: 转换与编译产物保存在这里.
+    MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
+    # 临时构建目录: 缓存和中间文件保存在仓库外.
     BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/rtmpose_body2d"
-    # 模型输出目录: 留空则使用 models/.
-    MODEL_OUTPUT_DIR=""
+
+    # 3. 板端地址与数据.
+    # 板端地址: SSH 用户和地址.
+    BOARD_HOST="root@192.168.0.92"
+    # 板端部署目录: 上传模型、程序和本脚本的目录,必须填写.
+    BOARD_DEPLOY_DIR=""
+    # 板端结果目录: 保存本次测试汇总.
+    BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # 板端 COCO-WholeBody 数据集目录.
     BOARD_DATASET_DIR=""
-    # 板端部署目录.
-    BOARD_DEPLOY_DIR=""
-    # 板端结果目录: 留空则位于部署目录下.
-    BOARD_RESULTS_DIR=""
-    # ONNX 精度数据: 编译主机与 Docker 都可访问的全量数据集根目录,必须填写.
+
+    # 4. ONNX 精度数据.
+    # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录,必须填写.
     ONNX_DATASET_DIR=""
-    # 板端 SSH 用户和地址.
-    BOARD_HOST="root@192.168.0.92"
+
+    # 5. 编译环境: 通常无需修改.
+    # Docker 容器: 编译主机上的 Genio 720 编译环境.
+    MTK_G720_CONTAINER="hhl_g720_8011"
+    # C++ 工具链: 编译主机上的 AArch64 编译工具和 OpenCV 库目录.
+    MTK_G720_CPP_TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
+    # 环境脚本: Docker 内 MTK SDK 初始化脚本.
+    MTK_SETUP_SCRIPT="/opt/mtk-build/setup_container.sh"
+    # 模型编译器: Docker 内 Neuron SDK host 目录,包含 bin/ 和 lib/.
+    NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
+    # Runtime 头文件: 编译主机上的 Neuron Runtime include 目录.
+    MTK_NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
+    # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
+    CROSS_CXX="aarch64-linux-gnu-g++"
+    # SSH 选项: 首次连接接受主机密钥,之后验证保存的密钥.
+    SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 fi
 
 # 板端阶段: 完整处理 5000 张图片和 104125 个人体检测框.
@@ -44,12 +72,12 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     test ! -e "${RESULT_DIR}"
     mkdir -p "${RUN_DIR}/report"
 
-    echo "[1/4] 生成并核对 104125 个检测框清单."
+    echo "[开发板 1/4] 生成并核对 104125 个检测框清单."
     "${SCRIPT_DIR}/prepare_eval_manifest" --detections "${DETECTIONS}" \
         --output "${RUN_DIR}/person_detections.tsv"
     test "$(($(wc -l < "${RUN_DIR}/person_detections.tsv") - 1))" -eq 104125
 
-    echo "[2/4] 在板端执行 C++ NPU 推理."
+    echo "[开发板 2/4] 在板端执行 C++ NPU 推理."
     "${SCRIPT_DIR}/rtmpose_board_eval" \
         --model "${SCRIPT_DIR}/model_int8.dla" \
         --images "${BOARD_DATASET_DIR}/images" \
@@ -58,7 +86,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         2>&1 | tee "${RUN_DIR}/board_eval.log"
     test "$(wc -l < "${RUN_DIR}/processed_ids.txt")" -eq 104125
 
-    echo "[3/4] 计算 WholeBody AP/AR."
+    echo "[开发板 3/4] 计算 WholeBody AP/AR."
     python3 "${SCRIPT_DIR}/evaluate_coco_wholebody.py" \
         --annotations "${ANNOTATIONS}" \
         --predictions "${RUN_DIR}/predictions.jsonl" \
@@ -81,30 +109,21 @@ if (( $# != 0 )); then
     exit 2
 fi
 
-# 路径配置: 模型、校准集、生成目录、板端数据和工具链均可覆盖.
-readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
+# 编译主机阶段: 检查配置,转换模型,交叉编译并上传.
 : "${ONNX_DATASET_DIR:?请在脚本顶部指定编译主机的全量精度数据集}"
 test -d "${ONNX_DATASET_DIR}"
 if [[ "${ONNX_DATASET_DIR}" != /* ]]; then
     echo "[ERROR] ONNX_DATASET_DIR 必须是编译主机与 Docker 共用的绝对路径." >&2
     exit 2
 fi
-readonly MODEL_ONNX="${MODEL_ONNX:-${MODEL_ROOT}/models/model_mtk_compatible.onnx}"
-readonly CALIBRATION_IMAGES="${CALIBRATION_IMAGES:?请指定校准图片目录}"
-readonly CALIBRATION_ANNOTATIONS="${CALIBRATION_ANNOTATIONS:?请指定 COCO 校准标注文件}"
-readonly MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR:-${MODEL_ROOT}/models}"
-readonly BOARD_DATASET_DIR="${BOARD_DATASET_DIR:?请指定板端 COCO WholeBody 数据集目录}"
-readonly BOARD_DEPLOY_DIR="${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
-readonly BOARD_RESULTS_DIR="${BOARD_RESULTS_DIR:-${BOARD_DEPLOY_DIR}/results}"
-readonly BOARD_HOST="${BOARD_HOST:-root@192.168.0.92}"
-readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
-readonly MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT:-/opt/mtk-build/setup_container.sh}"
-readonly NCC_ROOT="${NCC_ROOT:-/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host}"
-readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT:-/data/users/hailong.he/data/MTKG720/cpp_toolchain}"
-readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE:-/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include}"
-readonly CXX="${CROSS_CXX:-aarch64-linux-gnu-g++}"
-readonly SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+: "${CALIBRATION_IMAGES:?请指定校准图片目录}"
+: "${CALIBRATION_ANNOTATIONS:?请指定 COCO 校准标注文件}"
+: "${BOARD_DATASET_DIR:?请指定板端 COCO WholeBody 数据集目录}"
+: "${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
+readonly CONTAINER="${MTK_G720_CONTAINER}"
+readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}"
+readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE}"
+readonly CXX="${CROSS_CXX}"
 
 mkdir -p "${BUILD_WORK_DIR}/tmp"
 export TMPDIR="${BUILD_WORK_DIR}/tmp"
@@ -117,7 +136,7 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
     exit 2
 fi
 
-echo "[1/3] 在 Docker 中量化并编译 DLA."
+echo "[编译主机 1/3] 在 Docker 中量化并编译 DLA."
 docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 -e MODEL_ROOT="${MODEL_ROOT}" -e MODEL_ONNX="${MODEL_ONNX}" \
     -e CALIBRATION_IMAGES="${CALIBRATION_IMAGES}" \
     -e CALIBRATION_ANNOTATIONS="${CALIBRATION_ANNOTATIONS}" \
@@ -164,7 +183,7 @@ REFERENCE_ACCURACY="$(docker exec "${CONTAINER}" python -c \
 REFERENCE_SOURCE="本次 ONNX 浮点全量实测,使用与板端相同的评测协议"
 test -s "${MODEL_OUTPUT_DIR}/model_int8.dla"
 
-echo "[2/3] 在编译主机交叉编译推理和框清单 C++ 程序."
+echo "[编译主机 2/3] 在编译主机交叉编译推理和框清单 C++ 程序."
 readonly OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
@@ -189,7 +208,7 @@ command -v "${CXX}" >/dev/null 2>&1
 file "${BUILD_WORK_DIR}/rtmpose_board_eval" \
     "${BUILD_WORK_DIR}/prepare_eval_manifest"
 
-echo "[3/3] 上传模型、程序、评测代码和路径配置到板端."
+echo "[编译主机 3/3] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
     "${BUILD_WORK_DIR}/rtmpose_board_eval" \

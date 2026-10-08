@@ -1,34 +1,62 @@
 #!/usr/bin/env bash
-# 模型单脚本入口: 编译主机完成构建与上传,开发板完成测试.
+# 单脚本两步流程: 在编译主机编译并上传,在开发板执行测试.
 
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# 模型输入文件的绝对路径.
-MODEL_SOURCE=""
-# 校准数据目录的绝对路径.
-CALIBRATION_DIR=""
-# 临时目录: 缓存、辅助输入和编译程序必须放在仓库外.
-BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/model"
-# 生成产物的目录.
-MODEL_OUTPUT_DIR=""
-# 同协议核心参考精度: 留空时不计算损失.
-REFERENCE_ACCURACY=""
-# 参考基准来源: 记录后端、数据集和评测协议.
-REFERENCE_SOURCE=""
-# 板端测试数据目录.
-BOARD_DATASET_DIR=""
-# 板端部署目录.
-BOARD_DEPLOY_DIR=""
-# 开发板 SSH 用户和地址.
-BOARD_HOST=""
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# 编译主机配置区: 只修改等号右侧的路径或名称.板端使用上传的 board_paths.conf.
+if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
+    # 模型目录: 根据本脚本的位置自动确定.
+    MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+    # 1. 模型与校准数据.
+    # 模型文件: 原始权重或待编译的 ONNX 完整路径.
+    MODEL_SOURCE=""
+    # 校准数据: 编译主机与 Docker 可访问的图片目录.
+    CALIBRATION_DIR=""
+
+    # 2. 产物与临时目录.
+    # 模型输出目录: 转换与编译产物保存在这里.
+    MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
+    # 临时构建目录: 缓存和中间文件保存在仓库外.
+    BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/model_id"
+
+    # 3. 板端地址与数据.
+    # 板端地址: SSH 用户和地址.
+    BOARD_HOST=""
+    # 板端部署目录: 上传模型、程序和本脚本的目录.
+    BOARD_DEPLOY_DIR=""
+    # 板端结果目录: 保存本次测试汇总.
+    BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
+    # 板端数据: 与 ONNX 评测使用相同数据及标签.
+    BOARD_DATASET_DIR=""
+
+    # 4. ONNX 精度数据.
+    # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录.
+    ONNX_DATASET_DIR=""
+
+    # 5. 编译环境: 通常无需修改.
+    # Docker 容器: 编译主机上的 Genio 720 编译环境.
+    MTK_G720_CONTAINER=""
+    # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
+    CROSS_CXX="aarch64-linux-gnu-g++"
+    # SSH 选项: 首次连接接受主机密钥,之后验证保存的密钥.
+    SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+fi
+
+# 板端阶段: 使用上传的配置执行测试并汇总核心指标.
 if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     source "${SCRIPT_DIR}/board_paths.conf"
-    # 完整测试成功后只保留 summary.json,共用 tools/summarize_board_result.py 的汇总规则.
-    echo "[TODO] 在开发板执行模型测试并汇总核心指标."
-else
-    echo "[TODO] 在编译主机转换模型、交叉编译 C++ 程序并上传."
+    echo "[TODO] 在开发板执行模型测试,成功后仅保留 summary.json."
+    exit 2
 fi
+
+# 编译主机阶段: 检查配置,转换模型,交叉编译并上传.
+if (( $# != 0 )); then
+    echo "[ERROR] 在编译主机直接运行 bash deploy/run.sh,无需参数." >&2
+    exit 2
+fi
+echo "[TODO] 在编译主机转换模型、评测 ONNX、交叉编译 C++ 程序并上传."
 exit 2

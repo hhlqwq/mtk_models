@@ -1,29 +1,55 @@
 #!/usr/bin/env bash
-# YOLO-World XL 单脚本流程: 89 准备兼容 ONNX 并上传,开发板测试.
+# 单脚本两步流程: 在编译主机编译并上传,在开发板执行测试.
 
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
+
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# 用户配置: 留空的可选项使用仓库内默认路径.
+
+# 编译主机配置区: 只修改等号右侧的路径或名称.板端使用上传的 board_paths.conf.
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
-    # 官方 ONNX: 留空则使用 models/model_fp32.onnx.
-    SOURCE_ONNX=""
-    # 临时构建目录: 辅助输入、缓存和程序放在仓库外.
+    # 模型目录: 根据本脚本的位置自动确定.
+    MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+    # 1. 模型与校准数据.
+    # 官方 ONNX.
+    SOURCE_ONNX="${MODEL_ROOT}/models/model_fp32.onnx"
+
+    # 2. 产物与临时目录.
+    # 模型输出目录: 转换与编译产物保存在这里.
+    MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
+    # 临时构建目录: 缓存和中间文件保存在仓库外.
     BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yoloworld_xl"
-    # 模型输出目录: 留空则使用 models/.
-    MODEL_OUTPUT_DIR=""
+    # C++ 输出: 编译主机交叉编译生成的临时程序完整路径.
+    BOARD_BINARY_OUTPUT="${BUILD_WORK_DIR}/yoloworld_board_eval"
+
+    # 3. 板端地址与数据.
+    # 板端地址: SSH 用户和地址.
+    BOARD_HOST="root@192.168.0.92"
+    # 板端部署目录: 上传模型、程序和本脚本的目录,必须填写.
+    BOARD_DEPLOY_DIR=""
+    # 板端结果目录: 保存本次测试汇总.
+    BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # 板端 COCO val2017 数据集目录.
     BOARD_DATASET_DIR=""
-    # 板端部署目录.
-    BOARD_DEPLOY_DIR=""
-    # 板端结果目录: 留空则位于部署目录下.
-    BOARD_RESULTS_DIR=""
-    # ONNX 精度数据: 编译主机与 Docker 都可访问的全量数据集根目录,必须填写.
-    ONNX_DATASET_DIR=""
-    # 板端 SSH 用户和地址.
-    BOARD_HOST="root@192.168.0.92"
     # 板端 ONNX Runtime 动态库路径.
     ORT_RUNTIME_LIB="/usr/lib/libonnxruntime.so.1.20.2"
+
+    # 4. ONNX 精度数据.
+    # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录,必须填写.
+    ONNX_DATASET_DIR=""
+
+    # 5. 编译环境: 通常无需修改.
+    # Docker 容器: 编译主机上的 Genio 720 编译环境.
+    MTK_G720_CONTAINER="hhl_g720_8011"
+    # C++ 工具链: 编译主机上的 AArch64 编译工具和 OpenCV 库目录.
+    MTK_G720_CPP_TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
+    # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
+    CROSS_CXX="aarch64-linux-gnu-g++"
+    # Runtime 头文件: 编译主机上的 ONNX Runtime C API 头文件.
+    ORT_HEADER="${MODEL_ROOT}/../../../../tools/third_party/onnxruntime/onnxruntime_c_api.h"
+    # SSH 选项: 首次连接接受主机密钥,之后验证保存的密钥.
+    SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 fi
 
 # 板端阶段: 此模型由 ONNX Runtime Neuron EP 在线编译,没有离线 DLA.
@@ -41,13 +67,13 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     test ! -e "${RESULT_DIR}"
     mkdir -p "${RUN_DIR}/raw" "${RUN_DIR}/report"
 
-    echo "[1/3] 在板端执行 5000 张 Neuron EP 推理."
+    echo "[开发板 1/3] 在板端执行 5000 张 Neuron EP 推理."
     "${SCRIPT_DIR}/yoloworld_board_eval" \
         --model "${SCRIPT_DIR}/model_fp32_pure_npu.onnx" \
         --images "${BOARD_DATASET_DIR}/images" \
         --output-dir "${RUN_DIR}/raw" \
         2>&1 | tee "${RUN_DIR}/board_eval.log"
-    echo "[2/3] 计算 COCO bbox AP."
+    echo "[开发板 2/3] 计算 COCO bbox AP."
     python3 "${SCRIPT_DIR}/evaluate_full_coco.py" \
         --annotations "${ANNOTATIONS}" \
         --results "${RUN_DIR}/raw/results.jsonl" \
@@ -68,9 +94,7 @@ if (( $# != 0 )); then
     exit 2
 fi
 
-# 路径配置: 原始模型、生成位置、板端数据与工具链均可覆盖.
-readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
+# 编译主机阶段: 检查配置,转换模型,交叉编译并上传.
 : "${ONNX_DATASET_DIR:?请在脚本顶部指定编译主机的全量精度数据集}"
 test -d "${ONNX_DATASET_DIR}"
 if [[ "${ONNX_DATASET_DIR}" != /* ]]; then
@@ -78,19 +102,12 @@ if [[ "${ONNX_DATASET_DIR}" != /* ]]; then
     exit 2
 fi
 readonly REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../.." && pwd)"
-readonly SOURCE_ONNX="${SOURCE_ONNX:-${MODEL_ROOT}/models/model_fp32.onnx}"
-readonly MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR:-${MODEL_ROOT}/models}"
-readonly BOARD_DATASET_DIR="${BOARD_DATASET_DIR:?请指定板端 COCO 数据集目录}"
-readonly BOARD_DEPLOY_DIR="${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
-readonly BOARD_RESULTS_DIR="${BOARD_RESULTS_DIR:-${BOARD_DEPLOY_DIR}/results}"
-readonly ORT_RUNTIME_LIB="${ORT_RUNTIME_LIB:-/usr/lib/libonnxruntime.so.1.20.2}"
-readonly BOARD_HOST="${BOARD_HOST:-root@192.168.0.92}"
-readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
-readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT:-/data/users/hailong.he/data/MTKG720/cpp_toolchain}"
-readonly ORT_HEADER="${ORT_HEADER:-${REPO_ROOT}/tools/third_party/onnxruntime/onnxruntime_c_api.h}"
-readonly CXX="${CROSS_CXX:-aarch64-linux-gnu-g++}"
-readonly BINARY_OUTPUT="${BOARD_BINARY_OUTPUT:-${BUILD_WORK_DIR}/yoloworld_board_eval}"
-readonly SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+: "${BOARD_DATASET_DIR:?请指定板端 COCO 数据集目录}"
+: "${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
+readonly CONTAINER="${MTK_G720_CONTAINER}"
+readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}"
+readonly CXX="${CROSS_CXX}"
+readonly BINARY_OUTPUT="${BOARD_BINARY_OUTPUT}"
 
 mkdir -p "${BUILD_WORK_DIR}/tmp"
 export TMPDIR="${BUILD_WORK_DIR}/tmp"
@@ -102,7 +119,7 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
     exit 2
 fi
 
-echo "[1/3] 在 Docker 中准备兼容 ONNX 并验证等价性."
+echo "[编译主机 1/3] 在 Docker 中准备兼容 ONNX 并验证等价性."
 docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 -e MODEL_ROOT="${MODEL_ROOT}" \
     -e SOURCE_ONNX="${SOURCE_ONNX}" \
     -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
@@ -151,7 +168,7 @@ REFERENCE_SOURCE="本次 ONNX 浮点全量实测,使用与板端相同的评测�
 test -s "${MODEL_OUTPUT_DIR}/model_fp32_opset13.onnx"
 test -s "${MODEL_OUTPUT_DIR}/model_fp32_pure_npu.onnx"
 
-echo "[2/3] 在编译主机交叉编译板端 C++ 测试程序."
+echo "[编译主机 2/3] 在编译主机交叉编译板端 C++ 测试程序."
 readonly OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
@@ -170,7 +187,7 @@ mkdir -p "$(dirname "${BINARY_OUTPUT}")"
     -Wl,--allow-shlib-undefined -pthread -ldl -o "${BINARY_OUTPUT}"
 file "${BINARY_OUTPUT}"
 
-echo "[3/3] 上传模型、程序、评测代码和路径配置到板端."
+echo "[编译主机 3/3] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_fp32_pure_npu.onnx" \
     "${SCRIPT_DIR}/python/evaluate_full_coco.py" \

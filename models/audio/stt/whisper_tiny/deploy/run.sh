@@ -1,29 +1,59 @@
 #!/usr/bin/env bash
-# Whisper-Tiny 单脚本流程: 89 编译双 DLA 和 C++,开发板测 LibriSpeech.
+# 单脚本两步流程: 在编译主机编译并上传,在开发板执行测试.
 
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
+
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# 用户配置: 留空的可选项使用仓库内默认路径.
+
+# 编译主机配置区: 只修改等号右侧的路径或名称.板端使用上传的 board_paths.conf.
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
-    # Encoder ONNX: 留空则使用 models/encoder_fp32.onnx.
-    ENCODER_ONNX=""
-    # Decoder ONNX: 留空则使用 models/decoder_step_fp32.onnx.
-    DECODER_ONNX=""
-    # 临时构建目录: 辅助输入、缓存和程序放在仓库外.
+    # 模型目录: 根据本脚本的位置自动确定.
+    MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+    # 1. 模型与校准数据.
+    # 模型文件: Encoder 浮点 ONNX.
+    ENCODER_ONNX="${MODEL_ROOT}/models/encoder_fp32.onnx"
+    # 模型文件: Decoder 浮点 ONNX.
+    DECODER_ONNX="${MODEL_ROOT}/models/decoder_step_fp32.onnx"
+
+    # 2. 产物与临时目录.
+    # 模型输出目录: 转换与编译产物保存在这里.
+    MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
+    # 临时构建目录: 缓存和中间文件保存在仓库外.
     BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/whisper_tiny"
-    # 模型输出目录: 留空则使用 models/.
-    MODEL_OUTPUT_DIR=""
+
+    # 3. 板端地址与数据.
+    # 板端地址: SSH 用户和地址.
+    BOARD_HOST="root@192.168.0.92"
+    # 板端部署目录: 上传模型、程序和本脚本的目录,必须填写.
+    BOARD_DEPLOY_DIR=""
+    # 板端结果目录: 保存本次测试汇总.
+    BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # 板端 LibriSpeech test-clean 数据集目录.
     LIBRISPEECH_ROOT=""
-    # 板端部署目录.
-    BOARD_DEPLOY_DIR=""
-    # 板端结果目录: 留空则位于部署目录下.
-    BOARD_RESULTS_DIR=""
-    # ONNX 精度数据: 编译主机与 Docker 都可访问的全量数据集根目录,必须填写.
+
+    # 4. ONNX 精度数据.
+    # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录,必须填写.
     ONNX_DATASET_DIR=""
-    # 板端 SSH 用户和地址.
-    BOARD_HOST="root@192.168.0.92"
+
+    # 5. 编译环境: 通常无需修改.
+    # Docker 容器: 编译主机上的 Genio 720 编译环境.
+    MTK_G720_CONTAINER="hhl_g720_8011"
+    # C++ 工具链: 编译主机上的 AArch64 编译工具和 OpenCV 库目录.
+    MTK_G720_CPP_TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
+    # 环境脚本: Docker 内 MTK SDK 初始化脚本.
+    MTK_SETUP_SCRIPT="/opt/mtk-build/setup_container.sh"
+    # 模型编译器: Docker 内 Neuron SDK host 目录,包含 bin/ 和 lib/.
+    NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
+    # 编译模式: check 仅编译,其他值按下方编译流程处理.
+    NCC_MODE="check"
+    # Runtime 头文件: 编译主机上的 Neuron Runtime include 目录.
+    MTK_NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
+    # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
+    CROSS_CXX="aarch64-linux-gnu-g++"
+    # SSH 选项: 首次连接接受主机密钥,之后验证保存的密钥.
+    SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 fi
 
 # 板端阶段: C++ 准备音频和推理,Python 仅计算 WER.
@@ -45,7 +75,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     command -v ffmpeg
     python3 -c 'from whisper.normalizers import EnglishTextNormalizer; from whisper.tokenizer import get_tokenizer'
 
-    echo "[1/4] 在板端整理 2620 条音频并生成 Mel 输入."
+    echo "[开发板 1/4] 在板端整理 2620 条音频并生成 Mel 输入."
     "${SCRIPT_DIR}/prepare_board_audio" \
         --dataset-root "${LIBRISPEECH_ROOT}" \
         --filters "${SCRIPT_DIR}/mel_filters_f32.bin" \
@@ -53,7 +83,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     test "$(wc -l < "${CACHE_DIR}/source_manifest.jsonl")" -eq 2620
     mkdir -p "${RUN_DIR}/logs" "${REPORT_DIR}"
 
-    echo "[2/4] 在板端运行双 DLA 常驻 C++ 推理."
+    echo "[开发板 2/4] 在板端运行双 DLA 常驻 C++ 推理."
     "${SCRIPT_DIR}/whisper_board_eval" \
         "${SCRIPT_DIR}/encoder_fp32.dla" \
         "${SCRIPT_DIR}/decoder_step_fp32.dla" \
@@ -62,14 +92,14 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         "${RUN_DIR}/board_predictions.jsonl" \
         2>&1 | tee "${RUN_DIR}/logs/board.log"
 
-    echo "[3/4] 在板端计算 LibriSpeech WER."
+    echo "[开发板 3/4] 在板端计算 LibriSpeech WER."
     python3 "${TOOL_DIR}/evaluate_accuracy.py" \
         --dataset librispeech \
         --source-manifest "${CACHE_DIR}/source_manifest.jsonl" \
         --board-predictions "${RUN_DIR}/board_predictions.jsonl" \
         --preprocess-metrics "${CACHE_DIR}/preprocess_metrics.jsonl" \
         --output-dir "${REPORT_DIR}"
-    echo "[4/4] 汇总核心指标并清理临时结果."
+    echo "[开发板 4/4] 汇总核心指标并清理临时结果."
     # 所有原始数据仅在本次 work 下生成; 汇总成功后由工具清理.
     python3 "${SCRIPT_DIR}/summarize_board_result.py" \
         --model "whisper_tiny" --work-dir "${RUN_DIR}" \
@@ -84,30 +114,19 @@ if (( $# != 0 )); then
     exit 2
 fi
 
-# 路径配置: 双 ONNX、产物、LibriSpeech、工具链和板端位置均可覆盖.
-readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
+# 编译主机阶段: 检查配置,转换模型,交叉编译并上传.
 : "${ONNX_DATASET_DIR:?请在脚本顶部指定编译主机的全量精度数据集}"
 test -d "${ONNX_DATASET_DIR}"
 if [[ "${ONNX_DATASET_DIR}" != /* ]]; then
     echo "[ERROR] ONNX_DATASET_DIR 必须是编译主机与 Docker 共用的绝对路径." >&2
     exit 2
 fi
-readonly ENCODER_ONNX="${ENCODER_ONNX:-${MODEL_ROOT}/models/encoder_fp32.onnx}"
-readonly DECODER_ONNX="${DECODER_ONNX:-${MODEL_ROOT}/models/decoder_step_fp32.onnx}"
-readonly MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR:-${MODEL_ROOT}/models}"
-readonly LIBRISPEECH_ROOT="${LIBRISPEECH_ROOT:?请指定板端 LibriSpeech test-clean 目录}"
-readonly BOARD_DEPLOY_DIR="${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
-readonly BOARD_RESULTS_DIR="${BOARD_RESULTS_DIR:-${BOARD_DEPLOY_DIR}/results}"
-readonly BOARD_HOST="${BOARD_HOST:-root@192.168.0.92}"
-readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
-readonly MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT:-/opt/mtk-build/setup_container.sh}"
-readonly NCC_ROOT="${NCC_ROOT:-/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host}"
-readonly NCC_MODE="${NCC_MODE:-check}"
-readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT:-/data/users/hailong.he/data/MTKG720/cpp_toolchain}"
-readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE:-/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include}"
-readonly CXX="${CROSS_CXX:-aarch64-linux-gnu-g++}"
-readonly SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+: "${LIBRISPEECH_ROOT:?请指定板端 LibriSpeech test-clean 目录}"
+: "${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
+readonly CONTAINER="${MTK_G720_CONTAINER}"
+readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}"
+readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE}"
+readonly CXX="${CROSS_CXX}"
 
 mkdir -p "${BUILD_WORK_DIR}/tmp"
 export TMPDIR="${BUILD_WORK_DIR}/tmp"
@@ -123,7 +142,7 @@ if [[ "${NCC_MODE}" != "check" && "${NCC_MODE}" != "strict" ]]; then
     exit 2
 fi
 
-echo "[1/4] 在 Docker 中转换并编译双 DLA."
+echo "[编译主机 1/4] 在 Docker 中转换并编译双 DLA."
 docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 -e MODEL_ROOT="${MODEL_ROOT}" \
     -e ENCODER_ONNX="${ENCODER_ONNX}" -e DECODER_ONNX="${DECODER_ONNX}" \
     -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
@@ -184,7 +203,7 @@ REFERENCE_SOURCE="本次 ONNX 浮点全量实测,使用与板端相同的评测�
 test -s "${MODEL_OUTPUT_DIR}/encoder_fp32.dla"
 test -s "${MODEL_OUTPUT_DIR}/decoder_step_fp32.dla"
 
-echo "[2/4] 在编译主机交叉编译板端音频准备和推理程序."
+echo "[编译主机 2/4] 在编译主机交叉编译板端音频准备和推理程序."
 readonly OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
@@ -204,7 +223,7 @@ command -v "${CXX}" >/dev/null 2>&1
 file "${BUILD_WORK_DIR}/prepare_board_audio" \
     "${BUILD_WORK_DIR}/whisper_board_eval"
 
-echo "[3/4] 在 Docker 中导出滤波器、解码规则和指标依赖."
+echo "[编译主机 3/4] 在 Docker 中导出滤波器、解码规则和指标依赖."
 readonly ASSETS_DIR="${BUILD_WORK_DIR}/board_assets"
 docker exec -e PYTHONDONTWRITEBYTECODE=1 -e TMPDIR="${BUILD_WORK_DIR}/tmp" -e MODEL_ROOT="${MODEL_ROOT}" \
     "${CONTAINER}" python3 "${SCRIPT_DIR}/python/export_board_assets.py" \
@@ -218,7 +237,7 @@ docker cp "${CONTAINER}:${ASSETS_DIR}/." "${ASSETS_DIR}/"
 test -s "${ASSETS_DIR}/mel_filters_f32.bin"
 test -s "${ASSETS_DIR}/decode_config.txt"
 
-echo "[4/4] 上传双 DLA、程序、指标代码和路径配置到板端."
+echo "[编译主机 4/4] 上传双 DLA、程序、指标代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/tools'"
 scp "${SSH_OPTIONS[@]}" \

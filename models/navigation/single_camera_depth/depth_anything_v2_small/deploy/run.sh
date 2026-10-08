@@ -1,31 +1,59 @@
 #!/usr/bin/env bash
-# Depth Anything V2 Small 单脚本流程: 89 编译上传,开发板测试.
+# 单脚本两步流程: 在编译主机编译并上传,在开发板执行测试.
 
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
+
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# 用户配置: 留空的可选项使用仓库内默认路径.
+
+# 编译主机配置区: 只修改等号右侧的路径或名称.板端使用上传的 board_paths.conf.
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
-    # 官方 Small 权重: 留空则使用 original/ 下的默认文件.
-    WEIGHTS=""
-    # 官方上游源码目录: 留空则使用 original/upstream.
-    UPSTREAM_DIR=""
+    # 模型目录: 根据本脚本的位置自动确定.
+    MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+    # 1. 模型与校准数据.
+    # 官方 Small 权重.
+    WEIGHTS="${MODEL_ROOT}/original/depth_anything_v2_vits.pth"
+    # 官方上游源码目录.
+    UPSTREAM_DIR="${MODEL_ROOT}/original/upstream"
     # INT8 校准图片目录.
     CALIBRATION_DIR=""
-    # 临时构建目录: 辅助输入、缓存和程序放在仓库外.
+
+    # 2. 产物与临时目录.
+    # 模型输出目录: 转换与编译产物保存在这里.
+    MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
+    # 临时构建目录: 缓存和中间文件保存在仓库外.
     BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/depth_anything_v2_small"
-    # 模型输出目录: 留空则使用 models/.
-    MODEL_OUTPUT_DIR=""
+    # C++ 输出: 编译主机交叉编译生成的临时程序完整路径.
+    BOARD_BINARY_OUTPUT="${BUILD_WORK_DIR}/benchmark_board"
+
+    # 3. 板端地址与数据.
+    # 板端地址: SSH 用户和地址.
+    BOARD_HOST="root@192.168.0.92"
+    # 板端部署目录: 上传模型、程序和本脚本的目录,必须填写.
+    BOARD_DEPLOY_DIR=""
+    # 板端结果目录: 保存本次测试汇总.
+    BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # 板端 DA-2K 数据集目录.
     BOARD_DATASET_DIR=""
-    # 板端部署目录.
-    BOARD_DEPLOY_DIR=""
-    # 板端结果目录: 留空则位于部署目录下.
-    BOARD_RESULTS_DIR=""
-    # ONNX 精度数据: 编译主机与 Docker 都可访问的全量数据集根目录,必须填写.
+
+    # 4. ONNX 精度数据.
+    # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录,必须填写.
     ONNX_DATASET_DIR=""
-    # 板端 SSH 用户和地址.
-    BOARD_HOST="root@192.168.0.92"
+
+    # 5. 编译环境: 通常无需修改.
+    # Docker 容器: 编译主机上的 Genio 720 编译环境.
+    MTK_G720_CONTAINER="hhl_g720_8011"
+    # C++ 工具链: 编译主机上的 AArch64 编译工具和 OpenCV 库目录.
+    MTK_G720_CPP_TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
+    # 模型编译器: Docker 内 Neuron SDK host 目录,包含 bin/ 和 lib/.
+    NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
+    # Runtime 头文件: 编译主机上的 Neuron Runtime include 目录.
+    MTK_NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
+    # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
+    CROSS_CXX="aarch64-linux-gnu-g++"
+    # SSH 选项: 首次连接接受主机密钥,之后验证保存的密钥.
+    SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 fi
 
 # 板端有第一步写入的配置文件,直接运行 DA-2K 全量评测.
@@ -39,13 +67,13 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     test -s "${BOARD_DATASET_DIR}/annotations.json"
     test -d "${BOARD_DATASET_DIR}/images"
     test ! -e "${RESULT_DIR}"
-    echo "[1/2] 在板端执行 DA-2K 全量点对评测."
+    echo "[开发板 1/2] 在板端执行 DA-2K 全量点对评测."
     python3 "${SCRIPT_DIR}/full_accuracy_board.py" \
         --dataset-root "${BOARD_DATASET_DIR}" \
         --model "${SCRIPT_DIR}/model_int8.dla" \
         --metadata "${SCRIPT_DIR}/model_int8.json" \
         --run-dir "${RUN_DIR}" --run-id "${RUN_ID}"
-    echo "[2/2] 使用交叉编译的 C++ 程序测量常驻模型推理耗时."
+    echo "[开发板 2/2] 使用交叉编译的 C++ 程序测量常驻模型推理耗时."
     inputs=("${RUN_DIR}/inputs/"*.bin)
     test -f "${inputs[0]}"
     "${SCRIPT_DIR}/benchmark_board" --model "${SCRIPT_DIR}/model_int8.dla" \
@@ -65,30 +93,21 @@ if (( $# != 0 )); then
     exit 2
 fi
 
-# 路径配置: 输入和生成位置均可通过同名环境变量指定.
-readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
+# 编译主机阶段: 检查配置,转换模型,交叉编译并上传.
 : "${ONNX_DATASET_DIR:?请在脚本顶部指定编译主机的全量精度数据集}"
 test -d "${ONNX_DATASET_DIR}"
 if [[ "${ONNX_DATASET_DIR}" != /* ]]; then
     echo "[ERROR] ONNX_DATASET_DIR 必须是编译主机与 Docker 共用的绝对路径." >&2
     exit 2
 fi
-readonly WEIGHTS="${WEIGHTS:-${MODEL_ROOT}/original/depth_anything_v2_vits.pth}"
-readonly UPSTREAM_DIR="${UPSTREAM_DIR:-${MODEL_ROOT}/original/upstream}"
-readonly CALIBRATION_DIR="${CALIBRATION_DIR:?请指定 CALIBRATION_DIR}"
-readonly MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR:-${MODEL_ROOT}/models}"
-readonly BOARD_DATASET_DIR="${BOARD_DATASET_DIR:?请指定板端 DA-2K 数据集目录}"
-readonly BOARD_DEPLOY_DIR="${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
-readonly BOARD_RESULTS_DIR="${BOARD_RESULTS_DIR:-${BOARD_DEPLOY_DIR}/results}"
-readonly BOARD_HOST="${BOARD_HOST:-root@192.168.0.92}"
-readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
-readonly NCC_ROOT="${NCC_ROOT:-/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host}"
-readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT:-/data/users/hailong.he/data/MTKG720/cpp_toolchain}"
-readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE:-/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include}"
-readonly CXX="${CROSS_CXX:-aarch64-linux-gnu-g++}"
-readonly BINARY_OUTPUT="${BOARD_BINARY_OUTPUT:-${BUILD_WORK_DIR}/benchmark_board}"
-readonly SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+: "${CALIBRATION_DIR:?请指定 CALIBRATION_DIR}"
+: "${BOARD_DATASET_DIR:?请指定板端 DA-2K 数据集目录}"
+: "${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
+readonly CONTAINER="${MTK_G720_CONTAINER}"
+readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}"
+readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE}"
+readonly CXX="${CROSS_CXX}"
+readonly BINARY_OUTPUT="${BOARD_BINARY_OUTPUT}"
 
 mkdir -p "${BUILD_WORK_DIR}/tmp"
 export TMPDIR="${BUILD_WORK_DIR}/tmp"
@@ -101,7 +120,7 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
     exit 2
 fi
 
-echo "[1/3] 在 Docker 中导出、量化并编译 DLA."
+echo "[编译主机 1/3] 在 Docker 中导出、量化并编译 DLA."
 docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 \
     -e MODEL_ROOT="${MODEL_ROOT}" -e WEIGHTS="${WEIGHTS}" \
     -e UPSTREAM_DIR="${UPSTREAM_DIR}" -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
@@ -150,7 +169,7 @@ REFERENCE_SOURCE="本次 ONNX 浮点全量实测,使用与板端相同的评测�
 test -s "${MODEL_OUTPUT_DIR}/model_int8.dla"
 test -s "${MODEL_OUTPUT_DIR}/model_int8.json"
 
-echo "[2/3] 在编译主机交叉编译 C++ 板端性能程序."
+echo "[编译主机 2/3] 在编译主机交叉编译 C++ 板端性能程序."
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
 command -v "${CXX}" >/dev/null 2>&1
 test -f "${NEURON_INCLUDE}/neuron/api/RuntimeAPI.h"
@@ -162,7 +181,7 @@ mkdir -p "$(dirname "${BINARY_OUTPUT}")"
     -Wl,--allow-shlib-undefined -pthread -ldl -o "${BINARY_OUTPUT}"
 file "${BINARY_OUTPUT}"
 
-echo "[3/3] 上传模型、程序、评测代码和路径配置到板端."
+echo "[编译主机 3/3] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
     "${MODEL_OUTPUT_DIR}/model_int8.json" \

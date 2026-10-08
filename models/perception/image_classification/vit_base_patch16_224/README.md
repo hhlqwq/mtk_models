@@ -6,11 +6,13 @@ ImageNet-1K 图像分类，输入为 224×224 RGB 图像。正式上游为 PyTor
 
 ## 第一步：编译并上传
 
+所有配置均在脚本顶部,按模型与校准数据、产物与临时目录、板端地址与数据、ONNX 精度数据、编译环境分组.按注释修改等号右侧的值,编译环境通常无需调整.
+
 在 [run.sh](deploy/run.sh) 顶部填写以下路径:
 
 | 配置 | 内容 |
 | --- | --- |
-| `MODEL_ONNX` | 待量化 ONNX,留空使用 `models/model_mtk_compatible.onnx` |
+| `MODEL_ONNX` | 待量化的 MTK 兼容 ONNX 文件 |
 | `ONNX_DATASET_DIR` | 编译主机上的 ImageNet 验证集根目录 |
 | `CALIBRATION_DIR` | 校准图片目录,使用验证集中的 `val/` 或 `ILSVRC2012_img_val/` |
 | `BOARD_HOST` | 板端 SSH 用户和地址 |

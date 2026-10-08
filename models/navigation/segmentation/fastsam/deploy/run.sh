@@ -1,31 +1,57 @@
 #!/usr/bin/env bash
-# FastSAM-s 单脚本流程: 89 编译上传,开发板测试类别无关分割.
+# 单脚本两步流程: 在编译主机编译并上传,在开发板执行测试.
 
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
+
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# 用户配置: 留空的可选项使用仓库内默认路径.
+
+# 编译主机配置区: 只修改等号右侧的路径或名称.板端使用上传的 board_paths.conf.
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
-    # 官方 FastSAM-s 权重: 留空则使用 original/FastSAM-s.pt.
-    FASTSAM_WEIGHTS=""
-    # 导出等价性检查使用的一张图片.
-    FASTSAM_IMAGE=""
+    # 模型目录: 根据本脚本的位置自动确定.
+    MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+    # 1. 模型与校准数据.
+    # 官方 FastSAM-s 权重.
+    FASTSAM_WEIGHTS="${MODEL_ROOT}/original/FastSAM-s.pt"
     # INT8 校准图片目录.
     FASTSAM_CALIBRATION_DIR=""
-    # 临时构建目录: 辅助输入、缓存和程序放在仓库外.
+    # 导出等价性检查使用的一张图片.
+    FASTSAM_IMAGE=""
+
+    # 2. 产物与临时目录.
+    # 模型输出目录: 转换与编译产物保存在这里.
+    MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
+    # 临时构建目录: 缓存和中间文件保存在仓库外.
     BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/fastsam"
-    # 模型输出目录: 留空则使用 models/.
-    MODEL_OUTPUT_DIR=""
+
+    # 3. 板端地址与数据.
+    # 板端地址: SSH 用户和地址.
+    BOARD_HOST="root@192.168.0.92"
+    # 板端部署目录: 上传模型、程序和本脚本的目录,必须填写.
+    BOARD_DEPLOY_DIR=""
+    # 板端结果目录: 保存本次测试汇总.
+    BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # 板端 COCO val2017 数据集目录.
     BOARD_DATASET_DIR=""
-    # 板端部署目录.
-    BOARD_DEPLOY_DIR=""
-    # 板端结果目录: 留空则位于部署目录下.
-    BOARD_RESULTS_DIR=""
-    # ONNX 精度数据: 编译主机与 Docker 都可访问的全量数据集根目录,必须填写.
+
+    # 4. ONNX 精度数据.
+    # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录,必须填写.
     ONNX_DATASET_DIR=""
-    # 板端 SSH 用户和地址.
-    BOARD_HOST="root@192.168.0.92"
+
+    # 5. 编译环境: 通常无需修改.
+    # Docker 容器: 编译主机上的 Genio 720 编译环境.
+    MTK_G720_CONTAINER="hhl_g720_8011"
+    # C++ 工具链: 编译主机上的 AArch64 编译工具和 OpenCV 库目录.
+    MTK_G720_CPP_TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
+    # 模型编译器: Docker 内 Neuron SDK host 目录,包含 bin/ 和 lib/.
+    NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
+    # Runtime 头文件: 编译主机上的 Neuron Runtime include 目录.
+    MTK_NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
+    # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
+    CROSS_CXX="aarch64-linux-gnu-g++"
+    # SSH 选项: 首次连接接受主机密钥,之后验证保存的密钥.
+    SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 fi
 
 # 板端阶段: 保留逐图检查点,同一 EVAL_RUN_ID 可显式续跑.
@@ -52,7 +78,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     mkdir -p "${RUN_DIR}/raw" "${RUN_DIR}/predictions_by_image" \
         "${RUN_DIR}/report"
 
-    echo "[1/3] 在板端逐图执行 C++ NPU 推理并保存检查点."
+    echo "[开发板 1/3] 在板端逐图执行 C++ NPU 推理并保存检查点."
     count=0
     while IFS= read -r -d '' image; do
         image_name="$(basename "${image}" .jpg)"
@@ -88,7 +114,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         -type f -name '*.jpg' -print0 | sort -z)
     test "${count}" -eq 5000
 
-    echo "[2/3] 在板端计算类别无关 COCO segm AP."
+    echo "[开发板 2/3] 在板端计算类别无关 COCO segm AP."
     python3 "${SCRIPT_DIR}/full_accuracy_board.py" \
         --mode evaluate --images "${BOARD_DATASET_DIR}/images" \
         --annotations "${ANNOTATIONS}" --work-dir "${RUN_DIR}" \
@@ -108,29 +134,24 @@ if (( $# != 0 )); then
     exit 2
 fi
 
-# 路径配置: 模型和校准集由用户提供,产物及板端目录均可覆盖.
-readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
+# 编译主机阶段: 检查配置,转换模型,交叉编译并上传.
 : "${ONNX_DATASET_DIR:?请在脚本顶部指定编译主机的全量精度数据集}"
 test -d "${ONNX_DATASET_DIR}"
 if [[ "${ONNX_DATASET_DIR}" != /* ]]; then
     echo "[ERROR] ONNX_DATASET_DIR 必须是编译主机与 Docker 共用的绝对路径." >&2
     exit 2
 fi
-readonly WEIGHTS="${FASTSAM_WEIGHTS:-${MODEL_ROOT}/original/FastSAM-s.pt}"
-readonly SAMPLE_IMAGE="${FASTSAM_IMAGE:?请指定样例图片绝对路径}"
-readonly CALIBRATION_DIR="${FASTSAM_CALIBRATION_DIR:?请指定校准图片目录}"
-readonly MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR:-${MODEL_ROOT}/models}"
-readonly BOARD_DATASET_DIR="${BOARD_DATASET_DIR:?请指定板端 COCO 数据集目录}"
-readonly BOARD_DEPLOY_DIR="${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
-readonly BOARD_RESULTS_DIR="${BOARD_RESULTS_DIR:-${BOARD_DEPLOY_DIR}/results}"
-readonly BOARD_HOST="${BOARD_HOST:-root@192.168.0.92}"
-readonly CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
-readonly NCC_ROOT="${NCC_ROOT:-/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host}"
-readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT:-/data/users/hailong.he/data/MTKG720/cpp_toolchain}"
-readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE:-/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include}"
-readonly CXX="${CROSS_CXX:-aarch64-linux-gnu-g++}"
-readonly SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+readonly WEIGHTS="${FASTSAM_WEIGHTS}"
+: "${FASTSAM_IMAGE:?请指定样例图片绝对路径}"
+readonly SAMPLE_IMAGE="${FASTSAM_IMAGE}"
+: "${FASTSAM_CALIBRATION_DIR:?请指定校准图片目录}"
+readonly CALIBRATION_DIR="${FASTSAM_CALIBRATION_DIR}"
+: "${BOARD_DATASET_DIR:?请指定板端 COCO 数据集目录}"
+: "${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
+readonly CONTAINER="${MTK_G720_CONTAINER}"
+readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}"
+readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE}"
+readonly CXX="${CROSS_CXX}"
 
 mkdir -p "${BUILD_WORK_DIR}/tmp"
 export TMPDIR="${BUILD_WORK_DIR}/tmp"
@@ -143,7 +164,7 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
     exit 2
 fi
 
-echo "[1/3] 在 Docker 中导出、量化并编译 DLA."
+echo "[编译主机 1/3] 在 Docker 中导出、量化并编译 DLA."
 docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 -e MODEL_ROOT="${MODEL_ROOT}" -e WEIGHTS="${WEIGHTS}" \
     -e SAMPLE_IMAGE="${SAMPLE_IMAGE}" \
     -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
@@ -192,7 +213,7 @@ REFERENCE_ACCURACY="$(docker exec "${CONTAINER}" python -c \
 REFERENCE_SOURCE="本次 ONNX 浮点全量实测,使用与板端相同的评测协议"
 test -s "${MODEL_OUTPUT_DIR}/runtime_config.csv"
 
-echo "[2/3] 在编译主机交叉编译板端 C++ 测试程序."
+echo "[编译主机 2/3] 在编译主机交叉编译板端 C++ 测试程序."
 readonly OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
@@ -212,7 +233,7 @@ command -v "${CXX}" >/dev/null 2>&1
     -o "${BUILD_WORK_DIR}/fastsam_board"
 file "${BUILD_WORK_DIR}/fastsam_board"
 
-echo "[3/3] 上传模型、程序、评测代码和路径配置到板端."
+echo "[编译主机 3/3] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
     "${MODEL_OUTPUT_DIR}/runtime_config.csv" \
