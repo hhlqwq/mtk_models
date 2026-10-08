@@ -192,4 +192,4 @@ python tools/create_model.py \
 python tools/check_registry.py
 ```
 
-各模型统一在编译主机评测 ONNX 核心精度,板端记录核心精度、推理耗时、峰值 RSS、实际部署精度和相对 ONNX 的精度变化。量化方式、数据要求与测试步骤见各模型 README。
+各模型统一在编译主机评测 ONNX 核心精度,板端记录核心精度、推理耗时、峰值 RSS和相对 ONNX 的精度变化。量化方式、数据要求与测试步骤见各模型 README。

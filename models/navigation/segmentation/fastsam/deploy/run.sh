@@ -24,14 +24,6 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     BOARD_RESULTS_DIR=""
     # ONNX 精度数据: 编译主机与 Docker 都可访问的全量数据集根目录,必须填写.
     ONNX_DATASET_DIR=""
-    # 部署精度方案: 按实际编译信息填写,例如 w8a8、w8a16、fp16、fp32、mixed; 未确认用 unknown.
-    DEPLOYMENT_PRECISION="unknown"
-    # 实际权重类型: 例如 int8、fp16、mixed; 不根据输入输出或文件名推断.
-    WEIGHT_DTYPE="unknown"
-    # 实际激活类型: 例如 int16、fp16、mixed; 未确认用 unknown.
-    ACTIVATION_DTYPE="unknown"
-    # 精度依据: 编译配置/报告或混合层说明; 填写精度时同步填写,这些配置不改变编译策略.
-    PRECISION_SOURCE=""
     # 板端 SSH 用户和地址.
     BOARD_HOST="root@192.168.0.92"
 fi
@@ -107,11 +99,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         --model "fastsam" --work-dir "${RUN_DIR}" \
         --output "${RESULT_DIR}/summary.json" --run-id "${RUN_ID}" \
         --reference "${REFERENCE_ACCURACY:-}" \
-        --reference-source "${REFERENCE_SOURCE:-用户提供的同协议参考基准}" \
-        --precision "${DEPLOYMENT_PRECISION:-unknown}" \
-        --weight-dtype "${WEIGHT_DTYPE:-unknown}" \
-        --activation-dtype "${ACTIVATION_DTYPE:-unknown}" \
-        --precision-source "${PRECISION_SOURCE:-}"
+        --reference-source "${REFERENCE_SOURCE:-用户提供的同协议参考基准}"
     exit 0
 fi
 
@@ -237,8 +225,8 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
 scp "${SSH_OPTIONS[@]}" \
     "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/summarize_board_result.py"
-printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\nDEPLOYMENT_PRECISION=%q\nWEIGHT_DTYPE=%q\nACTIVATION_DTYPE=%q\nPRECISION_SOURCE=%q\n' \
-    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" "${DEPLOYMENT_PRECISION}" "${WEIGHT_DTYPE}" "${ACTIVATION_DTYPE}" "${PRECISION_SOURCE}" |
+printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\n' \
+    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
 echo "[OK] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

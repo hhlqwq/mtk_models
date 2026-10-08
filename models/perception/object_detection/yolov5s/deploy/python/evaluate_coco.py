@@ -77,7 +77,6 @@ def evaluate(args: argparse.Namespace) -> None:
     summary_lines = [
         f"板端 NPU 平均推理耗时: {npu_mean:.3f} ms",
         f"板端 mAP@0.5:0.95: {board_map:.6f}",
-        f"部署精度: {args.precision}; 权重: {args.weight_dtype}; 激活: {args.activation_dtype}",
     ]
     summary_lines.append("推理进程峰值 RSS: 未记录." if peak_rss_mib is None else
                          f"推理进程峰值 RSS: {peak_rss_mib:.3f} MiB")
@@ -104,10 +103,6 @@ def evaluate(args: argparse.Namespace) -> None:
         "accuracy_loss_percentage_points": loss_pp,
         "accuracy_change_percentage_points": None if loss_pp is None else -loss_pp,
         "onnx_baseline_source": args.fp32_source if fp32_map is not None else None,
-        "deployment_precision": {
-            "scheme": args.precision, "weights": args.weight_dtype,
-            "activations": args.activation_dtype, "source": args.precision_source or None,
-        },
     }
     args.metrics.write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -125,10 +120,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--fp32-source", default="用户提供的同协议 FP32 基准")
     parser.add_argument("--metrics", type=Path, required=True)
     parser.add_argument("--run-id")
-    parser.add_argument("--precision", default="unknown")
-    parser.add_argument("--weight-dtype", default="unknown")
-    parser.add_argument("--activation-dtype", default="unknown")
-    parser.add_argument("--precision-source", default="")
     return parser.parse_args()
 
 

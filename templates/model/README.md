@@ -20,7 +20,7 @@ bash run.sh
 
 ## 当前测试结果
 
-待上传 `results/summary.json` 后更新.记录 ONNX 核心精度、板端核心精度、精度变化、NPU 平均耗时、峰值 RSS 和实际部署精度.
+待上传 `results/summary.json` 后更新.记录 ONNX 核心精度、板端核心精度、精度变化、NPU 平均耗时和峰值 RSS.
 
 ## 文件结构
 
