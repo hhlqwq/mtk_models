@@ -1,5 +1,15 @@
 schema_version: 1
 models:
+  - id: yolov8n
+    batch: first_batch
+    pilot: false
+    scenario: perception
+    category: object_detection
+    path: models/perception/object_detection/yolov8n
+    source: ultralytics/ultralytics
+    platforms:
+      genio_720: environment_ready
+      genio_5100: not_started
   - id: depth_anything_v2_small
     batch: first_batch
     pilot: true

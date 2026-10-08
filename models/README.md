@@ -11,6 +11,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 
 | 模型 | 板端 NPU 平均耗时 (ms) | 峰值 RSS (MiB) | 核心精度 | 精度变化 (百分点) |
 | --- | ---: | ---: | --- | ---: |
+| [YOLOv8n](perception/object_detection/yolov8n/README.md) | 待验证 | 待验证 | mAP@0.5:0.95 待验证 | 待验证 |
 | [YOLOv5s](perception/object_detection/yolov5s/README.md) | **9.76** | **33.23** | mAP@0.5:0.95 **35.86%** | **-1.23** |
 | [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | 待上传 | 待上传 | Top-1 待上传 | 待上传 |
 | [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | 待上传 | 待上传 | WholeBody AP 待上传 | 待上传 |

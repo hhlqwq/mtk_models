@@ -60,6 +60,11 @@ models/audio/stt/whisper_tiny/examples/output/runs/
 models/navigation/segmentation/fastsam/models/*.json
 models/navigation/segmentation/fastsam/models/runtime_config.csv
 
+# YOLOv8n 本地导出、量化契约与产物哈希.
+models/perception/object_detection/yolov8n/models/*.json
+models/perception/object_detection/yolov8n/models/runtime_config.csv
+models/perception/object_detection/yolov8n/models/SHA256SUMS
+
 
 
 !models/perception/object_detection/yolov5s/models/yolov5-485da42.zip

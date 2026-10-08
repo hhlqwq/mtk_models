@@ -1,0 +1,7 @@
+implementation=https://github.com/ultralytics/ultralytics/tree/v8.0.111
+weights=https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt
+weights_sha256=31e20dde3def09e2cf938c7be6fe23d9150bbbe503982af13345706515f2ef95
+weights_bytes=6534387
+license=AGPL-3.0
+download_date=2026-10-08
+dataset=https://cocodataset.org/#download
