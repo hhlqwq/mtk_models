@@ -2,7 +2,7 @@
 
 完整测试成功后只保留一个 `summary.json`。预测、缓存与日志在汇总成功后删除,失败时保留本次 `work/`。ONNX 浮点精度由编译主机自动实测,上传到板端后计算精度变化。
 
-运行时的临时文件与 C++ 程序保存在脚本顶部的 `BUILD_WORK_DIR`,默认是仓库外的 `/tmp/hailongcodex/<当天日期>/rtmpose_body2d/`。模型产物写入 `MODEL_OUTPUT_DIR`,板端测试结果写入 `BOARD_RESULTS_DIR`。脚本不在代码目录生成 Python 字节码缓存。
+模型产物写入 `MODEL_OUTPUT_DIR`,板端测试结果写入 `BOARD_RESULTS_DIR`。脚本不在代码目录生成 Python 字节码缓存。
 
 人体 WholeBody 姿态估计，输入为 256×192 RGB 人体裁剪图，输出 133 个关节点。正式上游为 OpenMMLab MMPose v1.3.2；来源见[模型卡](model_card.md)。
 
@@ -22,7 +22,7 @@
 
 `summary.json` 中的 `deployment_precision` 保存精度说明。`accuracy_change_percentage_points` 正数表示改善,负数表示下降: 使用 `(板端 - ONNX) × 100`。同时保留 `accuracy_loss_percentage_points` 供兼容,它与精度变化互为相反数。
 
-Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 xtcocotools。浮点评测汇总放在仓库外的 `BUILD_WORK_DIR/onnx_accuracy/summary.json`,不保存原始预测; 成功后删除本次临时数据,失败时保留现场。
+Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 xtcocotools。
 
 ## 当前测试结果
 

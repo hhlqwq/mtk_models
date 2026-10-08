@@ -14,7 +14,7 @@ bash models/perception/object_detection/yolov5s/deploy/run.sh
 
 脚本在 Docker 中生成 DLA,自动评测 ONNX FP32 全量精度,在编译主机交叉编译板端 C++ 程序,然后上传文件和实测 FP32 基准。`FP32_IMAGES_DIR` 与 `FP32_ANNOTATIONS` 必须指向与板端相同的 COCO val2017 5000 张图片及标注。校准仅使用其中 100 张图片,与全量精度评测分开。
 
-浮点模型只记录 mAP@0.5:0.95,不测试 PyTorch 精度,不统计编译主机耗时或内存。Docker 需安装 ONNX Runtime、pycocotools、OpenCV、PyTorch、torchvision 和 tqdm; PyTorch 仅用于解码和 NMS。源码、补丁、浮点评测汇总及临时 C++ 程序使用 `/tmp/hailongcodex/当天日期/yolov5s/`,模型产物写入 `MODEL_OUTPUT_DIR`。脚本不下载模型或数据。
+浮点模型只记录 mAP@0.5:0.95,不测试 PyTorch 精度,不统计编译主机耗时或内存。Docker 需安装 ONNX Runtime、pycocotools、OpenCV、PyTorch、torchvision 和 tqdm; PyTorch 仅用于解码和 NMS。模型产物写入脚本配置的输出目录。脚本不下载模型或数据。
 
 ## 第二步：开发板测试
 
@@ -24,17 +24,19 @@ bash models/perception/object_detection/yolov5s/deploy/run.sh
 
 ## 当前测试结果
 
-结果来自 [results/summary.json](results/summary.json),运行编号 `20261008_024751_55865`,COCO val2017 全量 5000 张图片。
+结果来自 [results/summary.json](results/summary.json),运行编号 `20261008_032807_67603`,COCO val2017 全量 5000 张图片。
 
 | 指标 | 本次结果 |
 | --- | ---: |
-| 板端 NPU 平均推理耗时 | **9.736857 ms** |
-| 板端推理进程峰值 RSS | 未记录,待补充 |
-| FP32 mAP@0.5:0.95 | **0.370900** |
-| 板端 mAP@0.5:0.95 | **0.3585986035** |
-| 精度变化 (百分点) | **-1.230140** |
+| 板端 NPU 平均推理耗时 | **9.76 ms** |
+| 板端推理进程峰值 RSS | **33.23 MiB** |
+| ONNX FP32 mAP@0.5:0.95 | **37.09%** |
+| 板端 mAP@0.5:0.95 | **35.86%** |
+| 精度变化 (百分点) | **-1.23** |
 
-当前上传结果的 FP32 使用已确认的同协议 ONNX 基准 0.3709; 修改后的脚本将自动使用本次 ONNX 全量实测值。精度变化按 `(板端 - ONNX) × 100` 计算,负数表示下降。NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不含图片读取、前后处理和 COCOeval。峰值内存为板端 C++ 推理进程峰值 RSS (MiB),包含运行库与前后处理,不代表 NPU 专用内存; 本次上传文件缺少该值,不补填旧结果。
+ONNX FP32 与板端精度均来自本次同协议 COCO val2017 全量实测。mAP 以百分比显示并保留两位小数,精度变化按原始数值计算,负数表示下降。`summary.json` 保留完整数值精度,已纳入 Git 管理。
+
+NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不含图片读取、前后处理和 COCOeval。峰值内存为板端 C++ 推理进程峰值 RSS,包含运行库与前后处理,不代表 NPU 专用内存。
 
 全量测试成功后只保留一个 `summary.json`,中间预测和日志自动删除; 失败时保留现场。测试完成后将汇总文件上传到本地 `results/summary.json`,据此更新当前结果。
 

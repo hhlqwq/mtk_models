@@ -154,7 +154,7 @@ models/scenario_name/category_name/model_name/
 
 每个模型使用一个脚本完成两步流程：在编译主机运行 `deploy/run.sh` 编译并上传，再在开发板运行上传的同一脚本；路径在脚本中配置。具体命令见各模型 README。
 
-各模型的临时输入、依赖缓存和 C++ 编译程序统一写入 `BUILD_WORK_DIR`,默认是仓库外的 `/tmp/hailongcodex/<当天日期>/<模型名>/`。模型产物与板端结果分别写入 `MODEL_OUTPUT_DIR` 和 `BOARD_RESULTS_DIR`;代码目录不生成 Python 字节码缓存。Docker 与主机的临时目录独立,上传所需的辅助文件由脚本显式取回。
+模型产物与板端结果分别写入用户配置的 MODEL_OUTPUT_DIR 和 BOARD_RESULTS_DIR。
 
 完整板端测试成功后只保留一个 `summary.json`,包含平均 NPU 耗时、核心精度、匹配参考基准及精度差值。测试完成后将文件上传到本地模型的 `results/summary.json`,据此更新 README; 未上传结果不预填数字.
 

@@ -2,7 +2,7 @@
 
 完整测试成功后只保留一个 `summary.json`。预测、缓存与日志在汇总成功后删除,失败时保留本次 `work/`。ONNX 浮点精度由编译主机自动实测,上传到板端后计算精度变化。
 
-运行时的临时文件与 C++ 程序保存在脚本顶部的 `BUILD_WORK_DIR`,默认是仓库外的 `/tmp/hailongcodex/<当天日期>/yoloworld_xl/`。模型产物写入 `MODEL_OUTPUT_DIR`,板端测试结果写入 `BOARD_RESULTS_DIR`。脚本不在代码目录生成 Python 字节码缓存。
+模型产物写入 `MODEL_OUTPUT_DIR`,板端测试结果写入 `BOARD_RESULTS_DIR`。脚本不在代码目录生成 Python 字节码缓存。
 
 开放词汇目标检测，当前模型固化 COCO 80 类文本嵌入。使用 MediaTek 官方 ONNX，经 ONNX Runtime Neuron EP 在板端运行。来源见[模型卡](model_card.md)，精度与性能见[当前结果](README.md#当前测试结果)。
 
@@ -24,7 +24,7 @@ ONNX 图将固定文本注意力和分类矩阵乘法改写为卷积，将通道
 
 `summary.json` 中的 `deployment_precision` 保存精度说明。`accuracy_change_percentage_points` 正数表示改善,负数表示下降: 使用 `(板端 - ONNX) × 100`。同时保留 `accuracy_loss_percentage_points` 供兼容,它与精度变化互为相反数。
 
-Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 pycocotools。浮点评测汇总放在仓库外的 `BUILD_WORK_DIR/onnx_accuracy/summary.json`,不保存原始预测; 成功后删除本次临时数据,失败时保留现场。
+Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 pycocotools。
 
 ## 当前测试结果
 

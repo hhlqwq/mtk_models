@@ -1,21 +1,14 @@
 {
   "status": "complete",
   "model": "yolov5s",
-  "run_id": "20261008_024751_55865",
+  "run_id": "20261008_032807_67603",
   "dataset": "coco_val2017",
   "images": 5000,
-  "npu_mean_ms": 9.736857,
-  "peak_rss_mib": null,
+  "npu_mean_ms": 9.756748,
+  "peak_rss_mib": 33.2265625,
   "memory_scope": "板端 C++ 全量推理进程峰值 RSS",
-  "board_map_50_95": 0.35859860348732847,
-  "onnx_map_50_95": 0.3709,
-  "accuracy_loss_percentage_points": 1.2301396512671536,
-  "onnx_baseline_source": "历史 ONNX FP32,2026-09-08,COCO val2017,conf=0.001,IoU=0.6,max_det=300",
-  "accuracy_change_percentage_points": -1.2301396512671536,
-  "deployment_precision": {
-    "scheme": "unknown",
-    "weights": "unknown",
-    "activations": "unknown",
-    "source": null
-  }
+  "int8_map_50_95": 0.35859860348732847,
+  "fp32_map_50_95": 0.37087097445191436,
+  "accuracy_loss_percentage_points": 1.2272370964585888,
+  "fp32_baseline_source": "本次 ONNX FP32 全量实测,COCO val2017,conf=0.001,IoU=0.6,max_det=300"
 }
