@@ -1,0 +1,340 @@
+{
+  "model": "yolov8n",
+  "date": "2026-10-08",
+  "implementation_commit": "314d867",
+  "source": {
+    "implementation": "https://github.com/ultralytics/ultralytics/tree/v8.0.111",
+    "weights": "https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.pt",
+    "license": "AGPL-3.0"
+  },
+  "host": {
+    "ssh": "ubuntu89",
+    "container": "hhl_g720_8011",
+    "torch": "2.0.0+cu118",
+    "ultralytics": "8.0.111",
+    "onnx": "1.13.1",
+    "onnxruntime": "1.18.0",
+    "onnx_reference_provider": "CPUExecutionProvider",
+    "converter": "8.16.0",
+    "sdk": "8.0.11",
+    "ncc": "8.2.31"
+  },
+  "compile_flags": [
+    "--arch=mdla5.3",
+    "--suppress-output",
+    "--disallow-bridge"
+  ],
+  "board": {
+    "ssh": "root@192.168.0.92",
+    "soc": "MT8189 / Genio 720",
+    "system": "Rity Demo 26.0-release / scarthgap",
+    "runtime": "8.2.16",
+    "cpu_governor": "schedutil",
+    "deploy_dir": "/root/hailong.he/open_models/yolov8n",
+    "environment_record": "results/environment.txt"
+  },
+  "dataset": {
+    "name": "COCO val2017",
+    "samples": 5000,
+    "annotations_sha256": "e8c7f7908f1d7278341fae127d0da654f102f11bd7b21d8aeefa635b8c810b6f",
+    "host_board_annotations_match": true
+  },
+  "calibration": {
+    "samples": 100,
+    "selection": "sorted filenames, first 100",
+    "filenames": [
+      "000000000139.jpg",
+      "000000000285.jpg",
+      "000000000632.jpg",
+      "000000000724.jpg",
+      "000000000776.jpg",
+      "000000000785.jpg",
+      "000000000802.jpg",
+      "000000000872.jpg",
+      "000000000885.jpg",
+      "000000001000.jpg",
+      "000000001268.jpg",
+      "000000001296.jpg",
+      "000000001353.jpg",
+      "000000001425.jpg",
+      "000000001490.jpg",
+      "000000001503.jpg",
+      "000000001532.jpg",
+      "000000001584.jpg",
+      "000000001675.jpg",
+      "000000001761.jpg",
+      "000000001818.jpg",
+      "000000001993.jpg",
+      "000000002006.jpg",
+      "000000002149.jpg",
+      "000000002153.jpg",
+      "000000002157.jpg",
+      "000000002261.jpg",
+      "000000002299.jpg",
+      "000000002431.jpg",
+      "000000002473.jpg",
+      "000000002532.jpg",
+      "000000002587.jpg",
+      "000000002592.jpg",
+      "000000002685.jpg",
+      "000000002923.jpg",
+      "000000003156.jpg",
+      "000000003255.jpg",
+      "000000003501.jpg",
+      "000000003553.jpg",
+      "000000003661.jpg",
+      "000000003845.jpg",
+      "000000003934.jpg",
+      "000000004134.jpg",
+      "000000004395.jpg",
+      "000000004495.jpg",
+      "000000004765.jpg",
+      "000000004795.jpg",
+      "000000005001.jpg",
+      "000000005037.jpg",
+      "000000005060.jpg",
+      "000000005193.jpg",
+      "000000005477.jpg",
+      "000000005503.jpg",
+      "000000005529.jpg",
+      "000000005586.jpg",
+      "000000005600.jpg",
+      "000000005992.jpg",
+      "000000006012.jpg",
+      "000000006040.jpg",
+      "000000006213.jpg",
+      "000000006460.jpg",
+      "000000006471.jpg",
+      "000000006614.jpg",
+      "000000006723.jpg",
+      "000000006763.jpg",
+      "000000006771.jpg",
+      "000000006818.jpg",
+      "000000006894.jpg",
+      "000000006954.jpg",
+      "000000007088.jpg",
+      "000000007108.jpg",
+      "000000007278.jpg",
+      "000000007281.jpg",
+      "000000007386.jpg",
+      "000000007511.jpg",
+      "000000007574.jpg",
+      "000000007784.jpg",
+      "000000007795.jpg",
+      "000000007816.jpg",
+      "000000007818.jpg",
+      "000000007888.jpg",
+      "000000007977.jpg",
+      "000000007991.jpg",
+      "000000008021.jpg",
+      "000000008211.jpg",
+      "000000008277.jpg",
+      "000000008532.jpg",
+      "000000008629.jpg",
+      "000000008690.jpg",
+      "000000008762.jpg",
+      "000000008844.jpg",
+      "000000008899.jpg",
+      "000000009378.jpg",
+      "000000009400.jpg",
+      "000000009448.jpg",
+      "000000009483.jpg",
+      "000000009590.jpg",
+      "000000009769.jpg",
+      "000000009772.jpg",
+      "000000009891.jpg"
+    ]
+  },
+  "tensor_contract": {
+    "input": {
+      "name": "images",
+      "shape": [
+        1,
+        3,
+        640,
+        640
+      ],
+      "dtype": "int8",
+      "scale": 0.003921568859368563,
+      "zero_point": -128
+    },
+    "outputs": [
+      {
+        "name": "box_8",
+        "shape": [
+          1,
+          64,
+          80,
+          80
+        ],
+        "dtype": "int8",
+        "scale": 0.0860225185751915,
+        "zero_point": -72,
+        "semantic": "box_8",
+        "index": 0
+      },
+      {
+        "name": "score_8",
+        "shape": [
+          1,
+          80,
+          80,
+          80
+        ],
+        "dtype": "int8",
+        "scale": 0.10560102015733719,
+        "zero_point": 127,
+        "semantic": "score_8",
+        "index": 1
+      },
+      {
+        "name": "box_16",
+        "shape": [
+          1,
+          64,
+          40,
+          40
+        ],
+        "dtype": "int8",
+        "scale": 0.07355513423681259,
+        "zero_point": -56,
+        "semantic": "box_16",
+        "index": 2
+      },
+      {
+        "name": "score_16",
+        "shape": [
+          1,
+          80,
+          40,
+          40
+        ],
+        "dtype": "int8",
+        "scale": 0.14921529591083527,
+        "zero_point": 125,
+        "semantic": "score_16",
+        "index": 3
+      },
+      {
+        "name": "box_32",
+        "shape": [
+          1,
+          64,
+          20,
+          20
+        ],
+        "dtype": "int8",
+        "scale": 0.07296006381511688,
+        "zero_point": -42,
+        "semantic": "box_32",
+        "index": 4
+      },
+      {
+        "name": "score_32",
+        "shape": [
+          1,
+          80,
+          20,
+          20
+        ],
+        "dtype": "int8",
+        "scale": 0.1825948804616928,
+        "zero_point": 117,
+        "semantic": "score_32",
+        "index": 5
+      }
+    ],
+    "layout": "NCHW_INT8_WIDTH_ALIGN16",
+    "native_layout_board_verified": true
+  },
+  "export_check": {
+    "raw_decode_max_absolute_error": 8.312659338116646e-05,
+    "onnx_runtime_verified": true
+  },
+  "smoke": {
+    "samples": 10,
+    "unique_prediction_sets": 10,
+    "passed": true,
+    "board_result_dir": "/root/hailong.he/open_models/yolov8n/results/20261008_smoke10"
+  },
+  "artifacts": {
+    "yolov8n.pt": {
+      "sha256": "31e20dde3def09e2cf938c7be6fe23d9150bbbe503982af13345706515f2ef95",
+      "bytes": 6534387
+    },
+    "model_fp32.onnx": {
+      "sha256": "20971d85284f387c849fefe370426e6c55e66a3eefb72e8c40527f31787d9e3d",
+      "bytes": 12656715
+    },
+    "model_int8.tflite": {
+      "sha256": "5b07061f66e278b0765e8cc65cf3303396b6187ca8aba86e2143752e2214eb5a",
+      "bytes": 3472496
+    },
+    "model_int8.dla": {
+      "sha256": "a009dea16d53fa64dbfb98fe3156afcd2dc8028a62ef69b865060e6ec37ab2c2",
+      "bytes": 3527145
+    },
+    "runtime_config.csv": {
+      "sha256": "3be19857a4ae55f99b85df6850d48e739a036c3e2ae9f1064f3163b4f4c9e0ee"
+    },
+    "yolov8n_board_eval": {
+      "sha256": "575c3b54e6936692ac205719cb556b1a4b5718c67670d855bb9a329d260cfe6a"
+    }
+  },
+  "implementation_sha256": {
+    "deploy/board/evaluate_coco.py": "b803c3437358a3e597933bc1944eb3cd4170dd078bb2edf5035a98aa7259032d",
+    "deploy/board/render_examples.py": "3a353e04da7f3af169c3dc981858bbb2d79e6de31abc1a7d79e912f0a70e09c7",
+    "deploy/board/yolov8_utils.py": "7a8a54346630738e40dc809fa15d25ff11bea0508326c6d5a616fe3ec14587d7",
+    "deploy/board/yolov8n_board_eval.cpp": "3e0c1d986772320e5dcd555adffe2e5fe594ea8a78dee65145e1aef552e653a1",
+    "deploy/host/convert_int8.py": "019e01f4e281de560f0b49c2c23232c6b5f38594d1b6a293d90725c413ba0ee8",
+    "deploy/host/evaluate_fp32.py": "159de8e2d8d5ef85a2ba1aaa3d7525e939fd39c6cc47a5987f5cd1384d483cb3",
+    "deploy/host/export_model.py": "bc450ea3b17be985e74ae908650df008314a252e67d1a58b434cb3488457a939",
+    "deploy/run.sh": "3a0535676a269bcfda6f63b7e107a1787a4188266a39a30056088f8d3287c39f"
+  },
+  "full_board_run_id": "20261008_yolov8n_full_v1",
+  "status": "complete",
+  "full_board_result_dir": "/root/hailong.he/open_models/yolov8n/results/20261008_yolov8n_full_v1",
+  "protocol": {
+    "confidence": 0.001,
+    "nms_iou": 0.6,
+    "max_det": 300,
+    "class_selection": "single_best",
+    "input": [
+      1,
+      3,
+      640,
+      640
+    ]
+  },
+  "visualization": {
+    "prediction_source": "full board run work/predictions.jsonl",
+    "display_confidence": 0.25,
+    "renderer_sha256": "3a353e04da7f3af169c3dc981858bbb2d79e6de31abc1a7d79e912f0a70e09c7"
+  },
+  "result_sha256": {
+    "results/environment.txt": "49e4eae7061c3e0cf90050fcabdc6cc37df3165b0e60d1bd26298e724bcabcf9",
+    "results/onnx_summary.json": "d827cb229847abcdca1639df29b01f30069fb3b6e07c2da22f65032e089fd32c",
+    "results/pytorch_summary.json": "e4c10150579835917fa617a7dc700dac70c532728f1297de696a3349f788b72f",
+    "results/SHA256SUMS": "bd071ac49707564acbcc07b8b10cb18037b398b2fbbdf72d740023aa88da586c",
+    "results/summary.json": "a9c06c9c3efbc8872d3bc581a045b360402994ba7ae102dce5d196a33edc840f",
+    "results/timing_summary_current_run.json": "139eafafaf150abf29c5ff716abd291f2c0b1b7807add9008cad8191dfd7afc9",
+    "examples/output/sample_1_detections.jpg": "24d730be569e9678918ab9cdbd0f34850aaa28c034fc2f1542f051806373c1d0",
+    "examples/output/sample_2_detections.jpg": "0628ae306da814c5a007f2ba6cb202599fe0cc75b8a9e4c4c85fc3514db79f6c",
+    "examples/output/sample_3_detections.jpg": "1a49d96a19fe051d224f42205a517a6840f69a93ce4715537e086357acc9e53e"
+  },
+  "board_artifact_hashes_match": true,
+  "original_workflow_review": {
+    "models": [
+      "yolov5s",
+      "yoloworld_xl",
+      "fastsam",
+      "depth_anything_v2_small",
+      "rtmpose_body2d",
+      "mobilefacenet",
+      "vit_base_patch16_224",
+      "whisper_tiny"
+    ],
+    "scope": "entry point and resource review; bash -n; no original model rerun",
+    "passed": true
+  }
+}

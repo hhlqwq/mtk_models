@@ -1,7 +1,24 @@
 # YOLOv8n / Genio 720
 
 COCO 80 类目标检测,固定输入 `1x3x640x640` RGB,INT8 PTQ,目标为
-MT8189 / MDLA 5.3.当前状态: 环境建设中,代码已实现,转换及板端结果尚未验证.
+MT8189 / MDLA 5.3.2026-10-08 已完成官方权重导出、INT8 量化、DLA 编译、
+10 张冒烟和三后端 COCO val2017 全量评测,Genio 720 状态为完整交付.
+
+## 与原有模型流程的核对
+
+2026-10-08 复核现有入口,YOLOv5s、YOLO-World 和本模型均采用
+"89 编译主机运行 deploy/run.sh,92 开发板运行上传的 run.sh"两步入口.
+
+| 模型 | 转换与量化 | 板端执行 | 本次核对范围 |
+| --- | --- | --- | --- |
+| YOLOv5s | 官方源码加 MTK 补丁,TorchScript -> INT8 TFLite -> MDLA 5.3 DLA | C++ Neuron Runtime,COCO 5000 张 | 脚本与依赖路径复核,Shell 语法通过;保留原有实测结果 |
+| YOLO-World XL | 现有 MediaTek 发布 ONNX 兼容性改写,无离线 INT8 量化 | ORT Neuron EP 板端编译;profiling 检查无 CPU fallback | 脚本和加速检查复核,Shell 语法通过;不预填独立 NPU 耗时 |
+| YOLOv8n | 官方权重导出六个原始头,INT8 TFLite -> MDLA 5.3 DLA | C++ Neuron Runtime,CPU DFL 与 NMS | 本次执行导出、量化、编译及板端评测 |
+
+FastSAM 的 Ultralytics 8.0.111 和原始头量化实现用于复用转换方式.
+以上复核不会把旧模型的历史测试结果改记为本次重跑结果.
+另已对 Depth Anything V2 Small、RTMPose、MobileFaceNet、ViT 和 Whisper
+现有入口执行 Shell 语法检查,八个原有模型全部通过;本次没有修改这些模型实现.
 
 ## 官方来源
 
@@ -57,4 +74,55 @@ PyTorch、ONNX 和板端使用相同 letterbox、单最佳类别、`conf=0.001`,
 
 ## 当前结果
 
-尚未生成本次运行结果,不预填精度或性能数字.Genio 5100 尚未执行.
+运行 ID: `20261008_yolov8n_full_v1`,三个后端均使用 COCO val2017 全量
+5000 张图片,主机与板端标注 SHA256 相同.
+
+| 后端 | mAP@0.5:0.95 | 结果文件 |
+| --- | ---: | --- |
+| PyTorch FP32 | **36.6444%** | [pytorch_summary.json](results/pytorch_summary.json) |
+| ONNX FP32 | **36.6260%** | [onnx_summary.json](results/onnx_summary.json) |
+| MTK NPU INT8 | **35.3510%** | [summary.json](results/summary.json) |
+
+ONNX 相对 PyTorch 变化为 **-0.0184 个百分点**,INT8 相对本次 ONNX
+变化为 **-1.2750 个百分点**.单图原始头解码与官方前向的最大绝对误差为
+`8.312659338116646e-5`,六个 ONNX 输出已通过数值一致性校验.
+
+| 板端指标 | 平均 | P95 |
+| --- | ---: | ---: |
+| 预处理 | 13.236 ms | 16.963 ms |
+| 独立 NPU 推理 | **6.283 ms** | 6.381 ms |
+| CPU 后处理 | 3.233 ms | 4.669 ms |
+| 端到端 | **22.925 ms** | **27.088 ms** |
+
+推理进程峰值 RSS 为 **31.324 MiB**.NPU 耗时只统计常驻模型的
+`NeuronRuntime_inference` 调用,排除 20 次预热;端到端从图片读取开始,
+包含预处理、IO 登记、推理和后处理,不包含预测文件写入、COCO 汇总或画图.
+完整分位数见 [timing_summary_current_run.json](results/timing_summary_current_run.json).
+
+运行环境为 Rity Demo 26.0-release / scarthgap / Linux 6.6.137,
+Neuron Runtime 8.2.16,CPU governor 为 `schedutil`;本次快照见
+[environment.txt](results/environment.txt).主机使用 Torch 2.0.0+cu118,
+ONNX 1.13.1,ONNX Runtime 1.18.0,ONNX 精度基准使用 CPU EP.
+Genio 5100 尚未执行,上述数字只对应 Genio 720.
+
+权重、ONNX、TFLite、DLA、张量契约、程序及代码哈希见
+[delivery_manifest.json](results/delivery_manifest.json).
+本次 DLA 大小为 `3,527,145` 字节,板端模型与编译主机产物哈希一致.
+全部预测、图片覆盖清单、逐图耗时、日志和效果图保留在:
+
+```text
+/root/hailong.he/open_models/yolov8n/results/20261008_yolov8n_full_v1/
+```
+
+再次运行使用新的 `EVAL_RUN_ID` 或脚本生成的默认 ID,已有运行目录不会覆盖.
+
+## 真实板端效果
+
+展示阈值为 0.25,图像和许可证来源见 `examples/input/samples.json`.
+效果由上述全量 NPU 预测生成,标签排布仅用于提高可读性.
+
+![室内检测](examples/output/sample_1_detections.jpg)
+
+![熊检测](examples/output/sample_2_detections.jpg)
+
+![滑雪场景检测](examples/output/sample_3_detections.jpg)

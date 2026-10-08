@@ -7,6 +7,37 @@ from pathlib import Path
 import cv2
 
 
+def draw_detection(image, row, label, occupied):
+    """绘制真实检测框,避开已有标签,使密集场景的类别与分数可读."""
+    x, y, width, height = row["bbox"]
+    x1, y1, x2, y2 = map(round, (x, y, x + width, y + height))
+    color = (0, 145, 0)
+    cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
+    text = f"{label} {row['score']:.2f}"
+    (text_width, text_height), baseline = cv2.getTextSize(
+        text, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
+    label_width, label_height = text_width + 6, text_height + baseline + 6
+    left = max(0, min(x1, image.shape[1] - label_width))
+    top = max(0, min(y1 - label_height, image.shape[0] - label_height))
+    # 优先沿框上方错开标签,必要时扫描其他位置,不改变预测框或分数.
+    positions = [top] + list(range(0, image.shape[0] - label_height + 1,
+                                   label_height + 2))
+    positions = sorted(set(positions), key=lambda value: abs(value - top))
+    for candidate in positions:
+        rectangle = (left, candidate, left + label_width, candidate + label_height)
+        if all(rectangle[2] <= old[0] or rectangle[0] >= old[2]
+               or rectangle[3] <= old[1] or rectangle[1] >= old[3]
+               for old in occupied):
+            top = candidate
+            break
+    occupied.append((left, top, left + label_width, top + label_height))
+    cv2.line(image, (x1, y1), (left, top + label_height), color, 1)
+    cv2.rectangle(image, (left, top), (left + label_width, top + label_height),
+                  color, cv2.FILLED)
+    cv2.putText(image, text, (left + 3, top + text_height + 3),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1, cv2.LINE_AA)
+
+
 def main():
     """只绘制指定样例,记录图片地址和许可证的清单随输入保留."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -26,14 +57,10 @@ def main():
         image = cv2.imread(str(args.input_dir / sample["file"]))
         if image is None:
             raise ValueError(f"示例图片无法读取: {sample['file']}.")
+        occupied = []
         for row in selected[sample["image_id"]]:
-            x, y, width, height = row["bbox"]
-            x1, y1, x2, y2 = map(round, (x, y, x + width, y + height))
             label = manifest["categories"][str(row["category_id"])]
-            cv2.rectangle(image, (x1, y1), (x2, y2), (0, 180, 0), 2)
-            cv2.putText(image, f"{label} {row['score']:.2f}",
-                        (max(0, x1), max(20, y1)), cv2.FONT_HERSHEY_SIMPLEX,
-                        0.55, (0, 180, 0), 2, cv2.LINE_AA)
+            draw_detection(image, row, label, occupied)
         output = args.output_dir / f"sample_{index}_detections.jpg"
         if not cv2.imwrite(str(output), image):
             raise RuntimeError(f"无法保存示例: {output}.")

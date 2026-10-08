@@ -64,6 +64,7 @@ models/navigation/segmentation/fastsam/models/runtime_config.csv
 models/perception/object_detection/yolov8n/models/*.json
 models/perception/object_detection/yolov8n/models/runtime_config.csv
 models/perception/object_detection/yolov8n/models/SHA256SUMS
+models/perception/object_detection/yolov8n/results/predictions.json
 
 
 
@@ -106,3 +107,4 @@ Thumbs.db
 !**/examples/input/sample_*.JPEG
 !**/examples/input/sample_*.wav
 !**/examples/output/sample_*_classification.jpg
+!models/perception/object_detection/yolov8n/examples/output/sample_*_detections.jpg

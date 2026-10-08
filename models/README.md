@@ -11,7 +11,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 
 | 模型 | 板端 NPU 平均耗时 (ms) | 峰值 RSS (MiB) | 核心精度 | 精度变化 (百分点) |
 | --- | ---: | ---: | --- | ---: |
-| [YOLOv8n](perception/object_detection/yolov8n/README.md) | 待验证 | 待验证 | mAP@0.5:0.95 待验证 | 待验证 |
+| [YOLOv8n](perception/object_detection/yolov8n/README.md) | **6.28** | **31.32** | mAP@0.5:0.95 **35.35%** | **-1.275** |
 | [YOLOv5s](perception/object_detection/yolov5s/README.md) | **9.76** | **33.23** | mAP@0.5:0.95 **35.86%** | **-1.23** |
 | [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | 待上传 | 待上传 | Top-1 待上传 | 待上传 |
 | [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | 待上传 | 待上传 | WholeBody AP 待上传 | 待上传 |
@@ -22,6 +22,12 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | 待上传 | 待上传 | WER 待上传 | 待上传 |
 
 YOLOv5s 结果来自运行 `20261008_032807_67603`,COCO val2017 全量 5000 张; ONNX FP32 与板端精度均为本次同协议实测,ONNX mAP 为 **37.09%**。结果文件见 [summary.json](perception/object_detection/yolov5s/results/summary.json)。
+
+YOLOv8n 结果来自运行 `20261008_yolov8n_full_v1`,COCO val2017 全量 5000 张;
+PyTorch / ONNX / NPU mAP 分别为 **36.6444% / 36.6260% / 35.3510%**,
+板端端到端平均耗时为 **22.925 ms**,P95 为 **27.088 ms**.
+量化损失使用本次同协议 ONNX 作为基准,详见
+[YOLOv8n README](perception/object_detection/yolov8n/README.md).
 
 精度变化正数表示改善,负数表示下降: 准确率和 AP/AR 用板端减 ONNX,WER 用 ONNX 减板端。量化方式见各模型 README。ORT `session.Run` 与独立 NPU 调用耗时分开记录,不直接混排。
 

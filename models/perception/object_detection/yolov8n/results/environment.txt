@@ -1,0 +1,14 @@
+Thu Oct  8 11:20:06 UTC 2026
+Linux genio-720-evk 6.6.137-mtk+ga246e0c68c39-g429091ed5965 #1 SMP PREEMPT Fri Jul 24 08:02:12 UTC 2026 aarch64 GNU/Linux
+ID=rity-demo
+NAME="Rity Demo Layer"
+VERSION="26.0-release (scarthgap)"
+VERSION_ID=26.0-release
+VERSION_CODENAME="scarthgap"
+PRETTY_NAME="Rity Demo Layer 26.0-release (scarthgap)"
+CPE_NAME="cpe:/o:openembedded:rity-demo:26.0-release"
+Version: 8.2.16
+/sys/devices/system/cpu/cpufreq/policy0/scaling_governor: schedutil
+/sys/devices/system/cpu/cpufreq/policy6/scaling_governor: schedutil
+/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq: 1350000
+/sys/devices/system/cpu/cpufreq/policy6/scaling_cur_freq: 1550000

@@ -1,0 +1,3 @@
+a009dea16d53fa64dbfb98fe3156afcd2dc8028a62ef69b865060e6ec37ab2c2  /root/hailong.he/open_models/yolov8n/models/model_int8.dla
+3be19857a4ae55f99b85df6850d48e739a036c3e2ae9f1064f3163b4f4c9e0ee  /root/hailong.he/open_models/yolov8n/models/runtime_config.csv
+575c3b54e6936692ac205719cb556b1a4b5718c67670d855bb9a329d260cfe6a  /root/hailong.he/open_models/yolov8n/board/yolov8n_board_eval
