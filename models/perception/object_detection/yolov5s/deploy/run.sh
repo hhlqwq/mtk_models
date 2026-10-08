@@ -20,6 +20,8 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images"
     # 输出目录: ONNX、TFLite 和 DLA 放在这里.
     MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
+    # 临时构建目录: 展开源码和补丁,默认隐藏且不纳入 Git.
+    BUILD_WORK_DIR="${MODEL_ROOT}/.build"
     # DLA 文件: 编译后的完整路径.
     OUTPUT_DLA="${MODEL_OUTPUT_DIR}/model_int8.dla"
     # 示例图片: 恰好放三张 JPG 图片.
@@ -180,8 +182,9 @@ test -f "${PATCH_ARCHIVE}"
 test -d "${CALIBRATION_DIR}"
 test -d "${SMOKE_IMAGES_DIR}"
 test "$(find "${SMOKE_IMAGES_DIR}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 3
-if [[ "${MODEL_OUTPUT_DIR}" != /* || "${OUTPUT_DLA}" != /* ]]; then
-    echo "[ERROR] MODEL_OUTPUT_DIR 和 OUTPUT_DLA 必须是宿主机与容器共用的绝对路径." >&2
+if [[ "${MODEL_OUTPUT_DIR}" != /* || "${BUILD_WORK_DIR}" != /* ||
+        "${OUTPUT_DLA}" != /* ]]; then
+    echo "[ERROR] MODEL_OUTPUT_DIR、BUILD_WORK_DIR 和 OUTPUT_DLA 必须是宿主机与容器共用的绝对路径." >&2
     exit 2
 fi
 if [[ "${BOARD_BINARY}" != /* || "${BOARD_RESULTS_DIR}" != /* ]] ||
@@ -198,6 +201,7 @@ docker exec -i \
     -e PATCH_ARCHIVE="${PATCH_ARCHIVE}" \
     -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
     -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
+    -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" \
     -e OUTPUT_DLA="${OUTPUT_DLA}" \
     -e MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT}" \
     -e NCC_BIN="${NCC_BIN}" \
@@ -205,9 +209,9 @@ docker exec -i \
     "${MTK_G720_CONTAINER}" bash -s <<'DOCKER_BUILD'
 set -euo pipefail
 
-readonly SOURCE_DIR="${MODEL_OUTPUT_DIR}/source/yolov5"
+readonly SOURCE_DIR="${BUILD_WORK_DIR}/yolov5"
 readonly SOURCE_ARCHIVE_ROOT="yolov5-485da42273839d20ea6bdaf142fd02c1027aba61"
-readonly PATCH_DIR="${MODEL_OUTPUT_DIR}/source/mtk_patch"
+readonly PATCH_DIR="${BUILD_WORK_DIR}/mtk_patch"
 readonly PATCH_FILE="${PATCH_DIR}/Fix_yolov5_mtk_tflite_issue.patch"
 
 test -f "${MODEL_WEIGHTS}"
@@ -217,7 +221,7 @@ test -d "${CALIBRATION_DIR}"
 test -f "${MTK_SETUP_SCRIPT}"
 test -x "${NCC_BIN}"
 test -d "${NCC_LIB}"
-mkdir -p "${MODEL_OUTPUT_DIR}" "$(dirname "${SOURCE_DIR}")" "$(dirname "${OUTPUT_DLA}")"
+mkdir -p "${MODEL_OUTPUT_DIR}" "${BUILD_WORK_DIR}" "$(dirname "${OUTPUT_DLA}")"
 if [[ "${MODEL_WEIGHTS}" != "${MODEL_OUTPUT_DIR}/yolov5s.pt" ]]; then
     cp "${MODEL_WEIGHTS}" "${MODEL_OUTPUT_DIR}/yolov5s.pt"
 fi

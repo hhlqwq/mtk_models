@@ -12,7 +12,7 @@ COCO 80 类目标检测。模型来源和许可证见[模型卡](model_card.md)�
 bash models/perception/object_detection/yolov5s/deploy/run.sh
 ```
 
-脚本在 Docker 中生成 DLA，在编译主机交叉编译板端 C++ 程序，然后上传 DLA、程序、本脚本及三张示例图。脚本不下载模型或数据。
+脚本在 Docker 中生成 DLA，在编译主机交叉编译板端 C++ 程序，然后上传 DLA、程序、本脚本及三张示例图。解压的上游源码和补丁放在被 Git 忽略的 `.build/`，模型产物仍写入 `MODEL_OUTPUT_DIR`。脚本不下载模型或数据。
 
 ## 第二步：开发板测试
 

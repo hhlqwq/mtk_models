@@ -35,22 +35,18 @@ models/perception/image_classification/vit_base_patch16_224/original/exported/
 models/perception/image_classification/vit_base_patch16_224/original/labels.txt
 models/perception/image_classification/vit_base_patch16_224/original/imagenet_eval/
 models/perception/image_classification/vit_base_patch16_224/models/vit-onnx-float/
-models/perception/image_classification/vit_base_patch16_224/models/SHA256SUMS
 
 # RTMPose 官方权重的本地导出与校验产物.
 models/interaction/pose_detection/rtmpose_body2d/original/exported/
 models/interaction/pose_detection/rtmpose_body2d/models/rtmpose_body2d.data
-models/interaction/pose_detection/rtmpose_body2d/models/SHA256SUMS
 
 # Depth Anything V2 Small 官方源码、转换产物与运行证据.
 models/navigation/single_camera_depth/depth_anything_v2_small/original/upstream/
-models/navigation/single_camera_depth/depth_anything_v2_small/models/SHA256SUMS
 models/navigation/single_camera_depth/depth_anything_v2_small/models/*.json
 models/navigation/single_camera_depth/depth_anything_v2_small/examples/output/runs/
 
 # Whisper-Tiny 官方权重、导出模型与运行证据.
 models/audio/stt/whisper_tiny/original/tiny.pt
-models/audio/stt/whisper_tiny/models/SHA256SUMS
 models/audio/stt/whisper_tiny/models/onnx_manifest.json
 models/audio/stt/whisper_tiny/examples/output/runs/
 models/audio/stt/whisper_tiny/deploy/inference_demo/inspect_whisper_io
@@ -60,7 +56,6 @@ models/audio/stt/whisper_tiny/deploy/inference_demo/whisper_board_eval
 # 板端 C++ 交叉编译产物.
 # FastSAM 本地导出、校准与完整性记录.
 models/navigation/segmentation/fastsam/models/*.json
-models/navigation/segmentation/fastsam/models/*SHA256SUMS
 models/navigation/segmentation/fastsam/models/runtime_config.csv
 models/navigation/segmentation/fastsam/deploy/inference_demo/fastsam_board
 
@@ -68,9 +63,9 @@ models/perception/object_detection/yolov5s/deploy/cpp/yolov5s_board_eval
 models/interaction/pose_detection/rtmpose_body2d/deploy/inference_demo/rtmpose_board_eval
 
 
-# 离线展开的第三方源码和补丁；固定版本压缩包保留在 Git 中.
-models/perception/object_detection/yolov5s/models/yolov5/
-models/perception/object_detection/yolov5s/models/mtk_patch/
+# YOLOv5s 临时构建目录与旧版脚本留下的解压目录.
+models/perception/object_detection/yolov5s/.build/
+models/perception/object_detection/yolov5s/models/source/
 !models/perception/object_detection/yolov5s/models/yolov5-485da42.zip
 !models/perception/object_detection/yolov5s/models/model_conversion_YOLOv5s_example_20240916.zip
 
