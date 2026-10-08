@@ -29,11 +29,11 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 板端地址: SSH 用户和地址.
     BOARD_HOST="root@192.168.0.92"
     # 板端部署目录: 上传模型、程序和本脚本的目录,必须填写.
-    BOARD_DEPLOY_DIR="/root/hailong.he/open_models/vit_base_patch16_224/"
+    BOARD_DEPLOY_DIR="/root/hailong.he/open_models/vit_base_patch16_224"
     # 板端结果目录: 保存本次测试汇总.
     BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
-    # 板端 ImageNet 验证集目录.
-    BOARD_DATASET_DIR="/root/hailong.he/datasets/ImageNet/"
+    # 板端 ImageNet 根目录: 包含标签及 val/ 或 ILSVRC2012_img_val/ 图片目录.
+    BOARD_DATASET_DIR="/root/hailong.he/datasets/ImageNet"
 
     # 4. ONNX 精度数据.
     # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录,必须填写.
@@ -63,16 +63,38 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
     readonly RUN_DIR="${RESULT_DIR}/work"
     readonly LABELS="${BOARD_DATASET_DIR}/val_labels_0based.txt"
-    test -s "${SCRIPT_DIR}/models/model_int8.dla"
-    test -s "${SCRIPT_DIR}/models/quantization.json"
-    test -s "${LABELS}"
-    test "$(find "${BOARD_DATASET_DIR}/val" -maxdepth 1 -type f -name '*.JPEG' | wc -l)" -eq 50000
+    echo "[检查] ImageNet 数据集: ${BOARD_DATASET_DIR}."
+    IMAGES_DIR="${BOARD_DATASET_DIR}/val"
+    if [[ ! -d "${IMAGES_DIR}" ]]; then
+        IMAGES_DIR="${BOARD_DATASET_DIR}/ILSVRC2012_img_val"
+    fi
+    if [[ ! -s "${LABELS}" || ! -d "${IMAGES_DIR}" ]]; then
+        echo "[ERROR] 数据集根目录需包含 val_labels_0based.txt 和 val/ 或 ILSVRC2012_img_val/." >&2
+        exit 2
+    fi
+    readonly IMAGES_DIR
+    for required_file in "${SCRIPT_DIR}/models/model_int8.dla" \
+        "${SCRIPT_DIR}/models/quantization.json"; do
+        if [[ ! -s "${required_file}" ]]; then
+            echo "[ERROR] 缺少模型运行文件: ${required_file}." >&2
+            exit 2
+        fi
+    done
+    if [[ ! -x "${SCRIPT_DIR}/board/vit_board_eval" ]]; then
+        echo "[ERROR] 板端程序不存在或不可执行: ${SCRIPT_DIR}/board/vit_board_eval." >&2
+        exit 2
+    fi
+    IMAGE_COUNT="$(find "${IMAGES_DIR}" -maxdepth 1 -type f -name '*.JPEG' | wc -l)"
+    if (( IMAGE_COUNT != 50000 )); then
+        echo "[ERROR] ${IMAGES_DIR} 需要 50000 张 JPEG,实际为 ${IMAGE_COUNT}." >&2
+        exit 2
+    fi
     test ! -e "${RESULT_DIR}"
     mkdir -p "${RUN_DIR}/report"
     echo "[开发板 1/3] 在板端执行 50000 张 ImageNet 图片的 C++ NPU 推理."
     "${SCRIPT_DIR}/board/vit_board_eval" \
         --model "${SCRIPT_DIR}/models/model_int8.dla" \
-        --images "${BOARD_DATASET_DIR}/val" \
+        --images "${IMAGES_DIR}" \
         --quantization "${SCRIPT_DIR}/models/quantization.json" \
         --predictions "${RUN_DIR}/predictions.jsonl" \
         2>&1 | tee "${RUN_DIR}/board_eval.log"

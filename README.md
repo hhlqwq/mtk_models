@@ -128,16 +128,16 @@ models/scenario_name/category_name/model_name/
 ├── README.md
 ├── model_card.md
 ├── LICENSE
-├── original/
-│   └── source_url.txt
 ├── models/
+│   ├── source_url.txt
 │   ├── model_fp32.onnx
 │   ├── model_fp16.onnx
 │   ├── model_int8.tflite
 │   └── model_int8.dla
 ├── deploy/
-│   ├── run.sh               # 编译主机与开发板共用的入口.
-│   └── inference_demo/
+│   ├── board
+│   ├── host
+│   └── run.sh               # 编译主机与开发板共用的入口.
 ├── examples/
 │   ├── input/
 │   └── output/

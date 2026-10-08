@@ -15,9 +15,9 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 官方 FastSAM-s 权重.
     FASTSAM_WEIGHTS="${MODEL_ROOT}/models/FastSAM-s.pt"
     # INT8 校准图片目录.
-    FASTSAM_CALIBRATION_DIR=""
+    FASTSAM_CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images"
     # 导出等价性检查使用的一张图片.
-    FASTSAM_IMAGE=""
+    FASTSAM_IMAGE="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images/000000000139.jpg"
 
     # 2. 产物与临时目录.
     # 模型输出目录: 转换与编译产物保存在这里.
@@ -29,15 +29,15 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 板端地址: SSH 用户和地址.
     BOARD_HOST="root@192.168.0.92"
     # 板端部署目录: 上传模型、程序和本脚本的目录,必须填写.
-    BOARD_DEPLOY_DIR=""
+    BOARD_DEPLOY_DIR="/root/hailong.he/open_models/fastsam"
     # 板端结果目录: 保存本次测试汇总.
     BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # 板端 COCO val2017 数据集目录.
-    BOARD_DATASET_DIR=""
+    BOARD_DATASET_DIR="/root/hailong.he/datasets/coco/val2017"
 
     # 4. ONNX 精度数据.
     # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录,必须填写.
-    ONNX_DATASET_DIR=""
+    ONNX_DATASET_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017"
 
     # 5. 编译环境: 通常无需修改.
     # Docker 容器: 编译主机上的 Genio 720 编译环境.

@@ -43,6 +43,9 @@ models/perception/image_classification/vit_base_patch16_224/models/vit-onnx-floa
 models/interaction/pose_detection/rtmpose_body2d/models/exported/
 models/interaction/pose_detection/rtmpose_body2d/models/rtmpose_body2d.data
 
+# MobileFaceNet 下载的人脸对齐源码和检测权重,已跟踪的模型定义继续保留.
+models/interaction/face_recognition/mobilefacenet/models/upstream/
+
 # Depth Anything V2 Small 官方源码、转换产物与运行证据.
 models/navigation/single_camera_depth/depth_anything_v2_small/models/upstream/
 models/navigation/single_camera_depth/depth_anything_v2_small/models/*.json

@@ -37,11 +37,11 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 板端地址: SSH 用户和地址.
     BOARD_HOST="root@192.168.0.92"
     # 板端部署目录: 上传模型、程序和本脚本的目录,必须填写.
-    BOARD_DEPLOY_DIR="/root/hailong.he/open_models/yolov5s/"
+    BOARD_DEPLOY_DIR="/root/hailong.he/open_models/yolov5s"
     # 板端结果目录: 保存本次测试汇总.
     BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # 全量数据: COCO val2017 根目录; 只跑三图时可以留空.
-    BOARD_DATASET_DIR="/root/hailong.he/datasets/coco/val2017/"
+    BOARD_DATASET_DIR="/root/hailong.he/datasets/coco/val2017"
 
     # 4. ONNX 精度数据.
     # 浮点精度图片: 编译主机和 Docker 均可访问的 COCO val2017 全量图片目录.
