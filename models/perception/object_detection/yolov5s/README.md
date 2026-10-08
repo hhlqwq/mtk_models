@@ -40,7 +40,7 @@ NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不
 
 全量测试成功后只保留一个 `summary.json`,中间预测和日志自动删除; 失败时保留现场。测试完成后将汇总文件上传到本地 `results/summary.json`,据此更新当前结果。
 
-部署精度由 `DEPLOYMENT_PRECISION`、`WEIGHT_DTYPE`、`ACTIVATION_DTYPE` 和 `PRECISION_SOURCE` 记录,支持 W8A8、W8A16、FP16、FP32 和混合精度; 未确认填写 unknown。本次上传报告缺少精度格式依据,暂记为 unknown。这些配置只记录实际格式,不改变编译策略。
+量化方式: INT8 训练后量化 (PTQ),使用 100 张图片校准.
 
 ## 示例输出
 

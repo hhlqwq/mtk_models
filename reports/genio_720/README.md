@@ -8,4 +8,4 @@
 
 YOLOv5s 使用 COCO val2017 全量 5000 张图片,指标为 mAP@0.5:0.95。运行编号为 `20261008_032807_67603`,ONNX FP32 与板端精度均为本次同协议实测。原始当前汇总见 [summary.json](../../models/perception/object_detection/yolov5s/results/summary.json)。
 
-部署精度见模型 summary.json 的 deployment_precision,不能根据产物文件名或输入输出类型推断为 INT8。
+YOLOv5s 采用 INT8 训练后量化 (PTQ),使用 100 张图片校准.

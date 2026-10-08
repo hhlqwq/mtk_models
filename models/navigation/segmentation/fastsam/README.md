@@ -12,15 +12,15 @@
    在编译主机的本模型目录执行 `bash deploy/run.sh`。脚本在 Docker 中转换并编译 DLA，在主机交叉编译 C++ 程序并上传。
 2. 登录所配置的开发板，执行脚本打印的 `bash .../run.sh` 命令。板端逐图保存检查点并计算 COCO 分割指标；结果写入 `BOARD_RESULTS_DIR`。
 
-### ONNX 精度与部署精度
+### 精度评测
 
 在脚本顶部填写 `ONNX_DATASET_DIR`,必须与板端数据采用同一份样本、标注及评测协议。编译主机在 Docker 中自动评测 ONNX,只记录任务核心精度,不记录主机耗时或内存。
 
 数据目录要求: COCO val2017: images/ 和 annotations/instances_val2017.json,5000 张图片.
 
-部署精度通过顶部的 `DEPLOYMENT_PRECISION`、`WEIGHT_DTYPE`、`ACTIVATION_DTYPE` 和 `PRECISION_SOURCE` 记录。例如 W8A16 表示 int8 权重、int16 激活; 混合精度填写 `mixed`,在依据中说明不同层或子模型使用的格式。未确认的项目填写 `unknown`,不根据文件名或模型 I/O 类型推断。这些配置只记录实际精度,不改变转换与编译策略。
+量化方式: INT8 训练后量化 (PTQ),采用逐输出通道权重量化.
 
-`summary.json` 中的 `deployment_precision` 保存精度说明。`accuracy_change_percentage_points` 正数表示改善,负数表示下降: 使用 `(板端 - ONNX) × 100`。同时保留 `accuracy_loss_percentage_points` 供兼容,它与精度变化互为相反数。
+精度变化以百分点表示,正数为改善,负数为下降.
 
 Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 pycocotools。
 

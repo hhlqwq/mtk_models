@@ -14,15 +14,15 @@
 
 ONNX 图将固定文本注意力和分类矩阵乘法改写为卷积，将通道 Split 改写为 Slice，并在板端完成纯 Neuron 推理。模型输出三尺度 64 通道 DFL logits，C++ 在 CPU 后处理阶段完成 DFL、框解码和 NMS。三张公开样例的 FP32 与板端检测数量均为 10、13、4，逐框最大分数差 0.00535、最大坐标差 0.156 像素；板端 profiling 无 CPU 模型节点。[六张可视化](examples/output/README.md)保存在原有示例目录。
 
-### ONNX 精度与部署精度
+### 精度评测
 
 在脚本顶部填写 `ONNX_DATASET_DIR`,必须与板端数据采用同一份样本、标注及评测协议。编译主机在 Docker 中自动评测 ONNX,只记录任务核心精度,不记录主机耗时或内存。
 
 数据目录要求: COCO val2017: images/ 和 annotations/instances_val2017.json,5000 张图片.
 
-部署精度通过顶部的 `DEPLOYMENT_PRECISION`、`WEIGHT_DTYPE`、`ACTIVATION_DTYPE` 和 `PRECISION_SOURCE` 记录。例如 W8A16 表示 int8 权重、int16 激活; 混合精度填写 `mixed`,在依据中说明不同层或子模型使用的格式。未确认的项目填写 `unknown`,不根据文件名或模型 I/O 类型推断。这些配置只记录实际精度,不改变转换与编译策略。
+量化方式: 未做离线量化,浮点 ONNX 由 Neuron EP 在线编译.
 
-`summary.json` 中的 `deployment_precision` 保存精度说明。`accuracy_change_percentage_points` 正数表示改善,负数表示下降: 使用 `(板端 - ONNX) × 100`。同时保留 `accuracy_loss_percentage_points` 供兼容,它与精度变化互为相反数。
+精度变化以百分点表示,正数为改善,负数为下降.
 
 Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 pycocotools。
 

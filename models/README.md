@@ -22,7 +22,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 
 YOLOv5s 结果来自运行 `20261008_032807_67603`,COCO val2017 全量 5000 张; ONNX FP32 与板端精度均为本次同协议实测,ONNX mAP 为 **37.09%**。结果文件见 [summary.json](perception/object_detection/yolov5s/results/summary.json)。
 
-精度变化正数表示改善,负数表示下降: 准确率和 AP/AR 用板端减 ONNX,WER 用 ONNX 减板端。部署精度按实际格式记录,支持 W8A8、W8A16、FP16、FP32 和混合精度,未确认则记录 unknown。ORT `session.Run` 与独立 NPU 调用耗时分开记录,不直接混排。
+精度变化正数表示改善,负数表示下降: 准确率和 AP/AR 用板端减 ONNX,WER 用 ONNX 减板端。量化方式见各模型 README。ORT `session.Run` 与独立 NPU 调用耗时分开记录,不直接混排。
 
 ## 机器人模型推荐路线图
 
