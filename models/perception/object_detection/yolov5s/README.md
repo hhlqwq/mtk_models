@@ -20,6 +20,8 @@ bash models/perception/object_detection/yolov5s/deploy/run.sh
 
 使用脚本中配置的 `BOARD_HOST` 登录开发板，并执行第一步打印的 `[NEXT]` 命令。
 
+板端使用 C++ 完成 JPEG 预处理、Neuron Runtime 推理、YOLO 解码和 NMS,直接生成 COCO 预测与耗时记录,无需回传 5000 张图片的原始 NPU 输出。
+
 默认测试三张示例图；在板端命令末尾加 `full` 执行 COCO 全量测试。结果写入 `BOARD_RESULTS_DIR`，默认位于 `BOARD_DEPLOY_DIR/results`。全量测试要求 `BOARD_DATASET_DIR/images/` 中有 5000 张 COCO val2017 图片、`BOARD_DATASET_DIR/annotations/instances_val2017.json`，板端还需 `pycocotools`。若 SSH 提示主机密钥变化，先核对板端指纹，再更新编译主机上执行脚本用户的 `known_hosts`。
 
 ## 当前测试结果

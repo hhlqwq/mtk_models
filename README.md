@@ -5,8 +5,6 @@ Ubuntu 系统依赖使用基础镜像官方软件源, pip 镜像地址在容器�
 Python 3.11.11 源码地址由 Docker 构建参数管理, 默认使用服务器已验证可达的镜像地址.
 2026-09-07 已将同名容器迁移到 Ubuntu 22.04 镜像,并删除旧 Debian 12 容器和旧镜像.
 创建容器时仅验证工具, 操作方法见 [Docker 说明](docker/README.md).
-YOLOv5s 正式板端精度路径使用 C++ 完成 JPEG 预处理、Neuron Runtime 推理、YOLO 解码和
-NMS,直接在开发板生成 COCO 预测与耗时证据,不回传 5000 张原始 NPU 输出.
 
 本项目面向 MediaTek Genio 720（MT8189）和 Genio 5100,对开源模型进行兼容性修改、
 转换、量化、部署与板端验证.模型交付结构、文档完整度和结果展示方式参考
@@ -29,10 +27,6 @@ Gen AI、Audio、SLAM、PointCloud 和 3D 八个 Scenario.完整机器可读清�
 YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打通目录、转换、MTK NPU
 部署、Demo、精度和性能报告闭环.
 
-2026-09-15 开始接入 MediaTek IoT AI Hub 官方 ONNX Runtime Model Zoo 中的
-YOLO-World XL.该模型使用板端 ONNX Runtime + Neuron Execution Provider 在线推理,
-不经过离线 TFLite/DLA 编译,其状态和性能口径与三个先行离线模型分开维护.
-
 部分模型提供公开样例及板端结果,便于展示推理输出.公开样例不替代正式数据集精度.
 
 ## 先行实现模型
@@ -51,7 +45,6 @@ YOLO-World XL.该模型使用板端 ONNX Runtime + Neuron Execution Provider 在
 公开示例结果见各模型 README; 当前指标仅依据用户上传的 `results/summary.json` 更新.
 
 各模型的当前数据集、精度和耗时见 README,机器可读结果统一保存为 `results/summary.json`。
-Whisper-Tiny 本轮正式精度仅评测 LibriSpeech `test-clean` 全部 2,620 条音频。
 
 状态只能使用以下四类：
 
