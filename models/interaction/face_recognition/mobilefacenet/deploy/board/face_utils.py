@@ -6,6 +6,16 @@ import cv2
 import numpy as np
 
 
+def list_aligned_faces(image_dir: Path) -> list[Path]:
+    """按文件名排序读取已对齐图片,不要求文件名带特定后缀标记."""
+    if not image_dir.is_dir():
+        raise FileNotFoundError(f"对齐人脸目录不存在: {image_dir}")
+    extensions = {".jpg", ".jpeg", ".png"}
+    return sorted(
+        path for path in image_dir.iterdir()
+        if path.is_file() and path.suffix.lower() in extensions)
+
+
 def load_aligned_face(path: Path) -> np.ndarray:
     """按锁定上游的验证协议生成 RGB NCHW 浮点输入。"""
     image = cv2.imread(str(path), cv2.IMREAD_COLOR)

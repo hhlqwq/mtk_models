@@ -16,6 +16,8 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     WEIGHTS="${MODEL_ROOT}/models/mobilefacenet.pt"
     # 已对齐人脸的 INT8 校准图片目录.
     CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/LFW/aligned/images"
+    # 校准图片数量: 按文件名排序选取,默认使用 100 张.
+    CALIBRATION_SAMPLES="100"
 
     # 2. 产物与临时目录.
     # 模型输出目录: 转换与编译产物保存在这里.
@@ -123,6 +125,7 @@ echo "[编译主机 1] 在 Docker 中导出、量化、编译并生成输入元�
 docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 \
     -e MODEL_ROOT="${MODEL_ROOT}" -e WEIGHTS="${WEIGHTS}" \
     -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
+    -e CALIBRATION_SAMPLES="${CALIBRATION_SAMPLES}" \
     -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
     -e MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT}" -e NCC_ROOT="${NCC_ROOT}" \
     "${CONTAINER}" bash -s <<'DOCKER_BUILD'
@@ -139,6 +142,7 @@ python "${MODEL_ROOT}/deploy/host/export_onnx.py" \
 python "${MODEL_ROOT}/deploy/host/convert_int8.py" \
     --onnx "${MODEL_OUTPUT_DIR}/model_fp32.onnx" \
     --image-dir "${CALIBRATION_DIR}" \
+    --samples "${CALIBRATION_SAMPLES}" \
     --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
 export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 "${NCC_ROOT}/bin/ncc-tflite" --arch=mdla5.3 \

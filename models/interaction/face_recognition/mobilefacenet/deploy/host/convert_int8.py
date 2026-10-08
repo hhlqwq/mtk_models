@@ -10,7 +10,7 @@ import numpy as np
 
 # 复用板端预处理,保持校准与推理输入一致.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
-from face_utils import load_aligned_face
+from face_utils import list_aligned_faces, load_aligned_face
 
 
 def calibration_data(images: list[Path]) -> Iterator[list[np.ndarray]]:
@@ -20,11 +20,18 @@ def calibration_data(images: list[Path]) -> Iterator[list[np.ndarray]]:
         yield [load_aligned_face(path)]
 
 
-def convert_model(onnx: Path, image_dir: Path, output: Path) -> None:
+def convert_model(onnx: Path, image_dir: Path, output: Path,
+                  samples: int = 100) -> None:
     """对 ONNX 执行后训练量化。"""
-    images = sorted(image_dir.glob("*_aligned.jpg"))
-    if len(images) < 8:
-        raise ValueError(f"校准人脸不足 8 张: {image_dir}")
+    if samples <= 0:
+        raise ValueError("校准图片数量必须大于 0.")
+    images = list_aligned_faces(image_dir)
+    if len(images) < samples:
+        raise ValueError(
+            f"校准人脸不足: 需要 {samples} 张,找到 {len(images)} 张: {image_dir}")
+    print(f"[CALIBRATION] 找到 {len(images)} 张对齐图,选取前 {samples} 张.",
+          flush=True)
+    images = images[:samples]
     converter = mtk_converter.OnnxConverter.from_model_proto_file(str(onnx))
     converter.quantize = True
     converter.calibration_data_gen = lambda: calibration_data(images)
@@ -40,8 +47,9 @@ def main() -> None:
     parser.add_argument("--onnx", type=Path, required=True)
     parser.add_argument("--image-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--samples", type=int, default=100)
     args = parser.parse_args()
-    convert_model(args.onnx, args.image_dir, args.output)
+    convert_model(args.onnx, args.image_dir, args.output, args.samples)
 
 
 if __name__ == "__main__":

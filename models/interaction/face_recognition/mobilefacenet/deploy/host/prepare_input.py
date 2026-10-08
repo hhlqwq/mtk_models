@@ -10,7 +10,7 @@ import numpy as np
 
 # 复用板端预处理,保持校准与推理输入一致.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
-from face_utils import load_aligned_face
+from face_utils import list_aligned_faces, load_aligned_face
 
 
 INPUT_PROTOCOL = "RGB_ImageNet_normalize_aligned_112x112"
@@ -43,7 +43,7 @@ def prepare_inputs(tflite: Path, image_dir: Path, output_dir: Path) -> None:
     output_meta = tensor_metadata(outputs[0])
     if output_meta["dtype"] != "int8" or output_meta["shape"] != [1, 128]:
         raise ValueError(f"输出张量异常: {output_meta}")
-    images = sorted(image_dir.glob("*_aligned.jpg"))[:2]
+    images = list_aligned_faces(image_dir)[:2]
     if len(images) != 2:
         raise ValueError("至少需要两张对齐人脸")
     output_dir.mkdir(parents=True, exist_ok=True)
