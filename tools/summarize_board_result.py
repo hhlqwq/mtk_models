@@ -29,12 +29,13 @@ def extract_result(model: str, work_dir: Path) -> dict:
             "dataset": "coco_wholebody_val2017", "samples": 104125,
             "metric": "WholeBody AP", "board_accuracy": report["metrics"]["wholebody"]["AP"],
             "npu_mean_ms": timing["npu_mean_ms"],
+            "peak_rss_kib": timing.get("peak_rss_kb"),
             "timing_scope": "常驻模型,每个人体裁剪的 NeuronRuntime_inference 调用",
         }
     report = read_json(work_dir / "report" / "summary.json")
     if report.get("status") != "complete":
         raise ValueError("板端报告未完成.")
-    result = {"dataset": report["dataset"]}
+    result = {"dataset": report["dataset"], "peak_rss_kib": report.get("peak_rss_kib")}
     if model == "vit_base_patch16_224":
         require_count(report, "samples", 50000)
         result.update(samples=50000, metric="Top-1", board_accuracy=report["npu_top1"],
@@ -51,6 +52,7 @@ def extract_result(model: str, work_dir: Path) -> dict:
         timing = read_json(work_dir / "report" / "benchmark.json")
         result.update(samples=count, metric=metric, board_accuracy=report[key],
                       npu_mean_ms=timing["mean_ms"],
+                      peak_rss_kib=timing.get("peak_rss_kib"),
                       timing_scope="独立 C++ 常驻模型,预热 10 次后重复同一输入 100 次")
     elif model == "fastsam":
         require_count(report, "images", 5000)
@@ -67,6 +69,7 @@ def extract_result(model: str, work_dir: Path) -> dict:
     elif model == "whisper_tiny":
         require_count(report, "expected_samples", 2620)
         require_count(report, "successful_samples", 2620)
+        result["peak_rss_kib"] = report["performance"]["overall"]["peak_rss_kb"].get("max")
         result.update(samples=2620, metric="WER", board_accuracy=report["accuracy"]["value"],
                       npu_mean_ms=report["performance"]["overall"]["npu_total_ms"]["mean"],
                       timing_scope="每条音频的 Encoder 与所有 Decoder NPU 调用之和")
@@ -83,6 +86,14 @@ def summarize(args: argparse.Namespace) -> None:
             output.parent != work_dir.parent or output.name != "summary.json"):
         raise ValueError("汇总必须位于本次 work 目录的同级 summary.json.")
     result = extract_result(args.model, work_dir)
+    # Linux ru_maxrss 的单位是 KiB,统一换算为 MiB.
+    peak_rss = result.pop("peak_rss_kib", None)
+    if peak_rss is not None and (not math.isfinite(float(peak_rss)) or float(peak_rss) <= 0):
+        raise ValueError("峰值 RSS 无效.")
+    result["peak_rss_mib"] = None if peak_rss is None else float(peak_rss) / 1024.0
+    result["memory_scope"] = "推理进程峰值 RSS"
+    if args.model in ("mobilefacenet", "depth_anything_v2_small"):
+        result["memory_scope"] = "独立 C++ 常驻推理进程峰值 RSS"
     accuracy = float(result["board_accuracy"])
     if not math.isfinite(accuracy) or accuracy < 0 or (
             result["metric"] != "WER" and accuracy > 1):
@@ -111,6 +122,10 @@ def summarize(args: argparse.Namespace) -> None:
         print(f"板端 Runtime 平均耗时: {result['runtime_mean_ms']:.3f} ms; 纯 NPU 耗时未测量.")
     else:
         print(f"板端 NPU 平均推理耗时: {result['npu_mean_ms']:.3f} ms")
+    if result["peak_rss_mib"] is None:
+        print("推理进程峰值 RSS: 未记录.")
+    else:
+        print(f"推理进程峰值 RSS: {result['peak_rss_mib']:.3f} MiB")
     print(f"板端 {result['metric']}: {accuracy:.6f}")
     if reference is None:
         print("精度下降: 未计算,缺少匹配的参考基准.")

@@ -24,8 +24,8 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     BOARD_RESULTS_DIR=""
     # 参考精度: 核心指标的 0 到 1 数值; 留空不计算损失,更换模型或协议后需更新.
     REFERENCE_ACCURACY=""
-    # 基准来源: 历史结果不代表本次参考端实测.
-    REFERENCE_SOURCE="请填写匹配的同协议参考基准来源"
+    # 基准来源: 填写确认匹配的参考后端、数据集和评测协议.
+    REFERENCE_SOURCE=""
     # 板端 SSH 用户和地址.
     BOARD_HOST="root@192.168.0.92"
 fi

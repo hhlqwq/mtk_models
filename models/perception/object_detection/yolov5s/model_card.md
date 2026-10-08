@@ -1,6 +1,6 @@
 # YOLOv5s 模型卡
 
-场景：感知 / 目标检测。Genio 720 已完成 INT8 板端交付；Genio 5100 尚未开始。
+场景：感知 / 目标检测。Genio 720 已完成 INT8 全量板端测试；Genio 5100 尚未开始。
 输入为 `1×3×640×640` RGB，输出为三个检测头，共 80 类。
 
 ## 来源
@@ -23,8 +23,8 @@ Ultralytics YOLOv5 使用 AGPL-3.0.使用和再分发模型、修改代码或服
 
 ## 模型产物
 
-历史流程生成 PyTorch 权重、ONNX、INT8 TFLite 和 DLA。新流程的生成位置由 `deploy/run.sh` 顶部的 `MODEL_OUTPUT_DIR` 和 `OUTPUT_DLA` 决定。模型文件默认不进入普通 Git 历史。
+流程生成 PyTorch 权重、ONNX、INT8 TFLite 和 DLA。生成位置由 `deploy/run.sh` 顶部的 `MODEL_OUTPUT_DIR` 和 `OUTPUT_DLA` 决定。模型文件默认不进入普通 Git 历史。
 
-## 最终交付运行
+## 当前结果
 
-Genio 720 最终交付运行 ID 为 `20260908_cpp_delivery_v3`。该次运行的历史指标见 [README](README.md#历史精度)；原始运行目录已不在当前工作树中。
+当前板端结果见 [results/summary.json](results/summary.json),核心指标与三张示例输出见 [README](README.md#当前测试结果)。

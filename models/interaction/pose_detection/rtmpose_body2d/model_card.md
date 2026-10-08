@@ -13,12 +13,6 @@
 `deploy/export_onnx.py` 从本地官方 `.pth` 自行导出双 SimCC 输出 ONNX.原始框架、
 ONNX 和 MTK NPU 必须使用同一个官方开源权重完成同协议精度对比.
 
-## 历史 Qualcomm 衍生基线
-
-- 交付形式参考：<https://huggingface.co/qualcomm/RTMPose-Body2d>
-- 历史实现：<https://github.com/qualcomm/ai-hub-models/tree/v0.61.0/src/qai_hub_models/models/rtmpose_body2d>
-- 历史模型：Qualcomm AI Hub Models v0.61.0 预导出 FP32 ONNX.
-
 ## 正式模型规格
 
 - 参数量：17.9M.
@@ -26,22 +20,11 @@ ONNX 和 MTK NPU 必须使用同一个官方开源权重完成同协议精度对
 - 正式输入张量：`image [1,3,256,192]`,NCHW RGB float32 `[0,255]`.
 - 导出图内使用 MMPose 官方 ImageNet mean/std 完成归一化,不包含 RGB/BGR 通道重排.
 - 输出：`pred_x [1,133,384]`、`pred_y [1,133,512]`,SimCC split ratio 2.0.
-- 官方基准：COCO-WholeBody Whole AP 0.582、Whole AR 0.674.
 
 模型输入是人体框裁剪结果,不包含人体检测器.本项目采用 1.25 倍人体框边距并调整到
 192:256 比例后执行仿射变换.精度报告需要锁定原始数据集、人体框来源、仿射变换和
 SimCC 解码配置.
 
-## 正式 Genio 720 交付结果
+## 当前测试结果
 
-| 产物 | 大小 (bytes) |
-| --- | ---: |
-| `model_fp32.onnx` | 71,832,505 |
-| `model_mtk_compatible.onnx` | 71,967,810 |
-| `model_int8.tflite` | 18,741,240 |
-| `model_int8.dla` | 19,144,561 |
-
-COCO-WholeBody 正式板端结果为 WholeBody AP/AR 0.5324/0.6413,平均 NPU 延迟
-3.8527 ms/框.同协议 PyTorch FP32、ONNX FP32 和 MTK NPU INT8 的 WholeBody AP
-分别为 0.5702、0.5703 和 0.5324；NPU 相对 ONNX 下降 0.0380.完整结果见
-`docs/accuracy_comparison_20260914.json` 和 `docs/board_validation_20260911.json`.
+以用户上传的 `results/summary.json` 为准,当前待上传。核心指标见 [README](README.md#当前测试结果)。

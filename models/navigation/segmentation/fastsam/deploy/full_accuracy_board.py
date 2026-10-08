@@ -96,6 +96,7 @@ def encode_one(args: argparse.Namespace) -> None:
         "image_id": image_id,
         "protocol": protocol,
         "npu_ms": float(result["npu_ms"]),
+        "peak_rss_kib": result.get("peak_rss_kib"),
         "end_to_end_ms": float(result["end_to_end_ms"]),
         "predictions": image_predictions,
     })
@@ -118,6 +119,7 @@ def evaluate(args: argparse.Namespace) -> None:
     prediction_path = args.work_dir / "coco_segm_predictions.json"
     completed_path = args.work_dir / "processed_ids.txt"
     npu_times = []
+    peak_rss_values = []
     end_to_end_times = []
     prediction_count = 0
 
@@ -134,6 +136,8 @@ def evaluate(args: argparse.Namespace) -> None:
             if record.get("protocol") != protocol:
                 raise ValueError(f"检查点评测协议不一致: {image.stem}")
             npu_times.append(record["npu_ms"])
+            if record.get("peak_rss_kib") is not None:
+                peak_rss_values.append(record["peak_rss_kib"])
             end_to_end_times.append(record["end_to_end_ms"])
             completed.write(f"{record['image_id']}\n")
             for prediction in record["predictions"]:
@@ -168,6 +172,7 @@ def evaluate(args: argparse.Namespace) -> None:
         "AR_10": float(evaluator.stats[7]),
         "AR_100": float(evaluator.stats[8]),
         "npu_mean_ms": statistics.fmean(npu_times),
+        "peak_rss_kib": max(peak_rss_values) if len(peak_rss_values) == len(images) else None,
         "npu_p95_ms": float(np.percentile(npu_times, 95)),
         "end_to_end_mean_ms": statistics.fmean(end_to_end_times),
         "timing_scope": "C++ per-image model reload; NPU time reported separately",

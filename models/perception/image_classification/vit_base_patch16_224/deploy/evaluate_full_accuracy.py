@@ -70,7 +70,10 @@ def evaluate(args: argparse.Namespace) -> None:
     if len(timings) != 50000:
         raise ValueError(f"预测数量不完整: {len(timings)}/50000.")
     sorted_times = sorted(timings)
+    memory_path = args.predictions.parent / "memory.json"
+    memory = json.loads(memory_path.read_text(encoding="utf-8")) if memory_path.is_file() else {}
     summary = {
+        "peak_rss_kib": memory.get("peak_rss_kib"),
         "status": "complete",
         "model": "vit_base_patch16_224",
         "run_id": args.run_id,

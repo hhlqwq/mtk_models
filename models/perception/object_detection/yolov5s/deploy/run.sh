@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# YOLOv5s 单脚本两步流程: 在 89 编译上传,在 92 直接测试.
+# YOLOv5s 单脚本两步流程: 在编译主机 编译上传,在开发板 直接测试.
 
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# 89 配置区: 只修改等号右侧的路径或名称. 板端使用上传的 board_paths.conf.
+# 编译主机配置区: 只修改等号右侧的路径或名称. 板端使用上传的 board_paths.conf.
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
@@ -17,7 +17,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     SOURCE_ARCHIVE="${MODEL_ROOT}/models/yolov5-485da42.zip"
     # 补丁文件: MTK 模型转换补丁压缩包.
     PATCH_ARCHIVE="${MODEL_ROOT}/models/model_conversion_YOLOv5s_example_20240916.zip"
-    # 校准数据: 89 和 Docker 都能访问的图片目录,必须填写.
+    # 校准数据: 编译主机和 Docker 都能访问的图片目录,必须填写.
     CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images"
     # 输出目录: ONNX、TFLite 和 DLA 放在这里.
     MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
@@ -36,13 +36,13 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 全量数据: COCO val2017 根目录; 只跑三图时可以留空.
     BOARD_DATASET_DIR="/root/hailong.he/datasets/coco/val2017/"
 
-    # FP32 基准: 同协议 ONNX mAP@0.5:0.95,默认是历史结果; 留空不计算损失.
-    FP32_MAP="0.3709"
-    # 基准来源: 替换数值时同步修改来源,避免误认为本次实测.
-    FP32_BASELINE_SOURCE="历史 ONNX FP32,2026-09-08,COCO val2017,conf=0.001,IoU=0.6,max_det=300"
+    # 浮点精度图片: 编译主机和 Docker 均可访问的 COCO val2017 全量图片目录.
+    FP32_IMAGES_DIR="${CALIBRATION_DIR}"
+    # 浮点精度标注: 与上述 5000 张图片对应的 COCO 标注文件.
+    FP32_ANNOTATIONS="${FP32_IMAGES_DIR%/images}/annotations/instances_val2017.json"
 
-    # 仅当 89 上的 Docker 或交叉编译环境不同,才修改下面的配置.
-    # Docker 容器: 89 上的 Genio 720 编译环境.
+    # 仅当 编译主机上的 Docker 或交叉编译环境不同,才修改下面的配置.
+    # Docker 容器: 编译主机上的 Genio 720 编译环境.
     MTK_G720_CONTAINER="hhl_g720_8011"
     # 环境脚本: Docker 内 MTK SDK 初始化脚本.
     MTK_SETUP_SCRIPT="/opt/mtk-build/setup_container.sh"
@@ -50,11 +50,11 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     NCC_BIN="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/bin/ncc-tflite"
     # 编译器库: Docker 内 ncc-tflite 依赖库目录.
     NCC_LIB="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/lib"
-    # C++ 工具链: 89 上 AArch64 编译工具和 OpenCV 库的根目录.
+    # C++ 工具链: 编译主机上 AArch64 编译工具和 OpenCV 库的根目录.
     MTK_G720_CPP_TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
-    # Runtime 头文件: 89 上 Neuron Runtime 的 include 目录.
+    # Runtime 头文件: 编译主机上 Neuron Runtime 的 include 目录.
     MTK_NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
-    # C++ 编译器: 89 上的 AArch64 交叉编译命令.
+    # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
     CROSS_CXX="aarch64-linux-gnu-g++"
     # C++ 输出: 编译主机上的临时程序,该目录与 Docker 临时目录各自独立.
     BOARD_BINARY="${BUILD_WORK_DIR}/yolov5s_board_eval"
@@ -140,11 +140,11 @@ echo "[OK] 全量测试结果: ${RUN_DIR}/summary.json"
     exit 0
 fi
 if (( $# != 0 )); then
-    echo "[ERROR] 在 89 直接运行 bash deploy/run.sh,无需参数." >&2
+    echo "[ERROR] 在编译主机 直接运行 bash deploy/run.sh,无需参数." >&2
     exit 2
 fi
 
-# 编译部署阶段: 在 89 调用 Docker 转换模型、交叉编译 C++ 并上传.
+# 编译部署阶段: 在编译主机 调用 Docker 转换模型、交叉编译 C++ 并上传.
 : "${CALIBRATION_DIR:?请在脚本顶部配置 CALIBRATION_DIR}"
 : "${BOARD_DEPLOY_DIR:?请在脚本顶部配置 BOARD_DEPLOY_DIR}"
 
@@ -156,6 +156,8 @@ test -f "${MODEL_WEIGHTS}"
 test -f "${SOURCE_ARCHIVE}"
 test -f "${PATCH_ARCHIVE}"
 test -d "${CALIBRATION_DIR}"
+test -d "${FP32_IMAGES_DIR}"
+test -f "${FP32_ANNOTATIONS}"
 test -d "${SMOKE_IMAGES_DIR}"
 test "$(find "${SMOKE_IMAGES_DIR}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 3
 if [[ "${MODEL_OUTPUT_DIR}" != /* || "${OUTPUT_DLA}" != /* ]]; then
@@ -183,6 +185,8 @@ docker exec -i \
     -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
     -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" \
     -e OUTPUT_DLA="${OUTPUT_DLA}" \
+    -e FP32_IMAGES_DIR="${FP32_IMAGES_DIR}" \
+    -e FP32_ANNOTATIONS="${FP32_ANNOTATIONS}" \
     -e MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT}" \
     -e NCC_BIN="${NCC_BIN}" \
     -e NCC_LIB="${NCC_LIB}" \
@@ -198,6 +202,8 @@ test -f "${MODEL_WEIGHTS}"
 test -f "${SOURCE_ARCHIVE}"
 test -f "${PATCH_ARCHIVE}"
 test -d "${CALIBRATION_DIR}"
+test -d "${FP32_IMAGES_DIR}"
+test -f "${FP32_ANNOTATIONS}"
 test -f "${MTK_SETUP_SCRIPT}"
 test -x "${NCC_BIN}"
 test -d "${NCC_LIB}"
@@ -246,7 +252,31 @@ export LD_LIBRARY_PATH="${NCC_LIB}:${LD_LIBRARY_PATH:-}"
 DOCKER_BUILD
 test -s "${OUTPUT_DLA}"
 
-echo "[2/4] 在 89 交叉编译板端 C++ 测试程序."
+echo "[ONNX] 在编译主机 Docker 中评测 FP32 全量精度."
+docker exec -i -e PYTHONDONTWRITEBYTECODE=1 \
+    -e MODEL_ROOT="${MODEL_ROOT}" -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
+    -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e FP32_IMAGES_DIR="${FP32_IMAGES_DIR}" \
+    -e FP32_ANNOTATIONS="${FP32_ANNOTATIONS}" \
+    "${MTK_G720_CONTAINER}" bash -s <<'ONNX_ACCURACY'
+set -euo pipefail
+test -d "${FP32_IMAGES_DIR}"
+test -f "${FP32_ANNOTATIONS}"
+export TMPDIR="${BUILD_WORK_DIR}/tmp"
+export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
+REPO_ROOT="$(cd "${MODEL_ROOT}/../../../.." && pwd)"
+python "${REPO_ROOT}/tools/accuracy/yolov5s_val_coco.py" \
+    --onnx "${MODEL_OUTPUT_DIR}/model_fp32.onnx" \
+    --images-dir "${FP32_IMAGES_DIR}" --ann "${FP32_ANNOTATIONS}" \
+    --summary "${BUILD_WORK_DIR}/fp32_accuracy/summary.json" \
+    --image-size 640 --confidence 0.001 --iou 0.6 --max-det 300
+ONNX_ACCURACY
+# 传回实测数值; Docker 与编译主机的临时目录各自独立.
+FP32_MAP="$(docker exec "${MTK_G720_CONTAINER}" python -c \
+    'import json,sys; print(json.load(open(sys.argv[1]))["map_50_95"])' \
+    "${BUILD_WORK_DIR}/fp32_accuracy/summary.json")"
+FP32_BASELINE_SOURCE="本次 ONNX FP32 全量实测,COCO val2017,conf=0.001,IoU=0.6,max_det=300"
+
+echo "[2/4] 在编译主机 交叉编译板端 C++ 测试程序."
 readonly OPENCV_SOURCE="${MTK_G720_CPP_TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${MTK_G720_CPP_TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${MTK_G720_CPP_TOOLCHAIN_ROOT}/genio720-libs"

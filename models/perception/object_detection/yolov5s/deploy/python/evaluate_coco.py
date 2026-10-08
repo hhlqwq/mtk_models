@@ -65,6 +65,10 @@ def evaluate(args: argparse.Namespace) -> None:
     npu_mean = float(timings["npu_ms"]["mean"])
     if not math.isfinite(npu_mean) or npu_mean <= 0.0:
         raise ValueError("NPU 平均耗时无效.")
+    peak_rss = timings.get("peak_rss_kb")
+    if peak_rss is not None and (not math.isfinite(float(peak_rss)) or float(peak_rss) <= 0):
+        raise ValueError("峰值 RSS 无效.")
+    peak_rss_mib = None if peak_rss is None else float(peak_rss) / 1024.0
     fp32_map = args.fp32_map
     if fp32_map is not None and (
             not math.isfinite(fp32_map) or not 0.0 <= fp32_map <= 1.0):
@@ -74,6 +78,8 @@ def evaluate(args: argparse.Namespace) -> None:
         f"板端 NPU 平均推理耗时: {npu_mean:.3f} ms",
         f"INT8 mAP@0.5:0.95: {int8_map:.6f}",
     ]
+    summary_lines.append("推理进程峰值 RSS: 未记录." if peak_rss_mib is None else
+                         f"推理进程峰值 RSS: {peak_rss_mib:.3f} MiB")
     if fp32_map is None:
         summary_lines.append("量化精度下降: 未计算,请配置同协议 FP32_MAP 基准.")
     else:
@@ -90,6 +96,8 @@ def evaluate(args: argparse.Namespace) -> None:
         "dataset": "coco_val2017",
         "images": len(expected_ids),
         "npu_mean_ms": npu_mean,
+        "peak_rss_mib": peak_rss_mib,
+        "memory_scope": "板端 C++ 全量推理进程峰值 RSS",
         "int8_map_50_95": int8_map,
         "fp32_map_50_95": fp32_map,
         "accuracy_loss_percentage_points": loss_pp,

@@ -14,8 +14,6 @@ REQUIRED_FILES = (
     "model_card.md",
     "LICENSE",
     "models/README.md",
-    "docs/accuracy.md",
-    "docs/benchmark.md",
 )
 VALID_STATUSES = {
     "not_started",
@@ -62,11 +60,7 @@ def check_model(entry: dict[str, Any]) -> list[str]:
     if not model_root.is_dir():
         return [f"{model_id}: 模型目录不存在: {relative_path}"]
 
-    model_required_files = REQUIRED_FILES
-    if model_id in {"yolov5s", "vit_base_patch16_224"}:
-        model_required_files = tuple(
-            path for path in REQUIRED_FILES if not path.startswith("docs/"))
-    for required_file in model_required_files:
+    for required_file in REQUIRED_FILES:
         if not (model_root / required_file).is_file():
             errors.append(f"{model_id}: 缺少文件: {required_file}")
 

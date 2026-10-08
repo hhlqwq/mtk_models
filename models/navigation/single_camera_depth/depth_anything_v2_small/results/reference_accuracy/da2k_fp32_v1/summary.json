@@ -1,9 +1,0 @@
-{
-  "status": "complete",
-  "backend": "onnxruntime_cuda_fp32",
-  "dataset": "da2k_fixed_square_518_pair_order",
-  "images": 1033,
-  "pairs": 2068,
-  "correct_pairs": 1961,
-  "pair_accuracy": 0.9482591876208898
-}

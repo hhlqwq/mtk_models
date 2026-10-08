@@ -32,4 +32,7 @@ MediaTek 文件没有提供上游 checkpoint 名称、导出配置或内置文�
 - 当前模型只能使用导出时固化的 80 类文本,板端不能动态输入任意开放词汇.
 - Neuron EP 允许不支持的节点回退 CPU,板端 C++ 在正式处理图片前检查 profiling；发现 CPU 模型节点即停止。
 - 官方参考性能不能代替本项目板端实测.
-- 历史 COCO val2017 全量 bbox AP50:95：FP32 ONNX `0.472953`、板端混合 EP `0.472952`。新纯 NPU ONNX 已完成三图 FP32/板端一致性验证，COCO 全量精度尚未运行。结果见 [精度报告](docs/accuracy.md) 与 [性能报告](docs/benchmark.md).
+
+## 当前测试结果
+
+以用户上传的 `results/summary.json` 为准,当前待上传。核心指标见 [README](README.md#当前测试结果)。

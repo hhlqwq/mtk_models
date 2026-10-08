@@ -1,9 +1,0 @@
-{
-  "status": "complete",
-  "backend": "onnxruntime_fp32_cuda_preferred",
-  "dataset": "coco_val2017_class_agnostic_segm",
-  "images": 5000,
-  "predictions": 236937,
-  "ap50_95": 0.05209812066385719,
-  "ap50": 0.09256463425268475
-}

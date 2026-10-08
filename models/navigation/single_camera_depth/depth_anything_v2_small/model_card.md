@@ -8,7 +8,11 @@
 | 许可 | Small 模型 Apache-2.0，见同目录 [LICENSE](LICENSE) |
 | 本次输入 | RGB 518×518，NCHW，ImageNet 均值和标准差归一化；原生 INT8 输入行步长 528 字节 |
 | 本次输出 | 518×518 INT8 相对深度图；量化参数随转换产物保存 |
-| Genio 720 | `board_verified`，硬件冒烟及 DA-2K 1,033 图全量点对评测；FP32 ONNX `94.83%`，板端 `85.78%` |
+| Genio 720 | 待上传当前测试汇总 |
 | Genio 5100 | `not_started` |
 
-模型输出仅表达单张图内的相对深度结构，不能直接用于米制测距或安全避障。板端已完成两张公共图片的冒烟验证及 DA-2K 全量点对精度；结果与稳态性能边界见[精度报告](docs/accuracy.md)和[性能报告](docs/benchmark.md)。
+模型输出仅表达单张图内的相对深度结构，不能直接用于米制测距或安全避障。
+
+## 当前测试结果
+
+以用户上传的 `results/summary.json` 为准,当前待上传。核心指标见 [README](README.md#当前测试结果)。

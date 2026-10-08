@@ -16,6 +16,8 @@
 #include <string>
 #include <vector>
 
+#include <sys/resource.h>
+
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -222,6 +224,14 @@ int main(int argc, char** argv) {
                   << " 张.\n";
       }
     }
+    // 记录整个推理进程的峰值 RSS,临时文件在成功汇总后清理.
+    rusage usage{};
+    if (getrusage(RUSAGE_SELF, &usage) != 0) {
+      throw std::runtime_error("读取峰值 RSS 失败.");
+    }
+    std::ofstream memory(options.predictions.parent_path() / "memory.json");
+    memory << "{\"peak_rss_kib\":" << usage.ru_maxrss << "}\n";
+    if (!memory) throw std::runtime_error("峰值 RSS 写入失败.");
     return 0;
   } catch (const std::exception& error) {
     std::cerr << "[ERROR] " << error.what() << '\n';

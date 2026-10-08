@@ -14,12 +14,13 @@
 | Demo 默认阈值 | confidence=0.4, NMS IoU=0.9, max_det=100；正式 AR 评测 confidence=0.001 |
 | 提示支持 | 全图、单前景点、单 xyxy 框; 提示语义见 Demo 文档 |
 | 尚不支持 | 文本/CLIP、负点组合、多图批处理、G5100 实测 |
-| 精度状态 | PyTorch / ONNX / 独立校准 INT8 DLA 的 COCO val2017 全量 segm AR@100 为 0.391 / 0.390 / 0.376384；旧 DLA 的 0.370 使用了重叠校准图片，仅作历史诊断 |
-| 交付状态 | 板端已验证；独立校准 DLA 的 5,000 张全量精度及预热后常驻性能已测，见[精度报告](docs/accuracy.md)和[性能报告](docs/benchmark.md) |
+| 核心精度 | 类别无关 segm AR@100,待上传当前汇总 |
+| 当前结果 | 待上传 results/summary.json |
 
 FastSAM 不输出 COCO 80 类语义标签.本次正式精度采用类别无关协议,
 不能把所有预测随意设置为某个 COCO 类别后宣称完成标准实例分割 mAP.
 640 输入是本项目端侧配置,不直接比较官方 1024 输入结果.
 
-导出和量化参数分别记录在 `export_manifest.json`、`model_int8.json`；本次结果见
-[精度报告](docs/accuracy.md)与[2026-09-23 板端冒烟报告](docs/board_smoke_20260923.md).
+## 当前测试结果
+
+以用户上传的 `results/summary.json` 为准,当前待上传。核心指标见 [README](README.md#当前测试结果)。

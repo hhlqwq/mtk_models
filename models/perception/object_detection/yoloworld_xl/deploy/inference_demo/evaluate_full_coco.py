@@ -120,7 +120,10 @@ def evaluate(args: argparse.Namespace) -> None:
         evaluator.summarize()
     (args.output_dir / "coco_summary.log").write_text(
         log.getvalue(), encoding="utf-8")
+    memory_path = args.results.parent / "memory.json"
+    memory = json.loads(memory_path.read_text(encoding="utf-8")) if memory_path.is_file() else {}
     summary = {
+        "peak_rss_kib": memory.get("peak_rss_kib"),
         "status": "complete",
         "model": "yoloworld_xl",
         "run_id": args.run_id,

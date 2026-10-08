@@ -19,7 +19,6 @@ NMS,直接在开发板生成 COCO 预测与耗时证据,不回传 5000 张原始
 - `source` 只记录模型作者或官方开源项目发布的实现与权重,并记录版本、下载地址和许可证.
 - `delivery_reference` 仅记录目录组织、文档和结果展示的参考页面,不得作为模型输入产物.
 - 禁止以 Qualcomm 预导出的 ONNX、QNN、DLC 或其他转换产物作为正式移植起点.
-- 历史 Qualcomm 衍生结果可以保留用于工程对照,但必须明确标记,不得计入当前交付状态.
 
 ## 首批模型范围
 
@@ -40,19 +39,18 @@ YOLO-World XL.该模型使用板端 ONNX Runtime + Neuron Execution Provider 在
 
 | 模型 | 任务 | 标准输入 | 来源 | 当前状态 |
 | --- | --- | --- | --- | --- |
-| [Depth Anything V2 Small](models/navigation/single_camera_depth/depth_anything_v2_small/README.md) | Navigation / Single camera depth | 518×518 RGB | DepthAnything 官方源码与 Small 权重 | 板端已验证；DA-2K 全量点对测试已完成 |
-| [FastSAM-s](models/navigation/segmentation/fastsam/README.md) | Navigation / Segmentation | 640×640 RGB | CASIA-LMC-Lab / Ultralytics 8.0.111 | 板端已验证；独立校准 DLA 的 COCO 5,000 张全量精度与常驻性能已完成 |
-| [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics | 完整交付 |
-| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 完整交付 |
-| [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | 完整交付 |
-| [MobileFaceNet](models/interaction/face_recognition/mobilefacenet/README.md) | Interaction / Face recognition | 112×112 RGB 对齐人脸 | foamliu/MobileFaceNet | 板端已验证；输入协议修正后 LFW 十折全量精度重测中 |
-| [YOLO-World XL](models/perception/object_detection/yoloworld_xl/README.md) | Perception / Object detection | 640×640 RGB | AILab-CVC / MediaTek Model Zoo ONNX | 混合 Neuron/CPU EP 已验证；纯 NPU 正确性未通过，暂停后续全量测试 |
-| [Whisper-Tiny](models/audio/stt/whisper_tiny/README.md) | Audio / STT | 16 kHz 单声道、最长 30 秒 | OpenAI Whisper v20250625 | 板端已验证；LibriSpeech test-clean 全量 WER 已完成 |
+| [Depth Anything V2 Small](models/navigation/single_camera_depth/depth_anything_v2_small/README.md) | Navigation / Single camera depth | 518×518 RGB | DepthAnything 官方源码与 Small 权重 | 待上传当前测试汇总 |
+| [FastSAM-s](models/navigation/segmentation/fastsam/README.md) | Navigation / Segmentation | 640×640 RGB | CASIA-LMC-Lab / Ultralytics 8.0.111 | 待上传当前测试汇总 |
+| [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics | 本次全量结果已上传 |
+| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 待上传当前测试汇总 |
+| [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | 待上传当前测试汇总 |
+| [MobileFaceNet](models/interaction/face_recognition/mobilefacenet/README.md) | Interaction / Face recognition | 112×112 RGB 对齐人脸 | foamliu/MobileFaceNet | 待上传当前测试汇总 |
+| [YOLO-World XL](models/perception/object_detection/yoloworld_xl/README.md) | Perception / Object detection | 640×640 RGB | AILab-CVC / MediaTek Model Zoo ONNX | 待上传当前测试汇总 |
+| [Whisper-Tiny](models/audio/stt/whisper_tiny/README.md) | Audio / STT | 16 kHz 单声道、最长 30 秒 | OpenAI Whisper v20250625 | 待上传当前测试汇总 |
 
-公开示例结果见各模型 README；如模型没有样例图片,以历史精度报告为准.
+公开示例结果见各模型 README; 当前指标仅依据用户上传的 `results/summary.json` 更新.
 
-各模型的正式数据集、板端与同协议参考精度、耗时口径见各自 README 或历史报告；机器可读报告保存在各自的 `results/full_accuracy/<run_id>/` 和
-`results/reference_accuracy/<run_id>/`。
+各模型的当前数据集、精度和耗时见 README,机器可读结果统一保存为 `results/summary.json`。
 Whisper-Tiny 本轮正式精度仅评测 LibriSpeech `test-clean` 全部 2,620 条音频。
 
 状态只能使用以下四类：
@@ -150,20 +148,17 @@ models/scenario_name/category_name/model_name/
 ├── examples/
 │   ├── input/
 │   └── output/
-└── docs/
-    ├── accuracy.md
-    └── benchmark.md
+└── results/
+    └── summary.json
 ```
 
 每个模型使用一个脚本完成两步流程：在编译主机运行 `deploy/run.sh` 编译并上传，再在开发板运行上传的同一脚本；路径在脚本中配置。具体命令见各模型 README。
 
 各模型的临时输入、依赖缓存和 C++ 编译程序统一写入 `BUILD_WORK_DIR`,默认是仓库外的 `/tmp/hailongcodex/<当天日期>/<模型名>/`。模型产物与板端结果分别写入 `MODEL_OUTPUT_DIR` 和 `BOARD_RESULTS_DIR`;代码目录不生成 Python 字节码缓存。Docker 与主机的临时目录独立,上传所需的辅助文件由脚本显式取回。
 
-完整板端测试成功后,每次运行仅保留一个 `summary.json`,内容为平均 NPU 推理耗时、任务核心精度和匹配参考基准的精度差值。临时预测、缓存和日志在成功汇总后清理; 失败时保留现场。模型的历史参考来源在报告中明确标注,缺少匹配基准不计算损失。YOLO-World 当前只有 ORT Runtime 耗时,Whisper 默认参考为 FP16,报告按实际口径记录。
+完整板端测试成功后只保留一个 `summary.json`,包含平均 NPU 耗时、核心精度、匹配参考基准及精度差值。测试完成后将文件上传到本地模型的 `results/summary.json`,据此更新 README; 未上传结果不预填数字.
 
-各模型的临时输入、依赖缓存和 C++ 编译程序统一写入 `BUILD_WORK_DIR`,默认是仓库外的 `/tmp/hailongcodex/<当天日期>/<模型名>/`。模型产物与板端结果分别写入 `MODEL_OUTPUT_DIR` 和 `BOARD_RESULTS_DIR`;代码目录不生成 Python 字节码缓存。Docker 与主机的临时目录独立,上传所需的辅助文件由脚本显式取回。
 
-完整板端测试成功后,每次运行仅保留一个 `summary.json`,内容为平均 NPU 推理耗时、任务核心精度和匹配参考基准的精度差值。临时预测、缓存和日志在成功汇总后清理; 失败时保留现场。模型的历史参考来源在报告中明确标注,缺少匹配基准不计算损失。YOLO-World 当前只有 ORT Runtime 耗时,Whisper 默认参考为 FP16,报告按实际口径记录。
 
 仓库通过 `registry/models.yaml` 维护模型索引,避免扫描上百个目录才能了解交付状态.
 

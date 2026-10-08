@@ -75,6 +75,7 @@ def statistics(values: list[float]) -> dict:
     """生成 Mean/P50/P90/P95 统计."""
     return {
         "count": len(values),
+        "max": max(values) if values else None,
         "mean": sum(values) / len(values) if values else None,
         "p50": percentile(values, 50),
         "p90": percentile(values, 90),

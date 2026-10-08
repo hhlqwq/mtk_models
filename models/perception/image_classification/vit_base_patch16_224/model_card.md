@@ -8,8 +8,12 @@
 - 官方权重：<https://download.pytorch.org/models/vit_b_16-c867db91.pth>。
 - 许可证：TorchVision BSD-3-Clause。
 
-本项目从官方权重自行导出 ONNX，再转换为 INT8 TFLite 和 DLA。历史 Qualcomm ONNX 仅用于交付形式参考，不作为正式模型来源。
+本项目从官方权重自行导出 ONNX，再转换为 INT8 TFLite 和 DLA。Qualcomm 页面仅用于交付形式参考，不作为正式模型来源。
 
-## 规格与结果
+## 规格
 
-输入为 NCHW 224×224 RGB，输出为 ImageNet-1K 的 1000 类 logits。ILSVRC2012 val 全量 50000 张的历史同协议 Top-1 为 FP32 ONNX **80.64%**、Genio 720 INT8 **79.38%**。历史纯 NPU 平均延迟为 **51.7129 ms/次**。协议及性能边界见 [README](README.md#历史精度)。
+输入为 NCHW 224×224 RGB,输出为 ImageNet-1K 的 1000 类 logits。评测使用 ILSVRC2012 val 全量 50000 张图片,核心精度为 Top-1。
+
+## 当前测试结果
+
+以用户上传的 `results/summary.json` 为准,当前待上传。核心指标见 [README](README.md#当前测试结果)。

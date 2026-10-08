@@ -1,6 +1,0 @@
-{
-  "source": "https://github.com/openai/whisper",
-  "package": "openai-whisper",
-  "version": "20250625",
-  "purpose": "LibriSpeech test-clean Token 解码与英文 WER 规范化"
-}

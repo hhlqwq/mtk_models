@@ -1,17 +1,7 @@
-"""YOLOv5s COCO val2017 三后端统一精度评测 (PyTorch / ONNX / MTK NPU).
-
-三个后端共享同一 letterbox 预处理、解码和 NMS 逻辑, 保证公平对比:
-
-- ``prepare``: 生成板端 NPU 推理所需 INT8 输入 bin 与清单.
-- ``decode``: 对某一后端的原始推理结果做解码 + NMS, 输出 COCO 结果 jsonl.
-- ``evaluate``: 用 pycocotools 计算 mAP 并写出 summary.
-"""
+"""在编译主机运行 YOLOv5s ONNX FP32 COCO 全量精度评测."""
 
 import argparse
 import json
-import sys
-import types
-from collections import Counter
 from pathlib import Path
 
 import cv2
@@ -19,8 +9,6 @@ import numpy as np
 import torch
 import tqdm
 from torchvision.ops import batched_nms
-
-PROJECT_ROOT = Path("/data/users/hailong.he/github/mtk_models")
 
 COCO_91_CLASSES = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21,
@@ -50,73 +38,6 @@ def letterbox(image: np.ndarray, image_size: int) -> tuple:
     top = (image_size - resized_height) // 2
     canvas[top:top + resized_height, left:left + resized_width] = resized
     return canvas, scale, left, top, (height, width)
-
-
-def load_manifest(path: Path) -> dict:
-    """读取输入清单; 不存在时返回空 dict."""
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {}
-
-
-def save_manifest(path: Path, manifest: dict) -> None:
-    """原子写出输入清单."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(manifest), encoding="utf-8")
-    tmp.replace(path)
-
-
-def stage_prepare(args: argparse.Namespace) -> None:
-    """生成 [start, start+count) 范围图片的 INT8 输入 bin 并更新清单."""
-    import mtk_converter
-
-    image_paths = sorted(Path(args.images_dir).glob("*.jpg"))
-    subset = image_paths[args.start:args.start + args.count]
-    if len(subset) != args.count:
-        raise ValueError(
-            f"评测图片不足: 请求 [{args.start}, {args.start + args.count}), "
-            f"实际仅取得 {len(subset)} 张")
-    parser = mtk_converter.TFLiteParser(str(args.tflite))
-    input_detail = parser.get_input_tensor_details()[0]
-    q_scale = input_detail["quantization"]["scales"][0]
-    q_zero = input_detail["quantization"]["zero_points"][0]
-    manifest = load_manifest(args.manifest)
-    args.bins_dir.mkdir(parents=True, exist_ok=True)
-    for image_path in tqdm.tqdm(subset, desc="准备 INT8 输入", unit="img"):
-        image = cv2.imread(str(image_path))
-        if image is None:
-            raise ValueError(f"无法读取图片: {image_path}")
-        canvas, scale, left, top, original_shape = letterbox(
-            image, args.image_size)
-        rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
-        nchw = rgb.transpose(2, 0, 1).astype(np.float32) / 255.0
-        quantized = np.clip(np.round(nchw / q_scale) + q_zero, -128,
-                            127).astype(np.int8)
-        quantized[np.newaxis].tofile(args.bins_dir / f"{image_path.stem}.bin")
-        orig_h, orig_w = original_shape
-        manifest[image_path.stem] = {
-            "scale": float(scale),
-            "left": int(left),
-            "top": int(top),
-            "original_shape": [int(orig_h), int(orig_w)],
-        }
-    save_manifest(args.manifest, manifest)
-    print(f"[OK] prepare 完成, 累计清单 {len(manifest)} 条.")
-
-
-def rowpadded_to_nchw(buffer: np.ndarray, height: int, width: int,
-                      channels: int) -> np.ndarray:
-    """按 NCHW 行 stride 16 对齐 (或无 padding) 还原张量."""
-    plain = channels * height * width
-    pad = (width + 15) // 16 * 16
-    padded = channels * height * pad
-    if buffer.size == plain:
-        return buffer.reshape(1, channels, height, width)
-    if buffer.size == padded:
-        return buffer.reshape(1, channels, height, pad)[..., :width].copy()
-    raise ValueError(
-        f"输出大小异常: {buffer.size}, 期望 {plain} 或 {padded}")
 
 
 def decode_heads(heads: list, confidence: float, iou_threshold: float,
@@ -169,154 +90,16 @@ def rescale_to_original(boxes: torch.Tensor, meta: dict,
     return result
 
 
-def append_results(path: Path, image_id: int, boxes: np.ndarray) -> None:
-    """按 COCO 结果格式追加 jsonl 记录."""
-    with path.open("a", encoding="utf-8") as handle:
-        for *xyxy, score, class_id in boxes:
-            x1, y1, x2, y2 = xyxy
-            handle.write(json.dumps({
-                "image_id": image_id,
-                "category_id": COCO_91_CLASSES[int(class_id)],
-                "bbox": [float(round(x1, 3)), float(round(y1, 3)),
-                         float(round(x2 - x1, 3)), float(round(y2 - y1, 3))],
-                "score": round(float(score), 5),
-            }) + "\n")
-
-
-def result_image_ids(path: Path) -> set[int]:
-    """读取结果 jsonl 中已有预测的 image_id 集合."""
-    if not path.exists():
-        return set()
-    return {json.loads(line)["image_id"]
-            for line in path.read_text(encoding="utf-8").splitlines() if line}
-
-
-def processed_image_ids(path: Path) -> set[int]:
-    """读取已完成图片列表,包含没有任何检测结果的图片."""
-    if not path.exists():
-        return set()
-    return {int(line.split(",", maxsplit=1)[0]) for line in path.read_text(
-        encoding="utf-8").splitlines() if line}
-
-
-def processed_record_counts(path: Path) -> dict[int, int]:
-    """读取各图片应有的检测记录数."""
-    if not path.exists():
-        return {}
-    result = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line:
-            continue
-        image_id, count = line.split(",", maxsplit=1)
-        result[int(image_id)] = int(count)
-    return result
-
-
-def mark_processed(path: Path, image_id: int, record_count: int) -> None:
-    """在结果完整写出后追加图片完成标记和记录数."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(f"{image_id},{record_count}\n")
-
-
-def stage_decode(args: argparse.Namespace) -> None:
-    """对指定后端输出做解码 + NMS, 写 COCO 结果 jsonl."""
-    manifest = load_manifest(args.manifest)
-    if not manifest:
-        raise ValueError(f"输入清单为空: {args.manifest}")
-    args.result.parent.mkdir(parents=True, exist_ok=True)
-    processed = processed_image_ids(args.done)
-    orphan_results = result_image_ids(args.result) - processed
-    if orphan_results:
-        raise RuntimeError(
-            "结果文件包含未完成记录,可能是上次写入中断；请使用新的 "
-            f"EVAL_RUN_ID.示例 image_id: {min(orphan_results)}")
-    if args.backend == "npu":
-        import mtk_converter
-
-        parser = mtk_converter.TFLiteParser(str(args.tflite))
-        outputs = parser.get_output_tensor_details()
-        output_shapes = [list(output["shape"]) for output in outputs]
-        expected_shapes = [[1, 255, size, size] for size in HEAD_SIZES]
-        if output_shapes != expected_shapes:
-            raise ValueError(
-                f"TFLite 输出顺序或形状异常: {output_shapes}, "
-                f"期望 {expected_shapes}")
-        scales = [o["quantization"]["scales"][0] for o in outputs]
-        zeros = [o["quantization"]["zero_points"][0] for o in outputs]
-        items = sorted(manifest.items(), key=lambda item: int(item[0]))
-        for stem, meta in tqdm.tqdm(items, desc="解码 NPU 输出", unit="img"):
-            image_id = int(stem)
-            if image_id in processed:
-                continue
-            heads = []
-            for index, size in enumerate(HEAD_SIZES):
-                output_path = args.bins_dir / f"{stem}_{index}.bin"
-                if not output_path.is_file() or output_path.stat().st_size == 0:
-                    raise FileNotFoundError(f"NPU 输出缺失或为空: {output_path}")
-                raw = np.fromfile(output_path, dtype=np.int8)
-                nchw = rowpadded_to_nchw(raw, size, size, 255)
-                values = (nchw.astype(np.float32) - zeros[index]) * scales[index]
-                heads.append(torch.from_numpy(values))
-            boxes = decode_heads(heads, args.confidence, args.iou,
-                                 args.max_det)
-            append_results(args.result, image_id, rescale_to_original(
-                boxes, meta, args.image_size))
-            mark_processed(args.done, image_id, len(boxes))
-    else:
-        infer = build_fp32_infer(args)
-        items = sorted(manifest.items(), key=lambda item: int(item[0]))
-        for stem, meta in tqdm.tqdm(items, desc=f"解码 {args.backend}",
-                                    unit="img"):
-            image_id = int(stem)
-            if image_id in processed:
-                continue
-            image = cv2.imread(str(args.images_dir / f"{stem}.jpg"))
-            if image is None:
-                raise ValueError(f"缺少图片: {stem}.jpg")
-            canvas, _, _, _, _ = letterbox(image, args.image_size)
-            heads = infer(canvas)
-            boxes = decode_heads(heads, args.confidence, args.iou,
-                                 args.max_det)
-            append_results(args.result, image_id, rescale_to_original(
-                boxes, meta, args.image_size))
-            mark_processed(args.done, image_id, len(boxes))
-    print(f"[OK] decode({args.backend}) 完成 -> {args.result}")
-
-
 def build_fp32_infer(args: argparse.Namespace):
-    """构造返回 3 个原始检测头的 FP32 推理函数 (torch 或 onnx)."""
-    if args.backend == "torch":
-        sys.path.insert(0, str(args.source_dir))
-        from models.experimental import attempt_load
-
-        model = attempt_load(str(args.weights), device="cuda")
-        detect = model.model[-1]
-
-        def detect_forward(self, x):
-            """Detect 仅保留 3 个 conv 输出, 与部署图一致."""
-            return [self.m[i](x[i]) for i in range(self.nl)]
-
-        detect.forward = types.MethodType(detect_forward, detect)
-        model.eval().cuda()
-
-        def infer(canvas: np.ndarray) -> list:
-            """FP32 PyTorch 推理."""
-            rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
-            tensor = torch.from_numpy(
-                rgb.transpose(2, 0, 1).astype(np.float32) / 255.0).cuda()[None]
-            with torch.no_grad():
-                return model(tensor)
-
-        return infer
+    """构造 ONNX Runtime 推理函数,仅使用 ONNX 模型进行精度评测."""
     import onnxruntime
 
-    providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+    providers = [provider for provider in ["CUDAExecutionProvider", "CPUExecutionProvider"]
+                 if provider in onnxruntime.get_available_providers()]
     session = onnxruntime.InferenceSession(str(args.onnx),
                                            providers=providers)
-    if "CUDAExecutionProvider" not in session.get_providers():
-        raise RuntimeError(
-            "ONNX Runtime 未启用 CUDAExecutionProvider,拒绝静默回退 CPU.")
+    print(f"[ONNX] 执行后端: {session.get_providers()}", flush=True)
+
     input_name = session.get_inputs()[0].name
     order = {80: 0, 40: 1, 20: 2}
 
@@ -327,121 +110,93 @@ def build_fp32_infer(args: argparse.Namespace):
         outputs = session.run(None, {input_name: tensor})
         heads = [None, None, None]
         for value in outputs:
+            if value.ndim != 4 or value.shape[-1] not in order:
+                raise ValueError(f"ONNX 原始检测头形状异常: {value.shape}")
+            if heads[order[value.shape[-1]]] is not None:
+                raise ValueError("ONNX 检测头重复.")
             heads[order[value.shape[-1]]] = torch.from_numpy(value)
         return heads
 
     return infer
 
 
-def stage_evaluate(args: argparse.Namespace) -> None:
-    """用 pycocotools 计算 mAP 并写出 summary."""
+def evaluate_onnx_accuracy(args: argparse.Namespace) -> None:
+    """在编译主机评测 ONNX 全量精度,仅保存核心 mAP 汇总."""
+    import contextlib
+    import io
+    import math
     from pycocotools.coco import COCO
     from pycocotools.cocoeval import COCOeval
 
-    manifest = load_manifest(args.manifest)
-    expected_ids = {int(image_id) for image_id in manifest}
-    processed_ids = processed_image_ids(args.done)
-    if not expected_ids:
-        raise ValueError(f"输入清单为空: {args.manifest}")
-    if args.expected_images and len(expected_ids) != args.expected_images:
-        raise RuntimeError(
-            f"清单图片数异常: 期望 {args.expected_images}, "
-            f"实际 {len(expected_ids)}")
-    if processed_ids != expected_ids:
-        missing = sorted(expected_ids - processed_ids)
-        unexpected = sorted(processed_ids - expected_ids)
-        raise RuntimeError(
-            "评测覆盖不完整: "
-            f"期望 {len(expected_ids)}, 已完成 {len(processed_ids)}, "
-            f"缺少 {missing[:3]}, 多余 {unexpected[:3]}")
-    records = [json.loads(line) for line in
-               args.result.read_text(encoding="utf-8").splitlines() if line]
-    expected_record_counts = processed_record_counts(args.done)
-    record_counter = Counter(record["image_id"] for record in records)
-    actual_record_counts = {
-        image_id: record_counter.get(image_id, 0) for image_id in expected_ids
-    }
-    if actual_record_counts != expected_record_counts:
-        raise RuntimeError(
-            "结果记录数与完成标记不一致,可能发生中断或文件损坏；"
-            "请使用新的 EVAL_RUN_ID.")
-    unexpected_results = result_image_ids(args.result) - expected_ids
-    if unexpected_results:
-        raise RuntimeError(
-            f"结果包含清单外 image_id: {sorted(unexpected_results)[:3]}")
-    print(f"[INFO] {args.result.name}: {len(records)} 条检测结果")
-    annotation = COCO(str(args.ann))
-    prediction = annotation.loadRes(records)
-    evaluator = COCOeval(annotation, prediction, "bbox")
-    # 必须评测清单中的全部图片,包括没有任何预测结果的图片.
-    evaluator.params.imgIds = sorted(expected_ids)
-    evaluator.evaluate()
-    evaluator.accumulate()
-    evaluator.summarize()
-    names = ["AP50:95", "AP50", "AP75", "AP_small", "AP_medium", "AP_large",
-             "AR1", "AR10", "AR100", "AR_small", "AR_medium", "AR_large"]
-    summary = {name: round(float(value), 4)
-               for name, value in zip(names, evaluator.stats)}
-    summary["backend"] = args.backend
-    summary["evaluated_images"] = len(expected_ids)
+    with contextlib.redirect_stdout(io.StringIO()):
+        annotation = COCO(str(args.ann))
+    image_ids = sorted(annotation.getImgIds())
+    paths = sorted(args.images_dir.glob("*.jpg"))
+    if len(image_ids) != 5000 or len(paths) != 5000 or {
+            int(path.stem) for path in paths} != set(image_ids):
+        raise ValueError("图片与标注必须覆盖同一份 COCO val2017 全量 5000 张图片.")
+    infer = build_fp32_infer(args)
+    records = []
+    for path in tqdm.tqdm(paths, desc="ONNX FP32 全量精度", unit="img"):
+        image = cv2.imread(str(path))
+        if image is None:
+            raise ValueError(f"无法读取图片: {path}")
+        canvas, scale, left, top, shape = letterbox(image, args.image_size)
+        heads = infer(canvas)
+        if any(head is None for head in heads) or any(
+                tuple(head.shape) != (1, 255, size, size)
+                for head, size in zip(heads, HEAD_SIZES)):
+            raise ValueError("ONNX 必须输出三个原始检测头: 80x80,40x40,20x20.")
+        boxes = decode_heads(heads, args.confidence, args.iou, args.max_det)
+        boxes = rescale_to_original(
+            boxes, {"scale": scale, "left": left, "top": top,
+                    "original_shape": shape}, args.image_size)
+        for x1, y1, x2, y2, score, class_id in boxes:
+            records.append({
+                "image_id": int(path.stem),
+                "category_id": COCO_91_CLASSES[int(class_id)],
+                "bbox": [float(x1), float(y1), float(x2 - x1), float(y2 - y1)],
+                "score": float(score),
+            })
+    print("[ONNX] 推理完成,计算 mAP@0.5:0.95.", flush=True)
+    with contextlib.redirect_stdout(io.StringIO()):
+        if records:
+            prediction = annotation.loadRes(records)
+        else:
+            prediction = COCO()
+            prediction.dataset = {
+                "images": annotation.dataset["images"],
+                "categories": annotation.dataset["categories"], "annotations": []}
+            prediction.createIndex()
+        evaluator = COCOeval(annotation, prediction, "bbox")
+        evaluator.params.imgIds = image_ids
+        evaluator.evaluate()
+        evaluator.accumulate()
+        evaluator.summarize()
+    value = float(evaluator.stats[0])
+    if not math.isfinite(value) or not 0 <= value <= 1:
+        raise ValueError("ONNX mAP 无效.")
     args.summary.parent.mkdir(parents=True, exist_ok=True)
-    args.summary.write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    print(f"[OK] summary -> {args.summary}")
+    args.summary.write_text(json.dumps({
+        "status": "complete", "backend": "ONNX FP32", "images": len(image_ids),
+        "map_50_95": value,
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[ONNX] mAP@0.5:0.95: {value:.6f}", flush=True)
 
 
 def parse_args() -> argparse.Namespace:
-    """解析命令行参数."""
+    """解析 ONNX 模型、全量数据集和汇总输出路径."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", required=True,
-                        choices=["prepare", "decode", "evaluate"])
-    parser.add_argument("--images-dir", type=Path,
-                        default=Path("/data/users/hailong.he/nas_smb/Datasets/"
-                                     "open_source/raw/coco/coco_val2017/images"))
-    parser.add_argument("--ann", type=Path,
-                        default=Path("/data/users/hailong.he/nas_smb/Datasets/"
-                                     "open_source/raw/coco/coco_val2017/"
-                                     "annotations/instances_val2017.json"))
-    parser.add_argument("--tflite", type=Path,
-                        default=PROJECT_ROOT / "models/perception/"
-                        "object_detection/yolov5s/models/model_int8.tflite")
-    parser.add_argument("--onnx", type=Path,
-                        default=PROJECT_ROOT / "models/perception/"
-                        "object_detection/yolov5s/models/model_fp32.onnx")
-    parser.add_argument("--weights", type=Path,
-                        default=PROJECT_ROOT / "models/perception/"
-                        "object_detection/yolov5s/models/yolov5s.pt")
-    parser.add_argument("--source-dir", type=Path,
-                        default=PROJECT_ROOT / "models/perception/"
-                        "object_detection/yolov5s/models/yolov5")
-    parser.add_argument("--work-dir", type=Path,
-                        default=PROJECT_ROOT / ".eval/yolov5s")
-    parser.add_argument("--bins-dir", type=Path, default=None)
-    parser.add_argument("--manifest", type=Path, default=None)
-    parser.add_argument("--result", type=Path, default=None)
-    parser.add_argument("--summary", type=Path, default=None)
-    parser.add_argument("--done", type=Path, default=None)
-    parser.add_argument("--backend", default="npu",
-                        choices=["npu", "torch", "onnx"])
-    parser.add_argument("--start", type=int, default=0)
-    parser.add_argument("--count", type=int, default=500)
-    parser.add_argument("--expected-images", type=int, default=None)
+    parser.add_argument("--onnx", type=Path, required=True)
+    parser.add_argument("--images-dir", type=Path, required=True)
+    parser.add_argument("--ann", type=Path, required=True)
+    parser.add_argument("--summary", type=Path, required=True)
     parser.add_argument("--image-size", type=int, default=640)
     parser.add_argument("--confidence", type=float, default=0.001)
     parser.add_argument("--iou", type=float, default=0.6)
     parser.add_argument("--max-det", type=int, default=300)
-    args = parser.parse_args()
-    args.bins_dir = args.bins_dir or args.work_dir / f"{args.backend}_bins"
-    args.manifest = args.manifest or args.work_dir / "manifest.json"
-    args.result = args.result or args.work_dir / f"{args.backend}_results.jsonl"
-    args.summary = args.summary or args.work_dir / f"{args.backend}_summary.json"
-    args.done = args.done or args.work_dir / f"{args.backend}_done_ids.txt"
-    args.work_dir.mkdir(parents=True, exist_ok=True)
-    return args
+    return parser.parse_args()
 
-
-STAGES = {"prepare": stage_prepare, "decode": stage_decode,
-          "evaluate": stage_evaluate}
 
 if __name__ == "__main__":
-    parsed = parse_args()
-    STAGES[parsed.stage](parsed)
+    evaluate_onnx_accuracy(parse_args())
