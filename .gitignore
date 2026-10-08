@@ -59,13 +59,9 @@ models/navigation/segmentation/fastsam/models/*.json
 models/navigation/segmentation/fastsam/models/runtime_config.csv
 models/navigation/segmentation/fastsam/deploy/inference_demo/fastsam_board
 
-models/perception/object_detection/yolov5s/deploy/cpp/yolov5s_board_eval
 models/interaction/pose_detection/rtmpose_body2d/deploy/inference_demo/rtmpose_board_eval
 
 
-# YOLOv5s 临时构建目录与旧版脚本留下的解压目录.
-models/perception/object_detection/yolov5s/.build/
-models/perception/object_detection/yolov5s/models/source/
 !models/perception/object_detection/yolov5s/models/yolov5-485da42.zip
 !models/perception/object_detection/yolov5s/models/model_conversion_YOLOv5s_example_20240916.zip
 

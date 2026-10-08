@@ -20,8 +20,8 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images"
     # 输出目录: ONNX、TFLite 和 DLA 放在这里.
     MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
-    # 临时构建目录: 展开源码和补丁,默认隐藏且不纳入 Git.
-    BUILD_WORK_DIR="${MODEL_ROOT}/.build"
+    # 临时构建目录: Docker 内展开源码和补丁,使用仓库外的当天临时目录.
+    BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yolov5s"
     # DLA 文件: 编译后的完整路径.
     OUTPUT_DLA="${MODEL_OUTPUT_DIR}/model_int8.dla"
     # 示例图片: 恰好放三张 JPG 图片.
@@ -50,8 +50,8 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     MTK_NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
     # C++ 编译器: 89 上的 AArch64 交叉编译命令.
     CROSS_CXX="aarch64-linux-gnu-g++"
-    # C++ 输出: 89 上生成的板端可执行程序.
-    BOARD_BINARY="${SCRIPT_DIR}/cpp/yolov5s_board_eval"
+    # C++ 输出: 编译主机上的临时程序,该目录与 Docker 临时目录各自独立.
+    BOARD_BINARY="${BUILD_WORK_DIR}/yolov5s_board_eval"
     # SSH 选项: 首次连接接受主机密钥,之后验证保存的密钥.
     SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 fi
@@ -182,9 +182,12 @@ test -f "${PATCH_ARCHIVE}"
 test -d "${CALIBRATION_DIR}"
 test -d "${SMOKE_IMAGES_DIR}"
 test "$(find "${SMOKE_IMAGES_DIR}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 3
-if [[ "${MODEL_OUTPUT_DIR}" != /* || "${BUILD_WORK_DIR}" != /* ||
-        "${OUTPUT_DLA}" != /* ]]; then
-    echo "[ERROR] MODEL_OUTPUT_DIR、BUILD_WORK_DIR 和 OUTPUT_DLA 必须是宿主机与容器共用的绝对路径." >&2
+if [[ "${MODEL_OUTPUT_DIR}" != /* || "${OUTPUT_DLA}" != /* ]]; then
+    echo "[ERROR] MODEL_OUTPUT_DIR 和 OUTPUT_DLA 必须是宿主机与容器共用的绝对路径." >&2
+    exit 2
+fi
+if [[ "${BUILD_WORK_DIR}" != /* ]]; then
+    echo "[ERROR] BUILD_WORK_DIR 必须是 Docker 内仓库外的绝对路径." >&2
     exit 2
 fi
 if [[ "${BOARD_BINARY}" != /* || "${BOARD_RESULTS_DIR}" != /* ]] ||
