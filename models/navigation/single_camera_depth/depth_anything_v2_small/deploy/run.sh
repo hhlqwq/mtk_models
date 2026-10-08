@@ -125,10 +125,10 @@ export TMPDIR="${BUILD_WORK_DIR}/tmp"
 export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 cd "${BUILD_WORK_DIR}"
-python "${MODEL_ROOT}/deploy/export_model.py" \
+python "${MODEL_ROOT}/deploy/python/export_model.py" \
     --upstream "${UPSTREAM_DIR}" --weights "${WEIGHTS}" \
     --output "${MODEL_OUTPUT_DIR}/model_fp32.onnx"
-python "${MODEL_ROOT}/deploy/convert_int8.py" \
+python "${MODEL_ROOT}/deploy/python/convert_int8.py" \
     --onnx "${MODEL_OUTPUT_DIR}/model_fp32.onnx" \
     --image-dir "${CALIBRATION_DIR}" --samples 16 \
     --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
@@ -169,7 +169,7 @@ test -f "${NEURON_INCLUDE}/neuron/api/RuntimeAPI.h"
 test -f "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8"
 mkdir -p "$(dirname "${BINARY_OUTPUT}")"
 "${CXX}" -std=c++17 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
-    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/benchmark_board.cpp" \
+    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/cpp/benchmark_board.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
     -Wl,--allow-shlib-undefined -pthread -ldl -o "${BINARY_OUTPUT}"
 file "${BINARY_OUTPUT}"
@@ -178,7 +178,7 @@ echo "[3/3] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
     "${MODEL_OUTPUT_DIR}/model_int8.json" \
-    "${SCRIPT_DIR}/full_accuracy_board.py" "${SCRIPT_DIR}/depth_utils.py" \
+    "${SCRIPT_DIR}/python/full_accuracy_board.py" "${SCRIPT_DIR}/python/depth_utils.py" \
     "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/benchmark_board"

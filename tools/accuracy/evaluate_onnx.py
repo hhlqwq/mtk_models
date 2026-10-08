@@ -202,7 +202,7 @@ def evaluate_coco(args, deploy: Path) -> tuple:
 def evaluate_pose(args, deploy: Path) -> tuple:
     """复用官方人体检测框、SimCC 解码和 WholeBody OKS-NMS 协议."""
     from rtmpose_utils import preprocess_image, decode_prediction
-    metrics = load_module("pose_metrics", deploy / "inference_demo/evaluate_coco_wholebody.py")
+    metrics = load_module("pose_metrics", deploy / "evaluate_coco_wholebody.py")
     detections = json.loads((args.dataset_root /
         "person_detection_results/COCO_val2017_detections_AP_H_56_person.json").read_text())
     if len(detections) != 104125:
@@ -337,9 +337,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.model == "whisper_tiny" and args.decoder_onnx is None:
         parser.error("Whisper 精度评测需要 --decoder-onnx.")
-    deploy = ROOT / "models" / MODELS[args.model] / "deploy"
+    deploy = ROOT / "models" / MODELS[args.model] / "deploy" / "python"
     sys.path.insert(0, str(deploy))
-    sys.path.insert(0, str(deploy / "inference_demo"))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     # 临时目录由工具创建,成功后仅清理此目录; 失败保留现场.
     import tempfile

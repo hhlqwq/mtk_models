@@ -9,7 +9,7 @@ import cv2
 import mtk_converter
 import numpy as np
 
-DEPLOY_DIR = Path(__file__).resolve().parents[1]
+DEPLOY_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(DEPLOY_DIR))
 
 from rtmpose_utils import load_person_samples, preprocess_image  # noqa: E402

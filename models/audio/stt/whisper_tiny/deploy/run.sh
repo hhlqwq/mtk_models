@@ -149,10 +149,10 @@ export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 cd "${BUILD_WORK_DIR}"
 bash "${MTK_SETUP_SCRIPT}"
-python "${MODEL_ROOT}/deploy/convert_fp32.py" \
+python "${MODEL_ROOT}/deploy/python/convert_fp32.py" \
     --onnx "${ENCODER_ONNX}" \
     --output "${MODEL_OUTPUT_DIR}/encoder_fp32.tflite"
-python "${MODEL_ROOT}/deploy/convert_fp32.py" \
+python "${MODEL_ROOT}/deploy/python/convert_fp32.py" \
     --onnx "${DECODER_ONNX}" \
     --output "${MODEL_OUTPUT_DIR}/decoder_step_fp32.tflite"
 export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
@@ -203,13 +203,13 @@ readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
 command -v "${CXX}" >/dev/null 2>&1
 "${CXX}" -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${OPENCV_BUILD}" -I"${OPENCV_SOURCE}/modules/core/include" \
-    "${SCRIPT_DIR}/prepare_board_audio.cpp" \
+    "${SCRIPT_DIR}/cpp/prepare_board_audio.cpp" \
     "${TARGET_LIBS}/libopencv_core.so.409" \
     -Wl,--allow-shlib-undefined -pthread -ldl \
     -o "${BUILD_WORK_DIR}/prepare_board_audio"
 "${CXX}" -std=c++20 -O2 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${NEURON_INCLUDE}" \
-    "${SCRIPT_DIR}/inference_demo/whisper_board_eval.cpp" \
+    "${SCRIPT_DIR}/cpp/whisper_board_eval.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
     -Wl,--allow-shlib-undefined -pthread -ldl \
     -o "${BUILD_WORK_DIR}/whisper_board_eval"
@@ -219,10 +219,10 @@ file "${BUILD_WORK_DIR}/prepare_board_audio" \
 echo "[3/4] 在 Docker 中导出滤波器、解码规则和指标依赖."
 readonly ASSETS_DIR="${BUILD_WORK_DIR}/board_assets"
 docker exec -e PYTHONDONTWRITEBYTECODE=1 -e TMPDIR="${BUILD_WORK_DIR}/tmp" -e MODEL_ROOT="${MODEL_ROOT}" \
-    "${CONTAINER}" python3 "${SCRIPT_DIR}/export_board_assets.py" \
+    "${CONTAINER}" python3 "${SCRIPT_DIR}/python/export_board_assets.py" \
     --output-dir "${ASSETS_DIR}"
 docker exec -e PYTHONDONTWRITEBYTECODE=1 -e TMPDIR="${BUILD_WORK_DIR}/tmp" -e MODEL_ROOT="${MODEL_ROOT}" \
-    "${CONTAINER}" python3 "${SCRIPT_DIR}/export_eval_vendor.py" \
+    "${CONTAINER}" python3 "${SCRIPT_DIR}/python/export_eval_vendor.py" \
     --output-dir "${ASSETS_DIR}/whisper_eval_vendor"
 mkdir -p "${ASSETS_DIR}"
 # Docker 与主机的临时目录独立,显式取回上传所需的文件.
@@ -242,7 +242,7 @@ scp "${SSH_OPTIONS[@]}" \
     "${ASSETS_DIR}/decode_config.txt" "${SCRIPT_DIR}/run.sh" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 scp "${SSH_OPTIONS[@]}" \
-    "${SCRIPT_DIR}/evaluate_accuracy.py" \
+    "${SCRIPT_DIR}/python/evaluate_accuracy.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/tools/"
 scp -r "${SSH_OPTIONS[@]}" \
     "${ASSETS_DIR}/whisper_eval_vendor/whisper" \

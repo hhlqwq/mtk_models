@@ -143,7 +143,7 @@ export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 cd "${BUILD_WORK_DIR}"
 bash "${MTK_SETUP_SCRIPT}"
-python "${MODEL_ROOT}/deploy/convert_int8.py" \
+python "${MODEL_ROOT}/deploy/python/convert_int8.py" \
     --onnx "${MODEL_ONNX}" --image-dir "${CALIBRATION_IMAGES}" \
     --annotations "${CALIBRATION_ANNOTATIONS}" \
     --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
@@ -185,7 +185,7 @@ command -v "${CXX}" >/dev/null 2>&1
     -I"${OPENCV_BUILD}" -I"${OPENCV_SOURCE}/modules/core/include" \
     -I"${OPENCV_SOURCE}/modules/imgproc/include" \
     -I"${OPENCV_SOURCE}/modules/imgcodecs/include" -I"${NEURON_INCLUDE}" \
-    "${SCRIPT_DIR}/inference_demo/rtmpose_board_eval.cpp" \
+    "${SCRIPT_DIR}/cpp/rtmpose_board_eval.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
     "${TARGET_LIBS}/libopencv_imgcodecs.so.409" \
     "${TARGET_LIBS}/libopencv_imgproc.so.409" \
@@ -194,7 +194,7 @@ command -v "${CXX}" >/dev/null 2>&1
     -o "${BUILD_WORK_DIR}/rtmpose_board_eval"
 "${CXX}" -std=c++20 -O2 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${OPENCV_BUILD}" -I"${OPENCV_SOURCE}/modules/core/include" \
-    "${SCRIPT_DIR}/inference_demo/prepare_eval_manifest.cpp" \
+    "${SCRIPT_DIR}/cpp/prepare_eval_manifest.cpp" \
     "${TARGET_LIBS}/libopencv_core.so.409" \
     -Wl,--allow-shlib-undefined -pthread -ldl \
     -o "${BUILD_WORK_DIR}/prepare_eval_manifest"
@@ -206,7 +206,7 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
     "${BUILD_WORK_DIR}/rtmpose_board_eval" \
     "${BUILD_WORK_DIR}/prepare_eval_manifest" \
-    "${SCRIPT_DIR}/inference_demo/evaluate_coco_wholebody.py" \
+    "${SCRIPT_DIR}/python/evaluate_coco_wholebody.py" \
     "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "chmod 755 '${BOARD_DEPLOY_DIR}/rtmpose_board_eval' '${BOARD_DEPLOY_DIR}/prepare_eval_manifest'"

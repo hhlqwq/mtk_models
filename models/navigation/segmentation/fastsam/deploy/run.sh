@@ -167,11 +167,11 @@ export TMPDIR="${BUILD_WORK_DIR}/tmp"
 export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 cd "${BUILD_WORK_DIR}"
-python "${MODEL_ROOT}/deploy/export_model.py" --weights "${WEIGHTS}" \
+python "${MODEL_ROOT}/deploy/python/export_model.py" --weights "${WEIGHTS}" \
     --image "${SAMPLE_IMAGE}" \
     --output-dir "${BUILD_WORK_DIR}/export"
 cp "${BUILD_WORK_DIR}/export/model_fp32.onnx" "${MODEL_OUTPUT_DIR}/model_fp32.onnx"
-python "${MODEL_ROOT}/deploy/convert_int8.py" \
+python "${MODEL_ROOT}/deploy/python/convert_int8.py" \
     --onnx "${MODEL_OUTPUT_DIR}/model_fp32.onnx" \
     --calibration-dir "${CALIBRATION_DIR}" --samples 100 \
     --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
@@ -215,7 +215,7 @@ command -v "${CXX}" >/dev/null 2>&1
     -I"${OPENCV_SOURCE}/modules/imgproc/include" \
     -I"${OPENCV_SOURCE}/modules/imgcodecs/include" \
     -I"${NEURON_INCLUDE}" \
-    "${SCRIPT_DIR}/inference_demo/fastsam_board.cpp" \
+    "${SCRIPT_DIR}/cpp/fastsam_board.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
     "${TARGET_LIBS}/libopencv_imgcodecs.so.409" \
     "${TARGET_LIBS}/libopencv_imgproc.so.409" \
@@ -229,8 +229,8 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
     "${MODEL_OUTPUT_DIR}/runtime_config.csv" \
     "${BUILD_WORK_DIR}/fastsam_board" \
-    "${SCRIPT_DIR}/full_accuracy_board.py" \
-    "${SCRIPT_DIR}/accuracy_protocol.json" "${SCRIPT_DIR}/run.sh" \
+    "${SCRIPT_DIR}/python/full_accuracy_board.py" \
+    "${SCRIPT_DIR}/python/accuracy_protocol.json" "${SCRIPT_DIR}/run.sh" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "chmod 755 '${BOARD_DEPLOY_DIR}/fastsam_board'"

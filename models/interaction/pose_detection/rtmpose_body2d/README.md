@@ -6,11 +6,27 @@
 
 人体 WholeBody 姿态估计，输入为 256×192 RGB 人体裁剪图，输出 133 个关节点。正式上游为 OpenMMLab MMPose v1.3.2；来源见[模型卡](model_card.md)。
 
-## 运行
+## 第一步: 编译并上传
 
-1. 在 [run.sh](deploy/run.sh) 中配置 ONNX、校准图片及标注、模型输出目录、COCO-WholeBody 数据集、Docker 与交叉编译环境、板端地址和部署目录。
-   在编译主机的本模型目录执行 `bash deploy/run.sh`。脚本在 Docker 中量化和编译 DLA，在主机交叉编译板端 C++ 程序并上传。
-2. 登录所配置的开发板，执行脚本打印的 `bash .../run.sh` 命令。板端处理 5000 张图片和 104125 个人体框，结果写入 `BOARD_RESULTS_DIR`。
+在 [run.sh](deploy/run.sh) 中配置 ONNX、校准图片及标注、模型输出目录、COCO-WholeBody 数据集、Docker 与交叉编译环境、板端地址和部署目录。
+
+在编译主机的本模型目录运行:
+
+```bash
+bash deploy/run.sh
+```
+
+脚本在 Docker 中量化和编译 DLA，在主机交叉编译板端 C++ 程序并上传。
+
+## 第二步: 开发板测试
+
+登录所配置的开发板，执行脚本打印的 `bash .../run.sh` 命令。板端处理 5000 张图片和 104125 个人体框，结果写入 `BOARD_RESULTS_DIR`。
+
+进入实际配置的部署目录后也可运行:
+
+```bash
+bash run.sh
+```
 
 ### 精度评测
 
@@ -27,3 +43,12 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 xtcocotools。
 ## 当前测试结果
 
 待上传本模型的 `results/summary.json` 后更新。只记录板端 NPU 平均耗时、推理进程峰值 RSS (MiB)、任务核心精度、同协议 ONNX 参考精度、部署精度和精度变化。峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存。
+
+## 文件结构
+
+- `deploy/run.sh`: 编译上传和板端测试的唯一 Shell 入口.
+- `deploy/python/`: 模型导出、转换、评测与辅助代码.
+- `deploy/cpp/`: 板端 C++ 源码.
+- `models/`: 模型产物与来源说明.
+- `examples/`: 示例输入与输出,按需保留.
+- `results/summary.json`: 上传后的最新测试汇总.

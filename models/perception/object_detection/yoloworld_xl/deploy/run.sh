@@ -125,14 +125,14 @@ export TMPDIR="${BUILD_WORK_DIR}/tmp"
 export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 cd "${BUILD_WORK_DIR}"
-python3 "${MODEL_ROOT}/deploy/prepare_onnx.py" \
+python3 "${MODEL_ROOT}/deploy/python/prepare_onnx.py" \
     --input "${SOURCE_ONNX}" \
     --output "${MODEL_OUTPUT_DIR}/model_fp32_opset13.onnx" \
     --raw-output "${MODEL_OUTPUT_DIR}/model_fp32_raw.onnx"
-python3 "${MODEL_ROOT}/deploy/prepare_pure_npu_onnx.py" \
+python3 "${MODEL_ROOT}/deploy/python/prepare_pure_npu_onnx.py" \
     --input "${MODEL_OUTPUT_DIR}/model_fp32_raw.onnx" \
     --output "${MODEL_OUTPUT_DIR}/model_fp32_pure_npu.onnx"
-python3 "${MODEL_ROOT}/deploy/verify_onnx_equivalence.py" \
+python3 "${MODEL_ROOT}/deploy/python/verify_onnx_equivalence.py" \
     --source "${SOURCE_ONNX}" \
     --converted "${MODEL_OUTPUT_DIR}/model_fp32_opset13.onnx" \
     --raw "${MODEL_OUTPUT_DIR}/model_fp32_raw.onnx" \
@@ -175,7 +175,7 @@ mkdir -p "$(dirname "${BINARY_OUTPUT}")"
     -I"${OPENCV_SOURCE}/modules/core/include" \
     -I"${OPENCV_SOURCE}/modules/imgproc/include" \
     -I"${OPENCV_SOURCE}/modules/imgcodecs/include" \
-    "${SCRIPT_DIR}/inference_demo/yoloworld_board_eval.cpp" \
+    "${SCRIPT_DIR}/cpp/yoloworld_board_eval.cpp" \
     "${TARGET_LIBS}/libopencv_imgcodecs.so.409" \
     "${TARGET_LIBS}/libopencv_imgproc.so.409" \
     "${TARGET_LIBS}/libopencv_core.so.409" \
@@ -185,7 +185,7 @@ file "${BINARY_OUTPUT}"
 echo "[3/3] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_fp32_pure_npu.onnx" \
-    "${SCRIPT_DIR}/inference_demo/evaluate_full_coco.py" \
+    "${SCRIPT_DIR}/python/evaluate_full_coco.py" \
     "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/yoloworld_board_eval"

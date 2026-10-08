@@ -124,10 +124,10 @@ export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 cd "${BUILD_WORK_DIR}"
 bash "${MTK_SETUP_SCRIPT}"
-python "${MODEL_ROOT}/deploy/export_onnx.py" \
+python "${MODEL_ROOT}/deploy/python/export_onnx.py" \
     --weights "${WEIGHTS}" \
     --output "${MODEL_OUTPUT_DIR}/model_fp32.onnx"
-python "${MODEL_ROOT}/deploy/convert_int8.py" \
+python "${MODEL_ROOT}/deploy/python/convert_int8.py" \
     --onnx "${MODEL_OUTPUT_DIR}/model_fp32.onnx" \
     --image-dir "${CALIBRATION_DIR}" \
     --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
@@ -135,7 +135,7 @@ export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 "${NCC_ROOT}/bin/ncc-tflite" --arch=mdla5.3 \
     --suppress-output --disallow-bridge \
     "${MODEL_OUTPUT_DIR}/model_int8.tflite" -o "${MODEL_OUTPUT_DIR}/model_int8.dla"
-python "${MODEL_ROOT}/deploy/prepare_input.py" \
+python "${MODEL_ROOT}/deploy/python/prepare_input.py" \
     --tflite "${MODEL_OUTPUT_DIR}/model_int8.tflite" \
     --image-dir "${CALIBRATION_DIR}" \
     --output-dir "${BUILD_WORK_DIR}/board_input"
@@ -174,7 +174,7 @@ test -f "${NEURON_INCLUDE}/neuron/api/RuntimeAPI.h"
 test -f "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8"
 mkdir -p "$(dirname "${BINARY_OUTPUT}")"
 "${CXX}" -std=c++17 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
-    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/benchmark_board.cpp" \
+    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/cpp/benchmark_board.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
     -Wl,--allow-shlib-undefined -pthread -ldl -o "${BINARY_OUTPUT}"
 file "${BINARY_OUTPUT}"
@@ -183,8 +183,8 @@ echo "[3/3] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
     "${BUILD_WORK_DIR}/metadata.json" \
-    "${SCRIPT_DIR}/full_accuracy_board.py" \
-    "${SCRIPT_DIR}/face_utils.py" "${SCRIPT_DIR}/run.sh" \
+    "${SCRIPT_DIR}/python/full_accuracy_board.py" \
+    "${SCRIPT_DIR}/python/face_utils.py" "${SCRIPT_DIR}/run.sh" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/benchmark_board"

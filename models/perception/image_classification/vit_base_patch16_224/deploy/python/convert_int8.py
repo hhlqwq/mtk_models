@@ -1,6 +1,7 @@
 """将 ViT-Base Patch16 224 FP32 ONNX 量化为 MTK INT8 TFLite."""
 
 import argparse
+import json
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -50,6 +51,30 @@ def calibration_data(
         yield [preprocess_image(image_path)]
 
 
+def save_quantization(tflite_path: Path, output_path: Path) -> None:
+    """提取板端推理所需的输入输出量化参数."""
+    graph = mtk_converter.TFLiteParser(str(tflite_path))
+    inputs = graph.get_input_tensor_details()
+    outputs = graph.get_output_tensor_details()
+    if (len(inputs) != 1 or list(inputs[0]["shape"]) != [1, 3, 224, 224] or
+            len(outputs) != 1 or list(outputs[0]["shape"]) != [1, 1000]):
+        raise ValueError("ViT TFLite 输入或输出结构异常.")
+    values = {
+        "input_scale": float(inputs[0]["quantization"]["scales"][0]),
+        "input_zero_point": int(inputs[0]["quantization"]["zero_points"][0]),
+        "output_scale": float(outputs[0]["quantization"]["scales"][0]),
+        "output_zero_point": int(outputs[0]["quantization"]["zero_points"][0]),
+        "input_shape": [1, 3, 224, 224],
+        "output_shape": [1, 1000],
+    }
+    if values["input_scale"] <= 0 or values["output_scale"] <= 0:
+        raise ValueError("量化 scale 必须为正值.")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(values, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(f"[OK] ViT 量化元数据: {output_path}.")
+
+
 def convert_model(args: argparse.Namespace) -> None:
     """创建 MTK ONNX Converter 并执行 INT8 PTQ."""
     if args.samples <= 0 or args.offset < 0:
@@ -62,6 +87,7 @@ def convert_model(args: argparse.Namespace) -> None:
     # ViT attention 对激活离群值敏感, 默认开启 per-channel 权重量化.
     converter.use_per_output_channel_quantization = True
     converter.convert_to_tflite(str(args.output))
+    save_quantization(args.output, args.output.with_name("quantization.json"))
 
 
 def parse_args() -> argparse.Namespace:

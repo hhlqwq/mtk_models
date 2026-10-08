@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ViT 单脚本流程: 89 编译上传,开发板执行 ImageNet 全量测试.
+# ViT 单脚本流程: 编译主机编译上传,开发板执行 ImageNet 全量测试.
 
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
@@ -126,16 +126,13 @@ export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
 export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 cd "${BUILD_WORK_DIR}"
 bash "${MTK_SETUP_SCRIPT}"
-python "${MODEL_ROOT}/deploy/convert_int8.py" \
+python "${MODEL_ROOT}/deploy/python/convert_int8.py" \
     --onnx "${MODEL_ONNX}" --calibration-dir "${CALIBRATION_DIR}" \
     --offset 1000 --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
 export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 "${NCC_ROOT}/bin/ncc-tflite" --arch=mdla5.3 \
     --suppress-output --disallow-bridge \
     "${MODEL_OUTPUT_DIR}/model_int8.tflite" -o "${MODEL_OUTPUT_DIR}/model_int8.dla"
-python3 "${MODEL_ROOT}/deploy/extract_quantization.py" \
-    --tflite "${MODEL_OUTPUT_DIR}/model_int8.tflite" \
-    --output "${MODEL_OUTPUT_DIR}/quantization.json"
 DOCKER_BUILD
 
 echo "[ONNX] 在编译主机 Docker 中评测全量浮点精度."
@@ -174,7 +171,7 @@ mkdir -p "$(dirname "${BINARY_OUTPUT}")"
     -I"${OPENCV_SOURCE}/modules/core/include" \
     -I"${OPENCV_SOURCE}/modules/imgproc/include" \
     -I"${OPENCV_SOURCE}/modules/imgcodecs/include" \
-    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/vit_board_eval.cpp" \
+    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/cpp/vit_board_eval.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
     "${TARGET_LIBS}/libopencv_imgcodecs.so.409" \
     "${TARGET_LIBS}/libopencv_imgproc.so.409" \
@@ -186,7 +183,7 @@ echo "[3/3] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
     "${MODEL_OUTPUT_DIR}/quantization.json" \
-    "${SCRIPT_DIR}/evaluate_full_accuracy.py" "${SCRIPT_DIR}/run.sh" \
+    "${SCRIPT_DIR}/python/evaluate_full_accuracy.py" "${SCRIPT_DIR}/run.sh" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/vit_board_eval"

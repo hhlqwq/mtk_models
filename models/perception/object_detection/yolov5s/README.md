@@ -61,3 +61,12 @@ NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不
 ![示例 3 检测结果](examples/output/sample_3_detections.jpg)
 
 示例输入由项目维护者使用 OpenAI 图像生成工具制作,按 [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) 发布。
+
+## 文件结构
+
+- `deploy/run.sh`: 编译上传和板端测试的唯一 Shell 入口.
+- `deploy/python/`: 模型导出、转换、评测与辅助代码.
+- `deploy/cpp/`: 板端 C++ 源码.
+- `models/`: 模型产物与来源说明.
+- `examples/`: 示例输入与输出,按需保留.
+- `results/summary.json`: 上传后的最新测试汇总.
