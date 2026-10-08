@@ -13,9 +13,9 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
 
     # 1. 模型与校准数据.
     # 官方 Small 权重.
-    WEIGHTS="${MODEL_ROOT}/original/depth_anything_v2_vits.pth"
+    WEIGHTS="${MODEL_ROOT}/models/depth_anything_v2_vits.pth"
     # 官方上游源码目录.
-    UPSTREAM_DIR="${MODEL_ROOT}/original/upstream"
+    UPSTREAM_DIR="${MODEL_ROOT}/models/upstream"
     # INT8 校准图片目录.
     CALIBRATION_DIR=""
 

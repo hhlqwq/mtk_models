@@ -7,7 +7,7 @@ from pathlib import Path
 import torch
 
 
-SOURCE_ROOT = Path(__file__).resolve().parents[2] / "original" / "upstream"
+SOURCE_ROOT = Path(__file__).resolve().parents[2] / "models" / "upstream"
 sys.path.insert(0, str(SOURCE_ROOT))
 
 from mobilefacenet import MobileFaceNet  # noqa: E402

@@ -13,7 +13,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
 
     # 1. 模型与校准数据.
     # 原始 PyTorch 权重.
-    WEIGHTS="${MODEL_ROOT}/original/mobilefacenet.pt"
+    WEIGHTS="${MODEL_ROOT}/models/mobilefacenet.pt"
     # 已对齐人脸的 INT8 校准图片目录.
     CALIBRATION_DIR=""
 

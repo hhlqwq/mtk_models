@@ -1,6 +1,8 @@
 # 模型产物
 
-本目录预期生成以下非 Git 产物：
+原始权重 `tiny.pt` 与转换产物统一保存在本目录,不进入 Git.
+
+本目录预期生成以下产物:
 
 - `encoder_fp32.onnx`：固定 `[1, 80, 3000]` Log-Mel 输入的 Encoder.
 - `decoder_step_fp32.onnx`：单 Token、固定 200 Token KV Cache 的 Decoder.

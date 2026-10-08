@@ -61,6 +61,6 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 xtcocotools。
 - `deploy/run.sh`: 编译上传和板端测试的唯一 Shell 入口.
 - `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
 - `deploy/board/`: 板端程序源码、预处理和评测代码.
-- `models/`: 模型产物与来源说明.
+- `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
 - `examples/`: 示例输入与输出,按需保留.
 - `results/summary.json`: 上传后的最新测试汇总.

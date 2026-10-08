@@ -75,10 +75,10 @@ def check_model(entry: dict[str, Any]) -> list[str]:
         if not (model_root / required_file).is_file():
             errors.append(f"{model_id}: 缺少文件: {required_file}")
 
-    # 兼容模型来源记录放在 original/ 或 models/ 的两种目录结构.
-    source_records = ("original/source_url.txt", "models/source_url.txt")
-    if not any((model_root / path).is_file() for path in source_records):
-        errors.append(f"{model_id}: 缺少来源记录: {source_records}")
+    # 模型来源记录统一保存在模型资源目录.
+    source_record = "models/source_url.txt"
+    if not (model_root / source_record).is_file():
+        errors.append(f"{model_id}: 缺少来源记录: {source_record}")
 
     platforms = entry.get("platforms", {})
     if not isinstance(platforms, dict):

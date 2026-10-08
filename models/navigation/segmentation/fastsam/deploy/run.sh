@@ -13,7 +13,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
 
     # 1. 模型与校准数据.
     # 官方 FastSAM-s 权重.
-    FASTSAM_WEIGHTS="${MODEL_ROOT}/original/FastSAM-s.pt"
+    FASTSAM_WEIGHTS="${MODEL_ROOT}/models/FastSAM-s.pt"
     # INT8 校准图片目录.
     FASTSAM_CALIBRATION_DIR=""
     # 导出等价性检查使用的一张图片.

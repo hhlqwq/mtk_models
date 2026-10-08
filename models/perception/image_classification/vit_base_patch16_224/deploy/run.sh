@@ -33,7 +33,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 板端结果目录: 保存本次测试汇总.
     BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # 板端 ImageNet 验证集目录.
-    BOARD_DATASET_DIR=""
+    BOARD_DATASET_DIR="/root/hailong.he/datasets/ImageNet/"
 
     # 4. ONNX 精度数据.
     # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录,必须填写.
