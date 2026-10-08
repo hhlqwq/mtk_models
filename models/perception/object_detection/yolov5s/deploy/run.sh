@@ -41,6 +41,15 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 浮点精度标注: 与上述 5000 张图片对应的 COCO 标注文件.
     FP32_ANNOTATIONS="${FP32_IMAGES_DIR%/images}/annotations/instances_val2017.json"
 
+    # 部署精度方案: 按实际编译信息填写,例如 w8a8、w8a16、fp16、fp32、mixed; 未确认用 unknown.
+    DEPLOYMENT_PRECISION="unknown"
+    # 实际权重类型: 例如 int8、fp16、mixed; 不根据输入输出或文件名推断.
+    WEIGHT_DTYPE="unknown"
+    # 实际激活类型: 例如 int16、fp16、mixed; 未确认用 unknown.
+    ACTIVATION_DTYPE="unknown"
+    # 精度依据: 编译配置/报告或混合层说明; 这些配置只记录结果,不改变编译策略.
+    PRECISION_SOURCE=""
+
     # 仅当 编译主机上的 Docker 或交叉编译环境不同,才修改下面的配置.
     # Docker 容器: 编译主机上的 Genio 720 编译环境.
     MTK_G720_CONTAINER="hhl_g720_8011"
@@ -127,6 +136,10 @@ python3 "${DEPLOY_DIR}/python/evaluate_coco.py" \
     "${FP32_ARGS[@]}" \
     --metrics "${RUN_DIR}/summary.json" \
     --run-id "${RUN_ID}" \
+    --precision "${DEPLOYMENT_PRECISION:-unknown}" \
+    --weight-dtype "${WEIGHT_DTYPE:-unknown}" \
+    --activation-dtype "${ACTIVATION_DTYPE:-unknown}" \
+    --precision-source "${PRECISION_SOURCE:-}" \
     2>&1 | tee "${RUN_DIR}/cocoeval.log"
 
 echo "[3/3] 保存汇总结果."
@@ -318,8 +331,8 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "chmod 755 '${BOARD_DEPLOY_DIR}/bin/yolov5s_board_eval'"
 
 echo "[4/4] 写入板端数据集和结果路径."
-printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nFP32_MAP=%q\nFP32_BASELINE_SOURCE=%q\n' \
-    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${FP32_MAP}" "${FP32_BASELINE_SOURCE}" |
+printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nFP32_MAP=%q\nFP32_BASELINE_SOURCE=%q\nDEPLOYMENT_PRECISION=%q\nWEIGHT_DTYPE=%q\nACTIVATION_DTYPE=%q\nPRECISION_SOURCE=%q\n' \
+    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${FP32_MAP}" "${FP32_BASELINE_SOURCE}" "${DEPLOYMENT_PRECISION}" "${WEIGHT_DTYPE}" "${ACTIVATION_DTYPE}" "${PRECISION_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
 echo "[OK] DLA: ${OUTPUT_DLA}"

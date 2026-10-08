@@ -7,8 +7,15 @@
   "npu_mean_ms": 9.736857,
   "peak_rss_mib": null,
   "memory_scope": "板端 C++ 全量推理进程峰值 RSS",
-  "int8_map_50_95": 0.35859860348732847,
-  "fp32_map_50_95": 0.3709,
+  "board_map_50_95": 0.35859860348732847,
+  "onnx_map_50_95": 0.3709,
   "accuracy_loss_percentage_points": 1.2301396512671536,
-  "fp32_baseline_source": "历史 ONNX FP32,2026-09-08,COCO val2017,conf=0.001,IoU=0.6,max_det=300"
+  "onnx_baseline_source": "历史 ONNX FP32,2026-09-08,COCO val2017,conf=0.001,IoU=0.6,max_det=300",
+  "accuracy_change_percentage_points": -1.2301396512671536,
+  "deployment_precision": {
+    "scheme": "unknown",
+    "weights": "unknown",
+    "activations": "unknown",
+    "source": null
+  }
 }

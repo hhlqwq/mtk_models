@@ -9,9 +9,9 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 
 仅根据用户上传的各模型 `results/summary.json` 更新。参考基准必须与板端模型及评测协议匹配; 未上传结果的模型不预填数字。
 
-| 模型 | 板端 NPU 平均耗时 (ms) | 峰值 RSS (MiB) | 核心精度 | 精度下降 (百分点) |
+| 模型 | 板端 NPU 平均耗时 (ms) | 峰值 RSS (MiB) | 核心精度 | 精度变化 (百分点) |
 | --- | ---: | ---: | --- | ---: |
-| [YOLOv5s](perception/object_detection/yolov5s/README.md) | **9.736857** | 未记录 | mAP@0.5:0.95 **0.3585986035** | **1.230140** |
+| [YOLOv5s](perception/object_detection/yolov5s/README.md) | **9.736857** | 未记录 | mAP@0.5:0.95 **0.3585986035** | **-1.230140** |
 | [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | 待上传 | 待上传 | Top-1 待上传 | 待上传 |
 | [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | 待上传 | 待上传 | WholeBody AP 待上传 | 待上传 |
 | [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | 待上传 | 待上传 | LFW 验证准确率待上传 | 待上传 |
@@ -22,7 +22,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 
 YOLOv5s 结果来自运行 `20261008_024751_55865`,COCO val2017 全量 5000 张; FP32 使用已确认的同协议 ONNX 基准 `0.3709`。结果文件见 [summary.json](perception/object_detection/yolov5s/results/summary.json)。
 
-精度差值统一以正数表示下降: 准确率和 AP/AR 用参考减板端,WER 用板端减参考。ORT `session.Run` 与独立 NPU 调用耗时分开记录,不直接混排。
+精度变化正数表示改善,负数表示下降: 准确率和 AP/AR 用板端减 ONNX,WER 用 ONNX 减板端。部署精度按实际格式记录,支持 W8A8、W8A16、FP16、FP32 和混合精度,未确认则记录 unknown。ORT `session.Run` 与独立 NPU 调用耗时分开记录,不直接混排。
 
 ## 机器人模型推荐路线图
 

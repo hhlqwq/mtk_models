@@ -125,7 +125,7 @@ def class_aware_nms(
     kept: list[int] = []
     for class_id in np.unique(labels):
         class_indices = np.flatnonzero(labels == class_id)
-        order = class_indices[np.argsort(scores[class_indices])[::-1]]
+        order = class_indices[np.argsort(-scores[class_indices], kind="stable")]
         while order.size:
             current = int(order[0])
             kept.append(current)
@@ -164,7 +164,7 @@ def decode_outputs(
     keep = class_aware_nms(
         candidate_boxes, candidate_scores, labels, iou_threshold=iou_threshold
     )
-    keep = keep[np.argsort(candidate_scores[keep])[::-1]][:max_detections]
+    keep = keep[np.argsort(-candidate_scores[keep], kind="stable")][:max_detections]
 
     candidate_boxes = candidate_boxes[keep]
     candidate_scores = candidate_scores[keep]

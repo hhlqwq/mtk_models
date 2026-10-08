@@ -101,3 +101,36 @@ def load_person_samples(annotations_path: Path) -> list[dict]:
             "area": float(annotation.get("area", bbox[2] * bbox[3])),
         })
     return sorted(samples, key=lambda item: item["annotation_id"])
+
+
+def decode_prediction(pred_x: np.ndarray, pred_y: np.ndarray,
+                      metadata: dict) -> tuple[list[float], float]:
+    """按板端相同的 SimCC 规则解码并映射回原图.
+
+    Args:
+        pred_x: X 轴 SimCC 输出.
+        pred_y: Y 轴 SimCC 输出.
+        metadata: 仿射裁剪元数据.
+
+    Returns:
+        展平的 133 点结果和裁剪框面积.
+    """
+    if pred_x.shape != (1, 133, 384):
+        raise ValueError(f"pred_x 形状错误: {pred_x.shape}")
+    if pred_y.shape != (1, 133, 512):
+        raise ValueError(f"pred_y 形状错误: {pred_y.shape}")
+    x_indices = pred_x[0].argmax(axis=1)
+    y_indices = pred_y[0].argmax(axis=1)
+    x_scores = pred_x[0, np.arange(133), x_indices]
+    y_scores = pred_y[0, np.arange(133), y_indices]
+    scores = np.minimum(x_scores, y_scores)
+    center = np.asarray(metadata["center"], dtype=np.float32)
+    scale = np.asarray(metadata["scale"], dtype=np.float32)
+    source_x = (x_indices / 2.0 / 192.0 * scale[0] +
+                center[0] - scale[0] * 0.5)
+    source_y = (y_indices / 2.0 / 256.0 * scale[1] +
+                center[1] - scale[1] * 0.5)
+    source_x = np.where(scores > 0.0, source_x, -1.0)
+    source_y = np.where(scores > 0.0, source_y, -1.0)
+    keypoints = np.stack((source_x, source_y, scores), axis=1)
+    return keypoints.astype(np.float32).reshape(-1).tolist(), float(np.prod(scale))

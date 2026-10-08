@@ -114,10 +114,18 @@ def summarize(args: argparse.Namespace) -> None:
         "status": "complete", "model": args.model, "run_id": args.run_id,
         **result, "reference_accuracy": reference,
         "accuracy_loss_percentage_points": loss,
+        "accuracy_change_percentage_points": None if loss is None else -loss,
+        "deployment_precision": {
+            "scheme": args.precision,
+            "weights": args.weight_dtype,
+            "activations": args.activation_dtype,
+            "source": args.precision_source or None,
+        },
         "reference_source": args.reference_source if reference is not None else None,
     }
     output.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
                       encoding="utf-8")
+    print(f"部署精度: {args.precision}; 权重: {args.weight_dtype}; 激活: {args.activation_dtype}")
     if result["npu_mean_ms"] is None:
         print(f"板端 Runtime 平均耗时: {result['runtime_mean_ms']:.3f} ms; 纯 NPU 耗时未测量.")
     else:
@@ -131,7 +139,7 @@ def summarize(args: argparse.Namespace) -> None:
         print("精度下降: 未计算,缺少匹配的参考基准.")
     else:
         print(f"参考 {result['metric']}: {reference:.6f}")
-        print(f"精度下降: {loss:.4f} 个百分点; 来源: {args.reference_source}")
+        print(f"精度变化: {-loss:+.4f} 个百分点; 正数为改善,负数为下降; 来源: {args.reference_source}")
     shutil.rmtree(work_dir)
     print(f"[OK] 结果: {output}")
 
@@ -145,6 +153,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--reference", default="")
     parser.add_argument("--reference-source", default="用户提供的同协议参考基准")
+    parser.add_argument("--precision", default="unknown",
+                        help="实际精度方案,例如 fp32、w8a16、mixed; 未确认用 unknown")
+    parser.add_argument("--weight-dtype", default="unknown")
+    parser.add_argument("--activation-dtype", default="unknown")
+    parser.add_argument("--precision-source", default="")
     return parser.parse_args()
 
 

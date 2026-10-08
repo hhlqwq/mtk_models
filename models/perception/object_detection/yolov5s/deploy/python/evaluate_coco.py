@@ -55,8 +55,8 @@ def evaluate(args: argparse.Namespace) -> None:
         evaluator.accumulate()
         # 官方 summarize 会计算 stats,仅隐藏其余 11 项的打印.
         evaluator.summarize()
-    int8_map = float(evaluator.stats[0])
-    if not math.isfinite(int8_map) or not 0.0 <= int8_map <= 1.0:
+    board_map = float(evaluator.stats[0])
+    if not math.isfinite(board_map) or not 0.0 <= board_map <= 1.0:
         raise ValueError("COCO mAP 无效,无法汇总精度.")
 
     timings = json.loads(args.timings.read_text(encoding="utf-8"))
@@ -73,10 +73,11 @@ def evaluate(args: argparse.Namespace) -> None:
     if fp32_map is not None and (
             not math.isfinite(fp32_map) or not 0.0 <= fp32_map <= 1.0):
         raise ValueError("FP32 mAP 必须是 0 到 1 之间的数值.")
-    loss_pp = None if fp32_map is None else (fp32_map - int8_map) * 100.0
+    loss_pp = None if fp32_map is None else (fp32_map - board_map) * 100.0
     summary_lines = [
         f"板端 NPU 平均推理耗时: {npu_mean:.3f} ms",
-        f"INT8 mAP@0.5:0.95: {int8_map:.6f}",
+        f"板端 mAP@0.5:0.95: {board_map:.6f}",
+        f"部署精度: {args.precision}; 权重: {args.weight_dtype}; 激活: {args.activation_dtype}",
     ]
     summary_lines.append("推理进程峰值 RSS: 未记录." if peak_rss_mib is None else
                          f"推理进程峰值 RSS: {peak_rss_mib:.3f} MiB")
@@ -85,7 +86,7 @@ def evaluate(args: argparse.Namespace) -> None:
     else:
         summary_lines.extend([
             f"FP32 mAP@0.5:0.95: {fp32_map:.6f}",
-            f"精度下降 (FP32 - INT8): {loss_pp:.4f} 个百分点",
+            f"精度变化 (板端 - ONNX): {-loss_pp:+.4f} 个百分点",
             f"FP32 基准来源: {args.fp32_source}",
         ])
     summary_text = "\n".join(summary_lines) + "\n"
@@ -98,10 +99,15 @@ def evaluate(args: argparse.Namespace) -> None:
         "npu_mean_ms": npu_mean,
         "peak_rss_mib": peak_rss_mib,
         "memory_scope": "板端 C++ 全量推理进程峰值 RSS",
-        "int8_map_50_95": int8_map,
-        "fp32_map_50_95": fp32_map,
+        "board_map_50_95": board_map,
+        "onnx_map_50_95": fp32_map,
         "accuracy_loss_percentage_points": loss_pp,
-        "fp32_baseline_source": args.fp32_source if fp32_map is not None else None,
+        "accuracy_change_percentage_points": None if loss_pp is None else -loss_pp,
+        "onnx_baseline_source": args.fp32_source if fp32_map is not None else None,
+        "deployment_precision": {
+            "scheme": args.precision, "weights": args.weight_dtype,
+            "activations": args.activation_dtype, "source": args.precision_source or None,
+        },
     }
     args.metrics.write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -119,6 +125,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--fp32-source", default="用户提供的同协议 FP32 基准")
     parser.add_argument("--metrics", type=Path, required=True)
     parser.add_argument("--run-id")
+    parser.add_argument("--precision", default="unknown")
+    parser.add_argument("--weight-dtype", default="unknown")
+    parser.add_argument("--activation-dtype", default="unknown")
+    parser.add_argument("--precision-source", default="")
     return parser.parse_args()
 
 

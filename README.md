@@ -198,3 +198,5 @@ python tools/create_model.py \
 ```bash
 python tools/check_registry.py
 ```
+
+各模型统一在编译主机评测 ONNX 核心精度,板端记录核心精度、推理耗时、峰值 RSS、实际部署精度和相对 ONNX 的精度变化。部署精度支持 W8A8、W8A16、浮点和混合精度,未确认时记录 unknown。详细数据路径和精度配置见各模型 README。

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# FastSAM-s 单脚本流程: 89 编译上传,92 板端测试类别无关分割.
+# FastSAM-s 单脚本流程: 89 编译上传,开发板测试类别无关分割.
 
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
@@ -22,10 +22,16 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     BOARD_DEPLOY_DIR=""
     # 板端结果目录: 留空则位于部署目录下.
     BOARD_RESULTS_DIR=""
-    # 参考精度: 核心指标的 0 到 1 数值; 留空不计算损失,更换模型或协议后需更新.
-    REFERENCE_ACCURACY=""
-    # 基准来源: 填写确认匹配的参考后端、数据集和评测协议.
-    REFERENCE_SOURCE=""
+    # ONNX 精度数据: 编译主机与 Docker 都可访问的全量数据集根目录,必须填写.
+    ONNX_DATASET_DIR=""
+    # 部署精度方案: 按实际编译信息填写,例如 w8a8、w8a16、fp16、fp32、mixed; 未确认用 unknown.
+    DEPLOYMENT_PRECISION="unknown"
+    # 实际权重类型: 例如 int8、fp16、mixed; 不根据输入输出或文件名推断.
+    WEIGHT_DTYPE="unknown"
+    # 实际激活类型: 例如 int16、fp16、mixed; 未确认用 unknown.
+    ACTIVATION_DTYPE="unknown"
+    # 精度依据: 编译配置/报告或混合层说明; 填写精度时同步填写,这些配置不改变编译策略.
+    PRECISION_SOURCE=""
     # 板端 SSH 用户和地址.
     BOARD_HOST="root@192.168.0.92"
 fi
@@ -101,17 +107,28 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         --model "fastsam" --work-dir "${RUN_DIR}" \
         --output "${RESULT_DIR}/summary.json" --run-id "${RUN_ID}" \
         --reference "${REFERENCE_ACCURACY:-}" \
-        --reference-source "${REFERENCE_SOURCE:-用户提供的同协议参考基准}"
+        --reference-source "${REFERENCE_SOURCE:-用户提供的同协议参考基准}" \
+        --precision "${DEPLOYMENT_PRECISION:-unknown}" \
+        --weight-dtype "${WEIGHT_DTYPE:-unknown}" \
+        --activation-dtype "${ACTIVATION_DTYPE:-unknown}" \
+        --precision-source "${PRECISION_SOURCE:-}"
     exit 0
 fi
 
 if (( $# != 0 )); then
-    echo "[ERROR] 在 89 直接运行 bash deploy/run.sh,无需参数." >&2
+    echo "[ERROR] 在编译主机直接运行 bash deploy/run.sh,无需参数." >&2
     exit 2
 fi
 
 # 路径配置: 模型和校准集由用户提供,产物及板端目录均可覆盖.
 readonly MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+: "${ONNX_DATASET_DIR:?请在脚本顶部指定编译主机的全量精度数据集}"
+test -d "${ONNX_DATASET_DIR}"
+if [[ "${ONNX_DATASET_DIR}" != /* ]]; then
+    echo "[ERROR] ONNX_DATASET_DIR 必须是编译主机与 Docker 共用的绝对路径." >&2
+    exit 2
+fi
 readonly WEIGHTS="${FASTSAM_WEIGHTS:-${MODEL_ROOT}/original/FastSAM-s.pt}"
 readonly SAMPLE_IMAGE="${FASTSAM_IMAGE:?请指定样例图片绝对路径}"
 readonly CALIBRATION_DIR="${FASTSAM_CALIBRATION_DIR:?请指定校准图片目录}"
@@ -163,9 +180,31 @@ export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
     --suppress-output --disallow-bridge \
     "${MODEL_OUTPUT_DIR}/model_int8.tflite" -o "${MODEL_OUTPUT_DIR}/model_int8.dla"
 DOCKER_BUILD
+
+echo "[ONNX] 在编译主机 Docker 中评测全量浮点精度."
+docker exec -i -e PYTHONDONTWRITEBYTECODE=1 \
+    -e MODEL_ROOT="${MODEL_ROOT}" -e ONNX_DATASET_DIR="${ONNX_DATASET_DIR}" \
+    -e ONNX_REFERENCE="${MODEL_OUTPUT_DIR}/model_fp32.onnx" -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" \
+    "${CONTAINER}" bash -s <<'ONNX_ACCURACY'
+set -euo pipefail
+test -d "${ONNX_DATASET_DIR}"
+export TMPDIR="${BUILD_WORK_DIR}/tmp"
+export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
+export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
+REPO_ROOT="$(cd "${MODEL_ROOT}/../../../.." && pwd)"
+python "${REPO_ROOT}/tools/accuracy/evaluate_onnx.py" \
+    --model "fastsam" --onnx "${ONNX_REFERENCE}" \
+    --dataset-root "${ONNX_DATASET_DIR}" \
+    --output "${BUILD_WORK_DIR}/onnx_accuracy/summary.json"
+ONNX_ACCURACY
+# 将本次实测精度写入板端配置,不传递主机预测、耗时或内存.
+REFERENCE_ACCURACY="$(docker exec "${CONTAINER}" python -c \
+    'import json,sys; print(json.load(open(sys.argv[1]))["accuracy"])' \
+    "${BUILD_WORK_DIR}/onnx_accuracy/summary.json")"
+REFERENCE_SOURCE="本次 ONNX 浮点全量实测,使用与板端相同的评测协议"
 test -s "${MODEL_OUTPUT_DIR}/runtime_config.csv"
 
-echo "[2/3] 在 89 交叉编译板端 C++ 测试程序."
+echo "[2/3] 在编译主机交叉编译板端 C++ 测试程序."
 readonly OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
@@ -198,8 +237,8 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
 scp "${SSH_OPTIONS[@]}" \
     "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/summarize_board_result.py"
-printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\n' \
-    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" |
+printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\nDEPLOYMENT_PRECISION=%q\nWEIGHT_DTYPE=%q\nACTIVATION_DTYPE=%q\nPRECISION_SOURCE=%q\n' \
+    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" "${DEPLOYMENT_PRECISION}" "${WEIGHT_DTYPE}" "${ACTIVATION_DTYPE}" "${PRECISION_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
 echo "[OK] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

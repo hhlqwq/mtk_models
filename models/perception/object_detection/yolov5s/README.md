@@ -31,12 +31,14 @@ bash models/perception/object_detection/yolov5s/deploy/run.sh
 | 板端 NPU 平均推理耗时 | **9.736857 ms** |
 | 板端推理进程峰值 RSS | 未记录,待补充 |
 | FP32 mAP@0.5:0.95 | **0.370900** |
-| INT8 mAP@0.5:0.95 | **0.3585986035** |
-| 精度下降 (百分点) | **1.230140** |
+| 板端 mAP@0.5:0.95 | **0.3585986035** |
+| 精度变化 (百分点) | **-1.230140** |
 
-当前上传结果的 FP32 使用已确认的同协议 ONNX 基准 0.3709; 修改后的脚本将自动使用本次 ONNX 全量实测值。精度下降按 `(FP32 - INT8) × 100` 计算。NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不含图片读取、前后处理和 COCOeval。峰值内存为板端 C++ 推理进程峰值 RSS (MiB),包含运行库与前后处理,不代表 NPU 专用内存; 本次上传文件缺少该值,不补填旧结果。
+当前上传结果的 FP32 使用已确认的同协议 ONNX 基准 0.3709; 修改后的脚本将自动使用本次 ONNX 全量实测值。精度变化按 `(板端 - ONNX) × 100` 计算,负数表示下降。NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不含图片读取、前后处理和 COCOeval。峰值内存为板端 C++ 推理进程峰值 RSS (MiB),包含运行库与前后处理,不代表 NPU 专用内存; 本次上传文件缺少该值,不补填旧结果。
 
 全量测试成功后只保留一个 `summary.json`,中间预测和日志自动删除; 失败时保留现场。测试完成后将汇总文件上传到本地 `results/summary.json`,据此更新当前结果。
+
+部署精度由 `DEPLOYMENT_PRECISION`、`WEIGHT_DTYPE`、`ACTIVATION_DTYPE` 和 `PRECISION_SOURCE` 记录,支持 W8A8、W8A16、FP16、FP32 和混合精度; 未确认填写 unknown。本次上传报告缺少精度格式依据,暂记为 unknown。这些配置只记录实际格式,不改变编译策略。
 
 ## 示例输出
 
