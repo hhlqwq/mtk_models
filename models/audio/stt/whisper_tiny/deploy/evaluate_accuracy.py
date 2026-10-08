@@ -314,7 +314,7 @@ def main() -> None:
             output.write(json.dumps(item, ensure_ascii=False) + "\n")
     if accuracy:
         write_markdown(args.output_dir / "report.md", args.dataset, summary)
-    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    print("[OK] WER 已计算,准备汇总 NPU 耗时.", flush=True)
     if not complete and not args.allow_incomplete:
         raise SystemExit("评测不完整,请按同一输出文件断点续跑后重新汇总.")
 

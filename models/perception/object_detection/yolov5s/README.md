@@ -20,6 +20,14 @@ bash models/perception/object_detection/yolov5s/deploy/run.sh
 
 默认测试三张示例图；在板端命令末尾加 `full` 执行 COCO 全量测试。结果写入 `BOARD_RESULTS_DIR`，默认位于 `BOARD_DEPLOY_DIR/results`。全量测试要求 `BOARD_DATASET_DIR/images/` 中有 5000 张 COCO val2017 图片、`BOARD_DATASET_DIR/annotations/instances_val2017.json`，板端还需 `pycocotools`。若 SSH 提示主机密钥变化，先核对板端指纹，再更新编译主机上执行脚本用户的 `known_hosts`。
 
+## 全量测试结果
+
+全量测试成功后,每次运行目录只保留一个 `summary.json`。不再生成 `report/` 副本、系统快照和输入清单; 原始预测、逐图耗时及日志在汇总成功后删除。测试失败时保留中间文件,历史结果不会自动清理。
+
+终端和 `summary.json` 仅汇总板端 NPU 平均推理耗时、FP32 与 INT8 的 mAP@0.5:0.95 和精度下降百分点。NPU 耗时取本次 5000 张图片的 `npu_ms.mean`,不包含预热、图片读取、预处理、后处理和 COCOeval。精度下降按 `(FP32 - INT8) × 100` 计算,负数表示精度提升。
+
+脚本顶部的 `FP32_MAP` 默认使用历史同协议 ONNX FP32 基准 `0.3709`,输出会明确标注历史来源,不是本次 FP32 实测。更换权重或评测协议后,必须替换为匹配的 FP32 基准并更新 `FP32_BASELINE_SOURCE`;没有匹配基准时把 `FP32_MAP` 留空,报告不计算损失。比较包含转换、量化与板端执行的整体精度变化。
+
 ## 历史精度
 
 2026-09-08 在 COCO val2017 全量 5000 张图片上完成评测。PyTorch、ONNX 和 NPU 使用同一 letterbox 640×640、YOLOv5 解码、逐类 NMS 和 COCOeval 协议，阈值为 conf 0.001、IoU 0.6、max_det 300。NPU 使用 MDLA 5.3 的原生 NCHW INT8 输出，行 stride 为 16，后处理负责反量化。该协议的 NMS IoU 与上游公布结果的 0.65 不同，因此下表适用于后端间对照。

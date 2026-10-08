@@ -2,6 +2,7 @@
 # MobileFaceNet 单脚本流程: 89 编译上传,92 板端测试.
 
 set -euo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 用户配置: 留空的可选项使用仓库内默认路径.
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
@@ -9,6 +10,8 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     WEIGHTS=""
     # 已对齐人脸的 INT8 校准图片目录.
     CALIBRATION_DIR=""
+    # 临时构建目录: 辅助输入、缓存和程序放在仓库外.
+    BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/mobilefacenet"
     # 模型输出目录: 留空则使用 models/.
     MODEL_OUTPUT_DIR=""
     # 板端已对齐 LFW 数据集目录.
@@ -17,6 +20,10 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     BOARD_DEPLOY_DIR=""
     # 板端结果目录: 留空则位于部署目录下.
     BOARD_RESULTS_DIR=""
+    # 参考精度: 核心指标的 0 到 1 数值; 留空不计算损失,更换模型或协议后需更新.
+    REFERENCE_ACCURACY=""
+    # 基准来源: 历史结果不代表本次参考端实测.
+    REFERENCE_SOURCE="请填写匹配的同协议参考基准来源"
     # 板端 SSH 用户和地址.
     BOARD_HOST="root@192.168.0.92"
 fi
@@ -25,12 +32,13 @@ fi
 if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     source "${SCRIPT_DIR}/board_paths.conf"
     readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-    readonly RUN_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
+    readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
+    readonly RUN_DIR="${RESULT_DIR}/work"
     test -s "${SCRIPT_DIR}/model_int8.dla"
     test -s "${SCRIPT_DIR}/metadata.json"
     test -s "${BOARD_DATASET_DIR}/pairs.csv"
     test -d "${BOARD_DATASET_DIR}/images"
-    test ! -e "${RUN_DIR}"
+    test ! -e "${RESULT_DIR}"
     echo "[1/2] 在板端执行 LFW 十折全量人脸验证."
     python3 "${SCRIPT_DIR}/full_accuracy_board.py" \
         --dataset-root "${BOARD_DATASET_DIR}" \
@@ -43,8 +51,12 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     "${SCRIPT_DIR}/benchmark_board" --model "${SCRIPT_DIR}/model_int8.dla" \
         --input "${inputs[0]}" --report "${RUN_DIR}/report/benchmark.json" \
         --warmup 10 --repeats 100
-    uname -a > "${RUN_DIR}/report/system.txt"
-    echo "[OK] 报告: ${RUN_DIR}/report"
+    # 所有原始数据仅在本次 work 下生成; 汇总成功后由工具清理.
+    python3 "${SCRIPT_DIR}/summarize_board_result.py" \
+        --model "mobilefacenet" --work-dir "${RUN_DIR}" \
+        --output "${RESULT_DIR}/summary.json" --run-id "${RUN_ID}" \
+        --reference "${REFERENCE_ACCURACY:-}" \
+        --reference-source "${REFERENCE_SOURCE:-用户提供的同协议参考基准}"
     exit 0
 fi
 
@@ -68,8 +80,11 @@ readonly NCC_ROOT="${NCC_ROOT:-/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.1
 readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT:-/data/users/hailong.he/data/MTKG720/cpp_toolchain}"
 readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE:-/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include}"
 readonly CXX="${CROSS_CXX:-aarch64-linux-gnu-g++}"
-readonly BINARY_OUTPUT="${BOARD_BINARY_OUTPUT:-${SCRIPT_DIR}/benchmark_board}"
+readonly BINARY_OUTPUT="${BOARD_BINARY_OUTPUT:-${BUILD_WORK_DIR}/benchmark_board}"
 readonly SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+
+mkdir -p "${BUILD_WORK_DIR}/tmp"
+export TMPDIR="${BUILD_WORK_DIR}/tmp"
 
 test -s "${WEIGHTS}"
 test -d "${CALIBRATION_DIR}"
@@ -79,14 +94,18 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
 fi
 
 echo "[1/3] 在 Docker 中导出、量化、编译并生成输入元数据."
-docker exec -i \
+docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 \
     -e MODEL_ROOT="${MODEL_ROOT}" -e WEIGHTS="${WEIGHTS}" \
     -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
     -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
     -e MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT}" -e NCC_ROOT="${NCC_ROOT}" \
     "${CONTAINER}" bash -s <<'DOCKER_BUILD'
 set -euo pipefail
-mkdir -p "${MODEL_OUTPUT_DIR}"
+mkdir -p "${MODEL_OUTPUT_DIR}" "${BUILD_WORK_DIR}/tmp" "${BUILD_WORK_DIR}/cache"
+export TMPDIR="${BUILD_WORK_DIR}/tmp"
+export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
+export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
+cd "${BUILD_WORK_DIR}"
 bash "${MTK_SETUP_SCRIPT}"
 python "${MODEL_ROOT}/deploy/export_onnx.py" \
     --weights "${WEIGHTS}" \
@@ -102,10 +121,12 @@ export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 python "${MODEL_ROOT}/deploy/prepare_input.py" \
     --tflite "${MODEL_OUTPUT_DIR}/model_int8.tflite" \
     --image-dir "${CALIBRATION_DIR}" \
-    --output-dir "${MODEL_OUTPUT_DIR}/board_input"
+    --output-dir "${BUILD_WORK_DIR}/board_input"
 DOCKER_BUILD
 test -s "${MODEL_OUTPUT_DIR}/model_int8.dla"
-test -s "${MODEL_OUTPUT_DIR}/board_input/metadata.json"
+# Docker 与主机的临时目录独立,仅取回上传所需的元数据.
+docker cp "${CONTAINER}:${BUILD_WORK_DIR}/board_input/metadata.json" "${BUILD_WORK_DIR}/metadata.json"
+test -s "${BUILD_WORK_DIR}/metadata.json"
 
 echo "[2/3] 在 89 交叉编译 C++ 板端性能程序."
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
@@ -122,14 +143,17 @@ file "${BINARY_OUTPUT}"
 echo "[3/3] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
-    "${MODEL_OUTPUT_DIR}/board_input/metadata.json" \
+    "${BUILD_WORK_DIR}/metadata.json" \
     "${SCRIPT_DIR}/full_accuracy_board.py" \
     "${SCRIPT_DIR}/face_utils.py" "${SCRIPT_DIR}/run.sh" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/benchmark_board"
-printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\n' \
-    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" |
+scp "${SSH_OPTIONS[@]}" \
+    "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/summarize_board_result.py"
+printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\n' \
+    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
 echo "[OK] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

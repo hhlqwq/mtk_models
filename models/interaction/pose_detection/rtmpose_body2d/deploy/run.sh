@@ -2,6 +2,7 @@
 # RTMPose 单脚本流程: 89 编译上传,92 板端执行 WholeBody 全量测试.
 
 set -euo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 用户配置: 留空的可选项使用仓库内默认路径.
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
@@ -11,6 +12,8 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     CALIBRATION_IMAGES=""
     # INT8 校准标注文件.
     CALIBRATION_ANNOTATIONS=""
+    # 临时构建目录: 辅助输入、缓存和程序放在仓库外.
+    BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/rtmpose_body2d"
     # 模型输出目录: 留空则使用 models/.
     MODEL_OUTPUT_DIR=""
     # 板端 COCO-WholeBody 数据集目录.
@@ -19,6 +22,10 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     BOARD_DEPLOY_DIR=""
     # 板端结果目录: 留空则位于部署目录下.
     BOARD_RESULTS_DIR=""
+    # 参考精度: 核心指标的 0 到 1 数值; 留空不计算损失,更换模型或协议后需更新.
+    REFERENCE_ACCURACY="0.5703"
+    # 基准来源: 历史结果不代表本次参考端实测.
+    REFERENCE_SOURCE="历史 ONNX FP32,同协议基准,详见本模型 README"
     # 板端 SSH 用户和地址.
     BOARD_HOST="root@192.168.0.92"
 fi
@@ -27,7 +34,8 @@ fi
 if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     source "${SCRIPT_DIR}/board_paths.conf"
     readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-    readonly RUN_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
+    readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
+    readonly RUN_DIR="${RESULT_DIR}/work"
     readonly DETECTIONS="${BOARD_DATASET_DIR}/person_detection_results/COCO_val2017_detections_AP_H_56_person.json"
     readonly ANNOTATIONS="${BOARD_DATASET_DIR}/annotations/coco_wholebody_val_v1.0.json"
     test -s "${SCRIPT_DIR}/model_int8.dla"
@@ -35,7 +43,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     test -s "${ANNOTATIONS}"
     test "$(find "${BOARD_DATASET_DIR}/images" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 5000
     python3 -c 'import numpy, xtcocotools'
-    test ! -e "${RUN_DIR}"
+    test ! -e "${RESULT_DIR}"
     mkdir -p "${RUN_DIR}/report"
 
     echo "[1/4] 生成并核对 104125 个检测框清单."
@@ -61,31 +69,12 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         --summary-log "${RUN_DIR}/coco_wholebody_summary.log" \
         2>&1 | tee "${RUN_DIR}/cocoeval.log"
 
-    echo "[4/4] 整理报告."
-    cp "${RUN_DIR}/timing_summary.json" \
-        "${RUN_DIR}/coco_wholebody_metrics.json" \
-        "${RUN_DIR}/coco_wholebody_summary.log" \
-        "${RUN_DIR}/board_eval.log" "${RUN_DIR}/cocoeval.log" \
-        "${RUN_DIR}/report/"
-    python3 - "${RUN_DIR}/coco_wholebody_metrics.json" \
-        "${RUN_DIR}/report/summary.json" "${RUN_ID}" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-metrics = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-if metrics.get("protocol", {}).get("detections_before_nms") != 104125:
-    raise SystemExit("[ERROR] WholeBody 检测框覆盖不完整.")
-summary = {
-    "status": "complete", "model": "rtmpose_body2d",
-    "run_id": sys.argv[3], "dataset": "coco_wholebody_val2017",
-    "detections": 104125, "accuracy": metrics["metrics"],
-}
-Path(sys.argv[2]).write_text(
-    json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-PY
-    uname -a > "${RUN_DIR}/report/system.txt"
-    echo "[OK] 报告: ${RUN_DIR}/report"
+    # 所有原始数据仅在本次 work 下生成; 汇总成功后由工具清理.
+    python3 "${SCRIPT_DIR}/summarize_board_result.py" \
+        --model "rtmpose_body2d" --work-dir "${RUN_DIR}" \
+        --output "${RESULT_DIR}/summary.json" --run-id "${RUN_ID}" \
+        --reference "${REFERENCE_ACCURACY:-}" \
+        --reference-source "${REFERENCE_SOURCE:-用户提供的同协议参考基准}"
     exit 0
 fi
 
@@ -112,6 +101,9 @@ readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE:-/data/users/hailong.he/data/MTKG7
 readonly CXX="${CROSS_CXX:-aarch64-linux-gnu-g++}"
 readonly SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
+mkdir -p "${BUILD_WORK_DIR}/tmp"
+export TMPDIR="${BUILD_WORK_DIR}/tmp"
+
 test -s "${MODEL_ONNX}"
 test -d "${CALIBRATION_IMAGES}"
 test -s "${CALIBRATION_ANNOTATIONS}"
@@ -121,14 +113,18 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
 fi
 
 echo "[1/3] 在 Docker 中量化并编译 DLA."
-docker exec -i -e MODEL_ROOT="${MODEL_ROOT}" -e MODEL_ONNX="${MODEL_ONNX}" \
+docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 -e MODEL_ROOT="${MODEL_ROOT}" -e MODEL_ONNX="${MODEL_ONNX}" \
     -e CALIBRATION_IMAGES="${CALIBRATION_IMAGES}" \
     -e CALIBRATION_ANNOTATIONS="${CALIBRATION_ANNOTATIONS}" \
     -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
     -e MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT}" -e NCC_ROOT="${NCC_ROOT}" \
     "${CONTAINER}" bash -s <<'DOCKER_BUILD'
 set -euo pipefail
-mkdir -p "${MODEL_OUTPUT_DIR}"
+mkdir -p "${MODEL_OUTPUT_DIR}" "${BUILD_WORK_DIR}/tmp" "${BUILD_WORK_DIR}/cache"
+export TMPDIR="${BUILD_WORK_DIR}/tmp"
+export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
+export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
+cd "${BUILD_WORK_DIR}"
 bash "${MTK_SETUP_SCRIPT}"
 python "${MODEL_ROOT}/deploy/convert_int8.py" \
     --onnx "${MODEL_ONNX}" --image-dir "${CALIBRATION_IMAGES}" \
@@ -156,27 +152,30 @@ command -v "${CXX}" >/dev/null 2>&1
     "${TARGET_LIBS}/libopencv_imgproc.so.409" \
     "${TARGET_LIBS}/libopencv_core.so.409" \
     -Wl,--allow-shlib-undefined -pthread -ldl \
-    -o "${SCRIPT_DIR}/inference_demo/rtmpose_board_eval"
+    -o "${BUILD_WORK_DIR}/rtmpose_board_eval"
 "${CXX}" -std=c++20 -O2 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${OPENCV_BUILD}" -I"${OPENCV_SOURCE}/modules/core/include" \
     "${SCRIPT_DIR}/inference_demo/prepare_eval_manifest.cpp" \
     "${TARGET_LIBS}/libopencv_core.so.409" \
     -Wl,--allow-shlib-undefined -pthread -ldl \
-    -o "${SCRIPT_DIR}/inference_demo/prepare_eval_manifest"
-file "${SCRIPT_DIR}/inference_demo/rtmpose_board_eval" \
-    "${SCRIPT_DIR}/inference_demo/prepare_eval_manifest"
+    -o "${BUILD_WORK_DIR}/prepare_eval_manifest"
+file "${BUILD_WORK_DIR}/rtmpose_board_eval" \
+    "${BUILD_WORK_DIR}/prepare_eval_manifest"
 
 echo "[3/3] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "mkdir -p '${BOARD_DEPLOY_DIR}'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
-    "${SCRIPT_DIR}/inference_demo/rtmpose_board_eval" \
-    "${SCRIPT_DIR}/inference_demo/prepare_eval_manifest" \
+    "${BUILD_WORK_DIR}/rtmpose_board_eval" \
+    "${BUILD_WORK_DIR}/prepare_eval_manifest" \
     "${SCRIPT_DIR}/inference_demo/evaluate_coco_wholebody.py" \
     "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "chmod 755 '${BOARD_DEPLOY_DIR}/rtmpose_board_eval' '${BOARD_DEPLOY_DIR}/prepare_eval_manifest'"
-printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\n' \
-    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" |
+scp "${SSH_OPTIONS[@]}" \
+    "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/summarize_board_result.py"
+printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\n' \
+    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
 echo "[OK] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

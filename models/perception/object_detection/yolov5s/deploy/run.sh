@@ -2,6 +2,7 @@
 # YOLOv5s 单脚本两步流程: 在 89 编译上传,在 92 直接测试.
 
 set -euo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -34,6 +35,11 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # 全量数据: COCO val2017 根目录; 只跑三图时可以留空.
     BOARD_DATASET_DIR="/root/hailong.he/datasets/coco/val2017/"
+
+    # FP32 基准: 同协议 ONNX mAP@0.5:0.95,默认是历史结果; 留空不计算损失.
+    FP32_MAP="0.3709"
+    # 基准来源: 替换数值时同步修改来源,避免误认为本次实测.
+    FP32_BASELINE_SOURCE="历史 ONNX FP32,2026-09-08,COCO val2017,conf=0.001,IoU=0.6,max_det=300"
 
     # 仅当 89 上的 Docker 或交叉编译环境不同,才修改下面的配置.
     # Docker 容器: 89 上的 Genio 720 编译环境.
@@ -100,67 +106,37 @@ readonly ANNOTATIONS="${BOARD_DATASET_DIR}/annotations/instances_val2017.json"
 test -f "${ANNOTATIONS}"
 test "$(find "${IMAGES_DIR}" -maxdepth 1 -type f -name '*.jpg' | wc -l)" -eq 5000
 python3 -c 'import pycocotools'
-mkdir -p "${RUN_DIR}/report"
+mkdir -p "${RUN_DIR}"
 
-echo "[1/4] 记录模型、程序和数据集输入."
-{
-    echo "run_id=${RUN_ID}"
-    echo "dataset_dir=${BOARD_DATASET_DIR}"
-    echo "image_count=5000"
-    echo "warmup=20"
-    echo "confidence=0.001"
-    echo "iou=0.6"
-    echo "max_detections=300"
-} > "${RUN_DIR}/run_inputs_manifest.txt"
-{
-    echo "captured_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    echo "kernel=$(uname -a)"
-    cat /etc/os-release
-    free -h
-    df -h "${RUN_DIR}"
-    ldconfig -p 2>/dev/null | grep -E 'lib(neuronusdk_runtime|opencv_core)' || true
-} > "${RUN_DIR}/system.txt"
-
-echo "[2/4] 在板端运行 5000 张图片的 C++ NPU 推理."
+echo "[1/3] 在板端运行 5000 张图片的 C++ NPU 推理."
 "${BINARY}" --model "${MODEL}" --images "${IMAGES_DIR}" \
     --output-dir "${RUN_DIR}" --warmup 20 --progress-interval 50 \
     2>&1 | tee "${RUN_DIR}/board_eval.log"
 
-echo "[3/4] 在板端计算 COCO bbox 指标."
+echo "[2/3] 在板端计算 mAP 并汇总 NPU 平均耗时和精度变化."
+FP32_ARGS=()
+if [[ -n "${FP32_MAP:-}" ]]; then
+    FP32_ARGS=(--fp32-map "${FP32_MAP}"
+        --fp32-source "${FP32_BASELINE_SOURCE:-用户提供的同协议 FP32 基准}")
+fi
 python3 "${DEPLOY_DIR}/python/evaluate_coco.py" \
     --annotations "${ANNOTATIONS}" \
     --predictions "${RUN_DIR}/predictions.json" \
     --processed-ids "${RUN_DIR}/processed_ids.txt" \
-    --metrics "${RUN_DIR}/coco_metrics.json" \
-    --summary-log "${RUN_DIR}/coco_summary.log" \
+    --timings "${RUN_DIR}/timing_summary_current_run.json" \
+    "${FP32_ARGS[@]}" \
+    --metrics "${RUN_DIR}/summary.json" \
+    --run-id "${RUN_ID}" \
     2>&1 | tee "${RUN_DIR}/cocoeval.log"
 
-echo "[4/4] 整理报告."
-cp "${RUN_DIR}/coco_metrics.json" "${RUN_DIR}/coco_summary.log" \
+echo "[3/3] 保存汇总结果."
+# 仅在评测和汇总成功后清理本次中间文件; 失败时由 set -e 保留现场.
+test -s "${RUN_DIR}/summary.json"
+rm -f -- "${RUN_DIR}/predictions.json" "${RUN_DIR}/predictions.jsonl" \
+    "${RUN_DIR}/processed_ids.txt" "${RUN_DIR}/timings.csv" \
     "${RUN_DIR}/timing_summary_current_run.json" \
-    "${RUN_DIR}/run_inputs_manifest.txt" \
-    "${RUN_DIR}/system.txt" "${RUN_DIR}/report/"
-python3 - "${RUN_DIR}/coco_metrics.json" "${RUN_DIR}/report/summary.json" \
-    "${RUN_ID}" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-metrics = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-if metrics.get("images") != 5000:
-    raise SystemExit("[ERROR] COCO 全量图片数不等于 5000.")
-summary = {
-    "status": "complete",
-    "model": "yolov5s",
-    "run_id": sys.argv[3],
-    "dataset": "coco_val2017",
-    "images": metrics["images"],
-    "accuracy": metrics["metrics"],
-}
-Path(sys.argv[2]).write_text(
-    json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-PY
-echo "[OK] 全量测试报告: ${RUN_DIR}/report"
+    "${RUN_DIR}/board_eval.log" "${RUN_DIR}/cocoeval.log"
+echo "[OK] 全量测试结果: ${RUN_DIR}/summary.json"
     exit 0
 fi
 if (( $# != 0 )); then
@@ -198,6 +174,7 @@ fi
 
 echo "[1/4] 在 Docker 中转换模型并编译 DLA: ${OUTPUT_DLA}"
 docker exec -i \
+    -e PYTHONDONTWRITEBYTECODE=1 \
     -e MODEL_ROOT="${MODEL_ROOT}" \
     -e MODEL_WEIGHTS="${MODEL_WEIGHTS}" \
     -e SOURCE_ARCHIVE="${SOURCE_ARCHIVE}" \
@@ -225,6 +202,10 @@ test -f "${MTK_SETUP_SCRIPT}"
 test -x "${NCC_BIN}"
 test -d "${NCC_LIB}"
 mkdir -p "${MODEL_OUTPUT_DIR}" "${BUILD_WORK_DIR}" "$(dirname "${OUTPUT_DLA}")"
+mkdir -p "${BUILD_WORK_DIR}/tmp" "${BUILD_WORK_DIR}/cache"
+export TMPDIR="${BUILD_WORK_DIR}/tmp"
+export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
+export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
 if [[ "${MODEL_WEIGHTS}" != "${MODEL_OUTPUT_DIR}/yolov5s.pt" ]]; then
     cp "${MODEL_WEIGHTS}" "${MODEL_OUTPUT_DIR}/yolov5s.pt"
 fi
@@ -307,8 +288,8 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "chmod 755 '${BOARD_DEPLOY_DIR}/bin/yolov5s_board_eval'"
 
 echo "[4/4] 写入板端数据集和结果路径."
-printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\n' \
-    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" |
+printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nFP32_MAP=%q\nFP32_BASELINE_SOURCE=%q\n' \
+    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${FP32_MAP}" "${FP32_BASELINE_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
         "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
 echo "[OK] DLA: ${OUTPUT_DLA}"

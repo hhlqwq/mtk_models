@@ -1,4 +1,4 @@
-"""按 MMPose 协议计算 COCO-WholeBody 分项和整体 AP/AR."""
+"""按 MMPose 协议计算 COCO-WholeBody 整体 AP."""
 
 import argparse
 import contextlib
@@ -28,10 +28,6 @@ SIGMAS = np.asarray([
     0.021, 0.021, 0.032, 0.020, 0.019, 0.022, 0.031,
 ], dtype=np.float32)
 CUTS = np.cumsum([0, 17, 6, 68, 21, 21])
-STAT_NAMES = (
-    "AP", "AP_50", "AP_75", "AP_M", "AP_L",
-    "AR", "AR_50", "AR_75", "AR_M", "AR_L",
-)
 
 
 def load_predictions(path: Path) -> dict[int, list[dict]]:
@@ -124,21 +120,18 @@ def format_results(grouped: dict[int, list[dict]]) -> list[dict]:
 
 def evaluate_component(coco_gt: COCO, coco_dt: COCO, name: str,
                        iou_type: str, sigmas: np.ndarray) -> dict[str, float]:
-    """执行一个 WholeBody 分项的 COCOeval 并返回十项指标."""
+    """执行 WholeBody COCOeval 并返回核心 AP."""
     print(f"[EVAL] {name}: {iou_type}")
     evaluator = COCOeval(coco_gt, coco_dt, iou_type, sigmas, use_area=True)
     evaluator.params.useSegm = None
     evaluator.evaluate()
     evaluator.accumulate()
     evaluator.summarize()
-    return {
-        metric: float(value)
-        for metric, value in zip(STAT_NAMES, evaluator.stats)
-    }
+    return {"AP": float(evaluator.stats[0])}
 
 
 def evaluate(args: argparse.Namespace) -> None:
-    """格式化板端结果并计算身体、脚、脸、手和 WholeBody 指标."""
+    """格式化板端结果并计算整体 WholeBody AP."""
     if SIGMAS.shape != (133,):
         raise RuntimeError(f"WholeBody sigma 数量错误: {SIGMAS.shape}")
     grouped = load_predictions(args.predictions)
@@ -149,14 +142,7 @@ def evaluate(args: argparse.Namespace) -> None:
 
     coco_gt = COCO(str(args.annotations))
     coco_dt = coco_gt.loadRes(str(args.formatted))
-    components = (
-        ("body", "keypoints_body", SIGMAS[CUTS[0]:CUTS[1]]),
-        ("foot", "keypoints_foot", SIGMAS[CUTS[1]:CUTS[2]]),
-        ("face", "keypoints_face", SIGMAS[CUTS[2]:CUTS[3]]),
-        ("lefthand", "keypoints_lefthand", SIGMAS[CUTS[3]:CUTS[4]]),
-        ("righthand", "keypoints_righthand", SIGMAS[CUTS[4]:CUTS[5]]),
-        ("wholebody", "keypoints_wholebody", SIGMAS),
-    )
+    components = (("wholebody", "keypoints_wholebody", SIGMAS),)
     metrics = {}
     args.summary_log.parent.mkdir(parents=True, exist_ok=True)
     with args.summary_log.open("w", encoding="utf-8") as log_file:
@@ -177,7 +163,7 @@ def evaluate(args: argparse.Namespace) -> None:
             },
             "metrics": metrics,
         }, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(args.summary_log.read_text(encoding="utf-8"))
+    print("[OK] WholeBody AP 已计算,准备汇总 NPU 耗时.")
     print(f"[OK] WholeBody 指标: {args.metrics}")
 
 

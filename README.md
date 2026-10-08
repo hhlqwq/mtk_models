@@ -157,6 +157,14 @@ models/scenario_name/category_name/model_name/
 
 每个模型使用一个脚本完成两步流程：在编译主机运行 `deploy/run.sh` 编译并上传，再在开发板运行上传的同一脚本；路径在脚本中配置。具体命令见各模型 README。
 
+各模型的临时输入、依赖缓存和 C++ 编译程序统一写入 `BUILD_WORK_DIR`,默认是仓库外的 `/tmp/hailongcodex/<当天日期>/<模型名>/`。模型产物与板端结果分别写入 `MODEL_OUTPUT_DIR` 和 `BOARD_RESULTS_DIR`;代码目录不生成 Python 字节码缓存。Docker 与主机的临时目录独立,上传所需的辅助文件由脚本显式取回。
+
+完整板端测试成功后,每次运行仅保留一个 `summary.json`,内容为平均 NPU 推理耗时、任务核心精度和匹配参考基准的精度差值。临时预测、缓存和日志在成功汇总后清理; 失败时保留现场。模型的历史参考来源在报告中明确标注,缺少匹配基准不计算损失。YOLO-World 当前只有 ORT Runtime 耗时,Whisper 默认参考为 FP16,报告按实际口径记录。
+
+各模型的临时输入、依赖缓存和 C++ 编译程序统一写入 `BUILD_WORK_DIR`,默认是仓库外的 `/tmp/hailongcodex/<当天日期>/<模型名>/`。模型产物与板端结果分别写入 `MODEL_OUTPUT_DIR` 和 `BOARD_RESULTS_DIR`;代码目录不生成 Python 字节码缓存。Docker 与主机的临时目录独立,上传所需的辅助文件由脚本显式取回。
+
+完整板端测试成功后,每次运行仅保留一个 `summary.json`,内容为平均 NPU 推理耗时、任务核心精度和匹配参考基准的精度差值。临时预测、缓存和日志在成功汇总后清理; 失败时保留现场。模型的历史参考来源在报告中明确标注,缺少匹配基准不计算损失。YOLO-World 当前只有 ORT Runtime 耗时,Whisper 默认参考为 FP16,报告按实际口径记录。
+
 仓库通过 `registry/models.yaml` 维护模型索引,避免扫描上百个目录才能了解交付状态.
 
 大模型文件、转换产物、输入数据和输出数据默认不进入普通 Git 历史.正式发布模型文件时应使用
