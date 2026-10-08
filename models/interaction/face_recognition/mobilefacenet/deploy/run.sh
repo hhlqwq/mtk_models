@@ -64,6 +64,10 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
     readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
     readonly RUN_DIR="${RESULT_DIR}/work"
+    # 在全量推理前检查少量示例的工具、清单和图片依赖.
+    test -s "${SCRIPT_DIR}/examples/input/samples.json"
+    test -s "${SCRIPT_DIR}/board/render_examples.py"
+    python3 -c 'import cv2, numpy'
     test -s "${SCRIPT_DIR}/models/model_int8.dla"
     test -s "${SCRIPT_DIR}/models/metadata.json"
     test -s "${BOARD_DATASET_DIR}/pairs.csv"
@@ -81,6 +85,12 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     "${SCRIPT_DIR}/board/benchmark_board" --model "${SCRIPT_DIR}/models/model_int8.dla" \
         --input "${inputs[0]}" --report "${RUN_DIR}/report/benchmark.json" \
         --warmup 10 --repeats 100
+    echo "[示例] 保存少量板端效果示例."
+    python3 "${SCRIPT_DIR}/board/render_examples.py" \
+        --model "mobilefacenet" --input-dir "${SCRIPT_DIR}/examples/input" \
+        --output-dir "${RESULT_DIR}/examples/output" --work-dir "${RUN_DIR}" \
+        --dataset-root "${BOARD_DATASET_DIR}" --models-dir "${SCRIPT_DIR}/models"
+
     # 所有原始数据仅在本次 work 下生成; 汇总成功后由工具清理.
     python3 "${SCRIPT_DIR}/board/summarize_board_result.py" \
         --model "mobilefacenet" --work-dir "${RUN_DIR}" \
@@ -208,6 +218,14 @@ scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/summarize_board_result.
 scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/benchmark_board"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/benchmark_board'"
 scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
+# 上传统一可视化工具和少量示例输入,不增加 Shell 入口.
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "mkdir -p '${BOARD_DEPLOY_DIR}/examples/input'"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/render_examples.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/render_examples.py"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/examples/input/samples.json" \
+    "${MODEL_ROOT}/examples/input"/sample_* \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\n' \
     "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \

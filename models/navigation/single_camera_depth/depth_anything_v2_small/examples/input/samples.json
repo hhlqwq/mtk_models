@@ -1,0 +1,20 @@
+{
+  "source": "https://github.com/DepthAnything/Depth-Anything-V2/tree/main/DA-2K",
+  "samples": [
+    {
+      "file": "sample_1.jpg",
+      "image": "images/indoor/1009402064_7c74b0b819_k.jpg",
+      "scene": "indoor"
+    },
+    {
+      "file": "sample_2.jpg",
+      "image": "images/outdoor/17943623232_5f974cad30_k.jpg",
+      "scene": "outdoor"
+    },
+    {
+      "file": "sample_3.jpg",
+      "image": "images/transparent_reflective/49126232263_30c5bf5038_k.jpg",
+      "scene": "transparent_reflective"
+    }
+  ]
+}

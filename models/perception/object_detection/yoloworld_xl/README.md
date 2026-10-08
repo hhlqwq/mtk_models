@@ -44,6 +44,27 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 pycocotools。
 
 当前计时为 ORT session.Run,不作为独立 NPU 耗时。
 
+## 效果示例
+
+原图叠加板端检测框和类别.文本类别使用固定 COCO 80 类,展示分数阈值为 0.25.
+
+输入已放在 `examples/input/`,来源和样本对应关系见 [samples.json](examples/input/samples.json).
+
+全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
+将这些文件取回本模型的 `examples/output/` 后即可更新效果展示.当前先展示输入,输出以实际板端测试为准.
+
+### 示例 1: 室内场景
+
+![室内场景输入](examples/input/sample_1.jpg)
+
+### 示例 2: 熊
+
+![熊输入](examples/input/sample_2.jpg)
+
+### 示例 3: 滑雪场景
+
+![滑雪场景输入](examples/input/sample_3.jpg)
+
 ## 板端部署结构
 
 第一步上传到 `BOARD_DEPLOY_DIR` 后的布局统一为:
@@ -54,15 +75,16 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 pycocotools。
 ├── board_paths.conf
 ├── models/              # 模型与推理所需参数.
 ├── board/               # 板端程序、评测代码及必要依赖.
-└── results/             # 测试结果.
+├── examples/input/      # 少量示例输入及来源清单.
+└── results/             # 汇总及少量效果示例.
 ```
 
-全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后只保留汇总文件,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
+全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后保留汇总和少量效果示例,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
 ## 文件结构
 
 - `deploy/run.sh`: 编译上传和板端测试的唯一 Shell 入口.
 - `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
 - `deploy/board/`: 板端程序源码、预处理和评测代码.
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
-- `examples/`: 示例输入与输出,按需保留.
+- `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.

@@ -149,7 +149,7 @@ models/scenario_name/category_name/model_name/
 
 模型产物与板端结果分别写入用户配置的 MODEL_OUTPUT_DIR 和 BOARD_RESULTS_DIR。
 
-完整板端测试成功后只保留一个 `summary.json`,包含平均 NPU 耗时、核心精度、匹配参考基准及精度差值。测试完成后将文件上传到本地模型的 `results/summary.json`,据此更新 README; 未上传结果不预填数字.
+完整板端测试成功后保留 `summary.json` 和少量效果示例,包含平均 NPU 耗时、核心精度、匹配参考基准及精度差值。测试完成后将汇总上传到本地模型的 `results/summary.json`,效果文件取回 `examples/output/`,据此更新 README; 未上传结果不预填数字.
 
 
 

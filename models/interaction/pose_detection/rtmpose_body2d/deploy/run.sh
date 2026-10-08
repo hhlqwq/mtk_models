@@ -62,6 +62,10 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
     readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
     readonly RUN_DIR="${RESULT_DIR}/work"
+    # 在全量推理前检查少量示例的工具、清单和图片依赖.
+    test -s "${SCRIPT_DIR}/examples/input/samples.json"
+    test -s "${SCRIPT_DIR}/board/render_examples.py"
+    python3 -c 'import cv2, numpy'
     readonly DETECTIONS="${BOARD_DATASET_DIR}/person_detection_results/COCO_val2017_detections_AP_H_56_person.json"
     readonly ANNOTATIONS="${BOARD_DATASET_DIR}/annotations/coco_wholebody_val_v1.0.json"
     test -s "${SCRIPT_DIR}/models/model_int8.dla"
@@ -94,6 +98,12 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         --metrics "${RUN_DIR}/coco_wholebody_metrics.json" \
         --summary-log "${RUN_DIR}/coco_wholebody_summary.log" \
         2>&1 | tee "${RUN_DIR}/cocoeval.log"
+
+    echo "[示例] 保存少量板端效果示例."
+    python3 "${SCRIPT_DIR}/board/render_examples.py" \
+        --model "rtmpose_body2d" --input-dir "${SCRIPT_DIR}/examples/input" \
+        --output-dir "${RESULT_DIR}/examples/output" --work-dir "${RUN_DIR}" \
+        --dataset-root "${BOARD_DATASET_DIR}" --models-dir "${SCRIPT_DIR}/models"
 
     # 所有原始数据仅在本次 work 下生成; 汇总成功后由工具清理.
     python3 "${SCRIPT_DIR}/board/summarize_board_result.py" \
@@ -225,6 +235,14 @@ scp "${SSH_OPTIONS[@]}" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/prepare_eval_manifest"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/rtmpose_board_eval' '${BOARD_DEPLOY_DIR}/board/prepare_eval_manifest'"
 scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
+# 上传统一可视化工具和少量示例输入,不增加 Shell 入口.
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "mkdir -p '${BOARD_DEPLOY_DIR}/examples/input'"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/render_examples.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/render_examples.py"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/examples/input/samples.json" \
+    "${MODEL_ROOT}/examples/input"/sample_* \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\n' \
     "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \

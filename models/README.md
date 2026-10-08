@@ -107,11 +107,13 @@ models/
 3. 登录开发板,执行第一步打印的 `[NEXT]` 命令.在部署目录运行 `bash run.sh` 完成测试.
 4. 上传最新 `summary.json`,更新本模型 README 的核心指标.量化方式只在 README 说明.
 
-板端统一使用 `models/` 保存模型和参数、`board/` 保存板端程序、评测代码及必要依赖.全量结果写入 `BOARD_RESULTS_DIR/<运行编号>/summary.json`,成功后只保留汇总,失败时保留现场.
+板端统一使用 `models/` 保存模型和参数、`board/` 保存板端程序、评测代码及必要依赖.全量结果写入 `BOARD_RESULTS_DIR/<运行编号>/summary.json`,成功后保留汇总与少量效果示例,失败时保留现场.
 
 各模型在板端直接运行 `bash run.sh` 默认执行全量测试,无需模式参数.Whisper 的双模型、YOLO-World 的在线编译以及各任务的数据与指标属于必要差异,详见对应模型 README.
 
 `TFLite/` 是官方模型合集与通用基准工具,采用已有的模型格式,不作为上述单模型移植目录.
+各模型 README 统一提供“效果示例”.少量输入随脚本上传,测试完成后在本次结果目录生成 `examples/output/`,不保留全量原始预测.将 `summary.json` 与少量效果文件取回本地后更新指标和展示.
+
 ## 单模型交付要求
 
 所有模型的原始权重、离线包、转换产物和来源记录统一放在 `models/`,必要的上游源码放在 `models/upstream/`.不再单独设置原始模型目录.
@@ -130,6 +132,8 @@ models/
 │   ├── host/
 │   └── board/
 ├── examples/
+│   ├── input/            # 固定示例与来源清单.
+│   └── output/           # 实际板端效果.
 └── results/summary.json
 ```
 

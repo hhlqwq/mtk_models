@@ -28,8 +28,12 @@ bash run.sh
 
 ## 板端部署结构
 
-部署目录统一保留 `run.sh`、`board_paths.conf`、`models/`、`board/` 和测试结果.全量测试成功后只保留 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.
+部署目录统一保留 `run.sh`、`board_paths.conf`、`models/`、`board/` 和测试结果.全量测试成功后保留 `BOARD_RESULTS_DIR/<运行编号>/summary.json` 及少量效果示例.
 
 ## 文件结构
 
 `deploy/` 仅保留 `run.sh`,编译主机工具放在 `deploy/host/`,板端程序源码和评测代码放在 `deploy/board/`.模型产物放在 `models/`,示例按需保存在 `examples/`.
+
+## 效果示例
+
+选取少量固定输入放在 `examples/input/`,以 `samples.json` 记录来源及样本对应关系.全量板端测试复用这些样本的真实预测,仅保存少量可读效果到本次结果目录的 `examples/output/`.取回本地后在此展示实际结果.

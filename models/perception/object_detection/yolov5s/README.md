@@ -36,7 +36,7 @@ bash run.sh
 
 ## 数据与精度评测
 
-结果写入 `BOARD_RESULTS_DIR`，默认位于 `BOARD_DEPLOY_DIR/results`。测试要求 `BOARD_DATASET_DIR/images/` 中有 5000 张 COCO val2017 图片、`BOARD_DATASET_DIR/annotations/instances_val2017.json`，板端还需 `pycocotools`。若 SSH 提示主机密钥变化，先核对板端指纹，再更新编译主机上执行脚本用户的 `known_hosts`。
+结果写入 `BOARD_RESULTS_DIR`，默认位于 `BOARD_DEPLOY_DIR/results`。测试要求 `BOARD_DATASET_DIR/images/` 中有 5000 张 COCO val2017 图片、`BOARD_DATASET_DIR/annotations/instances_val2017.json`，板端还需 `pycocotools`、NumPy 和 OpenCV。若 SSH 提示主机密钥变化，先核对板端指纹，再更新编译主机上执行脚本用户的 `known_hosts`。
 
 ## 当前测试结果
 
@@ -54,25 +54,27 @@ ONNX FP32 与板端精度均来自本次同协议 COCO val2017 全量实测。mA
 
 NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不含图片读取、前后处理和 COCOeval。峰值内存为板端 C++ 推理进程峰值 RSS,包含运行库与前后处理,不代表 NPU 专用内存。
 
-全量测试成功后只保留一个 `summary.json`,中间预测和日志自动删除; 失败时保留现场。测试完成后将汇总文件上传到本地 `results/summary.json`,据此更新当前结果。
+全量测试成功后保留 `summary.json` 和少量效果示例,中间预测和日志自动删除; 失败时保留现场。测试完成后将汇总文件上传到本地 `results/summary.json`,据此更新当前结果。
 
-## 示例输出
+## 效果示例
 
-三张示例图仅展示检测效果,不参与 COCO 精度评测。
+选取 COCO val2017 中的室内、熊和滑雪三张图片,直接复用全量评测的板端预测生成检测效果,无需单独测试或额外推理.
 
-### 示例 1
+输入见 `examples/input/`,样本清单见 [samples.json](examples/input/samples.json).新效果图保存在本次结果目录的 `examples/output/`,取回本模型同名目录后更新展示.
+
+### 示例 1: 室内场景
 
 ![示例 1 检测结果](examples/output/sample_1_detections.jpg)
 
-### 示例 2
+### 示例 2: 熊
 
 ![示例 2 检测结果](examples/output/sample_2_detections.jpg)
 
-### 示例 3
+### 示例 3: 滑雪场景
 
 ![示例 3 检测结果](examples/output/sample_3_detections.jpg)
 
-示例输入由项目维护者使用 OpenAI 图像生成工具制作,按 [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) 发布。
+示例来自 [COCO val2017](https://cocodataset.org/#download),原图地址和各图片许可记录在输入清单中.展示分数阈值为 0.25,不改变全量精度评测协议.
 
 ## 板端部署结构
 
@@ -84,15 +86,16 @@ NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不
 ├── board_paths.conf
 ├── models/              # 模型与推理所需参数.
 ├── board/               # 板端程序、评测代码及必要依赖.
-└── results/             # 测试结果.
+├── examples/input/      # 少量示例输入及来源清单.
+└── results/             # 汇总及少量效果示例.
 ```
 
-全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后只保留汇总文件,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
+全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后保留汇总和少量效果示例,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
 ## 文件结构
 
 - `deploy/run.sh`: 编译上传和板端测试的唯一 Shell 入口.
 - `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
 - `deploy/board/`: 板端程序源码、预处理和评测代码.
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
-- `examples/`: 示例输入与输出,按需保留.
+- `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.

@@ -37,11 +37,32 @@ bash run.sh
 精度变化以百分点表示,正数为改善,负数为下降.
 
 Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 xtcocotools。
-板端需要 NumPy 和 xtcocotools,用于计算 WholeBody AP.
+板端需要 NumPy、OpenCV 和 xtcocotools,用于可视化和计算 WholeBody AP.
 
 ## 当前测试结果
 
 待上传本模型的 `results/summary.json` 后更新。只记录板端 NPU 平均耗时、推理进程峰值 RSS (MiB)、任务核心精度、同协议 ONNX 参考精度和精度变化。峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存。
+
+## 效果示例
+
+原图叠加板端 WholeBody 关节点和人体、手部骨架.
+
+输入已放在 `examples/input/`,来源和样本对应关系见 [samples.json](examples/input/samples.json).
+
+全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
+将这些文件取回本模型的 `examples/output/` 后即可更新效果展示.当前先展示输入,输出以实际板端测试为准.
+
+### 示例 1: 骑车姿态
+
+![骑车姿态输入](examples/input/sample_1.jpg)
+
+### 示例 2: 站立姿态
+
+![站立姿态输入](examples/input/sample_2.jpg)
+
+### 示例 3: 街头多人
+
+![街头多人输入](examples/input/sample_3.jpg)
 
 ## 板端部署结构
 
@@ -53,15 +74,16 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 xtcocotools。
 ├── board_paths.conf
 ├── models/              # 模型与推理所需参数.
 ├── board/               # 板端程序、评测代码及必要依赖.
-└── results/             # 测试结果.
+├── examples/input/      # 少量示例输入及来源清单.
+└── results/             # 汇总及少量效果示例.
 ```
 
-全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后只保留汇总文件,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
+全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后保留汇总和少量效果示例,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
 ## 文件结构
 
 - `deploy/run.sh`: 编译上传和板端测试的唯一 Shell 入口.
 - `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
 - `deploy/board/`: 板端程序源码、预处理和评测代码.
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
-- `examples/`: 示例输入与输出,按需保留.
+- `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.

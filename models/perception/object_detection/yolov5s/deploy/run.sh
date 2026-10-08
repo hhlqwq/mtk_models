@@ -75,6 +75,10 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
     readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
     readonly RUN_DIR="${RESULT_DIR}/work"
+    # 在全量推理前检查少量示例的工具、清单和图片依赖.
+    test -s "${SCRIPT_DIR}/examples/input/samples.json"
+    test -s "${SCRIPT_DIR}/board/render_examples.py"
+    python3 -c 'import cv2, numpy'
 
     if (( $# != 0 )); then
         echo "[ERROR] 在板端直接运行 bash run.sh,无需参数,默认执行全量测试." >&2
@@ -119,6 +123,12 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         --metrics "${RESULT_DIR}/summary.json" \
         --run-id "${RUN_ID}" \
         2>&1 | tee "${RUN_DIR}/cocoeval.log"
+
+    echo "[示例] 保存少量板端效果示例."
+    python3 "${SCRIPT_DIR}/board/render_examples.py" \
+        --model "yolov5s" --input-dir "${SCRIPT_DIR}/examples/input" \
+        --output-dir "${RESULT_DIR}/examples/output" --work-dir "${RUN_DIR}" \
+        --dataset-root "${BOARD_DATASET_DIR}" --models-dir "${SCRIPT_DIR}/models"
 
     echo "[开发板 3/3] 保存汇总结果."
     # 仅在评测和汇总成功后清理本次中间文件; 失败时由 set -e 保留现场.
@@ -304,6 +314,14 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "chmod 755 '${BOARD_DEPLOY_DIR}/board/yolov5s_board_eval'"
 
 echo "[编译主机 4] 写入板端数据集和结果路径."
+# 上传统一可视化工具和少量示例输入,不增加 Shell 入口.
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "mkdir -p '${BOARD_DEPLOY_DIR}/examples/input'"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/render_examples.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/render_examples.py"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/examples/input/samples.json" \
+    "${MODEL_ROOT}/examples/input"/sample_* \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nFP32_MAP=%q\nFP32_BASELINE_SOURCE=%q\n' \
     "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${FP32_MAP}" "${FP32_BASELINE_SOURCE}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
