@@ -62,19 +62,37 @@ COCO-WholeBody val2017 全量 5000 张图片、104125 个人体框,采用 WholeB
 输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
-将这些文件取回本模型的 `examples/output/` 后即可更新效果展示.当前先展示输入,输出以实际板端测试为准.
+以下输出来自本次全量测试的板端预测,展示 WholeBody 133 个关节点.示例目录仅保留三组输入和输出图片:
+
+```text
+examples/
+├── input/
+│   ├── sample_1.jpg
+│   ├── sample_2.jpg
+│   └── sample_3.jpg
+└── output/
+    ├── sample_1_keypoints.jpg
+    ├── sample_2_keypoints.jpg
+    └── sample_3_keypoints.jpg
+```
 
 ### 示例 1: 骑车姿态
 
 ![骑车姿态输入](examples/input/sample_1.jpg)
 
+![骑车姿态 WholeBody 输出](examples/output/sample_1_keypoints.jpg)
+
 ### 示例 2: 站立姿态
 
 ![站立姿态输入](examples/input/sample_2.jpg)
 
+![站立姿态 WholeBody 输出](examples/output/sample_2_keypoints.jpg)
+
 ### 示例 3: 街头多人
 
 ![街头多人输入](examples/input/sample_3.jpg)
+
+![街头多人 WholeBody 输出](examples/output/sample_3_keypoints.jpg)
 
 ## 板端部署结构
 
