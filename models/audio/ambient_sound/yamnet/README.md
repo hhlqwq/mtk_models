@@ -33,7 +33,7 @@ python3 models/audio/ambient_sound/yamnet/deploy/host/prepare_assets.py \
 work=/tmp/hailongcodex/$(date +%F)/yamnet
 docker exec hhl_g720_8011 python -m venv "$work/venv"
 docker exec hhl_g720_8011 "$work/venv/bin/pip" install \
-  tensorflow-cpu==2.15.1 tf2onnx==1.16.1 numpy==1.26.4 scipy==1.11.4 tqdm==4.66.5
+  tensorflow-cpu==2.15.1 tf2onnx==1.16.1 onnx==1.16.1 numpy==1.26.4 scipy==1.11.4 tqdm==4.66.5
 docker exec hhl_g720_8011 "$work/venv/bin/pip" install --no-deps tf-keras==2.15.0
 ```
 

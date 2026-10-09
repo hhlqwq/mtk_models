@@ -72,7 +72,7 @@ docker exec -e LD_LIBRARY_PATH="${NCC_ROOT}/lib" "${CONTAINER}" \
 echo '[编译主机 3/4] 交叉编译 C++ Runtime 程序并准备参考与示例.'
 aarch64-linux-gnu-g++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/board/yamnet_eval.cpp" \
-    "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" -pthread -ldl \
+    "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" -Wl,--allow-shlib-undefined -pthread -ldl \
     -o "${BUILD_WORK_DIR}/yamnet_eval"
 docker exec -i -e MODEL_ROOT="${MODEL_ROOT}" -e DATASET_DIR="${DATASET_DIR}" \
     -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" "${CONTAINER}" python - <<'REFERENCE'

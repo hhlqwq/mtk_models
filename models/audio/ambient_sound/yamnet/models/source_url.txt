@@ -1,6 +1,11 @@
 Google 官方源码: https://github.com/tensorflow/models
 固定源码版本: 34a21326906b9574fa11c4d6d0a5c534ff039267
-源文件地址: https://raw.githubusercontent.com/tensorflow/models/34a21326906b9574fa11c4d6d0a5c534ff039267/research/audioset/yamnet/{yamnet.py,params.py,features.py,yamnet_class_map.csv,README.md}
+模型源码: https://raw.githubusercontent.com/tensorflow/models/34a21326906b9574fa11c4d6d0a5c534ff039267/research/audioset/yamnet/yamnet.py
+模型参数: https://raw.githubusercontent.com/tensorflow/models/34a21326906b9574fa11c4d6d0a5c534ff039267/research/audioset/yamnet/params.py
+音频前处理: https://raw.githubusercontent.com/tensorflow/models/34a21326906b9574fa11c4d6d0a5c534ff039267/research/audioset/yamnet/features.py
+类别标签: https://raw.githubusercontent.com/tensorflow/models/34a21326906b9574fa11c4d6d0a5c534ff039267/research/audioset/yamnet/yamnet_class_map.csv
+上游说明: https://raw.githubusercontent.com/tensorflow/models/34a21326906b9574fa11c4d6d0a5c534ff039267/research/audioset/yamnet/README.md
+上游许可证: https://raw.githubusercontent.com/tensorflow/models/34a21326906b9574fa11c4d6d0a5c534ff039267/LICENSE
 源码许可证: Apache-2.0
 官方权重: https://storage.googleapis.com/audioset/yamnet.h5
 权重大小: 15296092 bytes
