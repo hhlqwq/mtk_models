@@ -14,8 +14,8 @@
 | Demo 默认阈值 | confidence=0.4, NMS IoU=0.9, max_det=100；正式 AR 评测 confidence=0.001 |
 | 提示支持 | 全图、单前景点、单 xyxy 框; 提示语义见 Demo 文档 |
 | 尚不支持 | 文本/CLIP、负点组合、多图批处理、G5100 实测 |
-| 核心精度 | 类别无关 segm AR@100,待上传当前汇总 |
-| 当前结果 | 待上传 results/summary.json |
+| 核心精度 | 类别无关 segm AR@100: ONNX FP32 39.02%,板端 NPU 37.57%,下降 1.45 个百分点 |
+| 当前结果 | COCO val2017 全量 5000 张,NPU 平均 14.72 ms,峰值 RSS 64.55 MiB |
 
 FastSAM 不输出 COCO 80 类语义标签.本次正式精度采用类别无关协议,
 不能把所有预测随意设置为某个 COCO 类别后宣称完成标准实例分割 mAP.
@@ -23,4 +23,4 @@ FastSAM 不输出 COCO 80 类语义标签.本次正式精度采用类别无关�
 
 ## 当前测试结果
 
-以用户上传的 `results/summary.json` 为准,当前待上传。核心指标见 [README](README.md#当前测试结果)。
+结果见 [summary.json](results/summary.json),核心指标和三张实际板端效果见 [README](README.md#当前测试结果).

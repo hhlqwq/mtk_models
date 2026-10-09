@@ -106,6 +106,7 @@ Thumbs.db
 !**/examples/input/sample_*.JPEG
 !**/examples/input/sample_*.wav
 !**/examples/output/sample_*_classification.jpg
+!models/navigation/segmentation/fastsam/examples/output/sample_*_segmentation.jpg
 !models/perception/object_detection/yolov8n/examples/output/sample_*_detections.jpg
 
 # 示例运行清单自动生成并随部署上传,不纳入 Git.

@@ -40,7 +40,17 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 pycocotools。
 
 ## 当前测试结果
 
-待上传本模型的 `results/summary.json` 后更新。只记录板端 NPU 平均耗时、推理进程峰值 RSS (MiB)、任务核心精度、同协议 ONNX 参考精度和精度变化。峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存。
+COCO val2017 全量 5000 张,采用类别无关 segm AR@100.结果见 [summary.json](results/summary.json).
+
+| 指标 | 结果 |
+| --- | ---: |
+| ONNX FP32 segm AR@100 | 39.02% |
+| 板端 NPU segm AR@100 | **37.57%** |
+| 精度变化 | **-1.45 个百分点** |
+| 板端 NPU 平均耗时 | **14.72 ms** |
+| 推理进程峰值 RSS | **64.55 MiB** |
+
+耗时仅统计 `NeuronRuntime_inference` 调用,不包含逐图模型加载及前后处理.峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存.
 
 ## 效果示例
 
@@ -49,19 +59,25 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 pycocotools。
 输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
-将这些文件取回本模型的 `examples/output/` 后即可更新效果展示.当前先展示输入,输出以实际板端测试为准.
+以下三张输出来自本次全量测试的板端预测,保存在 `examples/output/`.
 
 ### 示例 1: 室内场景
 
 ![室内场景输入](examples/input/sample_1.jpg)
 
+![室内场景分割输出](examples/output/sample_1_segmentation.jpg)
+
 ### 示例 2: 熊
 
 ![熊输入](examples/input/sample_2.jpg)
 
+![熊分割输出](examples/output/sample_2_segmentation.jpg)
+
 ### 示例 3: 滑雪场景
 
 ![滑雪场景输入](examples/input/sample_3.jpg)
+
+![滑雪场景分割输出](examples/output/sample_3_segmentation.jpg)
 
 ## 板端部署结构
 
