@@ -59,13 +59,6 @@ def extract_result(model: str, work_dir: Path) -> dict:
         result.update(samples=5000, metric="segm AR@100", board_accuracy=report["AR_100"],
                       npu_mean_ms=report["npu_mean_ms"],
                       timing_scope="逐图加载模型,单独统计 NeuronRuntime_inference 调用")
-    elif model == "yoloworld_xl":
-        require_count(report, "images", 5000)
-        result.update(samples=5000, metric="mAP@0.5:0.95",
-                      board_accuracy=report["accuracy"]["AP_50_95"], npu_mean_ms=None,
-                      runtime_mean_ms=report["timing"]["mean_ms"],
-                      timing_scope="ONNX Runtime session.Run,非独立 NPU 计时",
-                      provider_node_events=report["profile"]["provider_node_events"])
     elif model == "whisper_tiny":
         require_count(report, "expected_samples", 2620)
         require_count(report, "successful_samples", 2620)

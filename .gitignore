@@ -112,7 +112,6 @@ Thumbs.db
 !models/interaction/face_recognition/mobilefacenet/examples/output/sample_*_verification.jpg
 !models/navigation/single_camera_depth/depth_anything_v2_small/examples/output/sample_*_depth.jpg
 !models/perception/object_detection/yolov8n/examples/output/sample_*_detections.jpg
-!models/perception/object_detection/yoloworld_xl/examples/output/sample_*_detections.jpg
 
 # 示例运行清单自动生成并随部署上传,不纳入 Git.
 **/examples/input/samples.json

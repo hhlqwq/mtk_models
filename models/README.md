@@ -19,7 +19,6 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | **0.52** | **8.25** | LFW 验证准确率 **99.32%** | **-0.07** |
 | [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | **131.31** | **32.66** | DA-2K 点对准确率 **85.78%** | 待 ONNX 评测 |
 | [FastSAM-s](navigation/segmentation/fastsam/README.md) | **14.72** | **64.55** | segm AR@100 **37.57%** | **-1.45** |
-| [YOLO-World XL](perception/object_detection/yoloworld_xl/README.md) | 未采集 | **1459.28** | mAP@0.5:0.95 **47.27%** | **-0.03** |
 | [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | 待上传 | 待上传 | WER 待上传 | 待上传 |
 
 YOLOv5s 结果来自运行 `20261008_032807_67603`,COCO val2017 全量 5000 张; ONNX FP32 与板端精度均为本次同协议实测,ONNX mAP 为 **37.09%**。结果文件见 [summary.json](perception/object_detection/yolov5s/results/summary.json)。
@@ -121,7 +120,7 @@ models/
 
 板端统一使用 `models/` 保存模型和参数、`board/` 保存板端程序、评测代码及必要依赖.全量结果写入 `BOARD_RESULTS_DIR/<运行编号>/summary.json`,成功后保留汇总与少量效果示例,失败时保留现场.
 
-各模型在板端直接运行 `bash run.sh` 默认执行全量测试,无需模式参数.Whisper 的双模型、YOLO-World 的在线编译以及各任务的数据与指标属于必要差异,详见对应模型 README.
+各模型在板端直接运行 `bash run.sh` 默认执行全量测试,无需模式参数.Whisper 的双模型以及各任务的数据与指标属于必要差异,详见对应模型 README.
 
 `TFLite/` 是官方模型合集与通用基准工具,采用已有的模型格式,不作为上述单模型移植目录.
 各模型 README 统一提供“效果示例”.少量输入随脚本上传,来源与样本清单在编译时从数据集生成且不纳入 Git.测试完成后在本次结果目录生成 `examples/output/`,不保留全量原始预测.将 `summary.json` 与少量效果文件取回本地后更新指标和展示.

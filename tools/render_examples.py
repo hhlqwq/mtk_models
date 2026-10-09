@@ -80,23 +80,14 @@ def detections(args, manifest) -> None:
     """复用 COCO 检测结果,按展示阈值绘制类别和检测框."""
     samples = manifest["samples"]
     selected = {item["image_id"]: [] for item in samples}
-    if args.model == "yolov5s":
-        for row in read_jsonl(args.work_dir / "predictions.jsonl"):
-            if row["image_id"] in selected:
-                x, y, width, height = row["bbox"]
-                selected[row["image_id"]].append({
-                    "bbox": [x, y, x + width, y + height],
-                    "score": row["score"],
-                    "label": manifest["categories"][str(row["category_id"])],
-                })
-    else:
-        wanted = {Path(item["image"]).name: item["image_id"] for item in samples}
-        for row in read_jsonl(args.work_dir / "raw/results.jsonl"):
-            if row["image"] in wanted:
-                selected[wanted[row["image"]]] = [
-                    {"bbox": box["bbox_xyxy"], "score": box["score"],
-                     "label": manifest["class_names"][box["class_id"]]}
-                    for box in row["detections"]]
+    for row in read_jsonl(args.work_dir / "predictions.jsonl"):
+        if row["image_id"] in selected:
+            x, y, width, height = row["bbox"]
+            selected[row["image_id"]].append({
+                "bbox": [x, y, x + width, y + height],
+                "score": row["score"],
+                "label": manifest["categories"][str(row["category_id"])],
+            })
     for position, item in enumerate(samples, 1):
         image = load_image(args.input_dir / item["file"])
         count = 0
@@ -233,7 +224,7 @@ def speech(args, manifest) -> None:
 def main() -> None:
     """统一选择任务适配器,仅保存固定的少量示例产物."""
     adapters = {"vit_base_patch16_224": classification, "yolov5s": detections,
-                "yoloworld_xl": detections, "rtmpose_body2d": pose,
+                "rtmpose_body2d": pose,
                 "fastsam": segmentation, "depth_anything_v2_small": depth,
                 "mobilefacenet": face, "whisper_tiny": speech}
     parser = argparse.ArgumentParser(description=__doc__)

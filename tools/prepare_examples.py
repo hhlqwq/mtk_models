@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 
-COCO_MODELS = ("yolov5s", "yolov8n", "yoloworld_xl", "fastsam", "rtmpose_body2d")
+COCO_MODELS = ("yolov5s", "yolov8n", "fastsam", "rtmpose_body2d")
 OTHER_MODELS = ("vit_base_patch16_224", "mobilefacenet",
                 "depth_anything_v2_small", "whisper_tiny")
 

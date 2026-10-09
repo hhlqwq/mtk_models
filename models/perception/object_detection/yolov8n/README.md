@@ -6,13 +6,11 @@ MT8189 / MDLA 5.3.2026-10-08 已完成官方权重导出、INT8 量化、DLA 编
 
 ## 与原有模型流程的核对
 
-2026-10-08 复核现有入口,YOLOv5s、YOLO-World 和本模型均采用
-"89 编译主机运行 deploy/run.sh,92 开发板运行上传的 run.sh"两步入口.
+YOLOv5s 和本模型均采用"编译主机运行 deploy/run.sh,开发板运行上传的 run.sh"两步入口.
 
 | 模型 | 转换与量化 | 板端执行 | 本次核对范围 |
 | --- | --- | --- | --- |
 | YOLOv5s | 官方源码加 MTK 补丁,TorchScript -> INT8 TFLite -> MDLA 5.3 DLA | C++ Neuron Runtime,COCO 5000 张 | 脚本与依赖路径复核,Shell 语法通过;保留原有实测结果 |
-| YOLO-World XL | 现有 MediaTek 发布 ONNX 兼容性改写,无离线 INT8 量化 | ORT Neuron EP 板端编译;profiling 检查无 CPU fallback | 脚本和加速检查复核,Shell 语法通过;不预填独立 NPU 耗时 |
 | YOLOv8n | 官方权重导出六个原始头,INT8 TFLite -> MDLA 5.3 DLA | C++ Neuron Runtime,CPU DFL 与 NMS | 本次执行导出、量化、编译及板端评测 |
 
 FastSAM 的 Ultralytics 8.0.111 和原始头量化实现用于复用转换方式.

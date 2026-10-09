@@ -41,7 +41,6 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 | [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 本次全量结果已上传 |
 | [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | WholeBody AP 53.24%,NPU 3.86 ms/人体框,峰值 RSS 32.74 MiB |
 | [MobileFaceNet](models/interaction/face_recognition/mobilefacenet/README.md) | Interaction / Face recognition | 112×112 RGB 对齐人脸 | foamliu/MobileFaceNet | LFW 99.32%,NPU 0.52 ms,峰值 RSS 8.25 MiB |
-| [YOLO-World XL](models/perception/object_detection/yoloworld_xl/README.md) | Perception / Object detection | 640×640 RGB | AILab-CVC / MediaTek Model Zoo ONNX | mAP 47.27%,ORT 303.42 ms,峰值 RSS 1459.28 MiB |
 | [Whisper-Tiny](models/audio/stt/whisper_tiny/README.md) | Audio / STT | 16 kHz 单声道、最长 30 秒 | OpenAI Whisper v20250625 | 待上传当前测试汇总 |
 
 公开示例结果见各模型 README; 当前指标依据已回收的板端 `results/summary.json` 更新.

@@ -25,7 +25,6 @@ MODELS = {
     "mobilefacenet": "interaction/face_recognition/mobilefacenet",
     "depth_anything_v2_small": "navigation/single_camera_depth/depth_anything_v2_small",
     "fastsam": "navigation/segmentation/fastsam",
-    "yoloworld_xl": "perception/object_detection/yoloworld_xl",
     "whisper_tiny": "audio/stt/whisper_tiny",
 }
 
@@ -150,23 +149,14 @@ def coco_score(annotation, records: list, kind: str, index: int) -> float:
 
 
 def evaluate_coco(args, deploy: Path) -> tuple:
-    """评测 FastSAM 分割或 YOLO-World 检测,复用已有后处理."""
-    from pycocotools.coco import COCO
+    """评测 FastSAM 类别无关分割,复用已有后处理."""
     from pycocotools import mask as mask_utils
-    if args.model == "fastsam":
-        from fastsam_utils import preprocess, postprocess
-        helper = load_module("fastsam_metrics", deploy / "full_accuracy_board.py")
-        with contextlib.redirect_stdout(io.StringIO()):
-            annotation = helper.make_class_agnostic_ground_truth(args.dataset_root /
-                "annotations/instances_val2017.json")
-        protocol = json.loads((deploy / "accuracy_protocol.json").read_text(encoding="utf-8"))
-    else:
-        from yoloworld_utils import preprocess_image, decode_outputs, COCO_CLASSES
-        with contextlib.redirect_stdout(io.StringIO()):
-            annotation = COCO(str(args.dataset_root / "annotations/instances_val2017.json"))
-        categories = {item["name"]: item["id"] for item in annotation.dataset["categories"]}
-        if set(categories) != set(COCO_CLASSES):
-            raise ValueError("COCO 类别不匹配.")
+    from fastsam_utils import preprocess, postprocess
+    helper = load_module("fastsam_metrics", deploy / "full_accuracy_board.py")
+    with contextlib.redirect_stdout(io.StringIO()):
+        annotation = helper.make_class_agnostic_ground_truth(args.dataset_root /
+            "annotations/instances_val2017.json")
+    protocol = json.loads((deploy / "accuracy_protocol.json").read_text(encoding="utf-8"))
     paths = sorted((args.dataset_root / "images").glob("*.jpg"))
     if len(paths) != 5000 or {int(path.stem) for path in paths} != set(annotation.getImgIds()):
         raise ValueError("COCO 图片与标注必须覆盖相同的 5000 张图片.")
@@ -176,27 +166,16 @@ def evaluate_coco(args, deploy: Path) -> tuple:
         image = cv2.imread(str(path))
         if image is None:
             raise ValueError(f"无法读取图片: {path}")
-        if args.model == "fastsam":
-            tensor, geometry = preprocess(image)
-            _, scores, masks = postprocess(infer(session, tensor), geometry,
-                protocol["confidence"], protocol["nms_iou"], protocol["max_detections"])
-            for score, mask in zip(scores, masks):
-                encoded = mask_utils.encode(np.asfortranarray(mask.astype(np.uint8)))
-                encoded["counts"] = encoded["counts"].decode("ascii")
-                records.append({"image_id": int(path.stem), "category_id": 1,
-                                "segmentation": encoded, "score": float(score)})
-        else:
-            tensor, geometry = preprocess_image(image)
-            detections = decode_outputs(infer(session, tensor), geometry, 0.001, 0.65, 300)
-            for item in detections:
-                x1, y1, x2, y2 = item["bbox_xyxy"]
-                records.append({"image_id": int(path.stem),
-                    "category_id": categories[COCO_CLASSES[item["class_id"]]],
-                    "bbox": [x1, y1, x2 - x1, y2 - y1], "score": item["score"]})
-    segmentation = args.model == "fastsam"
-    value = coco_score(annotation, records, "segm" if segmentation else "bbox",
-                       8 if segmentation else 0)
-    return "segm AR@100" if segmentation else "mAP@0.5:0.95", value, len(paths)
+        tensor, geometry = preprocess(image)
+        _, scores, masks = postprocess(infer(session, tensor), geometry,
+            protocol["confidence"], protocol["nms_iou"], protocol["max_detections"])
+        for score, mask in zip(scores, masks):
+            encoded = mask_utils.encode(np.asfortranarray(mask.astype(np.uint8)))
+            encoded["counts"] = encoded["counts"].decode("ascii")
+            records.append({"image_id": int(path.stem), "category_id": 1,
+                            "segmentation": encoded, "score": float(score)})
+    value = coco_score(annotation, records, "segm", 8)
+    return "segm AR@100", value, len(paths)
 
 
 def evaluate_pose(args, deploy: Path) -> tuple:
@@ -349,7 +328,7 @@ def main() -> None:
     args.work_dir = Path(tempfile.mkdtemp(prefix="onnx_accuracy_", dir=args.output.parent))
     adapters = {"vit_base_patch16_224": evaluate_vit, "mobilefacenet": evaluate_face,
         "depth_anything_v2_small": evaluate_depth, "rtmpose_body2d": evaluate_pose,
-        "fastsam": evaluate_coco, "yoloworld_xl": evaluate_coco, "whisper_tiny": evaluate_whisper}
+        "fastsam": evaluate_coco, "whisper_tiny": evaluate_whisper}
     metric, value, samples = adapters[args.model](args, deploy)
     value = float(value)
     if not math.isfinite(value) or value < 0 or (metric != "WER" and value > 1):
