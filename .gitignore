@@ -110,6 +110,7 @@ Thumbs.db
 !models/navigation/segmentation/fastsam/examples/output/sample_*_segmentation.jpg
 !models/interaction/pose_detection/rtmpose_body2d/examples/output/sample_*_keypoints.jpg
 !models/perception/object_detection/yolov8n/examples/output/sample_*_detections.jpg
+!models/perception/object_detection/yoloworld_xl/examples/output/sample_*_detections.jpg
 
 # 示例运行清单自动生成并随部署上传,不纳入 Git.
 **/examples/input/samples.json

@@ -2,7 +2,7 @@
 
 开放词汇目标检测，当前模型固化 COCO 80 类文本嵌入。使用 MediaTek 官方 ONNX，经 ONNX Runtime Neuron EP 在板端运行。来源见[模型卡](model_card.md)，精度与性能见[当前结果](README.md#当前测试结果)。
 
-量化方式: 未做离线量化,浮点 ONNX 由 Neuron EP 在线编译.
+部署精度: FP16,浮点 ONNX 由 Neuron EP 在线编译,未做离线整数化量化.
 
 ## 第一步: 编译并上传
 
@@ -40,9 +40,18 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 pycocotools。
 
 ## 当前测试结果
 
-待上传本模型的 `results/summary.json` 后更新。只记录板端 NPU 平均耗时、推理进程峰值 RSS (MiB)、任务核心精度、同协议 ONNX 参考精度和精度变化。峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存。
+COCO val2017 全量 5000 张,采用 mAP@0.5:0.95.结果见 [summary.json](results/summary.json).
 
-当前计时为 ORT session.Run,不作为独立 NPU 耗时。
+| 指标 | 结果 |
+| --- | ---: |
+| ONNX FP32 mAP@0.5:0.95 | 47.29% |
+| 板端 mAP@0.5:0.95 | **47.27%** |
+| 精度变化 | **-0.03 个百分点** |
+| 板端 ORT 平均调用耗时 | **303.42 ms** |
+| 独立 NPU 平均耗时 | 未采集 |
+| 推理进程峰值 RSS | **1459.28 MiB** |
+
+当前计时为 `ONNX Runtime session.Run`,不作为独立 NPU 耗时.预热 profiling 中模型节点均由 Neuron EP 执行.峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存.
 
 ## 效果示例
 
@@ -51,19 +60,25 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 pycocotools。
 输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
-将这些文件取回本模型的 `examples/output/` 后即可更新效果展示.当前先展示输入,输出以实际板端测试为准.
+以下三张输出来自本次全量测试的板端预测,保存在 `examples/output/`.
 
 ### 示例 1: 室内场景
 
 ![室内场景输入](examples/input/sample_1.jpg)
 
+![室内场景检测输出](examples/output/sample_1_detections.jpg)
+
 ### 示例 2: 熊
 
 ![熊输入](examples/input/sample_2.jpg)
 
+![熊检测输出](examples/output/sample_2_detections.jpg)
+
 ### 示例 3: 滑雪场景
 
 ![滑雪场景输入](examples/input/sample_3.jpg)
+
+![滑雪场景检测输出](examples/output/sample_3_detections.jpg)
 
 ## 板端部署结构
 

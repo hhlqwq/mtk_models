@@ -35,4 +35,6 @@ MediaTek 文件没有提供上游 checkpoint 名称、导出配置或内置文�
 
 ## 当前测试结果
 
-以用户上传的 `results/summary.json` 为准,当前待上传。核心指标见 [README](README.md#当前测试结果)。
+COCO val2017 全量 5000 张.同协议 ONNX FP32 mAP@0.5:0.95 为 47.29%,板端为 47.27%,下降 0.03 个百分点.板端 ORT 平均调用耗时为 303.42 ms,独立 NPU 耗时未采集; 推理进程峰值 RSS 为 1459.28 MiB.
+
+结果见 [summary.json](results/summary.json),核心指标及三张实际检测效果见 [README](README.md#当前测试结果).

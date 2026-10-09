@@ -19,7 +19,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | 待上传 | 待上传 | LFW 验证准确率待上传 | 待上传 |
 | [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | 待上传 | 待上传 | DA-2K 点对准确率待上传 | 待上传 |
 | [FastSAM-s](navigation/segmentation/fastsam/README.md) | **14.72** | **64.55** | segm AR@100 **37.57%** | **-1.45** |
-| [YOLO-World XL](perception/object_detection/yoloworld_xl/README.md) | 待独立 NPU 计时 | 待上传 | mAP@0.5:0.95 待上传 | 待上传 |
+| [YOLO-World XL](perception/object_detection/yoloworld_xl/README.md) | 未采集 | **1459.28** | mAP@0.5:0.95 **47.27%** | **-0.03** |
 | [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | 待上传 | 待上传 | WER 待上传 | 待上传 |
 
 YOLOv5s 结果来自运行 `20261008_032807_67603`,COCO val2017 全量 5000 张; ONNX FP32 与板端精度均为本次同协议实测,ONNX mAP 为 **37.09%**。结果文件见 [summary.json](perception/object_detection/yolov5s/results/summary.json)。
