@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -50,12 +51,32 @@ std::pair<fs::path, fs::path> ParseArgs(int argc, char** argv) {
 
 // 读取并校验全部官方检测框,保留原始数组序号.
 std::vector<Detection> LoadDetections(const fs::path& input) {
-  cv::FileStorage storage(input.string(), cv::FileStorage::READ |
-                                       cv::FileStorage::FORMAT_JSON);
-  if (!storage.isOpened()) {
+  std::ifstream stream(input, std::ios::binary);
+  if (!stream) {
     throw std::runtime_error("无法打开检测 JSON: " + input.string());
   }
-  const cv::FileNode root = storage.root();
+  std::string json((std::istreambuf_iterator<char>(stream)),
+                   std::istreambuf_iterator<char>());
+  if (stream.bad()) {
+    throw std::runtime_error("读取检测 JSON 失败: " + input.string());
+  }
+  // 去除 UTF-8 BOM,允许带编码标记的标准 JSON 文件.
+  if (json.compare(0, 3, "\xEF\xBB\xBF") == 0) {
+    json.erase(0, 3);
+  }
+  const size_t first = json.find_first_not_of(" \t\r\n");
+  if (first == std::string::npos || json[first] != '[') {
+    throw std::runtime_error("检测 JSON 顶层必须是数组.");
+  }
+  // FileStorage 要求顶层为对象.仅在内存中包装数组,不改动原始文件.
+  const std::string document = "{\"detections\":" + json + "}";
+  cv::FileStorage storage(document, cv::FileStorage::READ |
+                                        cv::FileStorage::MEMORY |
+                                        cv::FileStorage::FORMAT_JSON);
+  if (!storage.isOpened()) {
+    throw std::runtime_error("无法解析检测 JSON: " + input.string());
+  }
+  const cv::FileNode root = storage["detections"];
   if (!root.isSeq()) {
     throw std::runtime_error("检测 JSON 顶层必须是数组.");
   }
