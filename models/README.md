@@ -14,10 +14,10 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | [YOLOv8n](perception/object_detection/yolov8n/README.md) | **6.28** | **31.32** | mAP@0.5:0.95 **35.35%** | **-1.275** |
 | [YOLOv5s](perception/object_detection/yolov5s/README.md) | **9.76** | **33.23** | mAP@0.5:0.95 **35.86%** | **-1.23** |
 | [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | **51.75** | **141.30** | Top-1 **79.40%** | **-1.27** |
-| [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | 待上传 | 待上传 | WholeBody AP 待上传 | 待上传 |
+| [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | **3.86** | **32.74** | WholeBody AP **53.24%** | **-3.80** |
 | [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | 待上传 | 待上传 | LFW 验证准确率待上传 | 待上传 |
 | [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | 待上传 | 待上传 | DA-2K 点对准确率待上传 | 待上传 |
-| [FastSAM-s](navigation/segmentation/fastsam/README.md) | 待上传 | 待上传 | segm AR@100 待上传 | 待上传 |
+| [FastSAM-s](navigation/segmentation/fastsam/README.md) | **14.72** | **64.55** | segm AR@100 **37.57%** | **-1.45** |
 | [YOLO-World XL](perception/object_detection/yoloworld_xl/README.md) | 待独立 NPU 计时 | 待上传 | mAP@0.5:0.95 待上传 | 待上传 |
 | [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | 待上传 | 待上传 | WER 待上传 | 待上传 |
 
