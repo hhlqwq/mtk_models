@@ -46,8 +46,6 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     MTK_SETUP_SCRIPT="/opt/mtk-build/setup_container.sh"
     # 模型编译器: Docker 内 Neuron SDK host 目录,包含 bin/ 和 lib/.
     NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
-    # 编译模式: check 仅编译,其他值按下方编译流程处理.
-    NCC_MODE="check"
     # Runtime 头文件: 编译主机上的 Neuron Runtime include 目录.
     MTK_NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
     # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
@@ -156,10 +154,6 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
     echo "[ERROR] BOARD_DEPLOY_DIR 必须是无空格的板端绝对路径." >&2
     exit 2
 fi
-if [[ "${NCC_MODE}" != "check" && "${NCC_MODE}" != "strict" ]]; then
-    echo "[ERROR] NCC_MODE 只能为 check 或 strict." >&2
-    exit 2
-fi
 
 # 从配置的数据集生成示例清单,仅写入仓库外的构建目录.
 mkdir -p "${BUILD_WORK_DIR}/examples"
@@ -175,7 +169,7 @@ docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=
     -e ENCODER_ONNX="${ENCODER_ONNX}" -e DECODER_ONNX="${DECODER_ONNX}" \
     -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
     -e MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT}" \
-    -e NCC_ROOT="${NCC_ROOT}" -e NCC_MODE="${NCC_MODE}" \
+    -e NCC_ROOT="${NCC_ROOT}" \
     "${CONTAINER}" bash -s <<'DOCKER_BUILD'
 set -euo pipefail
 mkdir -p "${MODEL_OUTPUT_DIR}" "${BUILD_WORK_DIR}/tmp" "${BUILD_WORK_DIR}/cache"
@@ -194,14 +188,10 @@ export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 for model_name in encoder decoder_step; do
     input="${MODEL_OUTPUT_DIR}/${model_name}_fp32.tflite"
     output="${MODEL_OUTPUT_DIR}/${model_name}_fp32.dla"
-    if [[ "${NCC_MODE}" == "strict" ]]; then
-        "${NCC_ROOT}/bin/ncc-tflite" --arch=mdla5.3 \
-            --suppress-input --suppress-output --disallow-bridge \
-            "${input}" -o "${output}"
-    else
-        "${NCC_ROOT}/bin/ncc-tflite" --arch=mdla5.3 \
-            --show-exec-plan "${input}" -o "${output}"
-    fi
+    # 限定板端 MDLA 5.3,禁止生成依赖其他执行目标的桥接图.
+    "${NCC_ROOT}/bin/ncc-tflite" --arch=mdla5.3 \
+        --suppress-input --suppress-output --disallow-bridge \
+        "${input}" --dla-file "${output}"
 done
 DOCKER_BUILD
 
