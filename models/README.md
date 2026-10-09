@@ -31,7 +31,7 @@ Whisper 参数量统计原始完整网络,encoder / decoder 文件大小分别�
 
 | 模型 | 板端 NPU 平均耗时 (ms) | 峰值 RSS (MiB) | 核心精度 | 精度变化 (百分点) |
 | --- | ---: | ---: | --- | ---: |
-| [YAMNet W8A16](audio/ambient_sound/yamnet/README.md) | **0.516/窗** | **10.75** | ESC-50 47 类投影宏平均 AP **73.8964%** | **-0.2491** |
+| [YAMNet W8A16](audio/ambient_sound/yamnet/README.md) | **0.516** | **10.75** | ESC-50 47 类投影宏平均 AP **73.8964%** | **-0.2491** |
 | [YOLOv8n](perception/object_detection/yolov8n/README.md) | **6.28** | **31.32** | mAP@0.5:0.95 **35.35%** | **-1.275** |
 | [YOLOv5s](perception/object_detection/yolov5s/README.md) | **9.76** | **33.23** | mAP@0.5:0.95 **35.86%** | **-1.23** |
 | [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | **51.75** | **141.30** | Top-1 **79.40%** | **-1.27** |
@@ -51,7 +51,16 @@ PyTorch / ONNX / NPU mAP 分别为 **36.6444% / 36.6260% / 35.3510%**,
 量化损失使用本次同协议 ONNX 作为基准,详见
 [YOLOv8n README](perception/object_detection/yolov8n/README.md).
 
-YAMNet 交付方案为全 W8A16,运行 `20261009_yamnet_esc50_w8a16_v1`,全部 2000 段音频、20000 窗口;主精度为折 2-5 的 1504 条映射样本,不是 AudioSet mAP.权重 INT8、激活 INT16,AP **73.8964%**,该交付运行 NPU 平均 **0.516 ms/窗口**,推理进程峰值 **10.75 MiB**,相对 ONNX AP **-0.2491 个百分点**.两种保留方案的详细精度、耗时及不同运行状态下的配对对照见 [YAMNet README](audio/ambient_sound/yamnet/README.md).
+YAMNet 交付方案为全 W8A16,运行 `20261009_yamnet_esc50_w8a16_v1`.
+
+**推理覆盖:** ESC-50 全部 2000 条音频、20000 个窗口.
+
+**精度评测:** 未参与校准的第 2-5 折共 1600 条,排除 3 个无直接标签映射类别的 96 条,
+按 47 类、1504 条有效样本计算 AP,不是 AudioSet mAP.
+
+表中耗时为该交付运行的 NPU 单次推理平均耗时,一次输入 `1×1×96×64`,batch=1,
+排除预热和音频前后处理.两种保留方案及不同运行条件的配对对照见
+[YAMNet README](audio/ambient_sound/yamnet/README.md).
 
 精度变化正数表示改善,负数表示下降: 准确率和 AP/AR 用板端减 ONNX,WER 用 ONNX 减板端。量化方式见各模型 README。ORT `session.Run` 与独立 NPU 调用耗时分开记录,不直接混排。
 
