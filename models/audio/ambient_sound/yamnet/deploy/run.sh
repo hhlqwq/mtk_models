@@ -108,7 +108,7 @@ for number,target in enumerate([0,39,42],1):
 REFERENCE
 
 echo '[编译主机 4/4] 同步板端原始音频、模型、程序及运行入口.'
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+ssh -n "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board' '${BOARD_DEPLOY_DIR}/examples/input' '${BOARD_DATASET_DIR}'"
 rsync -a --info=progress2 "${DATASET_DIR}/audio" "${DATASET_DIR}/meta" \
     "${DATASET_DIR}/LICENSE" "${DATASET_DIR}/source_manifest.json" "${BOARD_HOST}:${BOARD_DATASET_DIR}/"
@@ -122,5 +122,5 @@ scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/examples/input/"* "${BOARD_HOST}:${BOARD_
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nBOARD_PRECISION=%q\n' \
     "${BOARD_DATASET_DIR}" "${BOARD_DEPLOY_DIR}/results" "${PRECISION}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/yamnet_eval'"
+ssh -n "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/yamnet_eval'"
 echo "[NEXT] 开发板执行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

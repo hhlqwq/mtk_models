@@ -1,0 +1,26 @@
+{
+  "source_filename": "1-20133-A-39.wav",
+  "esc50_category": "glass_breaking",
+  "top5_yamnet": [
+    {
+      "class": "Silence",
+      "score": 0.30210933089256287
+    },
+    {
+      "class": "Coin (dropping)",
+      "score": 0.11687087267637253
+    },
+    {
+      "class": "Glass",
+      "score": 0.10546818375587463
+    },
+    {
+      "class": "Cutlery, silverware",
+      "score": 0.07522501796483994
+    },
+    {
+      "class": "Dishes, pots, and pans",
+      "score": 0.07359056174755096
+    }
+  ]
+}

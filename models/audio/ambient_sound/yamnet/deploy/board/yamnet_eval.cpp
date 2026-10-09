@@ -199,7 +199,7 @@ int Run(int argc, char** argv) {
   return 0;
 }
 
-}  // namespace
+}  // 匿名命名空间.
 
 // 将异常转换为明确退出状态,禁止失败后继续生成成功汇总.
 int main(int argc, char** argv) {

@@ -1,0 +1,26 @@
+{
+  "source_filename": "1-31482-A-42.wav",
+  "esc50_category": "siren",
+  "top5_yamnet": [
+    {
+      "class": "Siren",
+      "score": 0.2581707239151001
+    },
+    {
+      "class": "Opera",
+      "score": 0.23900264501571655
+    },
+    {
+      "class": "Alarm",
+      "score": 0.23404023051261902
+    },
+    {
+      "class": "Classical music",
+      "score": 0.18893855810165405
+    },
+    {
+      "class": "Emergency vehicle",
+      "score": 0.18115384876728058
+    }
+  ]
+}

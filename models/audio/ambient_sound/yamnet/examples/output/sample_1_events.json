@@ -1,0 +1,26 @@
+{
+  "source_filename": "1-100032-A-0.wav",
+  "esc50_category": "dog",
+  "top5_yamnet": [
+    {
+      "class": "Silence",
+      "score": 0.7020228505134583
+    },
+    {
+      "class": "Dog",
+      "score": 0.10930480808019638
+    },
+    {
+      "class": "Domestic animals, pets",
+      "score": 0.10670166462659836
+    },
+    {
+      "class": "Animal",
+      "score": 0.08490295708179474
+    },
+    {
+      "class": "Bow-wow",
+      "score": 0.080530546605587
+    }
+  ]
+}

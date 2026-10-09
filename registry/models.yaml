@@ -9,7 +9,7 @@ models:
     source: tensorflow/models
     delivery_reference: qualcomm/YamNet
     platforms:
-      genio_720: in_progress
+      genio_720: complete
       genio_5100: not_started
   - id: yolov8n
     batch: first_batch
