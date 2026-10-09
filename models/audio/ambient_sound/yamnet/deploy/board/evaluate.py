@@ -78,8 +78,8 @@ def summarize(args):
     inference_ms = np.array([float(row["inference_stage_ms"]) for row in clip_rows])
     config_name = f"runtime_config_{args.precision}.csv"
     if not (args.models_dir / config_name).exists():
-        if args.precision == "w8a16":
-            raise FileNotFoundError("W8A16 必须使用独立的真实 INT16 IO 配置.")
+        if args.precision in ("w8a16", "int8_tail16"):
+            raise FileNotFoundError("含INT16 IO的部署必须使用独立的真实量化配置.")
         config_name = "runtime_config.csv"
     summary = {
         "status": "complete", "model": "yamnet", "run_id": args.run_id,
@@ -140,7 +140,8 @@ def main():
     parser.add_argument("--models-dir", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--run-id")
-    parser.add_argument("--precision", choices=["fp16", "int8", "w8a16"], default="fp16")
+    parser.add_argument("--precision", choices=["fp16", "int8", "w8a16", "int8_tail16"],
+                        default="w8a16")
     args = parser.parse_args()
     if args.mode == "prepare":
         prepare(args)

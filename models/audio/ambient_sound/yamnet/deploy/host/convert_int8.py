@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+from datetime import date
 import json
 from pathlib import Path
 import sys
@@ -26,8 +27,8 @@ def tensor_metadata(detail, dtype_name):
             "dtype": dtype_name, "scale": float(scales[0]), "zero_point": int(zeros[0])}
 
 
-def audit_w8a16(reader):
-    """检查每个主计算层的真实 W8A16 类型,同时记录偏置精度."""
+def audit_w8a16(reader, tail_only=False):
+    """检查全 W8A16 或第12层点卷积输出起的混合精度,同时记录偏置精度."""
     graph = reader.as_dict()
     subgraph = graph["subgraphs"][0]
     tensors = subgraph["tensors"]
@@ -45,9 +46,12 @@ def audit_w8a16(reader):
             continue
         activation, weights, bias = [tensors[index] for index in operator["inputs"][:3]]
         output = tensors[operator["outputs"][0]]
+        index = len(layers)
+        input_type = "INT8" if tail_only and index < 23 else "INT16"
+        output_type = "INT8" if tail_only and index < 22 else "INT16"
         if (activation["type"], weights["type"], output["type"]) != (
-                "INT16", "INT8", "INT16"):
-            raise ValueError(f"主计算层不是 W8A16: {name}, {activation}, {weights}, {output}.")
+                input_type, "INT8", output_type):
+            raise ValueError(f"主计算层精度不匹配: {name}, {activation}, {weights}, {output}.")
         layers.append({"operator": name, "input_dtype": activation["type"],
                        "weight_dtype": weights["type"], "bias_dtype": bias["type"],
                        "output_dtype": output["type"]})
@@ -56,12 +60,42 @@ def audit_w8a16(reader):
     return {"verified_affine_layers": len(layers), "tensor_types": tensor_types, "layers": layers}
 
 
+def configure_tail16(converter, models_dir, work_dir):
+    """从SDK真实分组生成尾部INT16配置,避免猜测融合后的张量名称."""
+    work_dir.mkdir(parents=True, exist_ok=True)
+    seed_config = work_dir / "precision_seed.json"
+    converter.precision_proportion = {"sym8W_asym8A": 1.0}
+    converter.precision_config_file = str(seed_config)
+    print("[量化 1/2] 导出原INT8图的真实精度分组.", flush=True)
+    converter.convert_to_tflite(str(work_dir / "precision_seed.tflite"))
+    configuration = json.loads(seed_config.read_text())
+    selected = 0
+    for specification in configuration["precision_specs"]:
+        names = (specification["act_names"] + specification["wgt_names"]
+                 + specification["param_names"])
+        if any(any(part in name for part in (
+                "layer13", "layer14", "global_average", "dense_1", "activation_1"))
+               for name in names):
+            specification["precision_name"] = "sym8W_asym16A"
+            selected += 1
+    if not selected:
+        raise ValueError("未找到YAMNet尾部精度分组.")
+    output_config = models_dir / "precision_config_int8_tail16.json"
+    output_config.write_text(json.dumps(configuration, indent=2))
+    converter.precision_proportion = None
+    converter.precision_config_file = str(output_config)
+    print(f"[量化 2/2] 应用{selected}个尾部分组,最终逐层核验实际精度.", flush=True)
+
+
 def main():
-    """默认转换 FP16 权重,可选第一折每类两条音频的 200 窗整数量化校准."""
+    """默认转换全W8A16,保留局部INT16和原有精度入口."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models-dir", type=Path, required=True)
     parser.add_argument("--dataset", type=Path, required=True)
-    parser.add_argument("--precision", choices=["fp16", "int8", "w8a16"], default="fp16")
+    parser.add_argument("--precision", choices=["fp16", "int8", "w8a16", "int8_tail16"],
+                        default="w8a16")
+    parser.add_argument("--work-dir", type=Path, default=Path(
+        f"/tmp/hailongcodex/{date.today().isoformat()}/yamnet/formal_int8_tail16"))
     args = parser.parse_args()
     if args.precision == "fp16":
         converter = mtk_converter.OnnxConverter.from_model_proto_file(
@@ -106,22 +140,27 @@ def main():
         converter.input_quantization_bitwidths = 16
     converter.append_output_dequantize_ops = False
     converter.calibration_data_gen = calibration
+    if args.precision == "int8_tail16":
+        converter.allow_asym16_quantization = True
+        configure_tail16(converter, args.models_dir, args.work_dir)
     output = args.models_dir / f"model_{args.precision}.tflite"
     converter.convert_to_tflite(str(output))
     reader = mtk_converter.TFLiteParser(str(output))
     inputs, outputs = reader.get_input_tensor_details(), reader.get_output_tensor_details()
     if len(inputs) != 1 or len(outputs) != 1:
         raise ValueError("必须为单输入和单输出.")
-    dtype_name = "int16" if args.precision == "w8a16" else "int8"
-    contract = [tensor_metadata(inputs[0], dtype_name), tensor_metadata(outputs[0], dtype_name)]
-    audit = audit_w8a16(reader) if args.precision == "w8a16" else None
+    input_dtype = "int16" if args.precision == "w8a16" else "int8"
+    output_dtype = "int16" if args.precision in ("w8a16", "int8_tail16") else "int8"
+    contract = [tensor_metadata(inputs[0], input_dtype), tensor_metadata(outputs[0], output_dtype)]
+    audit = (audit_w8a16(reader, args.precision == "int8_tail16")
+             if args.precision in ("w8a16", "int8_tail16") else None)
     if contract[0]["shape"] != [1, 1, 96, 64] or contract[1]["shape"] != [1, 521]:
         raise ValueError(f"输入输出形状不匹配: {contract}.")
     with (args.models_dir / f"runtime_config_{args.precision}.csv").open("w", newline="") as stream:
         writer = csv.writer(stream)
         for item in contract:
             row = [item["scale"], item["zero_point"]]
-            if args.precision == "w8a16":
+            if item["dtype"] == "int16":
                 row.append("w8a16")
             writer.writerow(row)
     (args.models_dir / f"quantization_{args.precision}.json").write_text(json.dumps({

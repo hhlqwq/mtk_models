@@ -6,10 +6,10 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     source "${SCRIPT_DIR}/board_paths.conf"
-    BOARD_PRECISION="${YAMNET_PRECISION:-${BOARD_PRECISION:-int8}}"
-    [[ "${BOARD_PRECISION}" == fp16 || "${BOARD_PRECISION}" == int8 || "${BOARD_PRECISION}" == w8a16 ]]
+    BOARD_PRECISION="${YAMNET_PRECISION:-${BOARD_PRECISION:-w8a16}}"
+    case "${BOARD_PRECISION}" in fp16|int8|w8a16|int8_tail16) ;; *) exit 1 ;; esac
     CONFIG="${SCRIPT_DIR}/models/runtime_config_${BOARD_PRECISION}.csv"
-    if [[ ! -f "${CONFIG}" && "${BOARD_PRECISION}" != w8a16 ]]; then
+    if [[ ! -f "${CONFIG}" && ( "${BOARD_PRECISION}" == fp16 || "${BOARD_PRECISION}" == int8 ) ]]; then
         CONFIG="${SCRIPT_DIR}/models/runtime_config.csv"
     fi
     test -s "${CONFIG}"
@@ -45,8 +45,8 @@ MODELS_DIR="${MODEL_ROOT}/models"
 DATASET_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ESC-50"
 BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yamnet"
 EXPORT_PYTHON="${YAMNET_EXPORT_PYTHON:-${BUILD_WORK_DIR}/venv/bin/python}"
-PRECISION="${YAMNET_PRECISION:-fp16}"
-[[ "${PRECISION}" == fp16 || "${PRECISION}" == int8 || "${PRECISION}" == w8a16 ]]
+PRECISION="${YAMNET_PRECISION:-w8a16}"
+case "${PRECISION}" in fp16|int8|w8a16|int8_tail16) ;; *) exit 1 ;; esac
 CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
 NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
 NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"

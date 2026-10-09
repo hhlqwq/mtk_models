@@ -65,7 +65,7 @@ Quantization ReadQuantization(std::ifstream& stream) {
 class Model {
  public:
   // 创建硬件 Runtime 并严格验证输入输出数量和原生字节布局.
-  explicit Model(const fs::path& path, size_t bytes) {
+  explicit Model(const fs::path& path, size_t input_bytes, size_t output_bytes) {
     EnvOptions options{};
     options.deviceKind = kEnvOptHardware;
     options.MDLACoreOption = Auto;
@@ -80,8 +80,8 @@ class Model {
       Check(NeuronRuntime_getOutputNumber(runtime_, &outputs), "output count");
       Check(NeuronRuntime_getSingleInputPaddedSize(runtime_, &input_size), "input size");
       Check(NeuronRuntime_getOutputPaddedSize(runtime_, 0, &output_size), "output size");
-      if (inputs != 1 || outputs != 1 || input_size != 6144 * bytes ||
-          (output_size != 521 * bytes && output_size != 528 * bytes)) {
+      if (inputs != 1 || outputs != 1 || input_size != 6144 * input_bytes ||
+          (output_size != 521 * output_bytes && output_size != 528 * output_bytes)) {
         throw std::runtime_error("原生 IO 布局不匹配: " + std::to_string(input_size) +
                                  "," + std::to_string(output_size));
       }
@@ -141,11 +141,9 @@ int Run(int argc, char** argv) {
   std::ifstream configuration(argv[2]);
   const auto input_quant = ReadQuantization(configuration);
   const auto output_quant = ReadQuantization(configuration);
-  if (input_quant.fp16 != output_quant.fp16 || input_quant.int16 != output_quant.int16) {
-    throw std::runtime_error("输入输出精度必须一致.");
-  }
   const size_t bytes = input_quant.fp16 || input_quant.int16 ? 2 : 1;
-  Model model(argv[1], bytes);
+  const size_t output_bytes = output_quant.fp16 || output_quant.int16 ? 2 : 1;
+  Model model(argv[1], bytes, output_bytes);
   std::ifstream manifest(work / "patch_counts.txt");
   std::ifstream features(work / "features.bin", std::ios::binary);
   std::ofstream scores(work / "scores.bin", std::ios::binary);
