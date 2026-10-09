@@ -108,11 +108,11 @@ for backend in pytorch onnx; do
     docker exec -e PYTHONDONTWRITEBYTECODE=1 "${CONTAINER}" \
         python "${SCRIPT_DIR}/host/evaluate_fp32.py" "${INPUT_ARGS[@]}" \
         --dataset-root "${DATASET_DIR}" \
-        --output "${MODEL_ROOT}/results/${backend}_summary.json"
+        --output "${BUILD_WORK_DIR}/fp32_accuracy/${backend}/summary.json"
 done
 FP32_MAP="$(docker exec "${CONTAINER}" python -c \
     'import json,sys; print(json.load(open(sys.argv[1]))["map_50_95"])' \
-    "${MODEL_ROOT}/results/onnx_summary.json")"
+    "${BUILD_WORK_DIR}/fp32_accuracy/onnx/summary.json")"
 FP32_SOURCE="本次 ONNX FP32 全量实测,COCO val2017,conf=0.001,IoU=0.6,max_det=300,单最佳类别"
 
 echo "[编译主机 4/4] 上传模型、程序、示例和板端配置."

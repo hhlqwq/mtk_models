@@ -46,6 +46,9 @@ bash models/perception/object_detection/yolov8n/deploy/run.sh
 PyTorch 与 ONNX 的 5000 张同协议精度评测、C++ 交叉编译和上传.
 模型产物保存在模型的 `models/`,临时文件保存在
 `/tmp/hailongcodex/当天日期/yolov8n`.
+PyTorch 和 ONNX 的中间评测汇总及预测分别保存在该临时目录的
+`fp32_accuracy/pytorch/` 和 `fp32_accuracy/onnx/`,仓库 `results/`
+只保留最终 [summary.json](results/summary.json).
 
 开发板 `root@192.168.0.92`:
 
@@ -77,11 +80,14 @@ PyTorch、ONNX 和板端使用相同 letterbox、单最佳类别、`conf=0.001`,
 运行 ID: `20261008_yolov8n_full_v1`,三个后端均使用 COCO val2017 全量
 5000 张图片,主机与板端标注 SHA256 相同.
 
-| 后端 | mAP@0.5:0.95 | 结果文件 |
-| --- | ---: | --- |
-| PyTorch FP32 | **36.6444%** | [pytorch_summary.json](results/pytorch_summary.json) |
-| ONNX FP32 | **36.6260%** | [onnx_summary.json](results/onnx_summary.json) |
-| MTK NPU INT8 | **35.3510%** | [summary.json](results/summary.json) |
+| 后端 | mAP@0.5:0.95 |
+| --- | ---: |
+| PyTorch FP32 | **36.6444%** |
+| ONNX FP32 | **36.6260%** |
+| MTK NPU INT8 | **35.3510%** |
+
+最终精度和 NPU 性能汇总见 [summary.json](results/summary.json),
+三后端详细实测指标和环境信息保留在本 README.
 
 ONNX 相对 PyTorch 变化为 **-0.0184 个百分点**,INT8 相对本次 ONNX
 变化为 **-1.2750 个百分点**.单图原始头解码与官方前向的最大绝对误差为
@@ -97,17 +103,16 @@ ONNX 相对 PyTorch 变化为 **-0.0184 个百分点**,INT8 相对本次 ONNX
 推理进程峰值 RSS 为 **31.324 MiB**.NPU 耗时只统计常驻模型的
 `NeuronRuntime_inference` 调用,排除 20 次预热;端到端从图片读取开始,
 包含预处理、IO 登记、推理和后处理,不包含预测文件写入、COCO 汇总或画图.
-完整分位数见 [timing_summary_current_run.json](results/timing_summary_current_run.json).
+完整分位数保存在下述板端原始运行目录的 `work/timing_summary_current_run.json`.
 
 运行环境为 Rity Demo 26.0-release / scarthgap / Linux 6.6.137,
-Neuron Runtime 8.2.16,CPU governor 为 `schedutil`;本次快照见
-[environment.txt](results/environment.txt).主机使用 Torch 2.0.0+cu118,
+Neuron Runtime 8.2.16,CPU governor 为 `schedutil`.主机使用 Torch 2.0.0+cu118,
 ONNX 1.13.1,ONNX Runtime 1.18.0,ONNX 精度基准使用 CPU EP.
 Genio 5100 尚未执行,上述数字只对应 Genio 720.
 
-权重、ONNX、TFLite、DLA、张量契约、程序及代码哈希见
-[delivery_manifest.json](results/delivery_manifest.json).
+模型、张量契约和板端程序哈希保存在板端原始运行目录的 `SHA256SUMS`.
 本次 DLA 大小为 `3,527,145` 字节,板端模型与编译主机产物哈希一致.
+本次 DLA SHA256 为 `a009dea16d53fa64dbfb98fe3156afcd2dc8028a62ef69b865060e6ec37ab2c2`.
 全部预测、图片覆盖清单、逐图耗时、日志和效果图保留在:
 
 ```text
