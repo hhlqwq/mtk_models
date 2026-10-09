@@ -63,19 +63,13 @@ DA-2K 全量 1033 张图片、2068 个点对,结果见 [summary.json](results/su
 
 ### 示例 1: 室内场景
 
-![室内场景输入](examples/input/sample_1.jpg)
-
 ![室内场景板端相对深度输出](examples/output/sample_1_depth.jpg)
 
 ### 示例 2: 室外街景
 
-![室外街景输入](examples/input/sample_2.jpg)
-
 ![室外街景板端相对深度输出](examples/output/sample_2_depth.jpg)
 
 ### 示例 3: 玻璃建筑
-
-![玻璃建筑输入](examples/input/sample_3.jpg)
 
 ![玻璃建筑板端相对深度输出](examples/output/sample_3_depth.jpg)
 
