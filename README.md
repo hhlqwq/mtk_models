@@ -37,7 +37,7 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 | [Depth Anything V2 Small](models/navigation/single_camera_depth/depth_anything_v2_small/README.md) | Navigation / Single camera depth | 518×518 RGB | DepthAnything 官方源码与 Small 权重 | 待上传当前测试汇总 |
 | [FastSAM-s](models/navigation/segmentation/fastsam/README.md) | Navigation / Segmentation | 640×640 RGB | CASIA-LMC-Lab / Ultralytics 8.0.111 | 待上传当前测试汇总 |
 | [YOLOv5s](models/perception/object_detection/yolov5s/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics | 本次全量结果已上传 |
-| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 待上传当前测试汇总 |
+| [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 本次全量结果已上传 |
 | [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | 待上传当前测试汇总 |
 | [MobileFaceNet](models/interaction/face_recognition/mobilefacenet/README.md) | Interaction / Face recognition | 112×112 RGB 对齐人脸 | foamliu/MobileFaceNet | 待上传当前测试汇总 |
 | [YOLO-World XL](models/perception/object_detection/yoloworld_xl/README.md) | Perception / Object detection | 640×640 RGB | AILab-CVC / MediaTek Model Zoo ONNX | 待上传当前测试汇总 |

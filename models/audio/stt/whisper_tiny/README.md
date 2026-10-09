@@ -49,7 +49,7 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm、ffmpeg 和 OpenAI Whisper�
 
 提供两位说话人的短音频,测试后保存对应的板端识别文本.
 
-输入已放在 `examples/input/`,来源和样本对应关系见 [samples.json](examples/input/samples.json).
+输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
 将这些文件取回本模型的 `examples/output/` 后即可更新效果展示.当前先展示输入,输出以实际板端测试为准.

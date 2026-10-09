@@ -60,7 +60,7 @@ NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不
 
 选取 COCO val2017 中的室内、熊和滑雪三张图片,直接复用全量评测的板端预测生成检测效果,无需单独测试或额外推理.
 
-输入见 `examples/input/`,样本清单见 [samples.json](examples/input/samples.json).新效果图保存在本次结果目录的 `examples/output/`,取回本模型同名目录后更新展示.
+输入见 `examples/input/`,样本清单在编译时自动生成并随部署上传,不纳入 Git.新效果图保存在本次结果目录的 `examples/output/`,取回本模型同名目录后更新展示.
 
 ### 示例 1: 室内场景
 

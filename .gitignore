@@ -102,9 +102,11 @@ Thumbs.db
 !models/TFLite/**/*.log
 
 # 跟踪固定示例输入和已展示的实际输出,其余输出在上传确认后纳入 Git.
-!**/examples/input/samples.json
 !**/examples/input/sample_*.jpg
 !**/examples/input/sample_*.JPEG
 !**/examples/input/sample_*.wav
 !**/examples/output/sample_*_classification.jpg
 !models/perception/object_detection/yolov8n/examples/output/sample_*_detections.jpg
+
+# 示例运行清单自动生成并随部署上传,不纳入 Git.
+**/examples/input/samples.json

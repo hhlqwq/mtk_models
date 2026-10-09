@@ -172,6 +172,15 @@ if [[ "${BOARD_BINARY}" != /* || "${BOARD_RESULTS_DIR}" != /* ]] ||
     exit 2
 fi
 
+# 从配置的数据集生成示例清单,仅写入仓库外的构建目录.
+mkdir -p "${BUILD_WORK_DIR}/examples"
+docker exec -e PYTHONDONTWRITEBYTECODE=1 "${MTK_G720_CONTAINER}" \
+    python "${MODEL_ROOT}/../../../../tools/prepare_examples.py" \
+    --model "yolov5s" --dataset-root "${FP32_IMAGES_DIR%/images}" \
+    --output "${BUILD_WORK_DIR}/examples/samples.json"
+docker cp "${MTK_G720_CONTAINER}:${BUILD_WORK_DIR}/examples/samples.json" \
+    "${BUILD_WORK_DIR}/examples/samples.json"
+
 echo "[编译主机 1] 在 Docker 中转换模型并编译 DLA: ${OUTPUT_DLA}"
 docker exec -i \
     -e PYTHONDONTWRITEBYTECODE=1 \
@@ -319,7 +328,7 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/examples/input'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/render_examples.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/render_examples.py"
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/examples/input/samples.json" \
+scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/examples/samples.json" \
     "${MODEL_ROOT}/examples/input"/sample_* \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nFP32_MAP=%q\nFP32_BASELINE_SOURCE=%q\n' \

@@ -62,6 +62,15 @@ test -s "${DATASET_DIR}/annotations/instances_val2017.json"
 echo '31e20dde3def09e2cf938c7be6fe23d9150bbbe503982af13345706515f2ef95 '"${MODEL_WEIGHTS}" | sha256sum -c -
 mkdir -p "${BUILD_WORK_DIR}"
 
+# 从配置的数据集生成示例清单,仅写入仓库外的构建目录.
+mkdir -p "${BUILD_WORK_DIR}/examples"
+docker exec -e PYTHONDONTWRITEBYTECODE=1 "${CONTAINER}" \
+    python "${MODEL_ROOT}/../../../../tools/prepare_examples.py" \
+    --model "yolov8n" --dataset-root "${DATASET_DIR}" \
+    --output "${BUILD_WORK_DIR}/examples/samples.json"
+docker cp "${CONTAINER}:${BUILD_WORK_DIR}/examples/samples.json" \
+    "${BUILD_WORK_DIR}/examples/samples.json"
+
 echo "[编译主机 1/4] 离线导出、量化并编译 MDLA 5.3 模型."
 docker exec -i -e MODEL_ROOT="${MODEL_ROOT}" -e MODEL_WEIGHTS="${MODEL_WEIGHTS}" \
     -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
@@ -124,7 +133,8 @@ scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/yolov8n_board_eval" \
     "${SCRIPT_DIR}/board/evaluate_coco.py" "${SCRIPT_DIR}/board/render_examples.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
 scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/examples/input/"* \
+scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/examples/samples.json" \
+    "${MODEL_ROOT}/examples/input"/sample_*.jpg \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nFP32_MAP=%q\nFP32_SOURCE=%q\n' \
     "${BOARD_DATASET_DIR}" "${BOARD_DEPLOY_DIR}/results" "${FP32_MAP}" "${FP32_SOURCE}" |

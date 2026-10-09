@@ -46,7 +46,7 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV 和 tqdm。
 
 原图与板端相对深度图并排,暖色表示较近,冷色表示较远.
 
-输入已放在 `examples/input/`,来源和样本对应关系见 [samples.json](examples/input/samples.json).
+输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
 将这些文件取回本模型的 `examples/output/` 后即可更新效果展示.当前先展示输入,输出以实际板端测试为准.

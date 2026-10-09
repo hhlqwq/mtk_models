@@ -47,7 +47,7 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 xtcocotools。
 
 原图叠加板端 WholeBody 关节点和人体、手部骨架.
 
-输入已放在 `examples/input/`,来源和样本对应关系见 [samples.json](examples/input/samples.json).
+输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
 将这些文件取回本模型的 `examples/output/` 后即可更新效果展示.当前先展示输入,输出以实际板端测试为准.
@@ -87,3 +87,5 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 xtcocotools。
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
 - `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.
+
+示例图片来源: 示例 1: [原图](http://farm7.staticflickr.com/6199/6207968507_effbfb5a1f_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/); 示例 2: [原图](http://farm6.staticflickr.com/5328/8789640387_14e10562cb_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/); 示例 3: [原图](http://farm4.staticflickr.com/3446/3232237447_13d84bd0a1_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/).

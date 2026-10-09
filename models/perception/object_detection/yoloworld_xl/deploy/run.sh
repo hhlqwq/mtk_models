@@ -129,6 +129,15 @@ if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
     exit 2
 fi
 
+# 从配置的数据集生成示例清单,仅写入仓库外的构建目录.
+mkdir -p "${BUILD_WORK_DIR}/examples"
+docker exec -e PYTHONDONTWRITEBYTECODE=1 "${CONTAINER}" \
+    python "${MODEL_ROOT}/../../../../tools/prepare_examples.py" \
+    --model "yoloworld_xl" --dataset-root "${ONNX_DATASET_DIR}" \
+    --output "${BUILD_WORK_DIR}/examples/samples.json"
+docker cp "${CONTAINER}:${BUILD_WORK_DIR}/examples/samples.json" \
+    "${BUILD_WORK_DIR}/examples/samples.json"
+
 echo "[编译主机 1] 在 Docker 中准备兼容 ONNX 并验证等价性."
 docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 -e MODEL_ROOT="${MODEL_ROOT}" \
     -e SOURCE_ONNX="${SOURCE_ONNX}" \
@@ -216,7 +225,7 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/examples/input'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/render_examples.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/render_examples.py"
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/examples/input/samples.json" \
+scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/examples/samples.json" \
     "${MODEL_ROOT}/examples/input"/sample_* \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\nORT_RUNTIME_LIB=%q\n' \

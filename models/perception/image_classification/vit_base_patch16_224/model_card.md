@@ -16,4 +16,4 @@
 
 ## 当前测试结果
 
-以用户上传的 `results/summary.json` 为准,当前待上传。核心指标见 [README](README.md#当前测试结果)。
+当前结果来自 [results/summary.json](results/summary.json),ImageNet val2012 全量 50000 张图片.核心指标与效果示例见 [README](README.md#当前测试结果)。

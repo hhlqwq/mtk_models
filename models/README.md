@@ -13,7 +13,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | --- | ---: | ---: | --- | ---: |
 | [YOLOv8n](perception/object_detection/yolov8n/README.md) | **6.28** | **31.32** | mAP@0.5:0.95 **35.35%** | **-1.275** |
 | [YOLOv5s](perception/object_detection/yolov5s/README.md) | **9.76** | **33.23** | mAP@0.5:0.95 **35.86%** | **-1.23** |
-| [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | 待上传 | 待上传 | Top-1 待上传 | 待上传 |
+| [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | **51.75** | **141.30** | Top-1 **79.40%** | **-1.27** |
 | [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | 待上传 | 待上传 | WholeBody AP 待上传 | 待上传 |
 | [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | 待上传 | 待上传 | LFW 验证准确率待上传 | 待上传 |
 | [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | 待上传 | 待上传 | DA-2K 点对准确率待上传 | 待上传 |
@@ -22,6 +22,8 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | 待上传 | 待上传 | WER 待上传 | 待上传 |
 
 YOLOv5s 结果来自运行 `20261008_032807_67603`,COCO val2017 全量 5000 张; ONNX FP32 与板端精度均为本次同协议实测,ONNX mAP 为 **37.09%**。结果文件见 [summary.json](perception/object_detection/yolov5s/results/summary.json)。
+
+ViT 结果来自运行 `20261008_094211_126146`,ImageNet val2012 全量 50000 张; 同协议 ONNX FP32 Top-1 为 **80.66%**,板端为 **79.40%**。结果文件见 [summary.json](perception/image_classification/vit_base_patch16_224/results/summary.json)。
 
 YOLOv8n 结果来自运行 `20261008_yolov8n_full_v1`,COCO val2017 全量 5000 张;
 PyTorch / ONNX / NPU mAP 分别为 **36.6444% / 36.6260% / 35.3510%**,
@@ -119,7 +121,7 @@ models/
 各模型在板端直接运行 `bash run.sh` 默认执行全量测试,无需模式参数.Whisper 的双模型、YOLO-World 的在线编译以及各任务的数据与指标属于必要差异,详见对应模型 README.
 
 `TFLite/` 是官方模型合集与通用基准工具,采用已有的模型格式,不作为上述单模型移植目录.
-各模型 README 统一提供“效果示例”.少量输入随脚本上传,测试完成后在本次结果目录生成 `examples/output/`,不保留全量原始预测.将 `summary.json` 与少量效果文件取回本地后更新指标和展示.
+各模型 README 统一提供“效果示例”.少量输入随脚本上传,来源与样本清单在编译时从数据集生成且不纳入 Git.测试完成后在本次结果目录生成 `examples/output/`,不保留全量原始预测.将 `summary.json` 与少量效果文件取回本地后更新指标和展示.
 
 ## 单模型交付要求
 

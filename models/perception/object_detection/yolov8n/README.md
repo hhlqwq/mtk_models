@@ -72,8 +72,7 @@ Runtime 检查缓冲区尺寸,支持 NCHW 行宽按 16 对齐.
 PyTorch、ONNX 和板端使用相同 letterbox、单最佳类别、`conf=0.001`,
 `IoU=0.6`,`max_det=300`.该协议用于本项目三后端对比,
 不直接等同于 Ultralytics 官方公开指标的复现协议.
-公开示例取自已有 COCO 数据,许可证和原始地址见
-`examples/input/samples.json`,展示阈值为 0.25.
+公开示例取自已有 COCO 数据,原图地址和许可证在编译时从 COCO 标注自动读取,随部署清单上传.展示阈值为 0.25.
 
 ## 当前结果
 
@@ -123,7 +122,7 @@ Genio 5100 尚未执行,上述数字只对应 Genio 720.
 
 ## 真实板端效果
 
-展示阈值为 0.25,图像和许可证来源见 `examples/input/samples.json`.
+展示阈值为 0.25,图像取自 COCO val2017,来源清单在编译时生成并随部署上传.
 效果由上述全量 NPU 预测生成,标签排布仅用于提高可读性.
 
 ![室内检测](examples/output/sample_1_detections.jpg)
@@ -131,3 +130,5 @@ Genio 5100 尚未执行,上述数字只对应 Genio 720.
 ![熊检测](examples/output/sample_2_detections.jpg)
 
 ![滑雪场景检测](examples/output/sample_3_detections.jpg)
+
+示例图片来源: 示例 1: [原图](http://farm9.staticflickr.com/8035/8024364858_9c41dc1666_z.jpg) / [图片许可](http://creativecommons.org/licenses/by-nc/2.0/); 示例 2: [原图](http://farm8.staticflickr.com/7434/9138147604_c6225224b8_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/); 示例 3: [原图](http://farm8.staticflickr.com/7015/6795644157_f019453ae7_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/).

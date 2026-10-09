@@ -29,7 +29,7 @@ ImageNet-1K 图像分类，输入为 224×224 RGB 图像。正式上游为 PyTor
 bash deploy/run.sh
 ```
 
-脚本在 Docker 中量化并编译 DLA、评测 ONNX 全量 Top-1,在编译主机交叉编译板端 C++ 程序,然后上传模型、程序与实测 ONNX 基准。Docker 需安装 ONNX Runtime、NumPy、OpenCV 和 tqdm。
+脚本在 Docker 中量化并编译 DLA、评测 ONNX 全量 Top-1,在编译主机交叉编译板端 C++ 程序,然后上传模型、程序与实测 ONNX 基准。Docker 需安装 ONNX Runtime、NumPy、OpenCV、PyTorch、torchvision 和 tqdm。
 
 ## 第二步: 开发板测试
 
@@ -58,16 +58,28 @@ ViT 默认执行 ImageNet 全量测试,无需额外参数。编译主机与板�
 
 ## 当前测试结果
 
-待上传本模型的 `results/summary.json` 后更新。只记录板端 NPU 平均耗时、推理进程峰值 RSS (MiB)、任务核心精度、同协议 ONNX 参考精度和精度变化。峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存。
+结果来自 [results/summary.json](results/summary.json),运行编号 `20261008_094211_126146`,ImageNet val2012 全量 50000 张图片。
+
+| 指标 | 本次结果 |
+| --- | ---: |
+| 板端 NPU 平均推理耗时 | **51.75 ms** |
+| 板端推理进程峰值 RSS | **141.30 MiB** |
+| ONNX FP32 Top-1 | **80.66%** |
+| 板端 Top-1 | **79.40%** |
+| 精度变化 (百分点) | **-1.27** |
+
+ONNX 与板端使用同一份验证集和评测协议.精度以百分比显示并保留两位小数,变化按原始数值计算,负数表示下降.完整数值保存在 `summary.json` 中。
+
+NPU 耗时为常驻模型对 50000 张图片的 `NeuronRuntime_inference` 平均调用耗时,不含图片读取、前后处理及精度计算.峰值 RSS 为推理进程峰值常驻内存,包含运行库与前后处理,不代表 NPU 专用内存。
 
 ## 效果示例
 
 原图下方显示板端 Top-1 与 Top-5 类别排序.
 
-输入已放在 `examples/input/`,来源和样本对应关系见 [samples.json](examples/input/samples.json).
+输入已放在 `examples/input/`,选取 [ImageNet val2012](https://image-net.org/challenges/LSVRC/2012/) 的前三张图片: 海蛇、雪山和牧羊犬.来源与样本清单在编译时自动生成并随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
-以下三张效果来自本次板端实际推理,复用已完成样本的预测,未额外运行模型.全量精度与性能以测试完成后的 `summary.json` 为准.
+以下三张效果来自本次板端实际推理,复用全量测试样本的预测,未额外运行模型.
 
 ### 示例 1: 海蛇
 
