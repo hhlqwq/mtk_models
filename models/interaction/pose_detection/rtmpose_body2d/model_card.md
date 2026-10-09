@@ -27,4 +27,6 @@ SimCC 解码配置.
 
 ## 当前测试结果
 
-以用户上传的 `results/summary.json` 为准,当前待上传。核心指标见 [README](README.md#当前测试结果)。
+COCO-WholeBody val2017 全量 5000 张图片、104125 个人体框.同协议 ONNX FP32 WholeBody AP 为 57.04%,板端为 53.24%,下降 3.80 个百分点.每个人体裁剪的 NPU 平均耗时为 3.86 ms,推理进程峰值 RSS 为 32.74 MiB.
+
+结果见 [summary.json](results/summary.json),指标说明见 [README](README.md#当前测试结果).

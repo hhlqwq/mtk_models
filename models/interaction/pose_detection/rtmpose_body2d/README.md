@@ -34,6 +34,8 @@ bash run.sh
 
 数据目录要求: COCO WholeBody: images/、annotations/coco_wholebody_val_v1.0.json 和 person_detection_results/COCO_val2017_detections_AP_H_56_person.json.
 
+人体检测文件使用官方标准 JSON 数组.板端 C++ 清单工具在内存中包装后读取,无需修改数据文件或增加依赖; 检测框编号和排序保持不变.更新该工具后,需在编译主机重新运行 `bash deploy/run.sh`,编译并上传新的板端程序.
+
 精度变化以百分点表示,正数为改善,负数为下降.
 
 Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 xtcocotools。
@@ -41,7 +43,17 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 xtcocotools。
 
 ## 当前测试结果
 
-待上传本模型的 `results/summary.json` 后更新。只记录板端 NPU 平均耗时、推理进程峰值 RSS (MiB)、任务核心精度、同协议 ONNX 参考精度和精度变化。峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存。
+COCO-WholeBody val2017 全量 5000 张图片、104125 个人体框,采用 WholeBody AP.结果见 [summary.json](results/summary.json).
+
+| 指标 | 结果 |
+| --- | ---: |
+| ONNX FP32 WholeBody AP | 57.04% |
+| 板端 NPU WholeBody AP | **53.24%** |
+| 精度变化 | **-3.80 个百分点** |
+| 板端 NPU 平均耗时 | **3.86 ms** |
+| 推理进程峰值 RSS | **32.74 MiB** |
+
+耗时为常驻模型下每个人体裁剪的 `NeuronRuntime_inference` 调用,不包含前后处理,也不是每张完整图片的耗时.峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存.
 
 ## 效果示例
 
