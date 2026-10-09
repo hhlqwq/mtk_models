@@ -33,6 +33,7 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 
 | 模型 | 任务 | 标准输入 | 来源 | 当前状态 |
 | --- | --- | --- | --- | --- |
+| [YAMNet](models/audio/ambient_sound/yamnet/README.md) | Audio / Ambient sound | 16 kHz 单声道,96×64 Log-Mel | Google TensorFlow Models 官方源码与权重 | 环境建设中,已实现导出量化和全量测试入口 |
 | [YOLOv8n](models/perception/object_detection/yolov8n/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics v8.0.111 官方源码与权重 | Genio 720 完整交付,三后端全量结果已回收 |
 | [Depth Anything V2 Small](models/navigation/single_camera_depth/depth_anything_v2_small/README.md) | Navigation / Single camera depth | 518×518 RGB | DepthAnything 官方源码与 Small 权重 | 待上传当前测试汇总 |
 | [FastSAM-s](models/navigation/segmentation/fastsam/README.md) | Navigation / Segmentation | 640×640 RGB | CASIA-LMC-Lab / Ultralytics 8.0.111 | segm AR@100 37.57%,NPU 14.72 ms,峰值 RSS 64.55 MiB |

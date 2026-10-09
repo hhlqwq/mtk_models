@@ -1,5 +1,16 @@
 schema_version: 1
 models:
+  - id: yamnet
+    batch: first_batch
+    pilot: false
+    scenario: audio
+    category: ambient_sound
+    path: models/audio/ambient_sound/yamnet
+    source: tensorflow/models
+    delivery_reference: qualcomm/YamNet
+    platforms:
+      genio_720: in_progress
+      genio_5100: not_started
   - id: yolov8n
     batch: first_batch
     pilot: false

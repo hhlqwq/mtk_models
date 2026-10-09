@@ -1,0 +1,15 @@
+Google 官方源码: https://github.com/tensorflow/models
+固定源码版本: 34a21326906b9574fa11c4d6d0a5c534ff039267
+源文件地址: https://raw.githubusercontent.com/tensorflow/models/34a21326906b9574fa11c4d6d0a5c534ff039267/research/audioset/yamnet/{yamnet.py,params.py,features.py,yamnet_class_map.csv,README.md}
+源码许可证: Apache-2.0
+官方权重: https://storage.googleapis.com/audioset/yamnet.h5
+权重大小: 15296092 bytes
+权重 SHA256: 13c3308955bbfaef262f175ac9c40e47b134573a93984f009220dd7cc12a1744
+ESC-50 数据: https://codeload.github.com/karolpiczak/ESC-50/zip/33c8ce9eb2cf0b1c2f8bcf322eb349b6be34dbb6
+ESC-50 下载大小: 645832161 bytes
+ESC-50 压缩包 SHA256: 661183a6f53ef04f12c9bd618fed0ddc1713280d6c94a5a5431e844ba6f6a21f
+ESC-50 数据许可: CC BY-NC 3.0,具体音频归属见原始 LICENSE
+原始数据 NAS: /data/users/hailong.he/nas_smb/Datasets/open_source/raw/ESC-50
+板端数据: /root/hailong.he/datasets/ESC-50
+下载经既有 SOCKS 代理访问以上原始 URL,未使用替代模型来源.
+高通交付参考: https://aihub.qualcomm.com/models/yamnet

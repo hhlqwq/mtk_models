@@ -1,0 +1,7 @@
+YAMNet 原始实现来自 Google TensorFlow Models,采用 Apache License 2.0.
+原始完整许可证随锁定源码保存于 models/upstream/LICENSE.
+https://github.com/tensorflow/models/blob/34a21326906b9574fa11c4d6d0a5c534ff039267/LICENSE
+
+ESC-50 原始数据整体采用 CC BY-NC 3.0,ESC-10 子集为 CC BY 3.0.
+各示例文件的归属、原始来源与许可见 ESC-50 数据目录的 LICENSE.
+https://github.com/karolpiczak/ESC-50/blob/33c8ce9eb2cf0b1c2f8bcf322eb349b6be34dbb6/LICENSE

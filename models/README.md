@@ -11,6 +11,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 
 | 模型 | 板端 NPU 平均耗时 (ms) | 峰值 RSS (MiB) | 核心精度 | 精度变化 (百分点) |
 | --- | ---: | ---: | --- | ---: |
+| [YAMNet](audio/ambient_sound/yamnet/README.md) | 待测试 | 待测试 | ESC-50 固定标签投影宏平均 AP 待测试 | 待测试 |
 | [YOLOv8n](perception/object_detection/yolov8n/README.md) | **6.28** | **31.32** | mAP@0.5:0.95 **35.35%** | **-1.275** |
 | [YOLOv5s](perception/object_detection/yolov5s/README.md) | **9.76** | **33.23** | mAP@0.5:0.95 **35.86%** | **-1.23** |
 | [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | **51.75** | **141.30** | Top-1 **79.40%** | **-1.27** |

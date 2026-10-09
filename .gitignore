@@ -25,6 +25,7 @@ logs/
 *.dla
 *.bin
 *.npy
+*.h5
 *.npz
 *.zip
 *.tar.gz
@@ -112,3 +113,10 @@ Thumbs.db
 
 # 示例运行清单自动生成并随部署上传,不纳入 Git.
 **/examples/input/samples.json
+
+# YAMNet 官方资源、转换产物和板端运行参数.
+models/audio/ambient_sound/yamnet/models/upstream/
+models/audio/ambient_sound/yamnet/models/*.json
+models/audio/ambient_sound/yamnet/models/runtime_config.csv
+models/audio/ambient_sound/yamnet/models/yamnet_class_map.csv
+!models/audio/ambient_sound/yamnet/examples/output/sample_*_events.json
