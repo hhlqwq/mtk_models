@@ -159,9 +159,8 @@ def evaluate(args: argparse.Namespace) -> None:
     metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
     if metadata.get("input_protocol") != "RGB_ImageNet_normalize_aligned_112x112":
         raise ValueError("量化元数据未使用修正后的 RGB 输入协议。")
-    source_manifest = args.dataset_root / "source_manifest.json"
-    if not source_manifest.is_file() or not args.model.is_file():
-        raise FileNotFoundError("缺少模型或固定数据集来源清单。")
+    if not args.model.is_file():
+        raise FileNotFoundError(f"缺少模型: {args.model}。")
     if args.resume:
         if not args.run_dir.is_dir():
             raise FileNotFoundError(args.run_dir)
