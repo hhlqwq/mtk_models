@@ -17,7 +17,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | **51.75** | **141.30** | Top-1 **79.40%** | **-1.27** |
 | [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | **3.86** | **32.74** | WholeBody AP **53.24%** | **-3.80** |
 | [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | **0.52** | **8.25** | LFW 验证准确率 **99.32%** | **-0.07** |
-| [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | 待上传 | 待上传 | DA-2K 点对准确率待上传 | 待上传 |
+| [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | **131.31** | **32.66** | DA-2K 点对准确率 **85.78%** | 待 ONNX 评测 |
 | [FastSAM-s](navigation/segmentation/fastsam/README.md) | **14.72** | **64.55** | segm AR@100 **37.57%** | **-1.45** |
 | [YOLO-World XL](perception/object_detection/yoloworld_xl/README.md) | 未采集 | **1459.28** | mAP@0.5:0.95 **47.27%** | **-0.03** |
 | [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | 待上传 | 待上传 | WER 待上传 | 待上传 |

@@ -8,11 +8,13 @@
 | 许可 | Small 模型 Apache-2.0，见同目录 [LICENSE](LICENSE) |
 | 本次输入 | RGB 518×518，NCHW，ImageNet 均值和标准差归一化；原生 INT8 输入行步长 528 字节 |
 | 本次输出 | 518×518 INT8 相对深度图；量化参数随转换产物保存 |
-| Genio 720 | 待上传当前测试汇总 |
+| Genio 720 | DA-2K 点对准确率 85.78%,NPU 131.31 ms,峰值 RSS 32.66 MiB |
 | Genio 5100 | `not_started` |
 
 模型输出仅表达单张图内的相对深度结构，不能直接用于米制测距或安全避障。
 
 ## 当前测试结果
 
-以用户上传的 `results/summary.json` 为准,当前待上传。核心指标见 [README](README.md#当前测试结果)。
+DA-2K 全量 1033 张图片、2068 个点对,板端准确率为 85.78%.独立 C++ 常驻模型平均 NPU 耗时为 131.31 ms,推理进程峰值 RSS 为 32.66 MiB.本次未采集 ONNX 参考精度,精度变化暂缺.
+
+结果见 [summary.json](results/summary.json),计时说明和三张实际深度效果见 [README](README.md#当前测试结果).

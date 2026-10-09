@@ -40,7 +40,17 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV 和 tqdm。
 
 ## 当前测试结果
 
-待上传本模型的 `results/summary.json` 后更新。只记录板端 NPU 平均耗时、推理进程峰值 RSS (MiB)、任务核心精度、同协议 ONNX 参考精度和精度变化。峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存。
+DA-2K 全量 1033 张图片、2068 个点对,结果见 [summary.json](results/summary.json).
+
+| 指标 | 结果 |
+| --- | ---: |
+| ONNX FP32 点对准确率 | 未采集 |
+| 板端 NPU 点对准确率 | **85.78%** |
+| 精度变化 | 待同协议 ONNX 评测 |
+| 板端 NPU 平均耗时 | **131.31 ms** |
+| 推理进程峰值 RSS | **32.66 MiB** |
+
+耗时由独立 C++ 常驻模型预热 10 次、重复同一输入 100 次测得,不包含前后处理.峰值 RSS 为该 C++ 推理进程的峰值,不代表 NPU 专用内存或全量 Python 评测进程的内存.本次汇总未包含 ONNX 参考精度,暂不计算精度变化.
 
 ## 效果示例
 
@@ -49,19 +59,25 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV 和 tqdm。
 输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
-将这些文件取回本模型的 `examples/output/` 后即可更新效果展示.当前先展示输入,输出以实际板端测试为准.
+以下三张输出来自本次全量测试的板端预测,保存在 `examples/output/`.示例目录仅保留三张输入和三张对应输出.
 
 ### 示例 1: 室内场景
 
 ![室内场景输入](examples/input/sample_1.jpg)
 
+![室内场景板端相对深度输出](examples/output/sample_1_depth.jpg)
+
 ### 示例 2: 室外街景
 
 ![室外街景输入](examples/input/sample_2.jpg)
 
+![室外街景板端相对深度输出](examples/output/sample_2_depth.jpg)
+
 ### 示例 3: 玻璃建筑
 
 ![玻璃建筑输入](examples/input/sample_3.jpg)
+
+![玻璃建筑板端相对深度输出](examples/output/sample_3_depth.jpg)
 
 ## 板端部署结构
 
