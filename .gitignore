@@ -109,6 +109,7 @@ Thumbs.db
 !**/examples/output/sample_*_classification.jpg
 !models/navigation/segmentation/fastsam/examples/output/sample_*_segmentation.jpg
 !models/interaction/pose_detection/rtmpose_body2d/examples/output/sample_*_keypoints.jpg
+!models/interaction/face_recognition/mobilefacenet/examples/output/sample_*_verification.jpg
 !models/perception/object_detection/yolov8n/examples/output/sample_*_detections.jpg
 !models/perception/object_detection/yoloworld_xl/examples/output/sample_*_detections.jpg
 

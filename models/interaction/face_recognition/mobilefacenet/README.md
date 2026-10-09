@@ -36,13 +36,25 @@ bash run.sh
 
 数据目录要求: 对齐后的 LFW 包含 `images/`、`pairs.csv` 和 `alignment_summary.json`,覆盖 7701 张验证图、6000 对及 10 折.原始图片与对齐图片分别保存,编译主机和板端配置均指向对齐数据目录.
 
+板端核对对齐报告、验证对及图片完整性,不要求额外的 `source_manifest.json`.
+
 精度变化以百分点表示,正数为改善,负数为下降.
 
 Docker 需要 ONNX Runtime、NumPy、OpenCV 和 tqdm。
 
 ## 当前测试结果
 
-待上传本模型的 `results/summary.json` 后更新。只记录板端 NPU 平均耗时、推理进程峰值 RSS (MiB)、任务核心精度、同协议 ONNX 参考精度和精度变化。峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存。
+LFW 全量 6000 对,采用 MTCNN 五点对齐后的 7701 张人脸,进行十折验证.结果见 [summary.json](results/summary.json).
+
+| 指标 | 结果 |
+| --- | ---: |
+| ONNX FP32 LFW 验证准确率 | 99.38% |
+| 板端 NPU LFW 验证准确率 | **99.32%** |
+| 精度变化 | **-0.07 个百分点** |
+| 板端 NPU 平均耗时 | **0.52 ms** |
+| 推理进程峰值 RSS | **8.25 MiB** |
+
+耗时由独立 C++ 常驻模型预热 10 次、重复同一输入 100 次测得,不包含人脸检测、对齐或前后处理.峰值 RSS 为该 C++ 推理进程的峰值,不代表 NPU 专用内存或全量 Python 评测进程的内存.
 
 ## 效果示例
 
@@ -51,13 +63,26 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV 和 tqdm。
 输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
-将这些文件取回本模型的 `examples/output/` 后即可更新效果展示.当前先展示输入,输出以实际板端测试为准.
+以下三组输出来自本次全量测试的板端预测,保存在 `examples/output/`,展示余弦相似度和十折验证阈值下的同人判定.
 
 | 示例 | 人脸 A | 人脸 B | 真实关系 |
 | --- | --- | --- | --- |
 | 1 | ![人脸 A](examples/input/sample_1_a.jpg) | ![人脸 B](examples/input/sample_1_b.jpg) | 同一人 |
 | 2 | ![人脸 A](examples/input/sample_2_a.jpg) | ![人脸 B](examples/input/sample_2_b.jpg) | 不同人 |
 | 3 | ![人脸 A](examples/input/sample_3_a.jpg) | ![人脸 B](examples/input/sample_3_b.jpg) | 同一人 |
+
+### 示例 1: 同一人
+
+![示例 1 板端人脸验证输出](examples/output/sample_1_verification.jpg)
+
+### 示例 2: 不同人
+
+![示例 2 板端人脸验证输出](examples/output/sample_2_verification.jpg)
+
+### 示例 3: 同一人
+
+![示例 3 板端人脸验证输出](examples/output/sample_3_verification.jpg)
+
 ## 板端部署结构
 
 第一步上传到 `BOARD_DEPLOY_DIR` 后的布局统一为:
