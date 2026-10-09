@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -29,6 +30,7 @@ void Check(int result, const char* operation) {
 struct Quantization {
   float scale = 0;
   int zero = 0;
+  bool fp16 = false;
 };
 
 // 读取转换器解析出的实际 IO 量化配置.
@@ -42,13 +44,18 @@ Quantization ReadQuantization(std::ifstream& stream) {
       value.zero < -128 || value.zero > 127) {
     throw std::runtime_error("量化配置无效.");
   }
+  std::string precision;
+  if (row >> precision) {
+    if (precision != "fp16") throw std::runtime_error("未知 IO 精度.");
+    value.fp16 = true;
+  }
   return value;
 }
 
 class Model {
  public:
   // 创建硬件 Runtime 并严格验证输入输出数量和原生字节布局.
-  explicit Model(const fs::path& path) {
+  explicit Model(const fs::path& path, bool fp16) {
     EnvOptions options{};
     options.deviceKind = kEnvOptHardware;
     options.MDLACoreOption = Auto;
@@ -63,8 +70,9 @@ class Model {
       Check(NeuronRuntime_getOutputNumber(runtime_, &outputs), "output count");
       Check(NeuronRuntime_getSingleInputPaddedSize(runtime_, &input_size), "input size");
       Check(NeuronRuntime_getOutputPaddedSize(runtime_, 0, &output_size), "output size");
-      if (inputs != 1 || outputs != 1 || input_size != 6144 ||
-          (output_size != 521 && output_size != 528)) {
+      const size_t bytes = fp16 ? 2 : 1;
+      if (inputs != 1 || outputs != 1 || input_size != 6144 * bytes ||
+          (output_size != 521 * bytes && output_size != 528 * bytes)) {
         throw std::runtime_error("原生 IO 布局不匹配: " + std::to_string(input_size) +
                                  "," + std::to_string(output_size));
       }
@@ -86,9 +94,9 @@ class Model {
   }
 
   // 每次重新登记 IO,耗时仅覆盖硬件 inference 调用.
-  double Infer(std::vector<int8_t>& input) {
+  double Infer(const void* input, size_t size) {
     const BufferAttribute attribute{NON_ION_FD};
-    Check(NeuronRuntime_setSingleInput(runtime_, input.data(), input.size(), attribute),
+    Check(NeuronRuntime_setSingleInput(runtime_, input, size, attribute),
           "set input");
     Check(NeuronRuntime_setOutput(runtime_, 0, output_.data(), output_.size(), attribute),
           "set output");
@@ -97,8 +105,15 @@ class Model {
     return std::chrono::duration<double, std::milli>(Clock::now() - start).count();
   }
 
-  // 返回真实 INT8 类别输出,填充字节由调用方排除.
-  const std::vector<int8_t>& Output() const { return output_; }
+  // 读取原生 FP16 或 INT8 类别分数,忽略尾部填充.
+  float OutputScore(int category, const Quantization& quantization) const {
+    if (quantization.fp16) {
+      __fp16 value;
+      std::memcpy(&value, output_.data() + category * 2, sizeof(value));
+      return static_cast<float>(value);
+    }
+    return (static_cast<int>(output_[category]) - quantization.zero) * quantization.scale;
+  }
 
  private:
   void* runtime_ = nullptr;
@@ -112,7 +127,10 @@ int Run(int argc, char** argv) {
   std::ifstream configuration(argv[2]);
   const auto input_quant = ReadQuantization(configuration);
   const auto output_quant = ReadQuantization(configuration);
-  Model model(argv[1]);
+  if (input_quant.fp16 != output_quant.fp16) {
+    throw std::runtime_error("输入输出精度必须一致.");
+  }
+  Model model(argv[1], input_quant.fp16);
   std::ifstream manifest(work / "patch_counts.txt");
   std::ifstream features(work / "features.bin", std::ios::binary);
   std::ofstream scores(work / "scores.bin", std::ios::binary);
@@ -125,6 +143,7 @@ int Run(int argc, char** argv) {
   clip_times << "clip,patches,inference_stage_ms\n";
   std::vector<float> patch(6144);
   std::vector<int8_t> quantized(6144);
+  std::vector<__fp16> half(6144);
   int count = 0, clip = 0;
   bool warmed = false;
   while (manifest >> count) {
@@ -137,21 +156,27 @@ int Run(int argc, char** argv) {
       if (!features) throw std::runtime_error("特征文件不足.");
       for (size_t value = 0; value < patch.size(); ++value) {
         if (!std::isfinite(patch[value])) throw std::runtime_error("特征含非有限数.");
-        const float integer = std::nearbyint(patch[value] / input_quant.scale) + input_quant.zero;
-        quantized[value] = static_cast<int8_t>(std::clamp(integer, -128.0F, 127.0F));
+        if (input_quant.fp16) {
+          half[value] = static_cast<__fp16>(patch[value]);
+        } else {
+          const float integer = std::nearbyint(patch[value] / input_quant.scale) + input_quant.zero;
+          quantized[value] = static_cast<int8_t>(std::clamp(integer, -128.0F, 127.0F));
+        }
       }
+      const void* data = input_quant.fp16 ? static_cast<const void*>(half.data()) :
+                                           static_cast<const void*>(quantized.data());
+      const size_t size = input_quant.fp16 ? half.size() * sizeof(__fp16) : quantized.size();
       if (!warmed) {
         const auto warmup_start = Clock::now();
-        for (int repeat = 0; repeat < 20; ++repeat) model.Infer(quantized);
+        for (int repeat = 0; repeat < 20; ++repeat) model.Infer(data, size);
         warmup_ms = std::chrono::duration<double, std::milli>(
             Clock::now() - warmup_start).count();
         warmed = true;
       }
-      const double npu_ms = model.Infer(quantized);
+      const double npu_ms = model.Infer(data, size);
       timings << clip << ',' << index << ',' << npu_ms << '\n';
       for (int category = 0; category < 521; ++category) {
-        average[category] += (static_cast<int>(model.Output()[category]) - output_quant.zero) *
-                             output_quant.scale / count;
+        average[category] += model.OutputScore(category, output_quant) / count;
       }
     }
     const double elapsed = std::chrono::duration<double, std::milli>(

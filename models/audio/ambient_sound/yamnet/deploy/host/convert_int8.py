@@ -1,4 +1,4 @@
-"""使用 ESC-50 第一折校准 Google YAMNet,解析真实 INT8 IO 参数."""
+"""转换 Google YAMNet 为默认 FP16 或第一折校准的可选 INT8 模型."""
 
 import argparse
 import csv
@@ -27,11 +27,29 @@ def tensor_metadata(detail):
 
 
 def main():
-    """平衡选择第一折每类两条音频、每条两窗,执行 200 窗量化."""
+    """默认转换 FP16 权重,可选第一折每类两条音频的 200 窗 INT8 校准."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models-dir", type=Path, required=True)
     parser.add_argument("--dataset", type=Path, required=True)
+    parser.add_argument("--precision", choices=["fp16", "int8"], default="fp16")
     args = parser.parse_args()
+    if args.precision == "fp16":
+        converter = mtk_converter.OnnxConverter.from_model_proto_file(
+            str(args.models_dir / "model_fp32.onnx"))
+        converter.convert_float32_weights_to_float16 = True
+        converter.convert_to_tflite(str(args.models_dir / "model_fp16.tflite"))
+        with (args.models_dir / "runtime_config.csv").open("w", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow([1, 0, "fp16"])
+            writer.writerow([1, 0, "fp16"])
+        (args.models_dir / "quantization.json").write_text(json.dumps({
+            "precision": "fp16", "converter": mtk_converter.__version__,
+            "weights": "FP16", "ncc_flags": ["--relax-fp32", "--suppress-input",
+                                               "--suppress-output", "--disallow-bridge"],
+            "native_input_shape": [1, 1, 96, 64], "native_output_shape": [1, 521],
+            "calibration_patches": 0}, indent=2))
+        print("[OK] FP16 权重模型与原生 IO 参数已生成,需 NCC 降精度编译.", flush=True)
+        return
     records = load_records(args.dataset)
     paths = []
     for target in range(50):
@@ -67,6 +85,7 @@ def main():
         for item in contract:
             writer.writerow([item["scale"], item["zero_point"]])
     (args.models_dir / "quantization.json").write_text(json.dumps({
+        "precision": "int8",
         "input": contract[0], "output": contract[1], "calibration_fold": 1,
         "calibration_clips": [path.name for path in paths], "patches": 200,
         "converter": mtk_converter.__version__}, indent=2))

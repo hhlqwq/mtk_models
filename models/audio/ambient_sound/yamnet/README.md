@@ -1,8 +1,8 @@
 # YAMNet / Genio 720
 
 机器人环境声音分类,Google 原始 YAMNet,521 类 AudioSet 标签.固定网络输入
-`1x1x96x64` Log-Mel 窗口,音频为 16 kHz 单声道.量化方式为 INT8 PTQ,
-逐输出通道权重量化,CPU 音频前处理加 C++ Neuron Runtime NPU 推理.
+`1x1x96x64` Log-Mel 窗口,音频为 16 kHz 单声道.默认 FP16 权重压缩与 NPU
+降精度编译,保留可选 INT8 PTQ,CPU 音频前处理加 C++ Neuron Runtime NPU 推理.
 高通 YAMNet 仅作为功能与交付参考,不使用高通权重或预编译模型.
 
 ## 来源和资源准备
@@ -51,8 +51,10 @@ bash models/audio/ambient_sound/yamnet/deploy/run.sh
 ```
 
 主机执行官方前向比较、固定图导出、TensorFlow 与 ONNX 全量精度评测,
-200 窗 INT8 校准、`--arch=mdla5.3 --suppress-output --disallow-bridge`
-DLA 编译、C++ 交叉编译和板端上传.不会自动下载或安装依赖.
+默认 FP16 转换、`--arch=mdla5.3 --relax-fp32 --suppress-input --suppress-output
+--disallow-bridge` DLA 编译、C++ 交叉编译和板端上传.不会自动下载或安装依赖.
+可用 `YAMNET_PRECISION=int8 bash models/audio/ambient_sound/yamnet/deploy/run.sh`
+执行 200 窗 PTQ 校准的 INT8 对照流程,该精度存在明显退化,当前不推荐部署.
 主机评测与缓存写入 `/tmp/hailongcodex/当天日期/yamnet`,模型产物保存在 `models/`.
 
 92 开发板执行:

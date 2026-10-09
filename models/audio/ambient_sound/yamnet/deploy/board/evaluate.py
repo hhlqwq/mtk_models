@@ -78,6 +78,7 @@ def summarize(args):
     inference_ms = np.array([float(row["inference_stage_ms"]) for row in clip_rows])
     summary = {
         "status": "complete", "model": "yamnet", "run_id": args.run_id,
+        "precision": args.precision,
         "dataset": "ESC-50", "samples": 2000, "patches": len(npu),
         "metric": "ESC-50 projected macro AP, folds 2-5",
         "evaluation_samples": actual["held_out"]["samples"], "calibration_fold": 1,
@@ -101,7 +102,7 @@ def summarize(args):
         "annotations_sha256": annotation_hash,
         "artifacts_sha256": {
             name: hashlib.sha256((args.models_dir / name).read_bytes()).hexdigest()
-            for name in ("model_int8.dla", "runtime_config.csv", "yamnet_class_map.csv")},
+            for name in (f"model_{args.precision}.dla", "runtime_config.csv", "yamnet_class_map.csv")},
         "runtime_program_sha256": hashlib.sha256(
             (args.models_dir.parent / "board/yamnet_eval").read_bytes()).hexdigest(),
     }
@@ -132,6 +133,7 @@ def main():
     parser.add_argument("--models-dir", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--run-id")
+    parser.add_argument("--precision", choices=["fp16", "int8"], default="fp16")
     args = parser.parse_args()
     if args.mode == "prepare":
         prepare(args)
