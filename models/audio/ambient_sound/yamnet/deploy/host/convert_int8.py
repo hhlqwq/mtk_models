@@ -31,6 +31,10 @@ def audit_w8a16(reader):
     graph = reader.as_dict()
     subgraph = graph["subgraphs"][0]
     tensors = subgraph["tensors"]
+    tensor_types = {name: sum(tensor["type"] == name for tensor in tensors)
+                    for name in sorted({tensor["type"] for tensor in tensors})}
+    if not set(tensor_types).issubset({"INT8", "INT16", "INT32", "INT64"}):
+        raise ValueError(f"W8A16 模型含非整数张量: {tensor_types}.")
     layers = []
     for operator in subgraph["operators"]:
         code = graph["operator_codes"][operator["opcode_index"]]
@@ -49,11 +53,11 @@ def audit_w8a16(reader):
                        "output_dtype": output["type"]})
     if len(layers) != 28:
         raise ValueError(f"YAMNet 应有 27 层卷积与 1 层全连接,实际为 {len(layers)}.")
-    return {"verified_affine_layers": len(layers), "layers": layers}
+    return {"verified_affine_layers": len(layers), "tensor_types": tensor_types, "layers": layers}
 
 
 def main():
-    """默认转换 FP16 权重,可选第一折每类两条音频的 200 窗 INT8 校准."""
+    """默认转换 FP16 权重,可选第一折每类两条音频的 200 窗整数量化校准."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models-dir", type=Path, required=True)
     parser.add_argument("--dataset", type=Path, required=True)

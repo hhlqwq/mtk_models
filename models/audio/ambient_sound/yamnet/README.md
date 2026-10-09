@@ -54,10 +54,10 @@ bash models/audio/ambient_sound/yamnet/deploy/run.sh
 默认 FP16 转换、`--arch=mdla5.3 --relax-fp32 --suppress-input --suppress-output
 --disallow-bridge` DLA 编译、C++ 交叉编译和板端上传.不会自动下载或安装依赖.
 可用 `YAMNET_PRECISION=int8 bash models/audio/ambient_sound/yamnet/deploy/run.sh`
-执行 200 窗 PTQ 校准的 INT8 对照流程,该精度存在明显退化,当前不推荐部署.
+执行 200 窗 PTQ 校准的 INT8 对照流程,当前 W8A8 配方存在明显退化,需继续优化.
 W8A16 入口为 `YAMNET_PRECISION=w8a16 bash models/audio/ambient_sound/yamnet/deploy/run.sh`,
 使用 INT8 权重、INT16 激活与原生 INT16 IO.转换后逐层检查 27 层卷积和 1 层
-全连接的实际精度,实测结果将在全量板端测试完成后更新.
+全连接的实际精度,板端全量结果见下方 W8A16 实测表.
 各精度使用独立的 `runtime_config_精度.csv` 和 `quantization_精度.json`,
 保留旧版 `runtime_config.csv` 作为既有部署的兼容入口.
 主机评测与缓存写入 `/tmp/hailongcodex/当天日期/yamnet`,模型产物保存在 `models/`.
@@ -96,7 +96,7 @@ NPU 平均/P95 每窗计时只覆盖常驻模型的 `NeuronRuntime_inference`.
 
 正式运行编号: `20261009_yamnet_esc50_fp16_v2`,全部 **2000 条音频 / 20000 窗口**
 真实 NPU 执行完成,逐音频哈希、标注、标签映射、窗口顺序和分数覆盖检查通过.
-[summary.json](results/summary.json) 同时归档 FP16 正式结果与 INT8 对照结果.
+[summary.json](results/summary.json) 同时归档 FP16、W8A8 对照及 W8A16 全量结果.
 
 | 后端 | 主评测宏平均 AP,1504 条 | 主评测 Top-1 | 全量投影 AP,1880 条 | 全量投影 Top-1 |
 | --- | ---: | ---: | ---: | ---: |
@@ -149,6 +149,60 @@ ffmpeg `6.1.4`,NumPy `1.26.4`;未修改板端固件或全局依赖.
 音频哈希与日志;Git 中 `results/` 仅保留 `summary.json`.主机浮点结果与隔离依赖
 来源记录留在 `/tmp/hailongcodex/2026-10-09/yamnet/`,浮点结果位于 Docker 同名临时
 目录,依赖锁定与下载来源记录位于 89 主机临时目录.
+
+## W8A16 板端全量结果
+
+运行 `20261009_yamnet_esc50_w8a16_v1`,原始 WAV 前处理和全部 **2000 条音频 /
+20000 窗口**硬件推理完成.与原有后端采用相同原始音频、标签映射和评测协议,
+第一折相同 100 条音频的前两窗用于 200 窗校准,主精度仍使用折 2-5 的 1504 条样本.
+
+| 项目 | W8A16 实测 |
+| --- | ---: |
+| 主评测宏平均 AP / Top-1 | 73.8964% / 72.6064% |
+| 全量投影 AP / Top-1,1880 条 | 74.0222% / 73.0851% |
+| AP 相对 ONNX 变化 | -0.2491 个百分点 |
+| NPU 平均 / P95 每窗推理 | 0.516 / 0.620 ms |
+| 每段音频前处理 / 推理阶段平均 | 80.938 / 6.096 ms |
+| 分阶段处理 RTF | 0.01741 |
+| C++ 推理 / Python 前处理峰值 RSS | 10.75 / 40.12 MiB |
+| DLA 大小 | 3986767 bytes,3.80 MiB |
+
+转换后核验 **28 个主计算层**的 INT8 权重、INT16 激活与 INT32 偏置;
+全部张量为 INT8 28 个、INT16 33 个、INT32 31 个,无浮点张量.
+NCC 使用 `--arch=mdla5.3 --suppress-output --disallow-bridge`,Runtime 使用硬件模式.
+原生输入为 `12288 bytes`,输出为 `1042 bytes`;两者均为有符号 INT16,
+不是 FP16.输入 scale/zero_point 为 `0.00017911930626723915 / 5797`,
+输出为 `0.0000152587890625 / -32768`.
+
+W8A16 TFLite SHA256: `03751967e37fb901b27f302465dff279dc85f96fde970822989dcc0fb1366b42`.
+
+W8A16 DLA SHA256: `04692e6ec7cec50b8680aa36231699706f41ebd3948497ddc2d75b2f31238caf`.
+
+原始分数、逐窗计时、三条声音示例和哈希证据位于板端
+`/root/hailong.he/open_models/yamnet/results/20261009_yamnet_esc50_w8a16_v1/`.
+W8A16 示例 Top-5 已内嵌唯一结果文件的 `w8a16.examples`,原有示例文件保留 FP16 输出.
+新 Runtime 对原 FP16 和 W8A8 分别全量回归,每种均为 2000 条 / 20000 窗,
+全部分数与原结果逐值一致.默认入口保持 FP16,W8A16 为已验证的整数量化选择.
+已上传两种产物后,板端可显式切换,不用重新编译:
+
+```bash
+YAMNET_PRECISION=w8a16 EVAL_RUN_ID=新的运行编号 \
+  bash /root/hailong.he/open_models/yamnet/run.sh
+```
+
+### 与高通量化参考的关系
+
+[高通官方 YamNet 模型卡](https://huggingface.co/qualcomm/YamNet) 同时列出 W8A8
+和 W8A16,两者权重均为 INT8,激活位宽分别为 8 和 16.其 QCS6490 性能表中的
+TFLite W8A8 为 0.505 ms,ONNX W8A16 为 0.722 ms,对应用户参考截图的两条路径.
+这些是该设备的部署性能,没有提供本项目同协议 ESC-50 投影 AP.
+[官方源码封装](https://github.com/qualcomm/ai-hub-models/blob/v0.63.0/src/qai_hub_models/models/yamnet/model.py)
+采用 `torch_audioset` 版本,校准数据接口为 AudioSet;本项目继续采用 Google 官方
+TensorFlow 源码与原始权重,没有使用高通预导出产物作为移植源.
+
+当前 MTK W8A8 配方的 AP 43.9329% 只能说明该配方尚未达到精度目标,
+不能推断 YAMNet 无法做 INT8 部署.W8A16 使用 INT8 权重已取得 AP 73.8964%,
+支持优先排查 W8A8 激活量化尺度和逐层误差的判断;具体误差层尚未定位.
 
 ## 声音示例
 

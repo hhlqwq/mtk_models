@@ -171,6 +171,20 @@
       "patches": 20000,
       "maximum_score_error": 0.0,
       "passed": true
+    },
+    "w8a16_runtime_regression": {
+      "fp16": {
+        "samples": 2000,
+        "patches": 20000,
+        "maximum_score_error": 0.0,
+        "passed": true
+      },
+      "int8": {
+        "samples": 2000,
+        "patches": 20000,
+        "maximum_score_error": 0.0,
+        "passed": true
+      }
     }
   },
   "environment": {
@@ -209,5 +223,224 @@
     "model_fp32.onnx": "a2deca938ea590b8fe2643408ea9df73a956e482b0a5525308f930f71ca301a8",
     "model_fp16.tflite": "8fb178803a3fc6d79646f8174b2ea64ea4d182979c92aebf5db818d5915f701f"
   },
-  "board_evidence_dir": "/root/hailong.he/open_models/yamnet/results/20261009_yamnet_esc50_fp16_v2"
+  "board_evidence_dir": "/root/hailong.he/open_models/yamnet/results/20261009_yamnet_esc50_fp16_v2",
+  "w8a16": {
+    "status": "complete",
+    "model": "yamnet",
+    "run_id": "20261009_yamnet_esc50_w8a16_v1",
+    "precision": "w8a16",
+    "dataset": "ESC-50",
+    "samples": 2000,
+    "patches": 20000,
+    "metric": "ESC-50 projected macro AP, folds 2-5",
+    "evaluation_samples": 1504,
+    "calibration_fold": 1,
+    "evaluation_folds": [
+      2,
+      3,
+      4,
+      5
+    ],
+    "mapped_classes": 47,
+    "unmapped_classes": [
+      "drinking_sipping",
+      "can_opening",
+      "washing_machine"
+    ],
+    "board_accuracy": 0.7389641661402947,
+    "reference_accuracy": 0.7414555515937383,
+    "accuracy_change_percentage_points": -0.24913854534436286,
+    "reference_source": "本次 ONNX FP32 同协议实测,固定标签投影,窗口分数均值",
+    "metrics": {
+      "all": {
+        "samples": 1880,
+        "top1": 0.7308510638297873,
+        "map": 0.7402220225900594
+      },
+      "held_out": {
+        "samples": 1504,
+        "top1": 0.726063829787234,
+        "map": 0.7389641661402947
+      }
+    },
+    "tensorflow_metrics": {
+      "all": {
+        "samples": 1880,
+        "top1": 0.7414893617021276,
+        "map": 0.7427054718817149
+      },
+      "held_out": {
+        "samples": 1504,
+        "top1": 0.7373670212765957,
+        "map": 0.7414569448427025
+      }
+    },
+    "onnx_metrics": {
+      "all": {
+        "samples": 1880,
+        "top1": 0.7414893617021276,
+        "map": 0.742702265532765
+      },
+      "held_out": {
+        "samples": 1504,
+        "top1": 0.7373670212765957,
+        "map": 0.7414555515937383
+      }
+    },
+    "npu_mean_ms": 0.5162071159499999,
+    "npu_p95_ms": 0.6203070500000001,
+    "timing_scope": "常驻模型每个 0.48 秒步长窗口的 NeuronRuntime_inference,排除 20 次预热",
+    "preprocess_mean_ms_per_clip": 80.93822280416498,
+    "inference_stage_mean_ms_per_clip": 6.09629931,
+    "processing_real_time_factor": 0.017406904422832995,
+    "processing_scope": "分阶段前处理与推理处理时间之和,含 ffmpeg 解码及特征缓存读取,排除 20 次预热;非实时麦克风端到端延迟",
+    "peak_rss_mib": 10.75,
+    "frontend_peak_rss_mib": 40.1171875,
+    "memory_scope": "NPU C++ 进程和 Python 前处理进程峰值分别记录,不包含 ffmpeg 子进程",
+    "annotations_sha256": "ca660da60191a97de289983a05821c9382d852a38a2ba8428980816b68cf6246",
+    "artifacts_sha256": {
+      "model_w8a16.dla": "04692e6ec7cec50b8680aa36231699706f41ebd3948497ddc2d75b2f31238caf",
+      "runtime_config_w8a16.csv": "004486e2b1e386c1a7152779cb5e58cf5b2ab2d84f5e2bca05fd773fe0b7f649",
+      "yamnet_class_map.csv": "cdf24d193e196d9e95912a2667051ae203e92a2ba09449218ccb40ef787c6df2"
+    },
+    "runtime_program_sha256": "6367ce4ba6ba5a20949a075d7414ea7ce51ae94eca70c8c5cab212f0ad0ef1c0",
+    "quantization": {
+      "weights": "INT8",
+      "activations": "INT16",
+      "bias": "INT32",
+      "input": {
+        "shape": [
+          1,
+          1,
+          96,
+          64
+        ],
+        "dtype": "int16",
+        "scale": 0.00017911930626723915,
+        "zero_point": 5797
+      },
+      "output": {
+        "shape": [
+          1,
+          521
+        ],
+        "dtype": "int16",
+        "scale": 1.52587890625e-05,
+        "zero_point": -32768
+      },
+      "calibration_fold": 1,
+      "calibration_clips": 100,
+      "calibration_patches": 200,
+      "verified_affine_layers": 28,
+      "tensor_types": {
+        "INT8": 28,
+        "INT16": 33,
+        "INT32": 31
+      },
+      "floating_point_tensors": 0
+    },
+    "artifact_sizes_bytes": {
+      "model_w8a16.tflite": 4242592,
+      "model_w8a16.dla": 3986767
+    },
+    "tflite_sha256": "03751967e37fb901b27f302465dff279dc85f96fde970822989dcc0fb1366b42",
+    "ncc_flags": [
+      "--arch=mdla5.3",
+      "--suppress-output",
+      "--disallow-bridge"
+    ],
+    "native_input_bytes": 12288,
+    "native_output_bytes": 1042,
+    "examples": [
+      {
+        "source_filename": "1-100032-A-0.wav",
+        "esc50_category": "dog",
+        "top5_yamnet": [
+          {
+            "class": "Silence",
+            "score": 0.7016571164131165
+          },
+          {
+            "class": "Dog",
+            "score": 0.1210174560546875
+          },
+          {
+            "class": "Domestic animals, pets",
+            "score": 0.11676635593175888
+          },
+          {
+            "class": "Animal",
+            "score": 0.08845214545726776
+          },
+          {
+            "class": "Bow-wow",
+            "score": 0.0850830078125
+          }
+        ]
+      },
+      {
+        "source_filename": "1-20133-A-39.wav",
+        "esc50_category": "glass_breaking",
+        "top5_yamnet": [
+          {
+            "class": "Silence",
+            "score": 0.301840215921402
+          },
+          {
+            "class": "Coin (dropping)",
+            "score": 0.11361999809741974
+          },
+          {
+            "class": "Glass",
+            "score": 0.11092681437730789
+          },
+          {
+            "class": "Chink, clink",
+            "score": 0.08017273247241974
+          },
+          {
+            "class": "Cutlery, silverware",
+            "score": 0.07940216362476349
+          }
+        ]
+      },
+      {
+        "source_filename": "1-31482-A-42.wav",
+        "esc50_category": "siren",
+        "top5_yamnet": [
+          {
+            "class": "Siren",
+            "score": 0.2609405517578125
+          },
+          {
+            "class": "Opera",
+            "score": 0.24466706812381744
+          },
+          {
+            "class": "Alarm",
+            "score": 0.23340147733688354
+          },
+          {
+            "class": "Classical music",
+            "score": 0.19242551922798157
+          },
+          {
+            "class": "Emergency vehicle",
+            "score": 0.18170318007469177
+          }
+        ]
+      }
+    ],
+    "board_evidence_dir": "/root/hailong.he/open_models/yamnet/results/20261009_yamnet_esc50_w8a16_v1"
+  },
+  "quantization_reference": {
+    "url": "https://huggingface.co/qualcomm/YamNet",
+    "precision_options": [
+      "w8a8",
+      "w8a16"
+    ],
+    "source_implementation": "w-hc/torch_audioset",
+    "calibration_dataset": "AudioSet",
+    "scope": "仅功能、量化路线与交付参考;本项目仍从 Google 官方 TensorFlow 源码与原始权重转换.当前 MTK W8A8 配方的精度退化不代表 YAMNet 无法 INT8 部署."
+  }
 }

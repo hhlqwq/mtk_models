@@ -6,9 +6,13 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     source "${SCRIPT_DIR}/board_paths.conf"
-    BOARD_PRECISION="${BOARD_PRECISION:-int8}"
+    BOARD_PRECISION="${YAMNET_PRECISION:-${BOARD_PRECISION:-int8}}"
+    [[ "${BOARD_PRECISION}" == fp16 || "${BOARD_PRECISION}" == int8 || "${BOARD_PRECISION}" == w8a16 ]]
     CONFIG="${SCRIPT_DIR}/models/runtime_config_${BOARD_PRECISION}.csv"
-    if [[ ! -f "${CONFIG}" ]]; then CONFIG="${SCRIPT_DIR}/models/runtime_config.csv"; fi
+    if [[ ! -f "${CONFIG}" && "${BOARD_PRECISION}" != w8a16 ]]; then
+        CONFIG="${SCRIPT_DIR}/models/runtime_config.csv"
+    fi
+    test -s "${CONFIG}"
     RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
     [[ "${RUN_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
     RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"

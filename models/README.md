@@ -32,7 +32,7 @@ PyTorch / ONNX / NPU mAP 分别为 **36.6444% / 36.6260% / 35.3510%**,
 量化损失使用本次同协议 ONNX 作为基准,详见
 [YOLOv8n README](perception/object_detection/yolov8n/README.md).
 
-YAMNet 正式运行 `20261009_yamnet_esc50_fp16_v2`,全部 2000 段音频、20000 窗口;主精度为折 2-5 的 1504 条映射样本,不是 AudioSet mAP.默认 FP16;INT8 对照 AP 43.9329%,不推荐部署.前处理进程峰值另记为 40.89 MiB.详见 [YAMNet README](audio/ambient_sound/yamnet/README.md).
+YAMNet 正式运行 `20261009_yamnet_esc50_fp16_v2`,全部 2000 段音频、20000 窗口;主精度为折 2-5 的 1504 条映射样本,不是 AudioSet mAP.默认 FP16;INT8 对照 AP 43.9329%,不推荐部署.前处理进程峰值另记为 40.89 MiB.W8A16 全量运行 `20261009_yamnet_esc50_w8a16_v1`,AP **73.8964%**,NPU **0.516 ms/窗口**,推理进程峰值 **10.75 MiB**,相对 ONNX AP **-0.2491 个百分点**.权重 INT8,激活 INT16;当前 W8A8 配方的退化不代表模型不能进行 INT8 部署.详见 [YAMNet README](audio/ambient_sound/yamnet/README.md).
 
 精度变化正数表示改善,负数表示下降: 准确率和 AP/AR 用板端减 ONNX,WER 用 ONNX 减板端。量化方式见各模型 README。ORT `session.Run` 与独立 NPU 调用耗时分开记录,不直接混排。
 
