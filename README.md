@@ -33,7 +33,7 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 
 | 模型 | 任务 | 标准输入 | 来源 | 当前状态 |
 | --- | --- | --- | --- | --- |
-| [YAMNet](models/audio/ambient_sound/yamnet/README.md) | Audio / Ambient sound | 16 kHz 单声道,96×64 Log-Mel | Google TensorFlow Models 官方源码与权重 | Genio 720 FP16 全量交付,投影 AP 74.14%,NPU 0.716 ms/窗口;W8A16 AP 73.90%,0.516 ms/窗口已验证 |
+| [YAMNet](models/audio/ambient_sound/yamnet/README.md) | Audio / Ambient sound | 16 kHz 单声道,96×64 Log-Mel | Google TensorFlow Models 官方源码与权重 | Genio 720 W8A16 全量交付,投影 AP 73.90%,交付运行 NPU 0.516 ms/窗口 |
 | [YOLOv8n](models/perception/object_detection/yolov8n/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics v8.0.111 官方源码与权重 | Genio 720 完整交付,三后端全量结果已回收 |
 | [Depth Anything V2 Small](models/navigation/single_camera_depth/depth_anything_v2_small/README.md) | Navigation / Single camera depth | 518×518 RGB | DepthAnything 官方源码与 Small 权重 | DA-2K 85.78%,NPU 131.31 ms,峰值 RSS 32.66 MiB |
 | [FastSAM-s](models/navigation/segmentation/fastsam/README.md) | Navigation / Segmentation | 640×640 RGB | CASIA-LMC-Lab / Ultralytics 8.0.111 | segm AR@100 37.57%,NPU 14.72 ms,峰值 RSS 64.55 MiB |
@@ -41,7 +41,7 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 | [ViT-Base Patch16 224](models/perception/image_classification/vit_base_patch16_224/README.md) | Perception / Image classification | 224×224 RGB | PyTorch Vision v0.15.1 | 本次全量结果已上传 |
 | [RTMPose Body2d](models/interaction/pose_detection/rtmpose_body2d/README.md) | Interaction / Pose detection | 256×192 RGB | OpenMMLab MMPose v1.3.2 | WholeBody AP 53.24%,NPU 3.86 ms/人体框,峰值 RSS 32.74 MiB |
 | [MobileFaceNet](models/interaction/face_recognition/mobilefacenet/README.md) | Interaction / Face recognition | 112×112 RGB 对齐人脸 | foamliu/MobileFaceNet | LFW 99.32%,NPU 0.52 ms,峰值 RSS 8.25 MiB |
-| [Whisper-Tiny](models/audio/stt/whisper_tiny/README.md) | Audio / STT | 16 kHz 单声道、最长 30 秒 | OpenAI Whisper v20250625 | 待上传当前测试汇总 |
+| [Whisper-Tiny](models/audio/stt/whisper_tiny/README.md) | Audio / STT | 16 kHz 单声道、最长 30 秒 | OpenAI Whisper v20250625 | LibriSpeech test-clean 全量 WER 7.56%,NPU 379.19 ms/条音频,峰值 RSS 105.53 MiB |
 
 公开示例结果见各模型 README; 当前指标依据已回收的板端 `results/summary.json` 更新.
 

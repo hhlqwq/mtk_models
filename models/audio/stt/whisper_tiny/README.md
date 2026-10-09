@@ -43,18 +43,28 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm、ffmpeg 和 OpenAI Whisper�
 
 ## 当前测试结果
 
-待上传本模型的 `results/summary.json` 后更新。只记录板端 NPU 平均耗时、推理进程峰值 RSS (MiB)、任务核心精度、同协议 ONNX 参考精度和精度变化。峰值 RSS 包含运行库及前后处理,不代表 NPU 专用内存。
+LibriSpeech test-clean 全量 2620 条音频,结果见 [summary.json](results/summary.json)。
 
-主指标 WER 越低越好,差值为板端 WER 减参考 WER; 参考后端须如实记录。
+| 指标 | 结果 |
+| --- | ---: |
+| ONNX FP32 WER | **7.56%** |
+| 板端 WER | **7.56%** |
+| 精度变化 | **下降不足 0.01 个百分点** |
+| 板端 NPU 平均耗时 | **379.19 ms/条音频** |
+| 推理进程峰值 RSS | **105.53 MiB** |
+
+WER 越低越好,本次板端 WER 相比 ONNX 上升不足 0.01 个百分点。精度变化按 ONNX WER 减板端 WER 计算,完整数值保存在汇总文件中。
+
+耗时为每条音频的 Encoder 和全部自回归 Decoder NPU 调用之和,不包含前后处理,不等同于一次 Decoder 调用耗时。峰值 RSS 为双模型常驻推理进程的峰值,包含运行库及前后处理,不代表 NPU 专用内存。
 
 ## 效果示例
 
-提供两位说话人的短音频,测试后保存对应的板端识别文本.
+提供两位说话人的短音频,输入选自 [LibriSpeech test-clean](https://www.openslr.org/12/),对应输出来自本次板端全量测试。
 
 输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
-将这些文件取回本模型的 `examples/output/` 后即可更新效果展示.当前先展示输入,输出以实际板端测试为准.
+识别结果已保存到 [transcripts.md](examples/output/transcripts.md)。
 
 ### 示例 1
 
@@ -62,11 +72,15 @@ Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm、ffmpeg 和 OpenAI Whisper�
 
 参考文本: HE HOPED THERE WOULD BE STEW FOR DINNER TURNIPS AND CARROTS AND BRUISED POTATOES AND FAT MUTTON PIECES TO BE LADLED OUT IN THICK PEPPERED FLOUR FATTENED SAUCE
 
+板端识别: He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick, peppered flour-fat and sauce.
+
 ### 示例 2
 
 [播放或下载音频](examples/input/sample_2.wav)
 
 参考文本: YOU WILL FIND ME CONTINUALLY SPEAKING OF FOUR MEN TITIAN HOLBEIN TURNER AND TINTORET IN ALMOST THE SAME TERMS
+
+板端识别: You will find me continually speaking of foreman, Titian, Holbein, Turner, and Tintarat, and almost the same terms.
 
 板端识别文本保存在 `examples/output/transcripts.md`.
 

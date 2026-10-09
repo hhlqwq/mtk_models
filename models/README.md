@@ -5,13 +5,33 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 目录结构、模型卡、Demo 和评测方式的 `delivery_reference`，实际模型必须使用官方或原作者
 公开源码与权重完成 MTK 侧转换和验证。
 
+## 模型规格
+
+输入为导出模型的张量形状,图像统一按 `N×C×H×W` 表示,批量大小为 1。音频模型的采样率均为 16 kHz。
+
+| 模型 | 具体版本 / 权重 | 模型输入 | 参数量 (M) | FP32 ONNX 大小 (MB) | 部署 DLA 大小 (MB) |
+| --- | --- | --- | ---: | ---: | --- |
+| [YAMNet](audio/ambient_sound/yamnet/README.md) | Google AudioSet 521 类,源码 `34a2132` | Log-Mel `1×1×96×64`,单声道音频 | 3.73 | 14.94 | W8A16 **3.99** |
+| [YOLOv8n](perception/object_detection/yolov8n/README.md) | YOLOv8-N,Ultralytics `v8.0.111` | RGB `1×3×640×640` | 3.16 | 12.66 | INT8 **3.53** |
+| [YOLOv5s](perception/object_detection/yolov5s/README.md) | YOLOv5-S,官方 `v7.0` 权重 | RGB `1×3×640×640` | 7.24 | 28.94 | INT8 **7.66** |
+| [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | ViT-B/16,TorchVision `IMAGENET1K_V1` | RGB `1×3×224×224` | 86.57 | 346.44 | INT8 **88.00** |
+| [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | RTMPose-M WholeBody 133 点,MMPose `v1.3.2` | RGB 人体裁剪 `1×3×256×192` | 17.95 | 71.83 | INT8 **19.14** |
+| [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | foamliu MobileFaceNet,`v1.0` 权重,128 维特征 | RGB 对齐人脸 `1×3×112×112` | 1.00 | 4.00 | INT8 **1.41** |
+| [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | Depth Anything V2 Small,ViT-S/14 | RGB `1×3×518×518` | 24.79 | 98.97 | INT8 **25.83** |
+| [FastSAM-s](navigation/segmentation/fastsam/README.md) | 官方 `FastSAM-s.pt`,Ultralytics `v8.0.111` | RGB `1×3×640×640` | 11.79 | 47.18 | INT8 **12.29** |
+| [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | OpenAI 多语言 `tiny`,源码 `v20250625` | encoder: Log-Mel `1×80×3000`; decoder: token + KV cache | 37.18 | 230.79 (双模型合计) | 浮点 **116.03** (双模型合计) |
+
+参数量按当前原始网络统计,`1 M = 100 万个参数`,不计 BatchNorm 运行统计量等缓冲区。文件大小来自当前生成文件,`1 MB = 1,000,000 bytes`,与运行时峰值内存分开记录。
+
+Whisper 参数量统计原始完整网络,encoder / decoder 文件大小分别为 ONNX **32.87 / 197.92 MB**、DLA **16.60 / 99.43 MB**。模型来源与完整版本见各模型的 `model_card.md` 和 `models/source_url.txt`。
+
 ## 当前测试结果
 
 根据已回收的各模型板端 `results/summary.json` 更新。参考基准必须与板端模型及评测协议匹配; 未上传结果的模型不预填数字。
 
 | 模型 | 板端 NPU 平均耗时 (ms) | 峰值 RSS (MiB) | 核心精度 | 精度变化 (百分点) |
 | --- | ---: | ---: | --- | ---: |
-| [YAMNet FP16](audio/ambient_sound/yamnet/README.md) | **0.716/窗** | **14.00** | ESC-50 47 类投影宏平均 AP **74.1440%** | **-0.0016** |
+| [YAMNet W8A16](audio/ambient_sound/yamnet/README.md) | **0.516/窗** | **10.75** | ESC-50 47 类投影宏平均 AP **73.8964%** | **-0.2491** |
 | [YOLOv8n](perception/object_detection/yolov8n/README.md) | **6.28** | **31.32** | mAP@0.5:0.95 **35.35%** | **-1.275** |
 | [YOLOv5s](perception/object_detection/yolov5s/README.md) | **9.76** | **33.23** | mAP@0.5:0.95 **35.86%** | **-1.23** |
 | [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | **51.75** | **141.30** | Top-1 **79.40%** | **-1.27** |
@@ -19,7 +39,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | **0.52** | **8.25** | LFW 验证准确率 **99.32%** | **-0.07** |
 | [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | **131.31** | **32.66** | DA-2K 点对准确率 **85.78%** | 待 ONNX 评测 |
 | [FastSAM-s](navigation/segmentation/fastsam/README.md) | **14.72** | **64.55** | segm AR@100 **37.57%** | **-1.45** |
-| [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | 待上传 | 待上传 | WER 待上传 | 待上传 |
+| [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | **379.19/条音频** | **105.53** | WER **7.56%** | 下降不足 0.01 |
 
 YOLOv5s 结果来自运行 `20261008_032807_67603`,COCO val2017 全量 5000 张; ONNX FP32 与板端精度均为本次同协议实测,ONNX mAP 为 **37.09%**。结果文件见 [summary.json](perception/object_detection/yolov5s/results/summary.json)。
 
@@ -31,7 +51,7 @@ PyTorch / ONNX / NPU mAP 分别为 **36.6444% / 36.6260% / 35.3510%**,
 量化损失使用本次同协议 ONNX 作为基准,详见
 [YOLOv8n README](perception/object_detection/yolov8n/README.md).
 
-YAMNet 正式运行 `20261009_yamnet_esc50_fp16_v2`,全部 2000 段音频、20000 窗口;主精度为折 2-5 的 1504 条映射样本,不是 AudioSet mAP.默认 FP16;INT8 对照 AP 43.9329%,不推荐部署.前处理进程峰值另记为 40.89 MiB.W8A16 全量运行 `20261009_yamnet_esc50_w8a16_v1`,AP **73.8964%**,NPU **0.516 ms/窗口**,推理进程峰值 **10.75 MiB**,相对 ONNX AP **-0.2491 个百分点**.权重 INT8,激活 INT16;当前 W8A8 配方的退化不代表模型不能进行 INT8 部署.详见 [YAMNet README](audio/ambient_sound/yamnet/README.md).
+YAMNet 交付方案为全 W8A16,运行 `20261009_yamnet_esc50_w8a16_v1`,全部 2000 段音频、20000 窗口;主精度为折 2-5 的 1504 条映射样本,不是 AudioSet mAP.权重 INT8、激活 INT16,AP **73.8964%**,该交付运行 NPU 平均 **0.516 ms/窗口**,推理进程峰值 **10.75 MiB**,相对 ONNX AP **-0.2491 个百分点**.两种保留方案的详细精度、耗时及不同运行状态下的配对对照见 [YAMNet README](audio/ambient_sound/yamnet/README.md).
 
 精度变化正数表示改善,负数表示下降: 准确率和 AP/AR 用板端减 ONNX,WER 用 ONNX 减板端。量化方式见各模型 README。ORT `session.Run` 与独立 NPU 调用耗时分开记录,不直接混排。
 
@@ -46,7 +66,7 @@ YAMNet 正式运行 `20261009_yamnet_esc50_fp16_v2`,全部 2000 段音频、2000
 | P0 | YOLOv5s → Genio 5100 | 第二平台部署基线 | 复用现有 YOLOv5s 包 | Genio 720 证据最完整，最适合验证框架的平台抽象与兼容性 | 核对 G5100 SDK、编译架构、Runtime、量化和板端部署差异 |
 | P1 | Depth Anything V2 Small | 单目相对深度、障碍物远近和空间结构 | `navigation/single_camera_depth/depth_anything_v2_small` | 能把二维检测扩展为空间感知，直接服务移动机器人导航 | 固定输入尺寸；检查 Transformer、插值和量化误差；不得把相对深度直接当作安全米制距离 |
 | P1 | MediaPipe Hand Gesture | 手检测、21 点关键点和手势控制 | `interaction/gesture/mediapipe_hand_gesture` | 能形成直观的人机交互 Demo，并补足现有 RTMPose 的手部能力 | 按子模型分别验证检测、关键点和分类；动作控制必须使用多帧确认与超时失效 |
-| 已完成 | YAMNet FP16 | 警报、撞击、玻璃破碎和机械异常声识别 | `audio/ambient_sound/yamnet` | MobileNetV1 架构轻量，可与 Whisper 形成“语音内容 + 环境事件”双通路 | ESC-50 全量实测已完成；后续接入实时麦克风并使用真实机器人环境噪声验证 |
+| 已完成 | YAMNet W8A16 | 警报、撞击、玻璃破碎和机械异常声识别 | `audio/ambient_sound/yamnet` | MobileNetV1 架构轻量，可与 Whisper 形成“语音内容 + 环境事件”双通路 | ESC-50 全量实测已完成；后续接入实时麦克风并使用真实机器人环境噪声验证 |
 | P2 | OSNet + BoxMOT | 人员持续跟踪和身份保持 | `slam/object_tracking/boxmot_osnet` | 可复用现有 YOLO 检测结果，ReID 上 NPU、关联和 Kalman Filter 留在 CPU | 分开统计 Detector、ReID 和 Tracker 的耗时与资源，不能把 BoxMOT 当作单一 NPU 模型 |
 | P2 | SuperPoint → LightGlue | 视觉定位、特征匹配和 SLAM | `slam/localization/superpoint_lightglue` | 补齐机器人定位能力，适合按两个独立模型分阶段推进 | 先固定最大关键点数验证 SuperPoint；LightGlue 的动态匹配和注意力先允许 CPU 执行 |
 | P3 | FastSAM / EdgeSAM / MobileSAM | 点选目标、抓取区域和开放分割 | 复用 FastSAM，其他模型暂留目标清单 | 适合机械臂和交互展示，但不应替代持续运行的基础语义分割 | 评估提示输入、多阶段图、内存占用和许可证限制 |
