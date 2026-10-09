@@ -99,6 +99,11 @@ def summarize(args):
         "frontend_peak_rss_mib": int((args.work / "frontend_peak_rss_kib.txt").read_text()) / 1024,
         "memory_scope": "NPU C++ 进程和 Python 前处理进程峰值分别记录,不包含 ffmpeg 子进程",
         "annotations_sha256": annotation_hash,
+        "artifacts_sha256": {
+            name: hashlib.sha256((args.models_dir / name).read_bytes()).hexdigest()
+            for name in ("model_int8.dla", "runtime_config.csv", "yamnet_class_map.csv")},
+        "runtime_program_sha256": hashlib.sha256(
+            (args.models_dir.parent / "board/yamnet_eval").read_bytes()).hexdigest(),
     }
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))

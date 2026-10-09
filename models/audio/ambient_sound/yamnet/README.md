@@ -39,6 +39,8 @@ docker exec hhl_g720_8011 "$work/venv/bin/pip" install --no-deps tf-keras==2.15.
 
 已有环境可用 `YAMNET_EXPORT_PYTHON` 指定实际 Python 路径.编译主机和板端需要
 ffmpeg,板端 Python 需要 NumPy;MTK Converter 和 ONNX Runtime 复用现有 Docker.
+本次隔离依赖的锁定版本和具体下载 URL、文件哈希分别保存在主机临时目录的
+`requirements_locked.txt` 和 `dependency_sources.json`.
 
 ## 两步运行
 
