@@ -7,6 +7,8 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     source "${SCRIPT_DIR}/board_paths.conf"
     BOARD_PRECISION="${BOARD_PRECISION:-int8}"
+    CONFIG="${SCRIPT_DIR}/models/runtime_config_${BOARD_PRECISION}.csv"
+    if [[ ! -f "${CONFIG}" ]]; then CONFIG="${SCRIPT_DIR}/models/runtime_config.csv"; fi
     RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
     [[ "${RUN_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
     RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
@@ -20,7 +22,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         2>&1 | tee "${RESULT_DIR}/prepare.log"
     echo '[开发板 2/3] 常驻模型预热并执行真实 NPU 全量推理.'
     "${SCRIPT_DIR}/board/yamnet_eval" "${SCRIPT_DIR}/models/model_${BOARD_PRECISION}.dla" \
-        "${SCRIPT_DIR}/models/runtime_config.csv" "${RESULT_DIR}/work" \
+        "${CONFIG}" "${RESULT_DIR}/work" \
         2>&1 | tee "${RESULT_DIR}/npu.log"
     echo '[开发板 3/3] 同协议精度对比、性能汇总和真实声音示例.'
     python3 "${SCRIPT_DIR}/board/evaluate.py" --mode summarize \
@@ -40,7 +42,7 @@ DATASET_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ESC-50"
 BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yamnet"
 EXPORT_PYTHON="${YAMNET_EXPORT_PYTHON:-${BUILD_WORK_DIR}/venv/bin/python}"
 PRECISION="${YAMNET_PRECISION:-fp16}"
-[[ "${PRECISION}" == fp16 || "${PRECISION}" == int8 ]]
+[[ "${PRECISION}" == fp16 || "${PRECISION}" == int8 || "${PRECISION}" == w8a16 ]]
 CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
 NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
 NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
@@ -112,7 +114,7 @@ ssh -n "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board' '${BOARD_DEPLOY_DIR}/examples/input' '${BOARD_DATASET_DIR}'"
 rsync -a --info=progress2 "${DATASET_DIR}/audio" "${DATASET_DIR}/meta" \
     "${DATASET_DIR}/LICENSE" "${DATASET_DIR}/source_manifest.json" "${BOARD_HOST}:${BOARD_DATASET_DIR}/"
-scp "${SSH_OPTIONS[@]}" "${MODELS_DIR}/model_${PRECISION}.dla" "${MODELS_DIR}/runtime_config.csv" \
+scp "${SSH_OPTIONS[@]}" "${MODELS_DIR}/model_${PRECISION}.dla" "${MODELS_DIR}/runtime_config_${PRECISION}.csv" \
     "${MODELS_DIR}/yamnet_class_map.csv" "${MODELS_DIR}/fp32_reference.json" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/"
 scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/yamnet_eval" "${SCRIPT_DIR}/board/"*.py \

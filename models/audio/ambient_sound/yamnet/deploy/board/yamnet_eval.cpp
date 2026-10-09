@@ -31,6 +31,7 @@ struct Quantization {
   float scale = 0;
   int zero = 0;
   bool fp16 = false;
+  bool int16 = false;
 };
 
 // 读取转换器解析出的实际 IO 量化配置.
@@ -40,14 +41,23 @@ Quantization ReadQuantization(std::ifstream& stream) {
   std::replace(line.begin(), line.end(), ',', ' ');
   std::istringstream row(line);
   Quantization value;
-  if (!(row >> value.scale >> value.zero) || value.scale <= 0 ||
-      value.zero < -128 || value.zero > 127) {
+  if (!(row >> value.scale >> value.zero) || !std::isfinite(value.scale) || value.scale <= 0) {
     throw std::runtime_error("量化配置无效.");
   }
   std::string precision;
   if (row >> precision) {
-    if (precision != "fp16") throw std::runtime_error("未知 IO 精度.");
-    value.fp16 = true;
+    if (precision == "fp16") {
+      value.fp16 = true;
+    } else if (precision == "w8a16") {
+      value.int16 = true;
+    } else {
+      throw std::runtime_error("未知 IO 精度.");
+    }
+  }
+  const int minimum = value.int16 ? -32768 : -128;
+  const int maximum = value.int16 ? 32767 : 127;
+  if (value.zero < minimum || value.zero > maximum) {
+    throw std::runtime_error("零点超出对应精度的整数范围.");
   }
   return value;
 }
@@ -55,7 +65,7 @@ Quantization ReadQuantization(std::ifstream& stream) {
 class Model {
  public:
   // 创建硬件 Runtime 并严格验证输入输出数量和原生字节布局.
-  explicit Model(const fs::path& path, bool fp16) {
+  explicit Model(const fs::path& path, size_t bytes) {
     EnvOptions options{};
     options.deviceKind = kEnvOptHardware;
     options.MDLACoreOption = Auto;
@@ -70,7 +80,6 @@ class Model {
       Check(NeuronRuntime_getOutputNumber(runtime_, &outputs), "output count");
       Check(NeuronRuntime_getSingleInputPaddedSize(runtime_, &input_size), "input size");
       Check(NeuronRuntime_getOutputPaddedSize(runtime_, 0, &output_size), "output size");
-      const size_t bytes = fp16 ? 2 : 1;
       if (inputs != 1 || outputs != 1 || input_size != 6144 * bytes ||
           (output_size != 521 * bytes && output_size != 528 * bytes)) {
         throw std::runtime_error("原生 IO 布局不匹配: " + std::to_string(input_size) +
@@ -105,12 +114,17 @@ class Model {
     return std::chrono::duration<double, std::milli>(Clock::now() - start).count();
   }
 
-  // 读取原生 FP16 或 INT8 类别分数,忽略尾部填充.
+  // 读取原生 FP16、INT8 或 INT16 类别分数,忽略尾部填充.
   float OutputScore(int category, const Quantization& quantization) const {
     if (quantization.fp16) {
       __fp16 value;
       std::memcpy(&value, output_.data() + category * 2, sizeof(value));
       return static_cast<float>(value);
+    }
+    if (quantization.int16) {
+      int16_t value;
+      std::memcpy(&value, output_.data() + category * 2, sizeof(value));
+      return (static_cast<int>(value) - quantization.zero) * quantization.scale;
     }
     return (static_cast<int>(output_[category]) - quantization.zero) * quantization.scale;
   }
@@ -127,10 +141,11 @@ int Run(int argc, char** argv) {
   std::ifstream configuration(argv[2]);
   const auto input_quant = ReadQuantization(configuration);
   const auto output_quant = ReadQuantization(configuration);
-  if (input_quant.fp16 != output_quant.fp16) {
+  if (input_quant.fp16 != output_quant.fp16 || input_quant.int16 != output_quant.int16) {
     throw std::runtime_error("输入输出精度必须一致.");
   }
-  Model model(argv[1], input_quant.fp16);
+  const size_t bytes = input_quant.fp16 || input_quant.int16 ? 2 : 1;
+  Model model(argv[1], bytes);
   std::ifstream manifest(work / "patch_counts.txt");
   std::ifstream features(work / "features.bin", std::ios::binary);
   std::ofstream scores(work / "scores.bin", std::ios::binary);
@@ -144,6 +159,7 @@ int Run(int argc, char** argv) {
   std::vector<float> patch(6144);
   std::vector<int8_t> quantized(6144);
   std::vector<__fp16> half(6144);
+  std::vector<int16_t> wide(6144);
   int count = 0, clip = 0;
   bool warmed = false;
   while (manifest >> count) {
@@ -160,12 +176,17 @@ int Run(int argc, char** argv) {
           half[value] = static_cast<__fp16>(patch[value]);
         } else {
           const float integer = std::nearbyint(patch[value] / input_quant.scale) + input_quant.zero;
-          quantized[value] = static_cast<int8_t>(std::clamp(integer, -128.0F, 127.0F));
+          if (input_quant.int16) {
+            wide[value] = static_cast<int16_t>(std::clamp(integer, -32768.0F, 32767.0F));
+          } else {
+            quantized[value] = static_cast<int8_t>(std::clamp(integer, -128.0F, 127.0F));
+          }
         }
       }
       const void* data = input_quant.fp16 ? static_cast<const void*>(half.data()) :
-                                           static_cast<const void*>(quantized.data());
-      const size_t size = input_quant.fp16 ? half.size() * sizeof(__fp16) : quantized.size();
+          (input_quant.int16 ? static_cast<const void*>(wide.data()) :
+                              static_cast<const void*>(quantized.data()));
+      const size_t size = patch.size() * bytes;
       if (!warmed) {
         const auto warmup_start = Clock::now();
         for (int repeat = 0; repeat < 20; ++repeat) model.Infer(data, size);

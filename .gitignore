@@ -119,5 +119,6 @@ Thumbs.db
 models/audio/ambient_sound/yamnet/models/upstream/
 models/audio/ambient_sound/yamnet/models/*.json
 models/audio/ambient_sound/yamnet/models/runtime_config.csv
+models/audio/ambient_sound/yamnet/models/runtime_config_*.csv
 models/audio/ambient_sound/yamnet/models/yamnet_class_map.csv
 !models/audio/ambient_sound/yamnet/examples/output/sample_*_events.json

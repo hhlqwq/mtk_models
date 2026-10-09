@@ -76,13 +76,16 @@ def summarize(args):
         raise ValueError("音频推理阶段耗时覆盖不足.")
     preprocess_ms = np.array([row["preprocess_ms"] for row in audio])
     inference_ms = np.array([float(row["inference_stage_ms"]) for row in clip_rows])
+    config_name = f"runtime_config_{args.precision}.csv"
+    if not (args.models_dir / config_name).exists():
+        config_name = "runtime_config.csv"
     summary = {
         "status": "complete", "model": "yamnet", "run_id": args.run_id,
         "precision": args.precision,
         "dataset": "ESC-50", "samples": 2000, "patches": len(npu),
         "metric": "ESC-50 projected macro AP, folds 2-5",
         "evaluation_samples": actual["held_out"]["samples"],
-        "calibration_fold": 1 if args.precision == "int8" else None,
+        "calibration_fold": 1 if args.precision != "fp16" else None,
         "evaluation_folds": [2, 3, 4, 5],
         "mapped_classes": 47,
         "unmapped_classes": ["drinking_sipping", "can_opening", "washing_machine"],
@@ -104,7 +107,7 @@ def summarize(args):
         "annotations_sha256": annotation_hash,
         "artifacts_sha256": {
             name: hashlib.sha256((args.models_dir / name).read_bytes()).hexdigest()
-            for name in (f"model_{args.precision}.dla", "runtime_config.csv", "yamnet_class_map.csv")},
+            for name in (f"model_{args.precision}.dla", config_name, "yamnet_class_map.csv")},
         "runtime_program_sha256": hashlib.sha256(
             (args.models_dir.parent / "board/yamnet_eval").read_bytes()).hexdigest(),
     }
@@ -135,7 +138,7 @@ def main():
     parser.add_argument("--models-dir", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--run-id")
-    parser.add_argument("--precision", choices=["fp16", "int8"], default="fp16")
+    parser.add_argument("--precision", choices=["fp16", "int8", "w8a16"], default="fp16")
     args = parser.parse_args()
     if args.mode == "prepare":
         prepare(args)

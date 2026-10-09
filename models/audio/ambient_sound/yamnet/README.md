@@ -55,6 +55,11 @@ bash models/audio/ambient_sound/yamnet/deploy/run.sh
 --disallow-bridge` DLA 编译、C++ 交叉编译和板端上传.不会自动下载或安装依赖.
 可用 `YAMNET_PRECISION=int8 bash models/audio/ambient_sound/yamnet/deploy/run.sh`
 执行 200 窗 PTQ 校准的 INT8 对照流程,该精度存在明显退化,当前不推荐部署.
+W8A16 入口为 `YAMNET_PRECISION=w8a16 bash models/audio/ambient_sound/yamnet/deploy/run.sh`,
+使用 INT8 权重、INT16 激活与原生 INT16 IO.转换后逐层检查 27 层卷积和 1 层
+全连接的实际精度,实测结果将在全量板端测试完成后更新.
+各精度使用独立的 `runtime_config_精度.csv` 和 `quantization_精度.json`,
+保留旧版 `runtime_config.csv` 作为既有部署的兼容入口.
 主机评测与缓存写入 `/tmp/hailongcodex/当天日期/yamnet`,模型产物保存在 `models/`.
 
 92 开发板执行:
