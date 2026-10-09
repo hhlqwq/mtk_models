@@ -91,10 +91,10 @@ def summarize(args):
         "npu_mean_ms": float(npu.mean()), "npu_p95_ms": float(np.percentile(npu, 95)),
         "timing_scope": "常驻模型每个 0.48 秒步长窗口的 NeuronRuntime_inference,排除 20 次预热",
         "preprocess_mean_ms_per_clip": float(preprocess_ms.mean()),
-        "inference_stage_mean_ms_per_clip": float(inference_ms[1:].mean()),
-        "processing_real_time_factor": float((preprocess_ms.sum() + inference_ms[1:].sum()) /
+        "inference_stage_mean_ms_per_clip": float(inference_ms.mean()),
+        "processing_real_time_factor": float((preprocess_ms.sum() + inference_ms.sum()) /
                                              (sum(row["audio_seconds"] for row in audio) * 1000)),
-        "processing_scope": "分阶段前处理与推理处理时间之和,含 ffmpeg 解码及特征缓存读取;非实时麦克风端到端延迟;首条含预热的推理阶段排除",
+        "processing_scope": "分阶段前处理与推理处理时间之和,含 ffmpeg 解码及特征缓存读取,排除 20 次预热;非实时麦克风端到端延迟",
         "peak_rss_mib": int((args.work / "peak_rss_kib.txt").read_text()) / 1024,
         "frontend_peak_rss_mib": int((args.work / "frontend_peak_rss_kib.txt").read_text()) / 1024,
         "memory_scope": "NPU C++ 进程和 Python 前处理进程峰值分别记录,不包含 ffmpeg 子进程",

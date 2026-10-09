@@ -130,6 +130,7 @@ int Run(int argc, char** argv) {
   while (manifest >> count) {
     if (count <= 0) throw std::runtime_error("窗口数量必须为正.");
     std::vector<float> average(521, 0);
+    double warmup_ms = 0;
     const auto start = Clock::now();
     for (int index = 0; index < count; ++index) {
       features.read(reinterpret_cast<char*>(patch.data()), patch.size() * sizeof(float));
@@ -140,7 +141,10 @@ int Run(int argc, char** argv) {
         quantized[value] = static_cast<int8_t>(std::clamp(integer, -128.0F, 127.0F));
       }
       if (!warmed) {
+        const auto warmup_start = Clock::now();
         for (int repeat = 0; repeat < 20; ++repeat) model.Infer(quantized);
+        warmup_ms = std::chrono::duration<double, std::milli>(
+            Clock::now() - warmup_start).count();
         warmed = true;
       }
       const double npu_ms = model.Infer(quantized);
@@ -150,7 +154,8 @@ int Run(int argc, char** argv) {
                              output_quant.scale / count;
       }
     }
-    const double elapsed = std::chrono::duration<double, std::milli>(Clock::now() - start).count();
+    const double elapsed = std::chrono::duration<double, std::milli>(
+        Clock::now() - start).count() - warmup_ms;
     clip_times << clip << ',' << count << ',' << elapsed << '\n';
     scores.write(reinterpret_cast<char*>(average.data()), average.size() * sizeof(float));
     ++clip;
