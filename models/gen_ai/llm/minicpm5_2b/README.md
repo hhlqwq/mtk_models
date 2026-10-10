@@ -95,3 +95,10 @@ SHA256 `f6af174133ee756ffedbd0db327c0247b0f6ae9509ee2599b37cf8bd01988201`.
 输入 Token、原始文本、分块协议、实际 TFLite 与 embedding 哈希,
 记录相对 PPL 变化,不把主机子集结果标为板端 NPU 精度.
 板端归档后的 README 与汇总报告同时保留主机 PPL 和板端 Demo 范围说明.
+
+统一板端 PPL 入口为 `models/gen_ai/llm/evaluate_board_quality.py`.
+主机入口导出 SDK 掩码、RoPE 和实际 INT16 输入输出契约;
+板端复用既有 `neuron_bridge.cpp` 的硬件 Runtime 接口,核对所有缓冲区大小,
+同一批 Token 每块重置 KV,从真实 MDLA logits 计算 NLL/PPL,不回退到 CPU.
+`--bridge-library` 支持打包现有 AArch64 桥接库,新包含独立评价脚本与输入资源.
+这仍是固定文本子集的板端质量检查,不是完整 WikiText2 基准.

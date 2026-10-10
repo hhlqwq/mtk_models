@@ -9,6 +9,9 @@
 
 统一协议 FP32 参考 PPL 为 **118.70850**,评分 **7620** 个 Token;
 W4A16 结果仍待计算,见 [统一质量报告](results/quality_summary.json).
+原生 W4A16 的同协议板端 PPL 使用共享 `evaluate_board_quality.py`,
+读取实际 INT16 图契约并通过现有 `neuron_bridge.cpp` 在 MDLA 硬件执行,
+不沿用旧 FP16 的 NLL 结果.
 
 中英文文本问答与推理模型.使用 DeepSeek 官方权重,参考地瓜 RDK S 系列的选型与指标展示,不使用厂商预编译模型作为转换输入.
 

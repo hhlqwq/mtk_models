@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 from types import SimpleNamespace
 
+import numpy as np
 import pyarrow.parquet as parquet
 import torch
 from safetensors.torch import load_file
@@ -22,6 +23,44 @@ def sha256(path):
         for block in iter(lambda: stream.read(8 * 1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def export_board_inputs(model, graph_path, output):
+    """导出 SDK 同协议的掩码、RoPE 和原始 INT16 I/O 契约."""
+    from mtk_converter.python.converters.tflite.schema.tflite.Model import Model
+    from mtk_converter.python.converters.tflite.schema.tflite.TensorType import TensorType
+    from mtk_llm_sdk.utils import generate_utils, utils
+
+    graph = Model.GetRootAsModel(graph_path.read_bytes(), 0).Subgraphs(0)
+    contract = {"tflite_sha256": sha256(graph_path), "inputs": [], "outputs": []}
+    for kind, length, index in (("inputs", graph.InputsLength, graph.Inputs),
+                                ("outputs", graph.OutputsLength, graph.Outputs)):
+        for offset in range(length()):
+            tensor = graph.Tensors(index(offset))
+            q = tensor.Quantization()
+            if tensor.Type() != TensorType.INT16 or q.ScaleLength() != 1:
+                raise ValueError("板端 PPL 只支持逐张量 INT16 原生接口.")
+            contract[kind].append({"name": tensor.Name().decode(),
+                                   "shape": tensor.ShapeAsNumpy().tolist(),
+                                   "scale": float(q.Scale(0)),
+                                   "zero_point": int(q.ZeroPoint(0))})
+    config = utils.resolve_model_classes(str(model / "config.json"),
+                                         bypass_tokenizer=True)[0]
+    prefill = contract["inputs"][0]["shape"][1]
+    mask = generate_utils.generate_mask(config.max_position_embeddings, 0,
+                                        prefill, prefill, dtype=np.float32)
+    position = generate_utils.get_master_rot_emb(config, np.float32)[:, :, :prefill, :]
+    arrays = {}
+    for name, values in (("mask", mask), ("pos_emb", position)):
+        entry = next(item for item in contract["inputs"] if item["name"] == name)
+        if list(values.shape) != entry["shape"]:
+            raise ValueError(f"SDK 输入形状不符: {name}")
+        arrays[name] = np.clip(np.rint(values / entry["scale"] + entry["zero_point"]),
+                               -32768, 32767).astype("<i2")
+    np.savez(output / "board_inputs.npz", **arrays)
+    contract["board_inputs_sha256"] = sha256(output / "board_inputs.npz")
+    (output / "board_input_contract.json").write_text(
+        json.dumps(contract, ensure_ascii=False, indent=2) + "\n")
 
 
 def evaluate(args):
@@ -119,6 +158,7 @@ def evaluate(args):
         if len(graphs) != 1:
             raise ValueError("量化质量检查要求唯一静态 TFLite.")
         protocol["tflite_sha256"] = sha256(graphs[0])
+        export_board_inputs(args.model, graphs[0], args.output)
         # 仅在当前评测进程注入本地固定语料,不修改 SDK 或它的全局缓存.
         def get_local_dataset(*unused_args, **unused_kwargs):
             """返回与浮点参考完全相同的固定 Token 子集."""

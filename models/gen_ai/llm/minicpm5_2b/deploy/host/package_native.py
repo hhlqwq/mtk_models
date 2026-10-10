@@ -6,6 +6,7 @@ import math
 from pathlib import Path
 import re
 import shutil
+import struct
 
 import yaml
 
@@ -77,7 +78,8 @@ def write_run_script(output):
         'done\n')
 
 
-def package(work, output, prefill, quantized_prefix=None, quality_results=None):
+def package(work, output, prefill, quantized_prefix=None, quality_results=None,
+            bridge_library=None):
     """复制真实 DLA 与量化资源,生成配置和待板端验证清单."""
     preparation = json.loads((work / "native_prepare.json").read_text())
     context = preparation["context"]
@@ -170,10 +172,18 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None):
                    "board_npu_accuracy_verified": False}
         folder = output / "results/quality"
         folder.mkdir(parents=True)
-        for name in ("pytorch_quality.json", "tflite_quality.json"):
+        for name in ("pytorch_quality.json", "tflite_quality.json",
+                     "board_input_contract.json", "board_inputs.npz"):
             shutil.copyfile(quality_results / name, folder / name)
         (folder / "summary.json").write_text(
             json.dumps(quality, ensure_ascii=False, indent=2) + "\n")
+        shutil.copyfile(Path(__file__).resolve().parents[3] / "evaluate_board_quality.py",
+                        output / "scripts/evaluate_quality.py")
+        if bridge_library is not None:
+            header = bridge_library.read_bytes()[:20]
+            if header[:6] != b"\x7fELF\x02\x01" or struct.unpack_from("<H", header, 18)[0] != 183:
+                raise ValueError("板端硬件桥接库必须为 AArch64 ELF.")
+            shutil.copyfile(bridge_library, output / "scripts/libneuron_bridge.so")
     shutil.copyfile(model / "LICENSE", output / "LICENSE")
     (output / "README.md").write_text(
         f"# MiniCPM5-2B\n\n"
@@ -291,13 +301,14 @@ def main():
     parser.add_argument("--prefill", type=int, default=128)
     parser.add_argument("--quantized-prefix", type=Path)
     parser.add_argument("--quality-results", type=Path)
+    parser.add_argument("--bridge-library", type=Path)
     parser.add_argument("--board-results", type=Path)
     args = parser.parse_args()
     if args.board_results:
         record_board_results(args.work, args.output, args.board_results)
     else:
         package(args.work, args.output, args.prefill, args.quantized_prefix,
-                args.quality_results)
+                args.quality_results, args.bridge_library)
 
 
 if __name__ == "__main__":
