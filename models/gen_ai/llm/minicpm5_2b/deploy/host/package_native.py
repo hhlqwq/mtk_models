@@ -134,6 +134,13 @@ def package(work, output, prefill):
         "dlaPromptPaths": [f"./{context}c/prompt.dla"],
         "dlaGenPaths": [f"./{context}c/decode.dla"],
     }
+    # 原生 RE2 默认按单个数字切分,改为官方最多三位数字规则.
+    # RE2 不支持官方 whitespace lookahead,通用输入优先使用官方 Token.
+    runtime["tokenizerRegex"] = (
+        r"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|"
+        r"\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|"
+        r"\s+(?:$|[^\S])|\s+)"
+    )
     (output / "scripts/config-yocto.yaml").write_text(
         yaml.safe_dump({"modelOptions": options, "runtimeOptions": runtime},
                        sort_keys=False, allow_unicode=True))

@@ -32,3 +32,10 @@ OpenBMB 官方中英文纯文本 LLM,采用标准 Llama 架构.
 
 SDK 2.7.5 校准生成对 EOS 列表存在维度错误,独立转换配置使用官方对话结束 Token 130073.
 原生交付 stopToken 仍保留 1 和 130073,官方原始配置保持不变.
+
+主机质量对比入口为 `deploy/host/evaluate_quality.py`,同一固定 WikiText2 测试集
+前 8192 Token,64 个 128 Token 块,每块重置上下文并评分 127 次下一 Token.
+官方 Transformers FP32 与 SDK 量化 TFLite 使用相同 Token IDs,
+该协议为测试集子集的转换质量检查,不作为完整基准或板端 NPU 精度结论.
+原生 tokenizer 使用 RE2,数字切分配置为最多三位; RE2 不支持官方空白规则的
+lookahead,默认使用官方 Token 输入.原生文本输入的兼容结论仅覆盖实际验证样例.
