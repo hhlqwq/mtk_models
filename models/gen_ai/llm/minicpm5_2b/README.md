@@ -87,3 +87,7 @@ SHA256 `f6af174133ee756ffedbd0db327c0247b0f6ae9509ee2599b37cf8bd01988201`.
 统一协议 FP32 参考 PPL 为 **40.04115**,评分 **7366** 个 Token.
 原始文本 SHA256 为 `6605c41acd8bc0bfeb0f1acb43e31437da857e03135b21b097d16756ccaba84c`,
 与 DeepSeek 一致.量化结果尚待完成,见 [质量报告](results/quality_summary.json).
+
+打包时使用 `--quality-results` 归档两个后端的原始报告; 打包入口核对
+输入 Token、原始文本、分块协议、实际 TFLite 与 embedding 哈希,
+记录相对 PPL 变化,不把主机子集结果标为板端 NPU 精度.

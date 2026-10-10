@@ -57,6 +57,8 @@ def evaluate(args):
         "input_ids": tokens[0].tolist(),
         "model_name": args.model.name,
         "reference_device": args.device if args.backend == "pytorch" else None,
+        "model_config_sha256": sha256(args.model / "config.json"),
+        "native_prepare_sha256": sha256(args.model.parent / "native_prepare.json"),
     }
     args.output.mkdir(parents=True, exist_ok=True)
     if args.backend == "pytorch":
@@ -113,6 +115,10 @@ def evaluate(args):
         if not embedding.exists():
             raise ValueError("请等待 Shape 阶段完成,量化评测需要实际 INT16 embedding.")
         protocol["embedding_sha256"] = sha256(embedding)
+        graphs = list(args.tflite.glob("*.tflite"))
+        if len(graphs) != 1:
+            raise ValueError("量化质量检查要求唯一静态 TFLite.")
+        protocol["tflite_sha256"] = sha256(graphs[0])
         # 仅在当前评测进程注入本地固定语料,不修改 SDK 或它的全局缓存.
         def get_local_dataset(*unused_args, **unused_kwargs):
             """返回与浮点参考完全相同的固定 Token 子集."""

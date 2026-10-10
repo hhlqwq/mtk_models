@@ -77,7 +77,7 @@ def write_run_script(output):
         'done\n')
 
 
-def package(work, output, prefill, quantized_prefix=None):
+def package(work, output, prefill, quantized_prefix=None, quality_results=None):
     """复制真实 DLA 与量化资源,生成配置和待板端验证清单."""
     preparation = json.loads((work / "native_prepare.json").read_text())
     context = preparation["context"]
@@ -147,6 +147,33 @@ def package(work, output, prefill, quantized_prefix=None):
         yaml.safe_dump({"modelOptions": options, "runtimeOptions": runtime},
                        sort_keys=False, allow_unicode=True))
     write_run_script(output)
+    quality = None
+    if quality_results is not None:
+        # 同一模型的两个后端必须使用完全相同的输入,并关联实际转换资源.
+        reference = json.loads((quality_results / "pytorch_quality.json").read_text())
+        quantized = json.loads((quality_results / "tflite_quality.json").read_text())
+        for key in ("protocol", "selected_text_sha256", "corpus_sha256", "input_ids",
+                    "blocks", "scored_tokens"):
+            if reference[key] != quantized[key]:
+                raise ValueError(f"浮点与量化质量协议不一致: {key}")
+        if reference["protocol"] != "fixed_text_rows_v1":
+            raise ValueError("最终包必须使用统一原始文本评价协议.")
+        if quantized["embedding_sha256"] != sha256(embedding) or \
+                quantized["tflite_sha256"] != sha256(prompt.with_suffix(".tflite")):
+            raise ValueError("质量报告与本次转换资源哈希不符.")
+        float_ppl, quant_ppl = reference["perplexity"], quantized["perplexity"]
+        if not all(math.isfinite(value) and value > 0 for value in (float_ppl, quant_ppl)):
+            raise ValueError("质量报告包含非法 PPL.")
+        quality = {"protocol": reference["protocol"], "scope": reference["scope"],
+                   "fp32_perplexity": float_ppl, "w4a16_perplexity": quant_ppl,
+                   "relative_ppl_increase_percent": (quant_ppl / float_ppl - 1) * 100,
+                   "board_npu_accuracy_verified": False}
+        folder = output / "results/quality"
+        folder.mkdir(parents=True)
+        for name in ("pytorch_quality.json", "tflite_quality.json"):
+            shutil.copyfile(quality_results / name, folder / name)
+        (folder / "summary.json").write_text(
+            json.dumps(quality, ensure_ascii=False, indent=2) + "\n")
     shutil.copyfile(model / "LICENSE", output / "LICENSE")
     (output / "README.md").write_text(
         f"# MiniCPM5-2B\n\n"
@@ -165,6 +192,7 @@ def package(work, output, prefill, quantized_prefix=None):
         "status": "compiled_pending_board", "preparation": preparation,
         "precision": "asym4W_sym16A", "weight_optimization": "hessian",
         "quantized_prefix": base.name,
+        "host_quality": quality,
         "prefill": prefill, "context": context, "files": files,
         "graph_contracts": contracts,
         "toolkit_sha256": "da10e770e2950542ab17c63182b0b932348ab05ffdceb18cbb097555ca6127f5",
@@ -255,12 +283,14 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--prefill", type=int, default=128)
     parser.add_argument("--quantized-prefix", type=Path)
+    parser.add_argument("--quality-results", type=Path)
     parser.add_argument("--board-results", type=Path)
     args = parser.parse_args()
     if args.board_results:
         record_board_results(args.work, args.output, args.board_results)
     else:
-        package(args.work, args.output, args.prefill, args.quantized_prefix)
+        package(args.work, args.output, args.prefill, args.quantized_prefix,
+                args.quality_results)
 
 
 if __name__ == "__main__":
