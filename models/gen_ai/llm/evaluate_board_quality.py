@@ -83,7 +83,10 @@ class HardwareModel:
 
 def evaluate(args):
     """逐块重置上下文并评分实际 MDLA logits,保留 Token NLL 和运行时间."""
-    report = json.loads((args.quality_data / "tflite_quality.json").read_text())
+    protocol_path = args.quality_data / "board_quality_protocol.json"
+    if not protocol_path.exists():
+        protocol_path = args.quality_data / "tflite_quality.json"
+    report = json.loads(protocol_path.read_text())
     contract = json.loads((args.quality_data / "board_input_contract.json").read_text())
     manifest = json.loads((args.package / "manifest.json").read_text())
     if report["protocol"] != "fixed_text_rows_v1" or report["block_tokens"] != 128:

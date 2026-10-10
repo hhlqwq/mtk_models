@@ -159,6 +159,11 @@ def evaluate(args):
             raise ValueError("量化质量检查要求唯一静态 TFLite.")
         protocol["tflite_sha256"] = sha256(graphs[0])
         export_board_inputs(args.model, graphs[0], args.output)
+        (args.output / "board_quality_protocol.json").write_text(
+            json.dumps(protocol, ensure_ascii=False, indent=2) + "\n")
+        if args.backend == "prepare_board":
+            print(f"[板端输入已准备] {args.output}", flush=True)
+            return
         # 仅在当前评测进程注入本地固定语料,不修改 SDK 或它的全局缓存.
         def get_local_dataset(*unused_args, **unused_kwargs):
             """返回与浮点参考完全相同的固定 Token 子集."""
@@ -195,7 +200,7 @@ def main():
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--backend", choices=("pytorch", "tflite"), required=True)
+    parser.add_argument("--backend", choices=("pytorch", "tflite", "prepare_board"), required=True)
     parser.add_argument("--tflite", type=Path)
     parser.add_argument("--text-rows", type=int, default=128)
     parser.add_argument("--blocks", type=int, help="仅复现旧版固定 Token 子集结果.")
@@ -203,7 +208,7 @@ def main():
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cuda")
     parser.add_argument("--cpu-threads", type=int, default=8)
     args = parser.parse_args()
-    if args.backend == "tflite" and args.tflite is None:
+    if args.backend in ("tflite", "prepare_board") and args.tflite is None:
         parser.error("量化后端需要 --tflite.")
     evaluate(args)
 

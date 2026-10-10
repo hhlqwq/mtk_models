@@ -102,3 +102,5 @@ SHA256 `f6af174133ee756ffedbd0db327c0247b0f6ae9509ee2599b37cf8bd01988201`.
 同一批 Token 每块重置 KV,从真实 MDLA logits 计算 NLL/PPL,不回退到 CPU.
 `--bridge-library` 支持打包现有 AArch64 桥接库,新包含独立评价脚本与输入资源.
 这仍是固定文本子集的板端质量检查,不是完整 WikiText2 基准.
+`--backend prepare_board` 仅准备真实图的 I/O 和测试 Token,不运行主机量化评价,
+用于独立启动板端 PPL.该模式不生成或虚构主机 PPL 数字.

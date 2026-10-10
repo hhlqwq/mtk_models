@@ -175,6 +175,8 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
         for name in ("pytorch_quality.json", "tflite_quality.json",
                      "board_input_contract.json", "board_inputs.npz"):
             shutil.copyfile(quality_results / name, folder / name)
+        shutil.copyfile(quality_results / "board_quality_protocol.json",
+                        folder / "board_quality_protocol.json")
         (folder / "summary.json").write_text(
             json.dumps(quality, ensure_ascii=False, indent=2) + "\n")
         shutil.copyfile(Path(__file__).resolve().parents[3] / "evaluate_board_quality.py",
