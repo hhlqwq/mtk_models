@@ -17,5 +17,14 @@
   "fp32_report_sha256": "182f3373b9ebde70611deaeb5f54412197b9ccd3f2a325418be8216d853a18bb",
   "w4a16_perplexity": null,
   "relative_ppl_increase_percent": null,
-  "board_npu_accuracy_verified": false
+  "board_npu_accuracy_verified": false,
+  "failed_v1_basic_hessian": {
+    "w4a16_perplexity": 143.71998596191406,
+    "relative_ppl_increase_percent": 258.9307568413457,
+    "same_input_ids_verified": true,
+    "tflite_report_sha256": "3ba3303bc32b0e5a42948c5a72acee4c2807d546d4b949a52fb9a43692008993",
+    "tflite_sha256": "bf85ffd7d42d212b12b89825c4d1eabb02ac23ae3a1703088318c2c770b1b14d",
+    "embedding_sha256": "a16928dfc2b8938e199b1ed694feb5d7f80f19acefa4726b40ac916331977cc7",
+    "status": "failed_large_quantization_degradation"
+  }
 }
