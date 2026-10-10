@@ -248,6 +248,7 @@ def record_board_results(work, output, results):
                    formal_accuracy_evaluated=False,
                    qualitative_observations=["双语样例仅验证推理,正式量化质量须独立评测."],
                    memory_scope="process_vm_hwm_and_sampled_system_memavailable")
+    metrics["host_quality"] = manifest.get("host_quality")
     (output / "results/summary.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
     write_run_script(output)
@@ -263,6 +264,12 @@ def record_board_results(work, output, results):
                    f"{row['native_reported_decode_tokens_per_second']:.4f} | 是 |\n")
     readme += "\n原始日志与 Token 均保留,不能将双语 Demo 视为正式精度达标.\n"
     readme += "Prefill 时间不包含加载和模型切换,不作为 TTFT; Runtime 速度按原生 CLI 的 Decode 计数.\n"
+    quality = manifest.get("host_quality")
+    if quality is not None:
+        readme += (f"\n同协议主机测试子集 PPL: FP32 {quality['fp32_perplexity']:.5f},"
+                   f"W4A16 {quality['w4a16_perplexity']:.5f},"
+                   f"相对变化 {quality['relative_ppl_increase_percent']:.2f}%.\n"
+                   "原始质量报告见 `results/quality/`,该结果不代表完整基准或板端 NPU 精度.\n")
     (output / "README.md").write_text(readme)
     manifest.update(status="board_verified", board_validation={
         "run_id": metrics["run_id"], "summary": "results/summary.json",

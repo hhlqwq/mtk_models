@@ -91,3 +91,4 @@ SHA256 `f6af174133ee756ffedbd0db327c0247b0f6ae9509ee2599b37cf8bd01988201`.
 打包时使用 `--quality-results` 归档两个后端的原始报告; 打包入口核对
 输入 Token、原始文本、分块协议、实际 TFLite 与 embedding 哈希,
 记录相对 PPL 变化,不把主机子集结果标为板端 NPU 精度.
+板端归档后的 README 与汇总报告同时保留主机 PPL 和板端 Demo 范围说明.
