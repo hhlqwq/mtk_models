@@ -59,11 +59,14 @@ if [[ "${STAGE}" == all || "${STAGE}" == prepare ]]; then
 fi
 if [[ "${STAGE}" == all || "${STAGE}" == calibrate ]]; then
     echo '[2/5] 生成真实权重校准数据,包含 Prompt 和生成阶段.'
+    run_python -c 'from pathlib import Path; Path("calibration_complete.txt").unlink(missing_ok=True)'
     run_python "${PYTHON%/python}/mtk_make_llm_ptq_calib_dataset" converter \
         "${MODEL}/config.json" "${WORK}/calibration.jsonl" \
         -b "${CALIBRATION_BATCHES}" -m 128 2>&1 | tee "${WORK}/logs/calibration.log"
+    run_python -c 'from pathlib import Path; import sys; Path("calibration_complete.txt").write_text(sys.argv[1]+"\n")' "${CALIBRATION_BATCHES}"
 fi
 if [[ "${STAGE}" == all || "${STAGE}" == quantize ]]; then
+    run_python -c 'from pathlib import Path; import sys; assert Path("calibration_complete.txt").read_text().strip()==sys.argv[1], "校准完成标记与批次数不符"' "${CALIBRATION_BATCHES}"
     echo '[3/5] 原生 W4A16 量化与 Hessian 权重优化,逐层记录进度.'
     quantize_options=()
     if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then
