@@ -16,6 +16,10 @@ CALIBRATION_TRAIN="${CALIBRATION_TRAIN:-}"
 WEIGHT_OPT_CONFIG="${WEIGHT_OPT_CONFIG:-}"
 MODEL="${WORK}/MiniCPM5-2B"
 QUANTIZED="${WORK}/tflite/MiniCPM5-2B_asym4W_sym16A_Overall_hessian"
+if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then
+    opt_name="${WEIGHT_OPT_CONFIG##*/}"
+    QUANTIZED="${QUANTIZED}_${opt_name%.json}"
+fi
 STAGE="${1:-all}"
 
 if (( $# > 1 )) || [[ ! "${STAGE}" =~ ^(all|prepare|calibrate|quantize|shape|compile)$ ]]; then

@@ -77,13 +77,15 @@ def write_run_script(output):
         'done\n')
 
 
-def package(work, output, prefill):
+def package(work, output, prefill, quantized_prefix=None):
     """复制真实 DLA 与量化资源,生成配置和待板端验证清单."""
     preparation = json.loads((work / "native_prepare.json").read_text())
     context = preparation["context"]
     model = work / "MiniCPM5-2B"
     config = json.loads((model / "config.json").read_text())
-    base = work / "tflite/MiniCPM5-2B_asym4W_sym16A_Overall_hessian"
+    base = quantized_prefix or work / "tflite/MiniCPM5-2B_asym4W_sym16A_Overall_hessian"
+    if base.resolve().parent != (work / "tflite").resolve():
+        raise ValueError("量化目录必须位于本次任务的 tflite 目录.")
     prompt = single_file(Path(f"{base}_{prefill}t{context}c"), "*.dla")
     decode = single_file(Path(f"{base}_1t{context}c"), "*.dla")
     contracts = {"prompt": graph_contract(prompt.with_suffix(".tflite")),
@@ -152,7 +154,7 @@ def package(work, output, prefill):
         "当前打包状态为 compiled_pending_board,板端结果需另行记录.\n\n"
         "将整个目录复制到板端,执行 `bash scripts/run.sh`.\n"
         "Demo 使用官方 tokenizer 的 Token 输入,Prompt 文本同时保留供核对.\n"
-        "16 条自编双语校准输入仅验证部署流程,不代表正式质量基准.\n")
+        f"校准范围: {preparation['calibration_scope']},不代表正式质量基准.\n")
     files = []
     for path in sorted(output.rglob("*")):
         if path.is_file():
@@ -162,6 +164,7 @@ def package(work, output, prefill):
     (output / "manifest.json").write_text(json.dumps({
         "status": "compiled_pending_board", "preparation": preparation,
         "precision": "asym4W_sym16A", "weight_optimization": "hessian",
+        "quantized_prefix": base.name,
         "prefill": prefill, "context": context, "files": files,
         "graph_contracts": contracts,
         "toolkit_sha256": "da10e770e2950542ab17c63182b0b932348ab05ffdceb18cbb097555ca6127f5",
@@ -251,12 +254,13 @@ def main():
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--prefill", type=int, default=128)
+    parser.add_argument("--quantized-prefix", type=Path)
     parser.add_argument("--board-results", type=Path)
     args = parser.parse_args()
     if args.board_results:
         record_board_results(args.work, args.output, args.board_results)
     else:
-        package(args.work, args.output, args.prefill)
+        package(args.work, args.output, args.prefill, args.quantized_prefix)
 
 
 if __name__ == "__main__":
