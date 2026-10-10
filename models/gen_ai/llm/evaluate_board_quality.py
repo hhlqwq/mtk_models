@@ -138,6 +138,7 @@ def evaluate(args):
               "selected_text_sha256", "blocks", "block_tokens", "scored_tokens",
               "excluded_tail_tokens", "input_ids", "reset_context_each_block")}
     result.update(backend="neuron_mdla_hardware", scope="board_fixed_text_subset_not_full_benchmark",
+                  graph_mode="prefill_128_teacher_forcing",
                   perplexity=float(np.exp(np.mean(nll_values))), nll=nll_values,
                   elapsed_seconds=time.perf_counter() - started, block_timings=rows,
                   dla_sha256=sha256(model_path), embedding_sha256=sha256(embedding_path),

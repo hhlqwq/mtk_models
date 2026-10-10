@@ -49,6 +49,7 @@ run_python() {
 
 if [[ "${STAGE}" == all || "${STAGE}" == prepare ]]; then
     echo '[1/5] 校验官方资源并生成 MiniCPM5 双语校准 Token.'
+    run_python -c 'from pathlib import Path; Path("calibration_complete.txt").unlink(missing_ok=True)'
     prepare_options=()
     if [[ -n "${CALIBRATION_TRAIN}" ]]; then
         prepare_options=(--calibration-train "${CALIBRATION_TRAIN}")

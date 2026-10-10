@@ -104,3 +104,5 @@ SHA256 `f6af174133ee756ffedbd0db327c0247b0f6ae9509ee2599b37cf8bd01988201`.
 这仍是固定文本子集的板端质量检查,不是完整 WikiText2 基准.
 `--backend prepare_board` 仅准备真实图的 I/O 和测试 Token,不运行主机量化评价,
 用于独立启动板端 PPL.该模式不生成或虚构主机 PPL 数字.
+重新准备配置会使旧校准完成标记失效.板端质量报告明确记录
+`prefill_128_teacher_forcing`,Decode 图的功能另由原生双语 Demo 验证.
