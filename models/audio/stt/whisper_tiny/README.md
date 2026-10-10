@@ -76,7 +76,14 @@ WER 越低越好,本次板端 WER 相比 ONNX 上升不足 0.01 个百分点。�
 输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
-识别结果已保存到 [transcripts.md](examples/output/transcripts.md)。
+输出目录保留一个 [transcripts.md](examples/output/transcripts.md),集中展示两条音频的实际板端识别结果。
+
+```text
+examples/
+├── input/sample_1.wav
+├── input/sample_2.wav
+└── output/transcripts.md
+```
 
 ### 示例 1
 
