@@ -1,4 +1,4 @@
-"""使用固定 WikiText2 子集比较官方 FP32 与量化 TFLite,不冒充板端精度."""
+"""统一 LLM 的 WikiText2 原始文本与 FP32/量化 PPL 协议."""
 
 import argparse
 import hashlib
@@ -28,19 +28,31 @@ def evaluate(args):
     """在同一连续 Token 子集与重置上下文协议下计算两个后端的 PPL."""
     import mtk_llm_sdk.benchmark as benchmark
 
-    if args.blocks < 1:
-        raise ValueError("评测块数必须为正整数.")
+    if args.text_rows < 1 or (args.blocks is not None and args.blocks < 1):
+        raise ValueError("评测行数或块数必须为正整数.")
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
     texts = parquet.read_table(args.corpus, columns=["text"])["text"].to_pylist()
-    tokens = tokenizer("\n\n".join(texts), return_tensors="pt", verbose=False).input_ids
-    length = args.blocks * 128
-    if tokens.numel() < length:
+    if sha256(args.corpus) != "5f1bea067869d04849c0f975a2b29c4ff47d867f484f5010ea5e861eab246d91":
+        raise ValueError("固定 WikiText2 测试集哈希不符.")
+    # 统一模式固定原始文本行,不同模型按官方词表编码,不固定跨模型 Token 数.
+    selected = texts if args.blocks is not None else texts[:args.text_rows]
+    text = "\n\n".join(selected)
+    tokens = tokenizer(text, return_tensors="pt", verbose=False,
+                       add_special_tokens=args.blocks is not None).input_ids
+    blocks = args.blocks or tokens.numel() // 128
+    length = blocks * 128
+    if blocks < 1 or tokens.numel() < length:
         raise ValueError("测试语料不足,不得重复填充语料.")
+    excluded_tokens = tokens.numel() - length
     tokens = tokens[:, :length].contiguous()
     protocol = {
-        "scope": "host_wikitext2_test_prefix_not_full_board_accuracy",
-        "corpus_sha256": sha256(args.corpus), "blocks": args.blocks,
-        "block_tokens": 128, "scored_tokens": args.blocks * 127,
+        "scope": "host_wikitext2_fixed_text_not_full_board_accuracy",
+        "protocol": "legacy_token_prefix" if args.blocks else "fixed_text_rows_v1",
+        "text_rows": len(selected),
+        "selected_text_sha256": hashlib.sha256(text.encode()).hexdigest(),
+        "excluded_tail_tokens": excluded_tokens,
+        "corpus_sha256": sha256(args.corpus), "blocks": blocks,
+        "block_tokens": 128, "scored_tokens": blocks * 127,
         "reset_context_each_block": True, "chat_template": False,
         "input_ids": tokens[0].tolist(),
     }
@@ -52,32 +64,38 @@ def evaluate(args):
         config = AutoConfig.from_pretrained(args.model, local_files_only=True)
         model = AutoModelForCausalLM.from_config(
             config, torch_dtype=torch.float32, attn_implementation="eager")
-        index = json.loads((args.model / "model.safetensors.index.json").read_text())
+        index_path = args.model / "model.safetensors.index.json"
+        if index_path.exists():
+            index = json.loads(index_path.read_text())
+            weight_files = sorted(set(index["weight_map"].values()))
+        else:
+            weight_files = ["model.safetensors"]
         state = {}
-        for name in sorted(set(index["weight_map"].values())):
+        for name in weight_files:
             state.update(load_file(args.model / name))
         model.load_state_dict(state, strict=True)
         del state
         model = model.to("cuda").eval()
         total_nll = 0.0
         with torch.inference_mode():
-            for index in range(args.blocks):
+            for index in range(blocks):
                 ids = tokens[:, index * 128:(index + 1) * 128].to("cuda")
                 logits = model(ids, use_cache=False).logits[:, :-1].float()
                 loss = torch.nn.functional.cross_entropy(
                     logits.reshape(-1, logits.shape[-1]), ids[:, 1:].reshape(-1),
                     reduction="sum")
                 total_nll += loss.item()
-                print(f"[质量参考] {index + 1}/{args.blocks}", flush=True)
+                print(f"[质量参考] {index + 1}/{blocks}", flush=True)
         ppl = float(torch.exp(torch.tensor(total_nll / protocol["scored_tokens"])))
         preparation = json.loads((args.model.parent / "native_prepare.json").read_text())
         protocol["demo_references"] = []
-        for sample in preparation["demos"]:
+        for sample in ([] if args.skip_demo else preparation["demos"]):
             print(f"[官方 Greedy 参考] {sample['id']}", flush=True)
             ids = torch.tensor([sample["input_ids"]], device="cuda")
             with torch.inference_mode():
                 output = model.generate(
-                    ids, max_new_tokens=768, do_sample=False,
+                    ids, attention_mask=torch.ones_like(ids),
+                    max_new_tokens=768, do_sample=False,
                     eos_token_id=preparation["stop_token_ids"], pad_token_id=1)
             generated = output[0, ids.shape[1]:].tolist()
             protocol["demo_references"].append({
@@ -129,7 +147,9 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--backend", choices=("pytorch", "tflite"), required=True)
     parser.add_argument("--tflite", type=Path)
-    parser.add_argument("--blocks", type=int, default=64)
+    parser.add_argument("--text-rows", type=int, default=128)
+    parser.add_argument("--blocks", type=int, help="仅复现旧版固定 Token 子集结果.")
+    parser.add_argument("--skip-demo", action="store_true")
     args = parser.parse_args()
     if args.backend == "tflite" and args.tflite is None:
         parser.error("量化后端需要 --tflite.")

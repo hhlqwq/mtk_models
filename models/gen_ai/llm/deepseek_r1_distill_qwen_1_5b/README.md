@@ -1,5 +1,12 @@
 # DeepSeek-R1-Distill-Qwen-1.5B
 
+本次与 MiniCPM5 统一的主机质量入口为 `models/gen_ai/llm/evaluate_quality.py`:
+同一固定 WikiText2 测试集的前 128 行文本,各自使用官方 tokenizer,
+不额外添加特殊 Token,128 Token 分块并重置上下文,每块评分 127 次预测.
+末尾不足一块的 Token 数写入报告.比较各模型自己的 FP32 与 W4A16 PPL 变化,
+不同词表的绝对 PPL 不直接作为模型排名.原有 26 Token 数值检查与新协议分开,
+新的统一评价结果尚待运行,不沿用旧 FP16 结果代表 W4A16.
+
 中英文文本问答与推理模型.使用 DeepSeek 官方权重,参考地瓜 RDK S 系列的选型与指标展示,不使用厂商预编译模型作为转换输入.
 
 2026-10-10 已完成官方资源校验、静态 ONNX 导出、FP16 编译、Genio 720 双语 Demo 与三后端样例数值检查,状态为 `board_verified`.

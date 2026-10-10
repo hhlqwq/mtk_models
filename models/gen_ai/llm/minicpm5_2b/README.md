@@ -33,8 +33,9 @@ OpenBMB 官方中英文纯文本 LLM,采用标准 Llama 架构.
 SDK 2.7.5 校准生成对 EOS 列表存在维度错误,独立转换配置使用官方对话结束 Token 130073.
 原生交付 stopToken 仍保留 1 和 130073,官方原始配置保持不变.
 
-主机质量对比入口为 `deploy/host/evaluate_quality.py`,同一固定 WikiText2 测试集
-前 8192 Token,64 个 128 Token 块,每块重置上下文并评分 127 次下一 Token.
+主机质量对比使用共享入口 `models/gen_ai/llm/evaluate_quality.py`,
+WikiText2 测试集前 128 行原始文本,不额外添加特殊 Token,每块 128 Token,
+重置上下文并评分 127 次下一 Token,不足一块的末尾 Token 单独记录并舍弃.
 官方 Transformers FP32 与 SDK 量化 TFLite 使用相同 Token IDs,
 该协议为测试集子集的转换质量检查,不作为完整基准或板端 NPU 精度结论.
 原生 tokenizer 使用 RE2,数字切分配置为最多三位; RE2 不支持官方空白规则的
@@ -55,9 +56,11 @@ Shape fixer 完成静态图后会复制真实 INT16 embedding.量化质量检查
 
 SDK 的 TFLite PPL 入口不接受 --dtype 参数,量化路径按实际静态图精度执行.
 
-第一版基础 Hessian W4A16 的子集 PPL 为 148.45839,官方 FP32 为 39.55449,
+旧协议第一版基础 Hessian W4A16 的子集 PPL 为 148.45839,官方 FP32 为 39.55449,
 相对增加 275.33%,未通过质量检查.同协议 SDK FP32 为 39.55450,
 与官方参考一致.这版只保留转换证据,不能作为质量合格交付.
+这些旧数字采用前 8192 Token 的协议,仅用于定位量化问题,
+可通过 `--blocks 64` 复现,不能混入新的统一评价表.
 
 第二版使用独立工作目录 `minicpm5_native_v2`,校准混合 WikiText2 训练集
 8 段各 256 Token 与 8 条自编中英文对话,不使用评测测试集进行校准.
@@ -71,3 +74,7 @@ SDK 的 TFLite PPL 入口不接受 --dtype 参数,量化路径按实际静态图
 校准成功后生成批次数完成标记,量化入口要求该标记匹配当前批次数,
 防止校准未完成时启动量化.第二版提前启动的量化已作废,经确认停止后
 保留日志与部分输出,等待 32 批校准完成再重新运行.
+
+工具归档目标为 `/data/users/hailong.he/data/MTKG720/GAI_Toolkit/MiniCPM5-2B/`.
+项目适配脚本与官方 SDK 分开标识,复用原 Qwen2.5 官方工具包中的 GAI 2.7.5,
+不存在本次已下载的 MiniCPM5 专用官方工具包.归档清单记录 Git 提交与 SHA256.
