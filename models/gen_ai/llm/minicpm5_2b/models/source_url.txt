@@ -57,3 +57,8 @@ WikiText2 raw test 独立评测语料:
 URL: https://huggingface.co/datasets/Salesforce/wikitext/resolve/b08601e04326c79dfdd32d625aee71d232d685c3/wikitext-2-raw-v1/test-00000-of-00001.parquet
 Bytes: 732610
 SHA256: 5f1bea067869d04849c0f975a2b29c4ff47d867f484f5010ea5e861eab246d91
+
+WikiText2 raw TRAIN 校准语料,不使用 TEST 校准:
+URL: https://huggingface.co/datasets/Salesforce/wikitext/resolve/b08601e04326c79dfdd32d625aee71d232d685c3/wikitext-2-raw-v1/train-00000-of-00001.parquet
+Bytes: 6357543
+SHA256: e83889baabc497075506f91975be5fac0d45c5290b6b20582c8cd1e853d0c9f7

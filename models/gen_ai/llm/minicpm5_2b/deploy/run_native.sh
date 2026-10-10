@@ -12,6 +12,8 @@ NCC_ROOT="${NCC_ROOT:-/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20
 CONTEXT="${CONTEXT_SIZE:-1024}"
 PREFILL="${PREFILL_TOKENS:-128}"
 CALIBRATION_BATCHES="${CALIBRATION_BATCHES:-32}"
+CALIBRATION_TRAIN="${CALIBRATION_TRAIN:-}"
+WEIGHT_OPT_CONFIG="${WEIGHT_OPT_CONFIG:-}"
 MODEL="${WORK}/MiniCPM5-2B"
 QUANTIZED="${WORK}/tflite/MiniCPM5-2B_asym4W_sym16A_Overall_hessian"
 STAGE="${1:-all}"
@@ -43,8 +45,13 @@ run_python() {
 
 if [[ "${STAGE}" == all || "${STAGE}" == prepare ]]; then
     echo '[1/5] 校验官方资源并生成 MiniCPM5 双语校准 Token.'
+    prepare_options=()
+    if [[ -n "${CALIBRATION_TRAIN}" ]]; then
+        prepare_options=(--calibration-train "${CALIBRATION_TRAIN}")
+    fi
     run_python "${SCRIPT_DIR}/host/prepare_native.py" --source "${SOURCE}" \
-        --output "${WORK}" --context "${CONTEXT}" 2>&1 | tee "${WORK}/logs/prepare.log"
+        --output "${WORK}" --context "${CONTEXT}" "${prepare_options[@]}" \
+        2>&1 | tee "${WORK}/logs/prepare.log"
 fi
 if [[ "${STAGE}" == all || "${STAGE}" == calibrate ]]; then
     echo '[2/5] 生成真实权重校准数据,包含 Prompt 和生成阶段.'
@@ -54,9 +61,14 @@ if [[ "${STAGE}" == all || "${STAGE}" == calibrate ]]; then
 fi
 if [[ "${STAGE}" == all || "${STAGE}" == quantize ]]; then
     echo '[3/5] 原生 W4A16 量化与 Hessian 权重优化,逐层记录进度.'
+    quantize_options=()
+    if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then
+        quantize_options=(--extra_converter_options "${WEIGHT_OPT_CONFIG}")
+    fi
     run_python "${PYTHON%/python}/mtk_ptq_llm" converter "${MODEL}/config.json" \
         -p asym4W_sym16A -d "${WORK}/calibration_datasets/MiniCPM5-2B" \
-        -m Overall -w hessian 2>&1 | tee "${WORK}/logs/quantization.log"
+        -m Overall -w hessian "${quantize_options[@]}" \
+        2>&1 | tee "${WORK}/logs/quantization.log"
 fi
 if [[ "${STAGE}" == all || "${STAGE}" == shape ]]; then
     echo "[4/5] 导出 ${PREFILL}t${CONTEXT}c 和 1t${CONTEXT}c,各一个分片."

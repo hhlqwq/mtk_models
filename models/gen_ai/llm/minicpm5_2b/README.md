@@ -54,3 +54,16 @@ Shape fixer 完成静态图后会复制真实 INT16 embedding.量化质量检查
 入口仅校验与使用该实际资源并记录哈希,不得提前修改转换目录.
 
 SDK 的 TFLite PPL 入口不接受 --dtype 参数,量化路径按实际静态图精度执行.
+
+第一版基础 Hessian W4A16 的子集 PPL 为 148.45839,官方 FP32 为 39.55449,
+相对增加 275.33%,未通过质量检查.同协议 SDK FP32 为 39.55450,
+与官方参考一致.这版只保留转换证据,不能作为质量合格交付.
+
+第二版使用独立工作目录 `minicpm5_native_v2`,校准混合 WikiText2 训练集
+8 段各 256 Token 与 8 条自编中英文对话,不使用评测测试集进行校准.
+`CALIBRATION_TRAIN` 指向已校验的训练集 Parquet;
+`WEIGHT_OPT_CONFIG` 指向官方工具包的
+`post_training_quantize/wgt_opt_cum_layer_error.json`,启用累计层误差优化
+(512 个样本,batch size 1).质量与板端验证结果仍待实际运行.
+可选 pytablewriter 表格依赖缺失时,评测入口仅在唯一完整 SDK JSON 已保存后
+继续生成质量报告,其他异常仍直接报错.

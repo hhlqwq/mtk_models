@@ -18,7 +18,7 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def prepare(source, output, context):
+def prepare(source, output, context, calibration_train=None):
     """校验官方文件并生成独立配置、双语校准输入和板端 Prompt."""
     manifest = json.loads((source / "source_manifest.json").read_text())
     for entry in manifest["files"]:
@@ -102,6 +102,29 @@ def prepare(source, output, context):
             raise ValueError("Prompt 必须且只能包含一个 BOS.")
         # GAI SDK 2.7.5 的 tokens 字段采用空格分隔字符串.
         records.append({"tokens": " ".join(str(token) for token in tokens)})
+    calibration_scope = "authored_bilingual_smoke_not_formal_accuracy"
+    training_source = None
+    if calibration_train is not None:
+        # 训练集参与校准,测试集只用于独立 PPL 对比.
+        import pyarrow.parquet as parquet
+
+        expected = "e83889baabc497075506f91975be5fac0d45c5290b6b20582c8cd1e853d0c9f7"
+        if sha256(calibration_train) != expected:
+            raise ValueError("WikiText2 训练集哈希不符.")
+        table = parquet.read_table(calibration_train)
+        train_tokens = tokenizer.encode(
+            "\n\n".join(table.column("text").to_pylist()),
+            add_special_tokens=False)
+        mixed_records = []
+        for index in range(8):
+            segment = train_tokens[index * 256:(index + 1) * 256]
+            mixed_records.append({"tokens": " ".join(map(str, segment))})
+            mixed_records.append(records[index])
+        records = mixed_records
+        calibration_scope = "wikitext2_train_8x256_and_authored_bilingual_8"
+        training_source = {"revision": "b08601e04326c79dfdd32d625aee71d232d685c3",
+                           "split": "train", "sha256": expected,
+                           "text_tokens": 2048}
     demos = []
     # Demo 与官方 FP32 参考使用相同 Prompt,校准输入保持独立且不变.
     for name, question in (("zh_demo", "请用中文简单介绍你自己。"),
@@ -122,7 +145,8 @@ def prepare(source, output, context):
         "eos_token_id": tokenizer.eos_token_id, "stop_token_ids": stops,
         "enable_thinking": False,
         "rope_theta": config["rope_theta"],
-        "calibration_scope": "authored_bilingual_smoke_not_formal_accuracy",
+        "calibration_scope": calibration_scope,
+        "calibration_training_source": training_source,
         "calibration_samples": len(records),
         "demos": demos,
         "calibration_sha256": sha256(output / "calibration.jsonl"),
@@ -138,8 +162,9 @@ def main():
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--context", type=int, default=1024)
+    parser.add_argument("--calibration-train", type=Path)
     args = parser.parse_args()
-    prepare(args.source, args.output, args.context)
+    prepare(args.source, args.output, args.context, args.calibration_train)
 
 
 if __name__ == "__main__":

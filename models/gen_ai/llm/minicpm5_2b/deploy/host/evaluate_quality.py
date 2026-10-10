@@ -102,7 +102,13 @@ def evaluate(args):
         sys.argv = ["mtk_benchmark_llm", str(args.model / "config.json"),
                     "tflite", "ppl", "-d", "wikitext", "-t", str(args.tflite),
                     "--save"]
-        benchmark.main()
+        try:
+            benchmark.main()
+        except ModuleNotFoundError as error:
+            if error.name != "pytablewriter":
+                raise
+            # 可选表格显示在 JSON 保存后执行,仍须核对唯一完整结果.
+            print("[报告] 可选表格依赖缺失,校验 SDK 已保存的 JSON.", flush=True)
         created = set(responses.glob("*.json")) - before
         if len(created) != 1:
             raise ValueError("官方评测未生成唯一结果文件.")
