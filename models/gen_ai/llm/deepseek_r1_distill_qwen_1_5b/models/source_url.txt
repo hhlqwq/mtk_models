@@ -92,3 +92,9 @@ SHA256: d5add7b4ca7afeea91d52e4d4e4db3b1fe9885b71f07054560d8c4296b7441a2
 https://mirrors.aliyun.com/pypi/packages/75/35/07c9879163b603f0e464b0f6e6e628a2340cfc7cdc5ca8e7d52d776710d4/transformers-4.44.2-py3-none-any.whl
 https://mirrors.aliyun.com/pypi/packages/e6/ee/69e498a892f208bd1da4104d4b9be887f8611bf4942144718b6738482250/safetensors-0.4.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 https://mirrors.aliyun.com/pypi/packages/a7/03/fb50fc03f86016b227a967c8d474f90230c885c0d18f78acdfda7a96ce56/tokenizers-0.19.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+
+统一主机 PPL 评价语料 WikiText2 test:
+URL: https://huggingface.co/datasets/Salesforce/wikitext/resolve/b08601e04326c79dfdd32d625aee71d232d685c3/wikitext-2-raw-v1/test-00000-of-00001.parquet
+Bytes: 732610
+SHA256: 5f1bea067869d04849c0f975a2b29c4ff47d867f484f5010ea5e861eab246d91
+Protocol: 前 128 行原始文本,不额外添加特殊 Token,128 Token 分块,块间重置上下文.

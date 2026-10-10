@@ -83,3 +83,7 @@ SDK 的 TFLite PPL 入口不接受 --dtype 参数,量化路径按实际静态图
 与 GPU 量化错开资源,仍按官方模型 FP32 计算.报告记录实际设备与原始文本哈希.
 工具归档已核对完成: GAI SDK 2.7.5 wheel 为 124053292 字节,
 SHA256 `f6af174133ee756ffedbd0db327c0247b0f6ae9509ee2599b37cf8bd01988201`.
+
+统一协议 FP32 参考 PPL 为 **40.04115**,评分 **7366** 个 Token.
+原始文本 SHA256 为 `6605c41acd8bc0bfeb0f1acb43e31437da857e03135b21b097d16756ccaba84c`,
+与 DeepSeek 一致.量化结果尚待完成,见 [质量报告](results/quality_summary.json).

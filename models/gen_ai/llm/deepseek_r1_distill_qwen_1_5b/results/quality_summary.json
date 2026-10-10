@@ -1,0 +1,21 @@
+{
+  "protocol": "fixed_text_rows_v1",
+  "scope": "host_wikitext2_fixed_text_not_full_board_accuracy",
+  "model_name": "DeepSeek-R1-Distill-Qwen-1.5B",
+  "text_rows": 128,
+  "selected_text_sha256": "6605c41acd8bc0bfeb0f1acb43e31437da857e03135b21b097d16756ccaba84c",
+  "corpus_sha256": "5f1bea067869d04849c0f975a2b29c4ff47d867f484f5010ea5e861eab246d91",
+  "block_tokens": 128,
+  "blocks": 60,
+  "scored_tokens": 7620,
+  "excluded_tail_tokens": 58,
+  "reset_context_each_block": true,
+  "chat_template": false,
+  "status": "reference_ready_quantized_pending",
+  "fp32_perplexity": 118.70850372314453,
+  "fp32_device": "cpu",
+  "fp32_report_sha256": "d4c561645313889661feee9c0c942df7f6c2e06765c78a70b9b85020e97b36ec",
+  "w4a16_perplexity": null,
+  "relative_ppl_increase_percent": null,
+  "board_npu_accuracy_verified": false
+}

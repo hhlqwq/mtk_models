@@ -1,0 +1,21 @@
+{
+  "protocol": "fixed_text_rows_v1",
+  "scope": "host_wikitext2_fixed_text_not_full_board_accuracy",
+  "model_name": "MiniCPM5-2B",
+  "text_rows": 128,
+  "selected_text_sha256": "6605c41acd8bc0bfeb0f1acb43e31437da857e03135b21b097d16756ccaba84c",
+  "corpus_sha256": "5f1bea067869d04849c0f975a2b29c4ff47d867f484f5010ea5e861eab246d91",
+  "block_tokens": 128,
+  "blocks": 58,
+  "scored_tokens": 7366,
+  "excluded_tail_tokens": 33,
+  "reset_context_each_block": true,
+  "chat_template": false,
+  "status": "reference_ready_quantized_pending",
+  "fp32_perplexity": 40.04114532470703,
+  "fp32_device": "cpu",
+  "fp32_report_sha256": "182f3373b9ebde70611deaeb5f54412197b9ccd3f2a325418be8216d853a18bb",
+  "w4a16_perplexity": null,
+  "relative_ppl_increase_percent": null,
+  "board_npu_accuracy_verified": false
+}
