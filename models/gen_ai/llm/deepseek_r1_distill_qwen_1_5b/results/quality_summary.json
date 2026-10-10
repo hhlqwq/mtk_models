@@ -11,11 +11,19 @@
   "excluded_tail_tokens": 58,
   "reset_context_each_block": true,
   "chat_template": false,
-  "status": "reference_ready_quantized_pending",
+  "status": "fp32_and_board_ready_host_quantized_pending",
   "fp32_perplexity": 118.70850372314453,
   "fp32_device": "cpu",
   "fp32_report_sha256": "d4c561645313889661feee9c0c942df7f6c2e06765c78a70b9b85020e97b36ec",
   "w4a16_perplexity": null,
   "relative_ppl_increase_percent": null,
-  "board_npu_accuracy_verified": false
+  "board_npu_accuracy_verified": true,
+  "npu_perplexity": 205.9968205089248,
+  "relative_npu_ppl_increase_percent": 73.53164604732669,
+  "board_npu_accuracy_scope": "board_fixed_text_subset_not_full_benchmark",
+  "npu_report_sha256": "be89500e8f215af9786d794f5e378e17291499908ba46b5e49a2e4241404fd7b",
+  "dla_sha256": "4aa3f2c9883be4fb4cf0032386690111a4bdcf52974e94e4b7522bdd503140fa",
+  "embedding_sha256": "369628231054283b4d7c959c0e681617d6653c82c3d5b9865b734704df0e8cd9",
+  "bridge_sha256": "6d631aed53cfdcfa38f0ce30c37a36be50853fe1f6a3058c18d6fe2b97649403",
+  "cpu_fallback": false
 }

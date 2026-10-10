@@ -12,6 +12,10 @@ W4A16 结果仍待计算,见 [统一质量报告](results/quality_summary.json).
 原生 W4A16 的同协议板端 PPL 使用共享 `evaluate_board_quality.py`,
 读取实际 INT16 图契约并通过现有 `neuron_bridge.cpp` 在 MDLA 硬件执行,
 不沿用旧 FP16 的 NLL 结果.
+同一测试子集实际 MDLA PPL 为 **205.99682**,相对 FP32 增加 **73.53%**.
+60 个块的硬件推理合计 **19.94 秒**,评价含 CPU NLL 计算共 **32.94 秒**,
+没有 CPU 模型回退.板端、浮点输入 Token 已逐项核对一致;
+主机 TFLite 结果仍待核对,当前 W4A16 不能因双语 Demo 完成而认定质量合格.
 
 中英文文本问答与推理模型.使用 DeepSeek 官方权重,参考地瓜 RDK S 系列的选型与指标展示,不使用厂商预编译模型作为转换输入.
 
