@@ -49,3 +49,6 @@ lookahead,默认使用官方 Token 输入.原生文本输入的兼容结论仅�
 
 官方 Safetensors 缺少旧 Transformers 加载器所需的 format 元数据,
 浮点参考按官方索引直接加载全部 Tensor 并严格匹配模型参数,不重写原始权重.
+
+静态图目录没有自动复制 embedding 时,量化质量入口链接同一真实 INT16 资源并记录哈希,
+不使用浮点 embedding 替代交付资源.

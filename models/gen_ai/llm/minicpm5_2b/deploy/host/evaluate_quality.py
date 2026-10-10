@@ -86,6 +86,15 @@ def evaluate(args):
                 "text": tokenizer.decode(generated, skip_special_tokens=False),
             })
     else:
+        # Shape fixer 没有复制 embedding,链接同一真实 INT16 资源供 SDK 读取.
+        embedding = args.tflite / "embedding_int16.bin"
+        source_folder = args.tflite.with_name(args.tflite.name.rsplit("_", 1)[0])
+        if not embedding.exists():
+            source_embedding = source_folder / "embedding_int16.bin"
+            if not source_embedding.is_file():
+                raise ValueError("量化评测缺少真实 INT16 embedding.")
+            embedding.symlink_to(source_embedding.resolve())
+        protocol["embedding_sha256"] = sha256(embedding)
         # 仅在当前评测进程注入本地固定语料,不修改 SDK 或它的全局缓存.
         def get_local_dataset(*unused_args, **unused_kwargs):
             """返回与浮点参考完全相同的固定 Token 子集."""

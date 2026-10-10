@@ -103,7 +103,7 @@ def prepare(source, output, context):
         # GAI SDK 2.7.5 的 tokens 字段采用空格分隔字符串.
         records.append({"tokens": " ".join(str(token) for token in tokens)})
     demos = []
-    # Demo 与既有 FP16 基线使用相同 Prompt,校准输入保持独立且不变.
+    # Demo 与官方 FP32 参考使用相同 Prompt,校准输入保持独立且不变.
     for name, question in (("zh_demo", "请用中文简单介绍你自己。"),
                            ("en_demo", "Briefly introduce yourself in English.")):
         text = tokenizer.apply_chat_template(
