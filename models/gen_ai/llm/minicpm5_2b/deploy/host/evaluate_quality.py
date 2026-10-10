@@ -105,7 +105,7 @@ def evaluate(args):
         before = set(responses.glob("*.json")) if responses.exists() else set()
         sys.argv = ["mtk_benchmark_llm", str(args.model / "config.json"),
                     "tflite", "ppl", "-d", "wikitext", "-t", str(args.tflite),
-                    "--dtype", "float32", "--save"]
+                    "--save"]
         benchmark.main()
         created = set(responses.glob("*.json")) - before
         if len(created) != 1:
