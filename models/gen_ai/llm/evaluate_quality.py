@@ -55,9 +55,13 @@ def evaluate(args):
         "block_tokens": 128, "scored_tokens": blocks * 127,
         "reset_context_each_block": True, "chat_template": False,
         "input_ids": tokens[0].tolist(),
+        "model_name": args.model.name,
+        "reference_device": args.device if args.backend == "pytorch" else None,
     }
     args.output.mkdir(parents=True, exist_ok=True)
     if args.backend == "pytorch":
+        if args.device == "cpu":
+            torch.set_num_threads(args.cpu_threads)
         print("[质量参考] 加载官方权重 FP32.", flush=True)
         # 官方 Safetensors 没有 format 元数据,旧 Transformers 加载器会报错.
         # 按官方索引直接加载 Tensor,严格匹配全部权重,不重写权重文件.
@@ -75,11 +79,11 @@ def evaluate(args):
             state.update(load_file(args.model / name))
         model.load_state_dict(state, strict=True)
         del state
-        model = model.to("cuda").eval()
+        model = model.to(args.device).eval()
         total_nll = 0.0
         with torch.inference_mode():
             for index in range(blocks):
-                ids = tokens[:, index * 128:(index + 1) * 128].to("cuda")
+                ids = tokens[:, index * 128:(index + 1) * 128].to(args.device)
                 logits = model(ids, use_cache=False).logits[:, :-1].float()
                 loss = torch.nn.functional.cross_entropy(
                     logits.reshape(-1, logits.shape[-1]), ids[:, 1:].reshape(-1),
@@ -91,7 +95,7 @@ def evaluate(args):
         protocol["demo_references"] = []
         for sample in ([] if args.skip_demo else preparation["demos"]):
             print(f"[官方 Greedy 参考] {sample['id']}", flush=True)
-            ids = torch.tensor([sample["input_ids"]], device="cuda")
+            ids = torch.tensor([sample["input_ids"]], device=args.device)
             with torch.inference_mode():
                 output = model.generate(
                     ids, attention_mask=torch.ones_like(ids),
@@ -150,6 +154,8 @@ def main():
     parser.add_argument("--text-rows", type=int, default=128)
     parser.add_argument("--blocks", type=int, help="仅复现旧版固定 Token 子集结果.")
     parser.add_argument("--skip-demo", action="store_true")
+    parser.add_argument("--device", choices=("cpu", "cuda"), default="cuda")
+    parser.add_argument("--cpu-threads", type=int, default=8)
     args = parser.parse_args()
     if args.backend == "tflite" and args.tflite is None:
         parser.error("量化后端需要 --tflite.")

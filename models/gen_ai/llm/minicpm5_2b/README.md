@@ -78,3 +78,8 @@ SDK 的 TFLite PPL 入口不接受 --dtype 参数,量化路径按实际静态图
 工具归档目标为 `/data/users/hailong.he/data/MTKG720/GAI_Toolkit/MiniCPM5-2B/`.
 项目适配脚本与官方 SDK 分开标识,复用原 Qwen2.5 官方工具包中的 GAI 2.7.5,
 不存在本次已下载的 MiniCPM5 专用官方工具包.归档清单记录 Git 提交与 SHA256.
+
+统一 FP32 参考支持 `--device cpu --cpu-threads 8 --skip-demo`,
+与 GPU 量化错开资源,仍按官方模型 FP32 计算.报告记录实际设备与原始文本哈希.
+工具归档已核对完成: GAI SDK 2.7.5 wheel 为 124053292 字节,
+SHA256 `f6af174133ee756ffedbd0db327c0247b0f6ae9509ee2599b37cf8bd01988201`.
