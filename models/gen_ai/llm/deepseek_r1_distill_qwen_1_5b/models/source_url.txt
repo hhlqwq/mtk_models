@@ -26,6 +26,66 @@ MTK 公开模型列表与运行工具:
 https://genio.mediatek.com/doc/iot-aihub/ai_hub/model_zoo/litert_gai/supported_models.html
 https://genio.mediatek.com/doc/iot-aihub/ai_hub/supported_os/yocto/litert_gai/llm_cmdline_tool.html
 
+原生 GAI 工具,仅作为转换工具,不作为模型权重来源:
+官方入口: https://neuropilot.mediatek.com/sphinx/neuropilot-8-basic-gai-full/html/l1_downloads/downloads_external.html
+用户提供的官方下载对象: https://s3.dualstack.cn-north-1.amazonaws.com.cn/mediatek.neuropilot.com/e88327a6-f5ed-4ad8-93ef-f240b9a112a8.gz
+原链接带 600 秒有效期的 AWS 签名参数,此处记录稳定对象地址,不能作为匿名永久下载链接.
+文件: GAI-Deployment-Toolkit-v2.0.8_qwen2.5-0.5b-1.5b-7b-v0.1.tar.gz
+服务器: /data/users/hailong.he/data/MTKG720/GAI_Toolkit/
+实际大小: 571891487 bytes
+SHA256: da10e770e2950542ab17c63182b0b932348ab05ffdceb18cbb097555ca6127f5
+
+原生 GAI 隔离环境新增依赖,由 pip 下载报告归档:
+安装期间曾下载 PyArrow26,因不兼容 NumPy1.26 已从隔离环境移除,未用于转换:
+https://mirrors.aliyun.com/pypi/packages/e1/81/8e685683897a6d3d5887c3e2fd24f3c14bc5d6d6bb3a2387484e665c580e/pyarrow-26.0.0-cp311-cp311-manylinux_2_28_x86_64.whl
+实际大小: 53904793 bytes
+SHA256: 6e89dee53aaeb50505ed6152ea55bc7ddfd4f4df264f5427ea255288d8f0e580
+sentencepiece==0.2.0
+https://mirrors.aliyun.com/pypi/packages/fb/12/2f5c8d4764b00033cf1c935b702d3bb878d10be9f0b87f0253495832d85f/sentencepiece-0.2.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+SHA256: e58b47f933aca74c6a60a79dcb21d5b9e47416256c795c2d58d55cec27f9551d
+datasets==2.21.0
+https://mirrors.aliyun.com/pypi/packages/72/b3/33c4ad44fa020e3757e9b2fad8a5de53d9079b501e6bbc45bdd18f82f893/datasets-2.21.0-py3-none-any.whl
+SHA256: 25e4e097110ce28824b746a107727ada94024cba11db8bc588d468414692b65a
+evaluate==0.4.3
+https://mirrors.aliyun.com/pypi/packages/a2/e7/cbca9e2d2590eb9b5aa8f7ebabe1beb1498f9462d2ecede5c9fd9735faaf/evaluate-0.4.3-py3-none-any.whl
+SHA256: 47d8770bdea76e2c2ed0d40189273027d1a41ccea861bcc7ba12d30ec5d1e517
+nvidia-ml-py3==7.352.0
+https://mirrors.aliyun.com/pypi/packages/6d/64/cce82bddb80c0b0f5c703bbdafa94bfb69a1c5ad7a79cff00b482468f0d3/nvidia-ml-py3-7.352.0.tar.gz
+SHA256: 390f02919ee9d73fe63a98c73101061a6b37fa694a793abf56673320f1f51277
+pyarrow==17.0.0
+https://mirrors.aliyun.com/pypi/packages/4c/21/9ca93b84b92ef927814cb7ba37f0774a484c849d58f0b692b16af8eebcfb/pyarrow-17.0.0-cp311-cp311-manylinux_2_28_x86_64.whl
+SHA256: e3343cb1e88bc2ea605986d4b94948716edc7a8d14afd4e2c097232f729758b4
+dill==0.3.8
+https://mirrors.aliyun.com/pypi/packages/c9/7a/cef76fd8438a42f96db64ddaa85280485a9c395e7df3db8158cfec1eee34/dill-0.3.8-py3-none-any.whl
+SHA256: c36ca9ffb54365bdd2f8eb3eff7d2a21237f8452b57ace88b1ac615b7e815bd7
+multiprocess==0.70.16
+https://mirrors.aliyun.com/pypi/packages/50/15/b56e50e8debaf439f44befec5b2af11db85f6e0f344c3113ae0be0593a91/multiprocess-0.70.16-py311-none-any.whl
+SHA256: af4cabb0dac72abfb1e794fa7855c325fd2b55a10a44628a3c1ad3311c04127a
+fsspec==2024.6.1
+https://mirrors.aliyun.com/pypi/packages/5e/44/73bea497ac69bafde2ee4269292fa3b41f1198f4bb7bbaaabde30ad29d4a/fsspec-2024.6.1-py3-none-any.whl
+SHA256: 3cb443f8bcd2efb31295a5b9fdb02aee81d8452c80d28f97a6d0959e6cee101e
+aiohttp==3.14.4
+https://mirrors.aliyun.com/pypi/packages/da/6c/1f83990fea249dcb10f48086726953546efc9199c96b6be7114532ac361f/aiohttp-3.14.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+SHA256: f887c3b7fb3058fc1ccd917f52078540c18d938d12018cb9edd64b6811d20c57
+aiohappyeyeballs==2.7.1
+https://mirrors.aliyun.com/pypi/packages/71/43/1947f06babed6b3f1d7f38b0c767f52df66bfb2bc10b468c4a7de9eceff2/aiohappyeyeballs-2.7.1-py3-none-any.whl
+SHA256: 9243213661e29250eb41368e5daa826fc017156c3b8a11440826b2e3ed376472
+aiosignal==1.4.0
+https://mirrors.aliyun.com/pypi/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl
+SHA256: 053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e
+frozenlist==1.8.0
+https://mirrors.aliyun.com/pypi/packages/11/b1/71a477adc7c36e5fb628245dfbdea2166feae310757dea848d02bd0689fd/frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
+SHA256: 2552f44204b744fba866e573be4c1f9048d6a324dfe14475103fd51613eb1d1f
+multidict==6.9.1
+https://mirrors.aliyun.com/pypi/packages/27/50/f420de3683f9b047fc5588064d84043ef57a7152ef451b8373dfc7068d22/multidict-6.9.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+SHA256: e8f1e362c9352b50ed120f001046fdbb80810c9d56580f4c3fc13bbe30823387
+propcache==0.5.4
+https://mirrors.aliyun.com/pypi/packages/c7/06/519a5ebb48b6f94beb48396e55c905f12246a25c3a3608a7ec7bceabf50e/propcache-0.5.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+SHA256: 6e9368e87a3efc285e559131092c5db643eb8e56de4ee42064d5baec22ef2bb5
+yarl==1.25.1
+https://mirrors.aliyun.com/pypi/packages/95/0c/a71501bbc1a674ff72c4d6c2b75f4d9a5af819f5244c3a7558080a8802c5/yarl-1.25.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+SHA256: d5add7b4ca7afeea91d52e4d4e4db3b1fe9885b71f07054560d8c4296b7441a2
+
 隔离 Python 环境依赖来源:
 安装镜像: https://mirrors.aliyun.com/pypi/simple/
 以下为安装镜像中已核对的具体 wheel 地址; 未保留安装时的 wheel 本地哈希:

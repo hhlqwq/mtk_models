@@ -1,0 +1,2538 @@
+{
+  "status": "board_verified",
+  "preparation": {
+    "source": {
+      "files": [
+        {
+          "sha256": "37bd455e9679d2959536270fed49d25cc7c290a64f6e52abb97c71345a9cee41",
+          "name": "config.json",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/config.json",
+          "bytes": 679
+        },
+        {
+          "sha256": "72cbec1015da9ed03ad025483005cbf6481403abf947adfd54e504d1a66a2126",
+          "name": "generation_config.json",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/generation_config.json",
+          "bytes": 181
+        },
+        {
+          "sha256": "1c8f573e830ca9b3ebfeb7ace1823146e22b66f99ee223840e7637c9e745e1c7",
+          "name": "LICENSE",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/LICENSE",
+          "bytes": 1064
+        },
+        {
+          "sha256": "58858233513d76b8703e72eed6ce16807b523328188e13329257fb9594462945",
+          "name": "model.safetensors",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/model.safetensors",
+          "bytes": 3554214621
+        },
+        {
+          "sha256": "8ac8c85fb242563c2260baec0909debd69d718af6a0b3d90e6cab62b4d341cd5",
+          "name": "tokenizer_config.json",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/tokenizer_config.json",
+          "bytes": 3071
+        },
+        {
+          "sha256": "88145e3c3249adc2546ede277e9819d6e405e19072456e4b521cbc724bd60773",
+          "name": "tokenizer.json",
+          "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/tokenizer.json",
+          "bytes": 7031660
+        }
+      ],
+      "repo": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "revision": "ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562"
+    },
+    "context": 1024,
+    "bos_token_id": 151646,
+    "eos_token_id": 151643,
+    "rope_theta": 10000,
+    "calibration_scope": "authored_bilingual_smoke_not_formal_accuracy",
+    "calibration_samples": 16,
+    "demos": [
+      {
+        "id": "zh_demo",
+        "prompt": "请用中文简单介绍你自己。",
+        "input_ids": [
+          151646,
+          151644,
+          14880,
+          11622,
+          104811,
+          100405,
+          100157,
+          107828,
+          1773,
+          151645,
+          151648,
+          198
+        ]
+      },
+      {
+        "id": "en_demo",
+        "prompt": "Briefly introduce yourself in English.",
+        "input_ids": [
+          151646,
+          151644,
+          85984,
+          398,
+          19131,
+          6133,
+          304,
+          6364,
+          13,
+          151645,
+          151648,
+          198
+        ]
+      }
+    ],
+    "calibration_sha256": "96fc8dff98859435f131e417aa768cf8bb6e8eca692db4df31c27a829a6455f0",
+    "config_sha256": "ecffb6912546be01183d997fbb71e281e15cbcb050fb71e1758da81f3b783b57"
+  },
+  "precision": "asym4W_sym16A",
+  "weight_optimization": "hessian",
+  "prefill": 128,
+  "context": 1024,
+  "files": [
+    {
+      "name": "1024c/decode.dla",
+      "bytes": 784515071,
+      "sha256": "6f8b1f1007448ade2e3ae43bdacf94fbc8d5fe70088f54fabd7971d2aa76f41c"
+    },
+    {
+      "name": "1024c/prompt.dla",
+      "bytes": 785698757,
+      "sha256": "4aa3f2c9883be4fb4cf0032386690111a4bdcf52974e94e4b7522bdd503140fa"
+    },
+    {
+      "name": "LICENSE",
+      "bytes": 1064,
+      "sha256": "1c8f573e830ca9b3ebfeb7ace1823146e22b66f99ee223840e7637c9e745e1c7"
+    },
+    {
+      "name": "README.md",
+      "bytes": 1007,
+      "sha256": "af094c5c48a0721cdeaaf5a16943d703dcfe2b1809f59a11f875905607b2e0c4"
+    },
+    {
+      "name": "results/20261010_deepseek_w4a16_v2/board_metrics.json",
+      "bytes": 15055,
+      "sha256": "5f73d8cc8b99b73b366a5cba929de1fbfdded8e047fcd5d7de74f044f7a25de2"
+    },
+    {
+      "name": "results/20261010_deepseek_w4a16_v2/en_demo.log",
+      "bytes": 11263,
+      "sha256": "e69edad1164a7c51c8291f85650c205f0a4f7c7c266dab83973912a1fbbf6683"
+    },
+    {
+      "name": "results/20261010_deepseek_w4a16_v2/en_text_input.log",
+      "bytes": 7700,
+      "sha256": "a1532df82a0159f7f7be1db129ae9102f831a4f1c01999f0e88e6850be47b429"
+    },
+    {
+      "name": "results/20261010_deepseek_w4a16_v2/zh_demo.log",
+      "bytes": 6751,
+      "sha256": "04dac1ee6d823b36e89a83d79549a59171dbe6c440ab5eb1e9a84b3a39d6cdd9"
+    },
+    {
+      "name": "results/20261010_deepseek_w4a16_v2/zh_text_input.log",
+      "bytes": 4744,
+      "sha256": "071ec113ba0d0def4e508d270100cec59c5eb73206436d425634c8fee7e40235"
+    },
+    {
+      "name": "results/summary.json",
+      "bytes": 20000,
+      "sha256": "5b2ba10ff2a20b22e7570f211bf832118c40ae9654be414728d05857994a4530"
+    },
+    {
+      "name": "scripts/config-yocto.yaml",
+      "bytes": 681,
+      "sha256": "e6f6b018a57e4aea8878876c813cf5dfad7615ac22926f515a9193e0519b7f4b"
+    },
+    {
+      "name": "scripts/prompts/en_demo.tokens.txt",
+      "bytes": 65,
+      "sha256": "7c31d0d006527ae90f7e4eac63857ae1fa17e51b006bfee32ccfab37f778d02e"
+    },
+    {
+      "name": "scripts/prompts/en_demo.txt",
+      "bytes": 104,
+      "sha256": "51c094a55abd2e7615b253c876e33ea3b85dc582c3148fc53079991f011d9ac8"
+    },
+    {
+      "name": "scripts/prompts/zh_demo.tokens.txt",
+      "bytes": 77,
+      "sha256": "9b5384222783056fe06643a37233e6b3a29c0b32d4f383030791c5d61278c022"
+    },
+    {
+      "name": "scripts/prompts/zh_demo.txt",
+      "bytes": 102,
+      "sha256": "e1d248a1035f638ac0217bf06b06f9828a17ada8eeaef432cbd51554e5b5e994"
+    },
+    {
+      "name": "scripts/run.sh",
+      "bytes": 957,
+      "sha256": "c53985ea90c59ae2d4c29e03121d273d4367986db388631b926e726737a9294d"
+    },
+    {
+      "name": "tokenizer/added_tokens.yaml",
+      "bytes": 502,
+      "sha256": "3e11cdabc756b05be80d50ba1e3e5d47a697da2e0329d035eba00a5e408124f4"
+    },
+    {
+      "name": "tokenizer/embedding_int16.bin",
+      "bytes": 466747392,
+      "sha256": "369628231054283b4d7c959c0e681617d6653c82c3d5b9865b734704df0e8cd9"
+    },
+    {
+      "name": "tokenizer/merges.txt",
+      "bytes": 1671848,
+      "sha256": "0338dbe9ed0245177fd31958e2e1e62a9b3e38c74e4acf960ee15a6c66c256df"
+    },
+    {
+      "name": "tokenizer/vocab.txt",
+      "bytes": 2471517,
+      "sha256": "d716d826a081e4d997ac1959c9f9d652123ceeacfcc11baaa6530b6784bdc3e1"
+    }
+  ],
+  "graph_contracts": {
+    "prompt": {
+      "inputs": [
+        {
+          "name": "input_embeds",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            128,
+            1536
+          ]
+        },
+        {
+          "name": "mask",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            1,
+            128,
+            1152
+          ]
+        },
+        {
+          "name": "pos_emb",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_0",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_1",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_2",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_3",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_4",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_5",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_6",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_7",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_8",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_9",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_10",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_11",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_12",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_13",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_14",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_15",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_16",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_17",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_18",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_19",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_20",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_21",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_22",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_23",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_24",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_25",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_26",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_27",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_0",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_1",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_2",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_3",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_4",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_5",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_6",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_7",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_8",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_9",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_10",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_11",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_12",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_13",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_14",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_15",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_16",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_17",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_18",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_19",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_20",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_21",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_22",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_23",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_24",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_25",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_26",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_27",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "hidden_states_28",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            128,
+            151936
+          ]
+        },
+        {
+          "name": "curr_keys_0",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_1",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_2",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_3",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_4",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_5",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_6",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_7",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_8",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_9",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_10",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_11",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_12",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_13",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_14",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_15",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_16",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_17",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_18",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_19",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_20",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_21",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_22",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_23",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_24",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_25",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_26",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_27",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_0",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_1",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_2",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_3",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_4",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_5",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_6",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_7",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_8",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_9",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_10",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_11",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_12",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_13",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_14",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_15",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_16",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_17",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_18",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_19",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_20",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_21",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_22",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_23",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_24",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_25",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_26",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_27",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            128,
+            128
+          ]
+        }
+      ],
+      "quantization_scales_checked": 1595825
+    },
+    "decode": {
+      "inputs": [
+        {
+          "name": "input_embeds",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            1,
+            1536
+          ]
+        },
+        {
+          "name": "mask",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            1,
+            1,
+            1025
+          ]
+        },
+        {
+          "name": "pos_emb",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_0",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_1",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_2",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_3",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_4",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_5",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_6",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_7",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_8",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_9",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_10",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_11",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_12",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_13",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_14",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_15",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_16",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_17",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_18",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_19",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_20",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_21",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_22",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_23",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_24",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_25",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_26",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_keys_27",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_0",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_1",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_2",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_3",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_4",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_5",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_6",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_7",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_8",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_9",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_10",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_11",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_12",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_13",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_14",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_15",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_16",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_17",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_18",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_19",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_20",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_21",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_22",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_23",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_24",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_25",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_26",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        },
+        {
+          "name": "past_values_27",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1024,
+            128
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "name": "hidden_states_28",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            1,
+            151936
+          ]
+        },
+        {
+          "name": "curr_keys_0",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_1",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_2",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_3",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_4",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_5",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_6",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_7",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_8",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_9",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_10",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_11",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_12",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_13",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_14",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_15",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_16",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_17",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_18",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_19",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_20",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_21",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_22",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_23",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_24",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_25",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_26",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_keys_27",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_0",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_1",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_2",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_3",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_4",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_5",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_6",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_7",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_8",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_9",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_10",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_11",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_12",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_13",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_14",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_15",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_16",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_17",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_18",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_19",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_20",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_21",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_22",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_23",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_24",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_25",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_26",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        },
+        {
+          "name": "curr_values_27",
+          "dtype": "INT16",
+          "shape": [
+            1,
+            2,
+            1,
+            128
+          ]
+        }
+      ],
+      "quantization_scales_checked": 1595825
+    }
+  },
+  "toolkit_sha256": "da10e770e2950542ab17c63182b0b932348ab05ffdceb18cbb097555ca6127f5",
+  "board_validation": {
+    "run_id": "20261010_deepseek_w4a16_v2",
+    "summary": "results/summary.json",
+    "scope": "authored_bilingual_smoke_not_formal_accuracy",
+    "formal_accuracy_evaluated": false
+  }
+}

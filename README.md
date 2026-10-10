@@ -33,14 +33,15 @@ YOLOv5、ViT 和 RTMPose 是首批模型中的三个先行实现,用于率先打
 
 本次补充模型为 [DeepSeek-R1-Distill-Qwen-1.5B](models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md),
 用于中英文文本问答与推理.使用 DeepSeek 官方权重,参考地瓜 RDK S 系列的部署方式;
+原生 GAI W4A16 Prompt/Decode 交付包已完成板端双语推理,Decode 约 16.75 Token/s.
 2026-10-10 已完成 Genio 720 FP16 双语 Demo 与样例数值检查 (`board_verified`),
 Decode 约 3.8 Token/s,中文 / 英文分别在 73 / 412 Token 结束.Genio 5100 为 `not_started`;
-W4A16 与正式基准精度尚未验证.
+W4A16 原生包已归档至 NAS,英文语法存在问题,正式量化质量待评测.
 原始图片对应的 `target_models.yaml` 清单保持原样,补充模型登记于 `registry/models.yaml`.
 
 | 模型 | 任务 | 标准输入 | 来源 | 当前状态 |
 | --- | --- | --- | --- | --- |
-| [DeepSeek-R1-Distill-Qwen-1.5B](models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md) | Gen AI / LLM | Token + KV Cache,上下文 1024 | DeepSeek 官方权重 | Genio 720 FP16 双语 Demo 通过,Decode 约 3.8 Token/s; 正式精度待评测 |
+| [DeepSeek-R1-Distill-Qwen-1.5B](models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md) | Gen AI / LLM | Token + KV Cache,上下文 1024 | DeepSeek 官方权重 | Genio 720 W4A16 原生双语 Demo 通过,Decode 约 16.75 Token/s; 正式质量待评测 |
 | [YAMNet](models/audio/ambient_sound/yamnet/README.md) | Audio / Ambient sound | 16 kHz 单声道,96×64 Log-Mel | Google TensorFlow Models 官方源码与权重 | Genio 720 W8A16 全量交付,投影 AP 73.90%,交付运行 NPU 0.516 ms/窗口 |
 | [YOLOv8n](models/perception/object_detection/yolov8n/README.md) | Perception / Object detection | 640×640 RGB | Ultralytics v8.0.111 官方源码与权重 | Genio 720 完整交付,三后端全量结果已回收 |
 | [Depth Anything V2 Small](models/navigation/single_camera_depth/depth_anything_v2_small/README.md) | Navigation / Single camera depth | 518×518 RGB | DepthAnything 官方源码与 Small 权重 | DA-2K 85.78%,ONNX 94.83%,精度变化 -9.04 个百分点,NPU 133.02 ms,峰值 RSS 33.04 MiB |

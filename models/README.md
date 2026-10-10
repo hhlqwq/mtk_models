@@ -10,7 +10,8 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 本次补充 LLM: [DeepSeek-R1-Distill-Qwen-1.5B](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md).
 目标为中英文文本问答与推理,来源为 DeepSeek 官方权重,地瓜 RDK 仅作为部署参考.
 Genio 720 已完成 FP16 双语 Demo 与三后端样例数值检查 (`board_verified`),
-Genio 5100 尚未开始.W4A16 与正式基准精度尚未验证.
+Genio 5100 尚未开始.原生 W4A16 双语推理已验证,Decode 约 16.75 Token/s,资源约 2.04 GB.
+英文输出存在语法问题,正式量化质量待评测; 详见模型 README 中的独立原生报告.
 
 输入为导出模型的张量形状,图像统一按 `N×C×H×W` 表示,批量大小为 1。音频模型的采样率均为 16 kHz。
 

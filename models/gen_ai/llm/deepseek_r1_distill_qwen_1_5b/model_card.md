@@ -27,11 +27,11 @@
 | RoPE Theta | 10000 |
 | Max Position Embeddings | 131072,不代表板端上下文容量 |
 | Embedding / LM Head | `tie_word_embeddings=false` |
-| 本次实际配置 | batch=1,上下文 1024,FP16; W4A16 尚未实现 |
+| 本次实际配置 | batch=1,上下文 1024; FP16 基线与 W4A16 原生包均已运行 |
 
 原始框架输入为 Token IDs、Attention Mask; 增量解码需 KV Cache.
 输出为词表 Logits 与更新后的 KV Cache,最终由 Tokenizer 解码为文本.
-静态 Decoder 输入依次为 hidden `[1,1,1536]`、past_key / past_value
+FP16 基线静态 Decoder 输入依次为 hidden `[1,1,1536]`、past_key / past_value
 `[1,2,1023,128]`、cosine / sine `[1,1,1,128]`、mask `[1,1,1,1024]`.
 输出为 hidden_out `[1,1,1536]` 与当前 key / value `[1,2,1,128]`.
 词表投影分为 10 片,前 9 片各 16384 行,最后一片 4480 行.
@@ -58,3 +58,7 @@ Genio 720 为 `board_verified`,运行 `20261010_deepseek_fp16_v3` 已完成中�
 样例逐 Token NLL 数值检查通过; Genio 5100 为 `not_started`.
 不将自编双语样例视为正式基准精度,也不将 FP16 结果视为 W4A16 验证.
 环境核查范围、后续流程与限制见 [README](README.md).
+
+原生 W4A16 使用 Prompt 128 Token、Decode 1 Token 的两个 DLA,INT16 embedding、KV Cache 和 I/O.
+运行 `20261010_deepseek_w4a16_v2` 双语样例完成 EOS,Decode 约 16.75 Token/s.
+英文样例存在语法问题,本次只确认板端推理,不作为正式量化质量验收.

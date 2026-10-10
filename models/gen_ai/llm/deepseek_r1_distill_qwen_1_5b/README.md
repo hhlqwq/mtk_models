@@ -3,7 +3,7 @@
 中英文文本问答与推理模型.使用 DeepSeek 官方权重,参考地瓜 RDK S 系列的选型与指标展示,不使用厂商预编译模型作为转换输入.
 
 2026-10-10 已完成官方资源校验、静态 ONNX 导出、FP16 编译、Genio 720 双语 Demo 与三后端样例数值检查,状态为 `board_verified`.
-正式基准精度、W4A16、并行 Prefill 和 Genio 5100 尚未验证,不标记为 `complete`.
+原生 W4A16 与 128 Token Prefill 已完成板端双语推理验证; 正式质量与 Genio 5100 尚未验证,不标记为 `complete`.
 
 ## 来源与配置
 
@@ -12,7 +12,7 @@
 - 2026-10-10 核对 [MTK 公开生成式模型列表](https://genio.mediatek.com/doc/iot-aihub/ai_hub/model_zoo/litert_gai/supported_models.html),未列出该模型; 结论仅覆盖公开列表.
 - 规格与许可见 [模型卡](model_card.md); 所有官方资源的地址、实际大小与 SHA-256 见 [来源](models/source_url.txt) 和 [资源清单](models/source_manifest.json).
 
-当前配置为 batch=1、上下文 1024、FP16.28 个 Decoder 分片与 10 个词表投影分片全部通过 Neuron Runtime 硬件接口运行,编译参数为 `--arch=mdla5.3 --suppress-input --suppress-output --disallow-bridge`.
+FP16 基线配置为 batch=1、上下文 1024、FP16.28 个 Decoder 分片与 10 个词表投影分片全部通过 Neuron Runtime 硬件接口运行,编译参数为 `--arch=mdla5.3 --suppress-input --suppress-output --disallow-bridge`.
 CPU 负责 embedding 查表、RoPE、KV Cache 管理、Greedy 选 Token 和统计; Attention、归一化、MLP 与词表投影在 NPU 执行.不存在模型计算失败后自动回退 CPU 的路径.
 
 Prefill 当前逐 Token 执行,与 Decode 复用同一组分片; 不具备并行 Prefill 优化.注意力在矩阵乘法前缩放 Query,避免 FP16 点积中间值溢出,数学公式不变.
@@ -48,6 +48,62 @@ bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/run.sh
 运行时间较长,逐分片显示进度,每阶段保留日志; 任一步骤失败即停止.权重及生成产物不提交普通 Git.
 
 当前临时实验的编译产物在 Docker `/tmp/hailongcodex/2026-10-10/deepseek_models`,源代码试验副本在宿主机与 Docker `/tmp/hailongcodex/2026-10-10/deepseek_code`.正式脚本默认输出为模型目录下 `models/generated`.
+
+## 原生 GAI W4A16 交付流程
+
+2026-10-10 已完成原生 GAI W4A16 转换、MDLA5.3 编译及 `llm_cmdline_tool` 板端验证.
+原生结果与 FP16 基线分别记录,正式量化质量尚未验收.
+
+工具来源为 MTK 官方 `GAI-Deployment-Toolkit-v2.0.8_qwen2.5-0.5b-1.5b-7b-v0.1.tar.gz`,
+内含 `mtk_llm_sdk==2.7.5`.用户下载的原始归档位于
+`/data/users/hailong.he/data/MTKG720/GAI_Toolkit/`,大小 `571891487` 字节,
+SHA256 为 `da10e770e2950542ab17c63182b0b932348ab05ffdceb18cbb097555ca6127f5`.
+下载地址见 [来源记录](models/source_url.txt).厂商工具及其中的第三方源码不纳入本仓库.
+
+工具解压至宿主机 `/tmp/hailongcodex/2026-10-10/gai_toolkit/`,
+容器副本为 `/tmp/hailongcodex/2026-10-10/gai_toolkit_qwen25/`.
+独立环境 `/tmp/hailongcodex/2026-10-10/deepseek_gai_env` 继承容器系统包,
+原生实验目录为 `/tmp/hailongcodex/2026-10-10/deepseek_native`.
+
+在既有容器中创建独立环境,安装本地工具包和兼容依赖:
+
+```bash
+docker exec hhl_g720_8011 python3 -m venv --system-site-packages \
+  /tmp/hailongcodex/2026-10-10/deepseek_gai_env
+docker exec hhl_g720_8011 /tmp/hailongcodex/2026-10-10/deepseek_gai_env/bin/python \
+  -m pip install --no-index --no-deps \
+  /tmp/hailongcodex/2026-10-10/gai_toolkit_qwen25/mtk_llm_sdk_v2.7.5/mtk_llm_sdk-2.7.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+docker exec hhl_g720_8011 /tmp/hailongcodex/2026-10-10/deepseek_gai_env/bin/python \
+  -m pip install transformers==4.44.2 safetensors==0.4.5 tokenizers==0.19.1 \
+  sentencepiece==0.2.0 datasets==2.21.0 evaluate==0.4.3 \
+  nvidia-ml-py3==7.352.0 pyarrow==17.0.0
+```
+
+PyArrow 固定为 17.0.0,与当前 NumPy1.26.4 兼容,不升级容器全局 NumPy.
+
+`deploy/host/prepare_native.py` 重新校验官方资源,生成独立配置,使用官方
+Chat Template 编码双语校准输入,不修改源权重.转换配置采用官方 tokenizer
+的 BOS `151646`、EOS `151643`,保留 RoPE `10000`.
+上下文先限制为 1024,Prefill 为 128,Decode 为 1; 配置与静态图必须同步生成.
+16 条自编双语校准输入仅用于部署流程检查,不代表正式精度评测.
+
+在 Ubuntu89 执行,脚本及资源路径必须在容器中可见:
+
+```bash
+cd /data/users/hailong.he/github/mtk_models
+bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/run_native.sh
+```
+
+可单独运行 `prepare`、`calibrate`、`quantize`、`shape`、`compile` 阶段,
+默认通过 Converter 后端执行 `asym4W_sym16A` 和 Hessian 权重优化.
+编译调整为 G720 的 MDLA5.3、L1 256KB、单核,保留原生脚本优化选项并禁止桥接.
+已验证 tokenizer、INT16 embedding、板端 Prompt/Decode 接口和双语输出.
+两个固定样例的原生文本输入与官方 Token 输入输出一致.
+
+编译通过后,在容器内执行 `deploy/host/package_native.py --work <原生实验目录>
+--output <新的交付目录>`,生成两个 DLA、INT16 embedding、BPE tokenizer、
+Yocto 配置、双语 Prompt 与运行脚本.打包前读取静态 TFLite I/O 验证 INT16 契约,
+交付清单记录文件哈希,初始状态为 `compiled_pending_board`.
 
 ## 板端测试与汇总
 
@@ -106,8 +162,54 @@ DLA 加 embedding 的部署资源合计约 **3.56 GB**,因此 RSS 不能作为�
 
 地瓜参考数据为 S100P、q4、输入长度 256、上下文 1024 时 TTFT 108 ms、39.49 Token/s、内存 1.1 GB,来源为上文 S100 工具链性能表.这些数值不能作为 MTK 实测结果.
 
+## 原生 W4A16 实测与 NAS 交付
+
+运行编号 `20261010_deepseek_w4a16_v2`,使用同一官方权重与 Chat Template.
+中文结果沿用已成功的 v1,英文将生成上限调整到 768 后完成; 原始运行编号保留在报告中.
+两路 TFLite 的 59 个输入与 57 个输出均为 INT16,量化 Scale 全部为有限正数.
+
+| Demo | 生成 Token | Prefill (秒) | Decode (Token/s) | 总耗时 (秒) | EOS / 最终回答 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| [中文实际输出](examples/output/zh_demo_native.txt) | 273 | 0.325992 | 16.75 | 18.773 | 均完成 |
+| [英文实际输出](examples/output/en_demo_native.txt) | 636 | 0.325769 | 16.75 | 39.827 | 均完成 |
+
+Prefill 时间来自原生 CLI,不包含模型加载或切换,不能当作 TTFT.
+Decode 速度按原生 CLI 的模型调用计数,排除首 Token.
+进程峰值 RSS 约 813.57 / 816.73 MiB,系统可用内存分别下降 938.87 / 909.03 MiB.
+后者仅为本次系统观测,不是驱动内存的独立测量.
+两个 DLA 与 embedding 合计 2036961220 字节,完整交付目录约 2.04 GB.
+
+英文样例出现不自然的语法,保留实际文本和原始 Token; 16 条自编校准输入及双语 Demo
+不足以证明正式量化质量达标.未对 W4A16 执行正式数据集精度评测,
+也不能沿用 FP16 的 PPL 与一致率.原生证据见 [报告](results/native_summary.json)
+与 [文件哈希及接口清单](results/native_artifact_manifest.json).
+
+NAS 交付目录:
+
+```text
+/data/users/hailong.he/nas_smb/Docs_Internal/知识库(钉钉同构)/算法工具链/模型部署/MTK/G720/TFLite/GenerativeAI/LLM/DeepSeek-R1-Distill-Qwen-1.5B/deepseek-r1-distill-qwen-1.5b
+```
+
+目录组织与既有 LLM 一致,包含 `1024c/{prompt.dla,decode.dla}`、
+`tokenizer/{embedding_int16.bin,vocab.txt,merges.txt,added_tokens.yaml}`、
+`scripts/{config-yocto.yaml,run.sh,prompts/}`、`results/`、许可证和文件清单.
+
+板端已部署到 `/root/hailong.he/open_models/deepseek_r1_distill_qwen_1_5b_native`:
+
+```bash
+cd /root/hailong.he/open_models/deepseek_r1_distill_qwen_1_5b_native
+bash scripts/run.sh
+# 使用原生文本分词,输入仍包含官方 Chat Template.
+INPUT_MODE=text bash scripts/run.sh
+```
+
+默认总生成上限为 768,可通过 `MAX_NEW_TOKENS` 调整; 原生 CLI 的 `-m` 计数
+不包含首 Token,脚本自动减 1.上下文 1024、Prefill 128 涉及静态图,
+修改时必须重新转换和编译,不能只改配置.脚本保存日志,指标归档另行使用
+`package_native.py --board-results <原始板端证据目录>` 校验日志哈希并更新清单.
+
 ## 使用限制
 
 小型推理模型可能生成较长思考过程、重复内容或中英文混用.生成上限仍可能截断思考内容,必须查看实际文本与截断标记,不能视为完整回答.
-FP16 基线模型体积和内存明显大于 q4 模型,当前不声称达到地瓜的内存或速度.W4A16、并行 Prefill、正式质量评测和 Genio 5100 验证尚未完成.
+FP16 基线模型体积和内存明显大于 q4 模型,当前不声称达到地瓜的内存或速度.原生 W4A16 已验证推理与 128 Token Prefill,正式质量评测和 Genio 5100 验证尚未完成.
 DeepSeek 模型许可为 MIT,Qwen 基础模型采用 Apache-2.0; 分发权重或转换产物时保留许可与归属信息.
