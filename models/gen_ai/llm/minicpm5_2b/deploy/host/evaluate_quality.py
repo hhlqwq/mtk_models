@@ -59,6 +59,21 @@ def evaluate(args):
                 total_nll += loss.item()
                 print(f"[质量参考] {index + 1}/{args.blocks}", flush=True)
         ppl = float(torch.exp(torch.tensor(total_nll / protocol["scored_tokens"])))
+        preparation = json.loads((args.model.parent / "native_prepare.json").read_text())
+        protocol["demo_references"] = []
+        for sample in preparation["demos"]:
+            print(f"[官方 Greedy 参考] {sample['id']}", flush=True)
+            ids = torch.tensor([sample["input_ids"]], device="cuda")
+            with torch.inference_mode():
+                output = model.generate(
+                    ids, max_new_tokens=768, do_sample=False,
+                    eos_token_id=preparation["stop_token_ids"], pad_token_id=1)
+            generated = output[0, ids.shape[1]:].tolist()
+            protocol["demo_references"].append({
+                "id": sample["id"], "generated_tokens": generated,
+                "eos_reached": generated[-1] in preparation["stop_token_ids"],
+                "text": tokenizer.decode(generated, skip_special_tokens=False),
+            })
     else:
         # 仅在当前评测进程注入本地固定语料,不修改 SDK 或它的全局缓存.
         def get_local_dataset(*unused_args, **unused_kwargs):

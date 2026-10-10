@@ -43,3 +43,6 @@ lookahead,默认使用官方 Token 输入.原生文本输入的兼容结论仅�
 板端证据入口为 `deploy/board/evaluate_native.py`,默认运行中英文 Token/文本输入,
 记录停止 Token、原始日志、Prefill/Decode 与本次内存观测,并核对两种输入结果.
 日志需归档后由打包入口检查哈希; 推理成功不表示正式量化质量达标.
+
+浮点质量入口同时生成相同双语 Prompt 的官方 FP32 Greedy 参考,
+保留 Token 和实际文本以核对量化板端输出,不人工修饰差异.
