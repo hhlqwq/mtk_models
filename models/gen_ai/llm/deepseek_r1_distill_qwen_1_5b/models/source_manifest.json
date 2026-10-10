@@ -1,0 +1,42 @@
+{
+  "files": [
+    {
+      "sha256": "37bd455e9679d2959536270fed49d25cc7c290a64f6e52abb97c71345a9cee41",
+      "name": "config.json",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/config.json",
+      "bytes": 679
+    },
+    {
+      "sha256": "72cbec1015da9ed03ad025483005cbf6481403abf947adfd54e504d1a66a2126",
+      "name": "generation_config.json",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/generation_config.json",
+      "bytes": 181
+    },
+    {
+      "sha256": "1c8f573e830ca9b3ebfeb7ace1823146e22b66f99ee223840e7637c9e745e1c7",
+      "name": "LICENSE",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/LICENSE",
+      "bytes": 1064
+    },
+    {
+      "sha256": "58858233513d76b8703e72eed6ce16807b523328188e13329257fb9594462945",
+      "name": "model.safetensors",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/model.safetensors",
+      "bytes": 3554214621
+    },
+    {
+      "sha256": "8ac8c85fb242563c2260baec0909debd69d718af6a0b3d90e6cab62b4d341cd5",
+      "name": "tokenizer_config.json",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/tokenizer_config.json",
+      "bytes": 3071
+    },
+    {
+      "sha256": "88145e3c3249adc2546ede277e9819d6e405e19072456e4b521cbc724bd60773",
+      "name": "tokenizer.json",
+      "url": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/tokenizer.json",
+      "bytes": 7031660
+    }
+  ],
+  "repo": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+  "revision": "ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562"
+}

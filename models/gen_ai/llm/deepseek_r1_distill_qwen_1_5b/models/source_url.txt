@@ -1,0 +1,34 @@
+核对日期: 2026-10-10
+模型: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+官方项目: https://github.com/deepseek-ai/DeepSeek-R1
+官方权重仓库: https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+固定 revision: ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562
+状态: 2026-10-10 已下载并逐文件验证,详见 source_manifest.json.
+model.safetensors 实际大小: 3554214621 bytes.
+model.safetensors SHA-256: 58858233513d76b8703e72eed6ce16807b523328188e13329257fb9594462945.
+资源目录: D:/tmp/hailongcodex/2026-10-10/deepseek_source.
+Ubuntu89 与 Docker 副本: /tmp/hailongcodex/2026-10-10/deepseek_source.
+许可: DeepSeek MIT; Qwen2.5-Math 基础模型 Apache-2.0.
+
+官方资源下载地址:
+https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/model.safetensors
+https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/config.json
+https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/generation_config.json
+https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/tokenizer.json
+https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/tokenizer_config.json
+https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B/resolve/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562/LICENSE
+
+部署参考,不是转换输入:
+https://github.com/D-Robotics/rdk_model_zoo_s
+https://developer.d-robotics.cc/rdk_s_doc/Advanced_development/toolchain_development/LLM_Toolchain/s100_LLM_Toolchain
+
+MTK 公开模型列表与运行工具:
+https://genio.mediatek.com/doc/iot-aihub/ai_hub/model_zoo/litert_gai/supported_models.html
+https://genio.mediatek.com/doc/iot-aihub/ai_hub/supported_os/yocto/litert_gai/llm_cmdline_tool.html
+
+隔离 Python 环境依赖来源:
+安装镜像: https://mirrors.aliyun.com/pypi/simple/
+以下为安装镜像中已核对的具体 wheel 地址; 未保留安装时的 wheel 本地哈希:
+https://mirrors.aliyun.com/pypi/packages/75/35/07c9879163b603f0e464b0f6e6e628a2340cfc7cdc5ca8e7d52d776710d4/transformers-4.44.2-py3-none-any.whl
+https://mirrors.aliyun.com/pypi/packages/e6/ee/69e498a892f208bd1da4104d4b9be887f8611bf4942144718b6738482250/safetensors-0.4.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+https://mirrors.aliyun.com/pypi/packages/a7/03/fb50fc03f86016b227a967c8d474f90230c885c0d18f78acdfda7a96ce56/tokenizers-0.19.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl

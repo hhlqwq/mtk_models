@@ -7,10 +7,16 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 
 ## 模型规格
 
+本次补充 LLM: [DeepSeek-R1-Distill-Qwen-1.5B](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md).
+目标为中英文文本问答与推理,来源为 DeepSeek 官方权重,地瓜 RDK 仅作为部署参考.
+Genio 720 已完成 FP16 双语 Demo 与三后端样例数值检查 (`board_verified`),
+Genio 5100 尚未开始.W4A16 与正式基准精度尚未验证.
+
 输入为导出模型的张量形状,图像统一按 `N×C×H×W` 表示,批量大小为 1。音频模型的采样率均为 16 kHz。
 
 | 模型 | 具体版本 / 权重 | 模型输入 | 参数量 (M) | FP32 ONNX 大小 (MB) | 部署 DLA 大小 (MB) |
 | --- | --- | --- | ---: | ---: | --- |
+| [DeepSeek-R1-Distill-Qwen-1.5B](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md) | DeepSeek 官方固定 revision,实际参数包含独立 LM Head | Token + KV Cache,上下文 1024,28 层 | 1777.09 | 6175.24 (38 个分片合计) | FP16 **3089.46**,另需 embedding **466.75** |
 | [YAMNet](audio/ambient_sound/yamnet/README.md) | Google AudioSet 521 类,源码 `34a2132` | Log-Mel `1×1×96×64`,单声道音频 | 3.73 | 14.94 | W8A16 **3.99** |
 | [YOLOv8n](perception/object_detection/yolov8n/README.md) | YOLOv8-N,Ultralytics `v8.0.111` | RGB `1×3×640×640` | 3.16 | 12.66 | INT8 **3.53** |
 | [YOLOv5s](perception/object_detection/yolov5s/README.md) | YOLOv5-S,官方 `v7.0` 权重 | RGB `1×3×640×640` | 7.24 | 28.94 | INT8 **7.66** |
@@ -31,6 +37,7 @@ Whisper 参数量统计原始完整网络,encoder / decoder 文件大小分别�
 
 | 模型 | 板端 NPU 平均耗时 (ms) | 峰值 RSS (MiB) | 核心精度 | 精度变化 (百分点) |
 | --- | ---: | ---: | --- | ---: |
+| [DeepSeek FP16](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md) | **220.11/Token** | **148.10** | 自编双语 26 Token 的 PPL **145.05**,非正式精度 | 不适用 |
 | [YAMNet W8A16](audio/ambient_sound/yamnet/README.md) | **0.516** | **10.75** | ESC-50 47 类投影宏平均 AP **73.8964%** | **-0.2491** |
 | [YOLOv8n](perception/object_detection/yolov8n/README.md) | **6.28** | **31.32** | mAP@0.5:0.95 **35.35%** | **-1.275** |
 | [YOLOv5s](perception/object_detection/yolov5s/README.md) | **9.76** | **33.23** | mAP@0.5:0.95 **35.86%** | **-1.23** |
@@ -40,6 +47,13 @@ Whisper 参数量统计原始完整网络,encoder / decoder 文件大小分别�
 | [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | **133.02** | **33.04** | DA-2K 点对准确率 **85.78%** | **-9.04** |
 | [FastSAM-s](navigation/segmentation/fastsam/README.md) | **14.72** | **64.55** | segm AR@100 **37.57%** | **-1.45** |
 | [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | **379.19/条音频** | **105.53** | WER **7.56%** | 下降不足 0.01 |
+
+DeepSeek 结果来自运行 `20261010_deepseek_fp16_v3`,batch=1、上下文 1024、FP16、
+逐 Token Prefill、Greedy 生成上限 512.中文 / 英文 Demo 分别在 73 / 412 Token 到达 EOS,
+TTFT 为 3.245 / 3.112 秒,端到端 Decode 为 3.78 / 3.81 Token/s.
+表中 220.11 ms 为模型算子的纯 NPU 调用平均耗时; RSS 未覆盖全部 NPU 驱动内存,
+本次系统可用内存下降约 3512.09 MiB.三后端自编短文本 PPL 为 144.57 / 144.57 / 145.05,
+仅验证数值,不能替代正式基准.结果与实际文本见 [DeepSeek README](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md).
 
 YOLOv5s 结果来自运行 `20261008_032807_67603`,COCO val2017 全量 5000 张; ONNX FP32 与板端精度均为本次同协议实测,ONNX mAP 为 **37.09%**。结果文件见 [summary.json](perception/object_detection/yolov5s/results/summary.json)。
 
