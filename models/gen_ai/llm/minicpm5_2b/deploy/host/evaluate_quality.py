@@ -9,6 +9,8 @@ from types import SimpleNamespace
 
 import pyarrow.parquet as parquet
 import torch
+from safetensors.torch import load_file
+from transformers import AutoConfig
 from transformers import AutoModelForCausalLM
 from transformers import AutoTokenizer
 
@@ -30,7 +32,7 @@ def evaluate(args):
         raise ValueError("评测块数必须为正整数.")
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
     texts = parquet.read_table(args.corpus, columns=["text"])["text"].to_pylist()
-    tokens = tokenizer("\n\n".join(texts), return_tensors="pt").input_ids
+    tokens = tokenizer("\n\n".join(texts), return_tensors="pt", verbose=False).input_ids
     length = args.blocks * 128
     if tokens.numel() < length:
         raise ValueError("测试语料不足,不得重复填充语料.")
@@ -45,9 +47,18 @@ def evaluate(args):
     args.output.mkdir(parents=True, exist_ok=True)
     if args.backend == "pytorch":
         print("[质量参考] 加载官方权重 FP32.", flush=True)
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model, local_files_only=True, torch_dtype=torch.float32,
-            attn_implementation="eager").to("cuda").eval()
+        # 官方 Safetensors 没有 format 元数据,旧 Transformers 加载器会报错.
+        # 按官方索引直接加载 Tensor,严格匹配全部权重,不重写权重文件.
+        config = AutoConfig.from_pretrained(args.model, local_files_only=True)
+        model = AutoModelForCausalLM.from_config(
+            config, torch_dtype=torch.float32, attn_implementation="eager")
+        index = json.loads((args.model / "model.safetensors.index.json").read_text())
+        state = {}
+        for name in sorted(set(index["weight_map"].values())):
+            state.update(load_file(args.model / name))
+        model.load_state_dict(state, strict=True)
+        del state
+        model = model.to("cuda").eval()
         total_nll = 0.0
         with torch.inference_mode():
             for index in range(args.blocks):

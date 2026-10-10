@@ -46,3 +46,6 @@ lookahead,默认使用官方 Token 输入.原生文本输入的兼容结论仅�
 
 浮点质量入口同时生成相同双语 Prompt 的官方 FP32 Greedy 参考,
 保留 Token 和实际文本以核对量化板端输出,不人工修饰差异.
+
+官方 Safetensors 缺少旧 Transformers 加载器所需的 format 元数据,
+浮点参考按官方索引直接加载全部 Tensor 并严格匹配模型参数,不重写原始权重.
