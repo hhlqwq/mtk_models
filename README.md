@@ -203,3 +203,5 @@ python tools/check_registry.py
 ```
 
 各模型统一在编译主机评测 ONNX 核心精度,板端记录核心精度、推理耗时、峰值 RSS和相对 ONNX 的精度变化。量化方式、数据要求与测试步骤见各模型 README。
+
+新增 [MiniCPM5-2B](models/gen_ai/llm/minicpm5_2b/README.md) 适配,官方 Llama 架构,目标 W4A16、Prefill 128、上下文 1024.当前尚未完成 MTK 板端验证.

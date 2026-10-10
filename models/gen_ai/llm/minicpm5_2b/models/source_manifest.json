@@ -1,0 +1,71 @@
+{
+  "model": "openbmb/MiniCPM5-2B",
+  "revision": "f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+  "license": "Apache-2.0",
+  "status": "weight_download_pending",
+  "files": [
+    {
+      "bytes": 704,
+      "sha256": "59613157e5357d62bcb121e04cb90f2170b43d789b142380c12c3d4277d95180",
+      "name": "config.json",
+      "url": "https://huggingface.co/openbmb/MiniCPM5-2B/resolve/f97400052a43d642bbc6e9975e2397e3ae6a6b52/config.json",
+      "verification": "verified"
+    },
+    {
+      "bytes": 213,
+      "sha256": "9ac4f32e5f32358697a9f438a3ea89ef80e6ba786c72c49e932f9f21c122fdb1",
+      "name": "generation_config.json",
+      "url": "https://huggingface.co/openbmb/MiniCPM5-2B/resolve/f97400052a43d642bbc6e9975e2397e3ae6a6b52/generation_config.json",
+      "verification": "verified"
+    },
+    {
+      "bytes": 5435,
+      "sha256": "bc1f78ef8a86b6bdf64a056cf89dd0ac506db4f198ab363d85168e2500ab44dd",
+      "name": "chat_template.jinja",
+      "url": "https://huggingface.co/openbmb/MiniCPM5-2B/resolve/f97400052a43d642bbc6e9975e2397e3ae6a6b52/chat_template.jinja",
+      "verification": "verified"
+    },
+    {
+      "bytes": 31378,
+      "sha256": "6d839cd76e8395de548a0e6cc310386f66d1ecbb2c75d198a8dfd3d70892b756",
+      "name": "model.safetensors.index.json",
+      "url": "https://huggingface.co/openbmb/MiniCPM5-2B/resolve/f97400052a43d642bbc6e9975e2397e3ae6a6b52/model.safetensors.index.json",
+      "verification": "verified"
+    },
+    {
+      "bytes": 551,
+      "sha256": "82d96d7a9e6ced037f12394b7ea6a5b02e6ca87e0d11edaa8d60d9be857ce7db",
+      "name": "special_tokens_map.json",
+      "url": "https://huggingface.co/openbmb/MiniCPM5-2B/resolve/f97400052a43d642bbc6e9975e2397e3ae6a6b52/special_tokens_map.json",
+      "verification": "verified"
+    },
+    {
+      "bytes": 9894271,
+      "sha256": "3e065a558a034185fe299917b398685c1facd0169a9eea1e629eb30c171fed81",
+      "name": "tokenizer.json",
+      "url": "https://huggingface.co/openbmb/MiniCPM5-2B/resolve/f97400052a43d642bbc6e9975e2397e3ae6a6b52/tokenizer.json",
+      "verification": "verified"
+    },
+    {
+      "bytes": 94391,
+      "sha256": "e9b1064649e771d7a8e15637c68b2d2749724877ba3648bd74a4ece31c26303b",
+      "name": "tokenizer_config.json",
+      "url": "https://huggingface.co/openbmb/MiniCPM5-2B/resolve/f97400052a43d642bbc6e9975e2397e3ae6a6b52/tokenizer_config.json",
+      "verification": "verified"
+    },
+    {
+      "bytes": 11335,
+      "sha256": "202d02b14796563546e1a1d1e761410fa9e399bf7e1b85d8b43c972658341202",
+      "url": "https://raw.githubusercontent.com/OpenBMB/MiniCPM/316cfb1cea39f39cfa16b4f5703b77495c2340be/LICENSE",
+      "name": "LICENSE",
+      "verification": "verified"
+    },
+    {
+      "name": "model-00000-of-00001.safetensors",
+      "url": "https://huggingface.co/openbmb/MiniCPM5-2B/resolve/f97400052a43d642bbc6e9975e2397e3ae6a6b52/model-00000-of-00001.safetensors",
+      "bytes": 5033557096,
+      "sha256": "14fb8e7f0a18d53d1f239773758bf581cee7e456a4523a54622c3a245b64402c",
+      "verification": "pending"
+    }
+  ]
+}
