@@ -261,6 +261,28 @@ def record_board_results(work, output, results):
                    qualitative_observations=["双语样例仅验证推理,正式量化质量须独立评测."],
                    memory_scope="process_vm_hwm_and_sampled_system_memavailable")
     metrics["host_quality"] = manifest.get("host_quality")
+    npu_path = results / "npu_quality.json"
+    if npu_path.exists():
+        npu = json.loads(npu_path.read_text())
+        reference = json.loads((output / "results/quality/pytorch_quality.json").read_text())
+        for key in ("protocol", "selected_text_sha256", "input_ids", "scored_tokens"):
+            if npu[key] != reference[key]:
+                raise ValueError(f"板端与浮点质量协议不一致: {key}")
+        dla = output / f"{manifest['context']}c/prompt.dla"
+        if npu["dla_sha256"] != sha256(dla) or npu["cpu_fallback"]:
+            raise ValueError("板端质量报告的 DLA 或硬件路径不符.")
+        if len(npu["nll"]) != npu["scored_tokens"] or not all(
+                math.isfinite(value) for value in npu["nll"]):
+            raise ValueError("板端 NLL 数量或数值非法.")
+        metrics["npu_subset_quality"] = {
+            "protocol": npu["protocol"], "scope": npu["scope"],
+            "perplexity": npu["perplexity"],
+            "relative_to_fp32_percent":
+                (npu["perplexity"] / reference["perplexity"] - 1) * 100,
+            "relative_to_host_tflite_percent":
+                (npu["perplexity"] / metrics["host_quality"]["w4a16_perplexity"] - 1) * 100,
+            "cpu_fallback": False,
+        }
     (output / "results/summary.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
     write_run_script(output)
@@ -282,6 +304,11 @@ def record_board_results(work, output, results):
                    f"W4A16 {quality['w4a16_perplexity']:.5f},"
                    f"相对变化 {quality['relative_ppl_increase_percent']:.2f}%.\n"
                    "原始质量报告见 `results/quality/`,该结果不代表完整基准或板端 NPU 精度.\n")
+    if "npu_subset_quality" in metrics:
+        npu = metrics["npu_subset_quality"]
+        readme += (f"\n同一子集的实际 MDLA PPL 为 {npu['perplexity']:.5f},"
+                   f"相对 FP32 变化 {npu['relative_to_fp32_percent']:.2f}%.\n"
+                   "仅为 Prefill 128 图的固定文本子集检查,不是完整 WikiText2 基准.\n")
     (output / "README.md").write_text(readme)
     manifest.update(status="board_verified", board_validation={
         "run_id": metrics["run_id"], "summary": "results/summary.json",
