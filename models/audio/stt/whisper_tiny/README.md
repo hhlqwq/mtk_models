@@ -4,6 +4,18 @@
 
 量化方式: 未进行整数定点量化,采用浮点模型部署.
 
+### 量化验证
+
+当前 Genio 720 / MDLA 5.3 下已尝试以下整数方案,正式部署仍使用通过全量测试的浮点模型。
+
+| 方案 | 转换与编译 | 验证结果 |
+| --- | --- | --- |
+| W8A8 | 双模型转换及严格 NPU 编译通过 | 当前校准配方下,20 条音频 WER **100.00%**,出现重复输出,不用于部署 |
+| W8A16 | 双模型转换通过,严格 NPU 编译失败 | `BATCH_MATMUL` 不支持非对称 16 位第二输入 |
+| W16A16 | 双模型转换通过,严格 NPU 编译失败 | `FULLY_CONNECTED` 报 `invalid constant data`,同时存在 16 位算子支持限制 |
+
+实验使用 8 条真实音频及其自回归 token / KV cache 状态校准,在 20 条音频上验证。同批浮点板端 WER 为 **2.64%**;未用于校准的 12 条音频上,浮点 WER 为 **2.41%**,W8A8 为 **100.00%**。小样本结果不替代下方全量结果,也不代表其他校准配方或混合精度方案的结果。
+
 ## 第一步: 编译并上传
 
 所有配置均在脚本顶部,按模型与校准数据、产物与临时目录、板端地址与数据、ONNX 精度数据、编译环境分组.脚本已填写当前部署环境的路径,使用时按注释调整等号右侧的值; 编译主机和 Docker 须能访问相同数据,板端路径独立配置.
@@ -82,7 +94,7 @@ WER 越低越好,本次板端 WER 相比 ONNX 上升不足 0.01 个百分点。�
 
 板端识别: You will find me continually speaking of foreman, Titian, Holbein, Turner, and Tintarat, and almost the same terms.
 
-板端识别文本保存在 `examples/output/transcripts.md`.
+输出文件: [examples/output/transcripts.md](examples/output/transcripts.md),包含上述两条音频的参考文本与实际板端识别文本。
 
 ## 板端部署结构
 
