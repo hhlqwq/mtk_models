@@ -37,7 +37,7 @@ Whisper 参数量统计原始完整网络,encoder / decoder 文件大小分别�
 | [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | **51.75** | **141.30** | Top-1 **79.40%** | **-1.27** |
 | [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | **3.86** | **32.74** | WholeBody AP **53.24%** | **-3.80** |
 | [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | **0.52** | **8.25** | LFW 验证准确率 **99.32%** | **-0.07** |
-| [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | **131.31** | **32.66** | DA-2K 点对准确率 **85.78%** | 待 ONNX 评测 |
+| [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | **133.02** | **33.04** | DA-2K 点对准确率 **85.78%** | **-9.04** |
 | [FastSAM-s](navigation/segmentation/fastsam/README.md) | **14.72** | **64.55** | segm AR@100 **37.57%** | **-1.45** |
 | [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | **379.19/条音频** | **105.53** | WER **7.56%** | 下降不足 0.01 |
 
@@ -61,6 +61,8 @@ YAMNet 交付方案为全 W8A16,运行 `20261009_yamnet_esc50_w8a16_v1`.
 表中耗时为该交付运行的 NPU 单次推理平均耗时,一次输入 `1×1×96×64`,batch=1,
 排除预热和音频前后处理.两种保留方案及不同运行条件的配对对照见
 [YAMNet README](audio/ambient_sound/yamnet/README.md).
+
+Depth Anything V2 Small 的 DA-2K 同协议 ONNX FP32 点对准确率为 **94.83%**,板端为 **85.78%**,精度下降 **9.04 个百分点**。结果见 [summary.json](navigation/single_camera_depth/depth_anything_v2_small/results/summary.json)。
 
 精度变化正数表示改善,负数表示下降: 准确率和 AP/AR 用板端减 ONNX,WER 用 ONNX 减板端。量化方式见各模型 README。ORT `session.Run` 与独立 NPU 调用耗时分开记录,不直接混排。
 
