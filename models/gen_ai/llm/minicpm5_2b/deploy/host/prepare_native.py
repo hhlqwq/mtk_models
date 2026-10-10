@@ -55,9 +55,10 @@ def prepare(source, output, context):
     if not isinstance(stops, list) or tokenizer.eos_token_id not in stops:
         raise ValueError("官方停止 Token 配置不符.")
     config = json.loads((source / "config.json").read_text())
-    # 推理特殊 Token 以官方 tokenizer/generation 配置为准,修正基础配置遗留值.
+    # SDK 2.7.5 校准生成只兼容单 EOS,使用官方对话结束 Token.
+    # 原生交付的 stopToken 仍保留官方两个停止 ID,不修改源配置.
     config.update(bos_token_id=tokenizer.bos_token_id,
-                  eos_token_id=stops,
+                  eos_token_id=130073,
                   pad_token_id=tokenizer.pad_token_id,
                   tokenizer="pretrained_fast", max_position_embeddings=context)
     (model / "config.json").write_text(

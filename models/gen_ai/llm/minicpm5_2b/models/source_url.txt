@@ -53,3 +53,7 @@ URL: https://files.pythonhosted.org/packages/50/f6/2841de926bc4118af996eaf0bdf0e
 Bytes: 2994005
 SHA256: 453c7769d22231960ee0e883d1005c93c68015025a5e4ae56275406d94a3c907
 
+WikiText2 raw test 独立评测语料:
+URL: https://huggingface.co/datasets/Salesforce/wikitext/resolve/b08601e04326c79dfdd32d625aee71d232d685c3/wikitext-2-raw-v1/test-00000-of-00001.parquet
+Bytes: 732610
+SHA256: 5f1bea067869d04849c0f975a2b29c4ff47d867f484f5010ea5e861eab246d91

@@ -26,6 +26,9 @@ OpenBMB 官方中英文纯文本 LLM,采用标准 Llama 架构.
 读取兼容副本对比,4 个中英文、数字、特殊 Token 样例的 Token IDs 一致.
 此检查只覆盖这些样例,不是完整 tokenizer 等价性证明.
 独立参考 wheel 的 URL、大小及哈希已记录,未升级转换环境依赖.
-官方权重约 5.03 GB,当前下载完成前状态为 `weight_download_pending`.
+官方权重 5033557096 字节已通过固定版本官方 SHA256 校验.
 沿用的隔离环境为 `/tmp/hailongcodex/2026-10-10/deepseek_gai_env`,
 新工作目录为 `/tmp/hailongcodex/2026-10-10/minicpm5_native`.
+
+SDK 2.7.5 校准生成对 EOS 列表存在维度错误,独立转换配置使用官方对话结束 Token 130073.
+原生交付 stopToken 仍保留 1 和 130073,官方原始配置保持不变.
