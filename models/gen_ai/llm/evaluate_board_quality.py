@@ -25,6 +25,34 @@ def check(code):
         raise RuntimeError(f"Neuron 硬件 Runtime 错误: {code}")
 
 
+def transfer_cache(source_contract, source_outputs, target_contract, target_inputs,
+                   append=False):
+    """按真实量化参数转移 KV,与 SDK 后缀有效缓存布局保持一致."""
+    outputs = {item["name"]: (item, value) for item, value in
+               zip(source_contract["outputs"], source_outputs)}
+    for item, target in zip(target_contract["inputs"], target_inputs):
+        if not item["name"].startswith("past_"):
+            continue
+        source, raw = outputs[item["name"].replace("past_", "curr_", 1)]
+        if raw.ndim != 4 or target.ndim != 4 or raw.shape[:2] != target.shape[:2] or \
+                raw.shape[3] != target.shape[3]:
+            raise ValueError("KV 形状与已核对的 SDK 布局不符.")
+        length = raw.shape[2]
+        if length > target.shape[2]:
+            raise ValueError("KV 输出超过缓存容量.")
+        if append:
+            target[:, :, :-length, :] = target[:, :, length:, :].copy()
+        else:
+            target.fill(item["zero_point"])
+        if source["scale"] == item["scale"] and source["zero_point"] == item["zero_point"]:
+            converted = raw
+        else:
+            values = (raw.astype(np.float32) - source["zero_point"]) * source["scale"]
+            converted = np.clip(np.rint(values / item["scale"] + item["zero_point"]),
+                                -32768, 32767).astype("<i2")
+        target[:, :, -length:, :] = converted
+
+
 class HardwareModel:
     """绑定实际 INT16 缓冲区,使用既有 Neuron C++ 桥接接口."""
 
@@ -122,7 +150,24 @@ def evaluate(args):
     output_spec = contract["outputs"][0]
     rows, nll_values = [], []
     started = time.perf_counter()
+    decode_model = None
     try:
+        if args.decode_steps:
+            decode_folder = args.quality_data / "decode"
+            decode_contract = json.loads((decode_folder / "board_input_contract.json").read_text())
+            decode_inputs_path = decode_folder / "board_inputs.npz"
+            if sha256(decode_inputs_path) != decode_contract["board_inputs_sha256"]:
+                raise ValueError("Decode SDK 输入哈希不符.")
+            decode_arrays = np.load(decode_inputs_path)
+            decode_path = args.package / f"{manifest['context']}c/decode.dla"
+            entry = next(item for item in manifest["files"] if item["name"] ==
+                         decode_path.relative_to(args.package).as_posix())
+            if sha256(decode_path) != entry["sha256"]:
+                raise ValueError("Decode DLA 哈希不符.")
+            sequences = report["decode_input_ids"][:len(token_blocks)]
+            if any(len(sequence) != 128 + args.decode_steps for sequence in sequences):
+                raise ValueError("Decode 真实 Token 长度不符.")
+            decode_model = HardwareModel(args.library, decode_path, decode_contract)
         for index, tokens in enumerate(token_blocks):
             np.copyto(model.inputs[0], embedding[tokens][None, :, :])
             tick = time.perf_counter()
@@ -137,8 +182,31 @@ def evaluate(args):
             nll = normalizer - logits[np.arange(127), tokens[1:]]
             nll_values.extend(nll.tolist())
             rows.append({"block": index, "inference_seconds": inference_seconds})
+            if args.decode_steps:
+                sequence = sequences[index]
+                if sequence[:128] != tokens.tolist():
+                    raise ValueError("Prefill 与 Decode 上下文不符.")
+                transfer_cache(contract, model.outputs, decode_contract, decode_model.inputs)
+                decode_logits = []
+                decode_tick = time.perf_counter()
+                for step, token in enumerate(sequence[128:]):
+                    np.copyto(decode_model.inputs[0], embedding[token][None, None, :])
+                    for offset, item in enumerate(decode_contract["inputs"]):
+                        if item["name"] in ("mask", "pos_emb"):
+                            np.copyto(decode_model.inputs[offset], decode_arrays[item["name"]][step])
+                    decode_outputs = decode_model.run()
+                    spec = decode_contract["outputs"][0]
+                    values = (decode_outputs[0][0, 0].astype(np.float32) - spec["zero_point"]) * spec["scale"]
+                    decode_logits.append(values)
+                    if step + 1 < args.decode_steps:
+                        transfer_cache(decode_contract, decode_outputs, decode_contract,
+                                       decode_model.inputs, append=True)
+                np.save(args.output / f"npu_decode_logits_{index:03d}.npy", np.stack(decode_logits))
+                rows[-1]["decode_inference_seconds"] = time.perf_counter() - decode_tick
             print(f"[MDLA PPL] {index + 1}/{len(token_blocks)}", flush=True)
     finally:
+        if decode_model is not None:
+            decode_model.close()
         model.close()
     result = {key: report[key] for key in ("protocol", "model_name", "corpus_sha256",
               "selected_text_sha256", "blocks", "block_tokens", "scored_tokens",
@@ -154,6 +222,11 @@ def evaluate(args):
                       blocks=len(token_blocks), scored_tokens=len(nll_values),
                       input_ids=token_blocks.reshape(-1).tolist(),
                       diagnostic_blocks=len(token_blocks))
+    if args.decode_steps:
+        result.update(decode_steps=args.decode_steps, decode_input_ids=sequences,
+                      decode_dla_sha256=sha256(decode_path),
+                      decode_tflite_sha256=decode_contract["tflite_sha256"],
+                      decode_graph_mode="teacher_forcing_with_backend_own_prefill_cache")
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "npu_quality.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n")
@@ -169,9 +242,12 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--diagnostic-blocks", type=int, default=0,
                         help="仅执行前 N 个块并保存逐位置硬件 logits.")
+    parser.add_argument("--decode-steps", type=int, default=0)
     args = parser.parse_args()
     if args.diagnostic_blocks < 0:
         parser.error("诊断块数不能为负数.")
+    if not 0 <= args.decode_steps <= 32 or (args.decode_steps and not args.diagnostic_blocks):
+        parser.error("Decode 步数须在 [0,32],且需要诊断模式.")
     evaluate(args)
 
 

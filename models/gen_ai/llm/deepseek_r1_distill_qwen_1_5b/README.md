@@ -251,3 +251,7 @@ DeepSeek 模型许可为 MIT,Qwen 基础模型采用 Apache-2.0; 分发权重或
 
 当前 W4A16 前 4 块、508 个预测位置: FP32→TFLite 平均余弦 0.813886,FP32→MDLA 0.809418,TFLite→MDLA 0.962701.
 FP32→MDLA Top1 一致率 43.70%,存在明显差异,当前输出精度未合格.
+
+Decode 诊断新增 --decode-steps: 128 Token Prefill 后继续输入真实后续 Token,各后端沿用自己的 KV.
+缓存布局按 SDK 掩码的有效后缀核对,缓存转移按实际 I/O 量化参数重编码.
+共享工具分别记录 Prefill 与 Decode 的输出比较,不按语言拆分,诊断通过也不代表完整验收.

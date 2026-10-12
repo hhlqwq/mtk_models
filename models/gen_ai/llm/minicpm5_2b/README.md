@@ -143,3 +143,7 @@ Prefill token/s = 实际输入 Token 数 / 原生 Prompt 阶段耗时,不是 128
 
 当前 W4A16 前 4 块、508 个预测位置: FP32→TFLite 平均余弦 0.936568,FP32→MDLA 0.927744,TFLite→MDLA 0.950869.
 FP32→MDLA Top1 一致率 58.86%,存在明显差异,当前输出精度未合格.
+
+Decode 诊断新增 --decode-steps: 128 Token Prefill 后继续输入真实后续 Token,各后端沿用自己的 KV.
+缓存布局按 SDK 掩码的有效后缀核对,缓存转移按实际 I/O 量化参数重编码.
+共享工具分别记录 Prefill 与 Decode 的输出比较,不按语言拆分,诊断通过也不代表完整验收.

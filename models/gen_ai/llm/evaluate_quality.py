@@ -25,7 +25,7 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def export_board_inputs(model, graph_path, output):
+def export_board_inputs(model, graph_path, output, decode_steps=0):
     """导出 SDK 同协议的掩码、RoPE 和原始 INT16 I/O 契约."""
     from mtk_converter.python.converters.tflite.schema.tflite.Model import Model
     from mtk_converter.python.converters.tflite.schema.tflite.TensorType import TensorType
@@ -58,6 +58,25 @@ def export_board_inputs(model, graph_path, output):
             raise ValueError(f"SDK 输入形状不符: {name}")
         arrays[name] = np.clip(np.rint(values / entry["scale"] + entry["zero_point"]),
                                -32768, 32767).astype("<i2")
+    if decode_steps:
+        if prefill != 1:
+            raise ValueError("Decode 静态图必须为 1 Token.")
+        arrays = {"mask": [], "pos_emb": []}
+        master = generate_utils.get_master_rot_emb(config, np.float32)
+        for step in range(decode_steps):
+            values = {
+                "mask": generate_utils.generate_mask(config.max_position_embeddings,
+                    128 + step, 1, 1, mask_value=config.mask_value, dtype=np.float32),
+                "pos_emb": master[:, :, 128 + step:129 + step, :],
+            }
+            for name, data in values.items():
+                entry = next(item for item in contract["inputs"] if item["name"] == name)
+                if list(data.shape) != entry["shape"]:
+                    raise ValueError(f"Decode SDK 输入形状不符: {name}")
+                arrays[name].append(np.clip(np.rint(data / entry["scale"] + entry["zero_point"]),
+                                            -32768, 32767).astype("<i2"))
+        arrays = {name: np.stack(data) for name, data in arrays.items()}
+    output.mkdir(parents=True, exist_ok=True)
     np.savez(output / "board_inputs.npz", **arrays)
     contract["board_inputs_sha256"] = sha256(output / "board_inputs.npz")
     (output / "board_input_contract.json").write_text(
@@ -84,6 +103,7 @@ def evaluate(args):
     if blocks < 1 or tokens.numel() < length:
         raise ValueError("测试语料不足,不得重复填充语料.")
     excluded_tokens = tokens.numel() - length
+    diagnostic_tokens = tokens
     if args.diagnostic_blocks:
         blocks = min(blocks, args.diagnostic_blocks)
         length = blocks * 128
@@ -132,12 +152,22 @@ def evaluate(args):
         with torch.inference_mode():
             for index in range(blocks):
                 ids = tokens[:, index * 128:(index + 1) * 128].to(args.device)
-                logits = model(ids, use_cache=False).logits[:, :-1].float()
+                if args.decode_steps:
+                    ids = diagnostic_tokens[:, index * 128:
+                                            (index + 1) * 128 + args.decode_steps].to(args.device)
+                    if ids.shape[1] != 128 + args.decode_steps:
+                        raise ValueError("Decode 诊断真实文本不足,不得重复填充.")
+                    protocol.setdefault("decode_input_ids", []).append(ids[0].tolist())
+                all_logits = model(ids, use_cache=False).logits.float()
+                logits = all_logits[:, :127]
                 if args.diagnostic_blocks:
                     np.save(args.output / f"pytorch_logits_{index:03d}.npy",
                             logits[0].cpu().numpy())
+                if args.decode_steps:
+                    np.save(args.output / f"pytorch_decode_logits_{index:03d}.npy",
+                            all_logits[0, 128:].cpu().numpy())
                 loss = torch.nn.functional.cross_entropy(
-                    logits.reshape(-1, logits.shape[-1]), ids[:, 1:].reshape(-1),
+                    logits.reshape(-1, logits.shape[-1]), ids[:, 1:128].reshape(-1),
                     reduction="sum")
                 total_nll += loss.item()
                 print(f"[质量参考] {index + 1}/{blocks}", flush=True)
@@ -169,6 +199,14 @@ def evaluate(args):
             raise ValueError("量化质量检查要求唯一静态 TFLite.")
         protocol["tflite_sha256"] = sha256(graphs[0])
         export_board_inputs(args.model, graphs[0], args.output)
+        if args.decode_steps:
+            protocol["decode_input_ids"] = [diagnostic_tokens[0, index * 128:
+                (index + 1) * 128 + args.decode_steps].tolist() for index in range(blocks)]
+            decode_graphs = list(args.decode_tflite.glob("*.tflite"))
+            if len(decode_graphs) != 1:
+                raise ValueError("Decode 质量检查要求唯一静态图.")
+            export_board_inputs(args.model, decode_graphs[0], args.output / "decode",
+                                args.decode_steps)
         (args.output / "board_quality_protocol.json").write_text(
             json.dumps(protocol, ensure_ascii=False, indent=2) + "\n")
         if args.backend == "prepare_board":
@@ -212,6 +250,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--backend", choices=("pytorch", "tflite", "prepare_board"), required=True)
     parser.add_argument("--tflite", type=Path)
+    parser.add_argument("--decode-tflite", type=Path)
     parser.add_argument("--text-rows", type=int, default=128)
     parser.add_argument("--blocks", type=int, help="仅复现旧版固定 Token 子集结果.")
     parser.add_argument("--skip-demo", action="store_true")
@@ -219,11 +258,17 @@ def main():
     parser.add_argument("--cpu-threads", type=int, default=8)
     parser.add_argument("--diagnostic-blocks", type=int, default=0,
                         help="仅执行前 N 个固定文本块并保存逐位置 FP32 logits.")
+    parser.add_argument("--decode-steps", type=int, default=0,
+                        help="诊断模式下额外保存 N 个真实后续 Token 的 Decode 输出.")
     args = parser.parse_args()
     if args.diagnostic_blocks < 0:
         parser.error("诊断块数不能为负数.")
+    if not 0 <= args.decode_steps <= 32 or (args.decode_steps and not args.diagnostic_blocks):
+        parser.error("Decode 步数须在 [0,32],且需要诊断模式.")
     if args.backend in ("tflite", "prepare_board") and args.tflite is None:
         parser.error("量化后端需要 --tflite.")
+    if args.backend != "pytorch" and args.decode_steps and args.decode_tflite is None:
+        parser.error("量化 Decode 诊断需要 --decode-tflite.")
     evaluate(args)
 
 

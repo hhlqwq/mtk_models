@@ -20,6 +20,7 @@ def sha256(path):
 def export_tflite(args):
     """用官方执行器运行原始 INT16 输入,保持与硬件输入一致."""
     from mtk_converter.python.tools.tflite_executor import TFLiteExecutor
+    from evaluate_board_quality import transfer_cache
 
     contract = json.loads((args.quality_data / "board_input_contract.json").read_text())
     protocol = json.loads((args.quality_data / "pytorch_quality.json").read_text())
@@ -40,23 +41,78 @@ def export_tflite(args):
         inputs[name] = arrays[name]
     print("[TFLite logits] 加载已编译的对应静态图.", flush=True)
     model = TFLiteExecutor(str(args.graph), cache_dequantized_weight=True)
+    decode_model = None
+    if args.decode_steps:
+        decode_contract = json.loads((args.quality_data / "decode/board_input_contract.json").read_text())
+        if sha256(args.decode_graph) != decode_contract["tflite_sha256"]:
+            raise ValueError("Decode 图与契约哈希不同.")
+        decode_inputs_path = args.quality_data / "decode/board_inputs.npz"
+        if sha256(decode_inputs_path) != decode_contract["board_inputs_sha256"]:
+            raise ValueError("Decode SDK 输入资源不符.")
+        decode_arrays = np.load(decode_inputs_path)
+        sequences = protocol["decode_input_ids"][:args.blocks]
+        decode_inputs = [np.full(item["shape"], item["zero_point"], dtype="<i2")
+                         for item in decode_contract["inputs"]]
+        decode_model = TFLiteExecutor(str(args.decode_graph), cache_dequantized_weight=True)
     spec = contract["outputs"][0]
     args.output.mkdir(parents=True, exist_ok=False)
     for index, tokens in enumerate(token_blocks):
         inputs["input_embeds"] = embedding[tokens][None, :, :]
-        outputs = model.run(inputs, output_names=[spec["name"]],
+        names = [item["name"] for item in contract["outputs"]] if args.decode_steps else [spec["name"]]
+        outputs = model.run(inputs, output_names=names,
                             quantize_input=False, dequantize_output=False)
         raw = outputs[spec["name"]] if isinstance(outputs, dict) else outputs[0]
         if hasattr(raw, "detach"):
             raw = raw.detach().cpu().numpy()
         values = (np.asarray(raw)[0, :-1].astype(np.float32) - spec["zero_point"]) * spec["scale"]
         np.save(args.output / f"tflite_logits_{index:03d}.npy", values)
+        if args.decode_steps:
+            raw_outputs = raw_output_list(outputs, contract)
+            transfer_cache(contract, raw_outputs, decode_contract, decode_inputs)
+            values = []
+            for step, token in enumerate(sequences[index][128:]):
+                decode_inputs[0] = embedding[token][None, None, :]
+                for offset, item in enumerate(decode_contract["inputs"]):
+                    if item["name"] in ("mask", "pos_emb"):
+                        decode_inputs[offset] = decode_arrays[item["name"]][step]
+                feed = {item["name"]: value for item, value in
+                        zip(decode_contract["inputs"], decode_inputs)}
+                outputs = decode_model.run(feed, quantize_input=False, dequantize_output=False)
+                raw_outputs = raw_output_list(outputs, decode_contract)
+                output_spec = decode_contract["outputs"][0]
+                logits = (raw_outputs[0][0, 0].astype(np.float32) - output_spec["zero_point"]) * output_spec["scale"]
+                values.append(logits)
+                if step + 1 < args.decode_steps:
+                    transfer_cache(decode_contract, raw_outputs, decode_contract,
+                                   decode_inputs, append=True)
+            np.save(args.output / f"tflite_decode_logits_{index:03d}.npy", np.stack(values))
         print(f"[TFLite logits] {index + 1}/{args.blocks}", flush=True)
     report = {"scope": "logits_diagnostic_prefix_not_full_accuracy",
               "input_ids": token_blocks.reshape(-1).tolist(), "blocks": args.blocks,
               "tflite_sha256": sha256(args.graph), "embedding_sha256": sha256(args.embedding),
               "board_inputs_sha256": sha256(inputs_path), "raw_int16_inputs": True}
+    if args.decode_steps:
+        report.update(decode_steps=args.decode_steps, decode_input_ids=sequences,
+                      decode_tflite_sha256=sha256(args.decode_graph),
+                      decode_graph_mode="teacher_forcing_with_backend_own_prefill_cache")
     (args.output / "tflite_quality.json").write_text(json.dumps(report, indent=2) + "\n")
+
+
+def raw_output_list(outputs, contract):
+    """按实际图契约获取全部原始 INT16 输出."""
+    values = [outputs[item["name"]] for item in contract["outputs"]] \
+        if isinstance(outputs, dict) else list(outputs)
+    arrays = []
+    if len(values) != len(contract["outputs"]):
+        raise ValueError("TFLite 输出数量不符.")
+    for value, item in zip(values, contract["outputs"]):
+        if hasattr(value, "detach"):
+            value = value.detach().cpu().numpy()
+        array = np.asarray(value)
+        if array.shape != tuple(item["shape"]) or array.dtype != np.int16:
+            raise ValueError(f"原始输出接口不符: {item['name']}")
+        arrays.append(array)
+    return arrays
 
 
 def compare_pair(reference, candidate):
@@ -96,13 +152,20 @@ def summarize(args):
         raise ValueError("三个后端的诊断输入 Token 不相同.")
     if reports["tflite"]["embedding_sha256"] != reports["npu"]["embedding_sha256"]:
         raise ValueError("主机与板端 embedding 不相同.")
+    if args.decode_steps:
+        sequences = reports["pytorch"]["decode_input_ids"]
+        if any(report.get("decode_input_ids") != sequences for report in reports.values()):
+            raise ValueError("三个后端的 Decode Token 不相同.")
+        if reports["tflite"]["decode_tflite_sha256"] != reports["npu"]["decode_tflite_sha256"]:
+            raise ValueError("Decode 主机图与板端契约不相同.")
     blocks = len(ids) // 128
     pairs = {"pytorch_tflite": [], "pytorch_npu": [], "tflite_npu": []}
     files = []
     for index in range(blocks):
         values = {}
         for name, path in folders.items():
-            source = path / f"{name}_logits_{index:03d}.npy"
+            suffix = "decode_logits" if args.decode_steps else "logits"
+            source = path / f"{name}_{suffix}_{index:03d}.npy"
             values[name] = np.load(source)
             files.append({"backend": name, "block": index, "sha256": sha256(source)})
         for name in pairs:
@@ -125,8 +188,13 @@ def summarize(args):
               "decode_accuracy_verified": False, "quality_qualified": False,
               "threshold": "not_assigned_no_pass_claim", "summary": summary,
               "details": pairs, "files": files}
+    if args.decode_steps:
+        result.update(scope="decode_teacher_forcing_diagnostic_not_full_accuracy",
+                      positions=blocks * args.decode_steps, decode_input_ids=sequences,
+                      decode_steps=args.decode_steps, decode_accuracy_verified=True)
     args.output.mkdir(parents=True, exist_ok=True)
-    (args.output / "logits_comparison.json").write_text(
+    filename = "decode_logits_comparison.json" if args.decode_steps else "logits_comparison.json"
+    (args.output / filename).write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     print(json.dumps(summary, indent=2), flush=True)
 
@@ -135,14 +203,18 @@ def main():
     """解析静态图导出与三后端配对比较参数."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("tflite", "compare"))
-    for name in ("quality-data", "graph", "embedding", "reference", "tflite", "npu", "output"):
+    for name in ("quality-data", "graph", "decode-graph", "embedding", "reference", "tflite", "npu", "output"):
         parser.add_argument(f"--{name}", type=Path)
     parser.add_argument("--blocks", type=int, default=4)
+    parser.add_argument("--decode-steps", type=int, default=0)
     args = parser.parse_args()
     required = ("quality_data", "graph", "embedding", "output") if args.mode == "tflite" \
         else ("reference", "tflite", "npu", "output")
     if args.blocks < 1 or any(getattr(args, name) is None for name in required):
         parser.error("缺少必需路径或块数无效.")
+    if not 0 <= args.decode_steps <= 32 or (args.mode == "tflite" and
+                                         args.decode_steps and args.decode_graph is None):
+        parser.error("Decode 步数须在 [0,32],TFLite 导出需要 --decode-graph.")
     export_tflite(args) if args.mode == "tflite" else summarize(args)
 
 
