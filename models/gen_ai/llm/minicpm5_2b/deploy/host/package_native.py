@@ -88,6 +88,24 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
     base = quantized_prefix or work / "tflite/MiniCPM5-2B_asym4W_sym16A_Overall_hessian"
     if base.resolve().parent != (work / "tflite").resolve():
         raise ValueError("量化目录必须位于本次任务的 tflite 目录.")
+    settings_path = work / "quantization_settings.json"
+    if settings_path.exists():
+        precision_settings = json.loads(settings_path.read_text())
+        if precision_settings["quantized_prefix"] != base.name:
+            raise ValueError("量化精度记录与打包目录不一致.")
+        precision_values = [precision_settings[key]
+                            for key in ("attention", "mlp", "lm_head")]
+        if any(value not in ("asym4W_sym16A", "sym8W_sym16A")
+               for value in precision_values):
+            raise ValueError("精度记录包含未支持的量化设置.")
+        precision = (precision_values[0] if len(set(precision_values)) == 1
+                     else "mixed_W8A16_W4A16")
+    else:
+        # 兼容已有 W4 包; 新 W8 或混合包必须提供量化成功后的精度记录.
+        if "_asym4W_sym16A_Overall_hessian" not in base.name:
+            raise ValueError("新精度包缺少量化成功记录.")
+        precision = "asym4W_sym16A"
+        precision_settings = dict.fromkeys(("attention", "mlp", "lm_head"), precision)
     prompt = single_file(Path(f"{base}_{prefill}t{context}c"), "*.dla")
     decode = single_file(Path(f"{base}_1t{context}c"), "*.dla")
     contracts = {"prompt": graph_contract(prompt.with_suffix(".tflite")),
@@ -191,7 +209,7 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
     shutil.copyfile(model / "LICENSE", output / "LICENSE")
     (output / "README.md").write_text(
         f"# MiniCPM5-2B\n\n"
-        f"Genio720 原生 W4A16,Prefill {prefill},上下文 {context},Decode 1.\n"
+        f"Genio720 原生 {precision},Prefill {prefill},上下文 {context},Decode 1.\n"
         "当前打包状态为 compiled_pending_board,板端结果需另行记录.\n\n"
         "将整个目录复制到板端,执行 `bash scripts/run.sh`.\n"
         "Demo 使用官方 tokenizer 的 Token 输入,Prompt 文本同时保留供核对.\n"
@@ -204,7 +222,8 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
                           "bytes": path.stat().st_size, "sha256": sha256(path)})
     (output / "manifest.json").write_text(json.dumps({
         "status": "compiled_pending_board", "preparation": preparation,
-        "precision": "asym4W_sym16A", "weight_optimization": "hessian",
+        "precision": precision, "precision_settings": precision_settings,
+        "weight_optimization": "hessian",
         "quantized_prefix": base.name,
         "host_quality": quality,
         "prefill": prefill, "context": context, "files": files,
@@ -263,7 +282,7 @@ def record_board_results(work, output, results):
     for path in results.iterdir():
         if path.is_file() and path.suffix in (".log", ".json"):
             shutil.copyfile(path, destination / path.name)
-    metrics.update(status="board_verified", precision="asym4W_sym16A",
+    metrics.update(status="board_verified", precision=manifest["precision"],
                    prefill=manifest["prefill"], context=manifest["context"],
                    formal_accuracy_evaluated=False,
                    qualitative_observations=["双语样例仅验证推理,正式量化质量须独立评测."],

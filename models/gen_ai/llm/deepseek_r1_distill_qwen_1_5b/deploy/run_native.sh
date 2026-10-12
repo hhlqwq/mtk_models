@@ -15,8 +15,23 @@ CALIBRATION_BATCHES="${CALIBRATION_BATCHES:-32}"
 MASK_VALUE="${MASK_VALUE:--100}"
 ROTATE_WEIGHTS="${ROTATE_WEIGHTS:-0}"
 WEIGHT_OPT_CONFIG="${WEIGHT_OPT_CONFIG:-}"
+ATTENTION_PRECISION="${ATTENTION_PRECISION:-asym4W_sym16A}"
+MLP_PRECISION="${MLP_PRECISION:-${ATTENTION_PRECISION}}"
+TAIL_PRECISION="${TAIL_PRECISION:-${ATTENTION_PRECISION}}"
 MODEL="${WORK}/DeepSeek-R1-Distill-Qwen-1.5B"
-QUANTIZED="${WORK}/tflite/DeepSeek-R1-Distill-Qwen-1.5B_asym4W_sym16A_Overall_hessian"
+for precision in "${ATTENTION_PRECISION}" "${MLP_PRECISION}" "${TAIL_PRECISION}"; do
+    if [[ ! "${precision}" =~ ^(asym4W_sym16A|sym8W_sym16A)$ ]]; then
+        echo '[错误] 仅支持已确认的 W4A16 与 W8A16 精度.' >&2
+        exit 2
+    fi
+done
+precision_options=("${ATTENTION_PRECISION}")
+precision_name="${ATTENTION_PRECISION}"
+if [[ "${ATTENTION_PRECISION}" != "${MLP_PRECISION}" ]]; then
+    precision_options+=("${MLP_PRECISION}")
+    precision_name="attn_${ATTENTION_PRECISION}_mlp_${MLP_PRECISION}"
+fi
+QUANTIZED="${WORK}/tflite/DeepSeek-R1-Distill-Qwen-1.5B_${precision_name}_Overall_hessian"
 if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then
     opt_name="${WEIGHT_OPT_CONFIG##*/}"
     QUANTIZED="${QUANTIZED}_${opt_name%.json}"
@@ -72,13 +87,17 @@ if [[ "${STAGE}" == all || "${STAGE}" == calibrate ]]; then
     run_python -c 'from pathlib import Path; import sys; Path("calibration_complete.txt").write_text(sys.argv[1]+"\n")' "${CALIBRATION_BATCHES}"
 fi
 if [[ "${STAGE}" == all || "${STAGE}" == quantize ]]; then
+    run_python -c 'from pathlib import Path; Path("quantization_settings.json").unlink(missing_ok=True)'
     run_python -c 'from pathlib import Path; import sys; assert Path("calibration_complete.txt").read_text().strip()==sys.argv[1], "校准尚未完成"' "${CALIBRATION_BATCHES}"
     quantize_options=()
     if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then quantize_options=(--extra_converter_options "${WEIGHT_OPT_CONFIG}"); fi
-    echo '[3/5] 原生 W4A16 量化与 Hessian 权重优化,逐层记录进度.'
+    echo "[3/5] 量化 Attention=${ATTENTION_PRECISION},MLP=${MLP_PRECISION},LM Head=${TAIL_PRECISION}."
     run_python "${PYTHON%/python}/mtk_ptq_llm" converter "${MODEL}/config.json" \
-        -p asym4W_sym16A -d "${WORK}/calibration_datasets/DeepSeek-R1-Distill-Qwen-1.5B" \
+        -p "${precision_options[@]}" -tp "${TAIL_PRECISION}" -d "${WORK}/calibration_datasets/DeepSeek-R1-Distill-Qwen-1.5B" \
         -m Overall -w hessian "${quantize_options[@]}" 2>&1 | tee "${WORK}/logs/quantization.log"
+    # 仅量化成功后记录设置,打包时从此文件读取真实精度.
+    run_python -c 'import json,sys; from pathlib import Path; Path("quantization_settings.json").write_text(json.dumps(dict(zip(("attention", "mlp", "lm_head", "quantized_prefix"), sys.argv[1:])), indent=2)+"\n")' \
+        "${ATTENTION_PRECISION}" "${MLP_PRECISION}" "${TAIL_PRECISION}" "${QUANTIZED##*/}"
 fi
 if [[ "${STAGE}" == all || "${STAGE}" == shape ]]; then
     echo "[4/5] 导出 ${PREFILL}t${CONTEXT}c 和 1t${CONTEXT}c,各一个分片."
@@ -89,7 +108,7 @@ fi
 if [[ "${STAGE}" == all || "${STAGE}" == compile ]]; then
     echo '[5/5] 编译 Genio720 MDLA5.3 单核模型,禁止 CPU 桥接.'
     docker exec -i -e LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
-        "${CONTAINER}" bash -s -- "${QUANTIZED}" "${NCC_ROOT}" "${PREFILL}" "${CONTEXT}" \
+        "${CONTAINER}" bash -s -- "${QUANTIZED}" "${NCC_ROOT}" "${PREFILL}" "${CONTEXT}" "${MLP_PRECISION}" \
         2>&1 <<'COMPILE' | tee "${WORK}/logs/compile.log"
 set -euo pipefail
 for shape in "${3}t${4}c" "1t${4}c"; do
@@ -102,7 +121,7 @@ for shape in "${3}t${4}c" "1t${4}c"; do
     model="${files[0]}"
     extra=()
     if [[ "${shape}" == 1t* ]]; then
-        extra=(--split-16a4w-conv-oc)
+        if [[ "${5}" == asym4W_sym16A ]]; then extra=(--split-16a4w-conv-oc); fi
     else
         extra=(--broadcast-act-wgt --broadcast-flow-distance=63 --split-large-conv-ic=1536)
     fi

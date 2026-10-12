@@ -163,3 +163,8 @@ FP32→MDLA 平均余弦 0.947060,Top1 一致率 73.44%; TFLite→MDLA 平均余
 
 SDK 旋转输出目录带 _rotate_hadamard_0 后缀,Shape 与编译入口按相同配置定位该目录.
 旋转版已完成量化,首次 Shape 因目录定位失败的日志保留,修正后仅重跑 Shape.
+
+旋转 W4 第三版已完成两个 DLA 的诊断: 4 块 Prefill 共 508 个位置、Decode 共 64 个位置,FP32→MDLA 平均余弦分别为 0.979157/0.983678.
+TFLite→MDLA 平均余弦为 0.999674/0.999761,但量化误差仍明显; 4 块诊断 MDLA PPL 为 38.65030,不能与 58 块统一子集结果混用.
+下一轮采用已确认的混合方案: ATTENTION_PRECISION=sym8W_sym16A,MLP_PRECISION=asym4W_sym16A,TAIL_PRECISION=sym8W_sym16A,ROTATE_WEIGHTS=1.
+复用同配置已完成的校准数据,保留每款两个 DLA.量化成功后生成 quantization_settings.json,打包清单与板端结果记录真实混合精度.

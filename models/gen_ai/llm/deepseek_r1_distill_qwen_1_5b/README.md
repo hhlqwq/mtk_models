@@ -279,3 +279,7 @@ FP32→MDLA 平均余弦 0.823447,Top1 一致率 56.25%; TFLite→MDLA 平均余
 
 SDK 旋转输出目录带 _rotate_hadamard_0 后缀,Shape 与编译入口按相同配置定位该目录.
 本轮 DeepSeek 未启用旋转; 此处仅补齐可选旋转目录的定位规则.
+
+下一轮使用全 W8A16: 设置 ATTENTION_PRECISION=sym8W_sym16A,MLP_PRECISION 与 TAIL_PRECISION 默认跟随,保持 MASK_VALUE=-10000.
+复用相同配置下已完成的 32 批校准数据,新建独立工作目录.量化成功后生成 quantization_settings.json,打包清单记录 Attention/MLP/LM Head 的真实精度.
+仍只编译 Prefill 128 Token 和 Decode 1 Token 两个 DLA,上下文 1024.全 W8 编译不再使用专属 W4 Decode 拆分选项.

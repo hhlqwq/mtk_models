@@ -210,3 +210,6 @@ LLM 原生交付使用两个 DLA,分别执行 Prefill 与 Decode,两阶段速度
 MiniCPM5-2B 第二版 FP32/TFLite/MDLA 子集 PPL 为 40.04115/57.29072/61.56529;
 DeepSeek-R1-Distill-Qwen-1.5B 为 118.70850/193.93135/205.99682.
 比较各模型自身的转换差距,不按不同 tokenizer 的绝对 PPL 排名.两款当前 W4A16 均有明显退化.
+
+已确认下一轮使用 DeepSeek 全 W8A16; MiniCPM5 使用 Attention/LM Head W8A16、MLP W4A16,保留 Hadamard 旋转.每款仍只交付 Prefill/Decode 两个 DLA.
+原生入口通过 ATTENTION_PRECISION、MLP_PRECISION、TAIL_PRECISION 指定设置,量化成功后记录精度,打包与板端结果从该记录读取,避免误标为 W4.
