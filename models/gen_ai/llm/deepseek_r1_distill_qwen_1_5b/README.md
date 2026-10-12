@@ -262,3 +262,5 @@ Decode 诊断新增 --decode-steps: 128 Token Prefill 后继续输入真实后�
 原版本 Decode 实测: 4 段固定上下文,每段继续 16 个真实 Token,共 64 个输出位置.
 FP32→MDLA 平均余弦 0.823447,Top1 一致率 56.25%; TFLite→MDLA 平均余弦 0.968509.
 测试已执行使用 evaluated 标记,精度未验收使用 verified=false、quality_qualified=false,避免混淆.
+
+打包支持 --quantized-prefix 指定本次任务中带官方优化配置后缀的量化目录,仍要求独立空目录和两个 DLA.
