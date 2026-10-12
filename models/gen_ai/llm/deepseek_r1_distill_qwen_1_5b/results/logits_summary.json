@@ -81,5 +81,84 @@
     },
     "raw_report_sha256": "3f6e92613f99b2d299f75c5be2583cfe166ce843eb8357ed17232695bcd70b6e",
     "quality_qualified": false
+  },
+  "mask_v2_candidate": {
+    "status": "evaluated_quality_degraded",
+    "scope": "4_blocks_508_prefill_and_64_decode_positions",
+    "precision": "asym4W_sym16A",
+    "mask_value": -10000,
+    "rotate": false,
+    "compiler_mode": "opt_accuracy",
+    "fp32_prefix_perplexity": 93.38108825683594,
+    "npu_prefix_perplexity": 132.16824180088187,
+    "relative_prefix_ppl_increase_percent": 41.536411995291274,
+    "prefill": {
+      "pytorch_tflite": {
+        "cosine_mean": 0.8948910608851227,
+        "cosine_min": 0.1541970448854226,
+        "centered_cosine_mean": 0.8557581497269648,
+        "rmse": 1.2641023900773034,
+        "mae": 0.9614095779572732,
+        "max_abs_error": 14.332731127738953,
+        "top1_agreement": 0.6161417322834646,
+        "kl_mean": 0.577584333669774
+      },
+      "pytorch_npu": {
+        "cosine_mean": 0.89411077200646,
+        "cosine_min": 0.1642728753240468,
+        "centered_cosine_mean": 0.8494280448144672,
+        "rmse": 1.2638945965894561,
+        "mae": 0.9639497021008643,
+        "max_abs_error": 15.686726450920105,
+        "top1_agreement": 0.5866141732283464,
+        "kl_mean": 0.6246728942787315
+      },
+      "tflite_npu": {
+        "cosine_mean": 0.9767925527628264,
+        "cosine_min": 0.7877965196485617,
+        "centered_cosine_mean": 0.970287102976669,
+        "rmse": 0.5804271175469012,
+        "mae": 0.43228520260784487,
+        "max_abs_error": 6.408487796783447,
+        "top1_agreement": 0.8110236220472441,
+        "kl_mean": 0.14291073714023483
+      }
+    },
+    "decode": {
+      "pytorch_tflite": {
+        "cosine_mean": 0.8898899139031364,
+        "cosine_min": 0.6339939332089344,
+        "centered_cosine_mean": 0.8736041428141239,
+        "rmse": 1.2759755256860006,
+        "mae": 0.9827857353501186,
+        "max_abs_error": 11.088183306157589,
+        "top1_agreement": 0.6875,
+        "kl_mean": 0.44071355115281213
+      },
+      "pytorch_npu": {
+        "cosine_mean": 0.899299385958657,
+        "cosine_min": 0.6959364962033707,
+        "centered_cosine_mean": 0.8728704154863389,
+        "rmse": 1.2297122978585124,
+        "mae": 0.9521922090972277,
+        "max_abs_error": 9.24879276752472,
+        "top1_agreement": 0.65625,
+        "kl_mean": 0.44997684760867235
+      },
+      "tflite_npu": {
+        "cosine_mean": 0.9833501997005112,
+        "cosine_min": 0.9427267899539284,
+        "centered_cosine_mean": 0.9803425996960411,
+        "rmse": 0.4337514011404539,
+        "mae": 0.3325049899208866,
+        "max_abs_error": 3.83589506149292,
+        "top1_agreement": 0.828125,
+        "kl_mean": 0.07687056012943405
+      }
+    },
+    "dla_sha256": "2c57820706a6cde948fa0a3aeb05efb424110499b181af3ad4f371ade2306a3b",
+    "decode_dla_sha256": "27868323fe17701eeecda0834a5f375e22883858e61993ccadbbdfcc2ec34379",
+    "quality_qualified": false,
+    "full_protocol_ppl_evaluated": false
   }
 }
