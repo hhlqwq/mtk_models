@@ -104,7 +104,7 @@ if [[ "${STAGE}" == all || "${STAGE}" == quantize ]]; then
         -m Overall -w hessian "${quantize_options[@]}" \
         2>&1 | tee "${WORK}/logs/quantization.log"
     # SDK 某些版本会吞掉转换异常,还须核对所有分片与配置确实存在.
-    run_python -c 'import json,sys; from pathlib import Path; config=json.loads(Path(sys.argv[1]).read_text()); folder=Path(sys.argv[2]); count=config["num_hidden_layers"]+1; assert len(list(folder.glob("*.tflite")))==count, "量化分片不完整"; assert len(list(folder.glob("*.json")))==1, "量化配置不唯一"; assert all(path.stat().st_size>0 for path in folder.glob("*.tflite")), "存在空分片"' \
+    run_python -c 'import json,sys; from pathlib import Path; config=json.loads(Path(sys.argv[1]).read_text()); folder=Path(sys.argv[2]); count=config["num_hidden_layers"]+1; expected={f"{folder.name}_{i}.tflite" for i in range(count)}; assert {p.name for p in folder.glob("*.tflite")}==expected, "量化分片不完整"; assert all((folder/name).stat().st_size>0 and (folder/name).with_name(Path(name).stem+"_info.json").is_file() for name in expected), "分片为空或缺少SDK元数据"' \
         "${MODEL}/config.json" "${QUANTIZED}"
     # 仅量化成功后记录设置,打包时从此文件读取真实精度.
     run_python -c 'import json,sys; from pathlib import Path; Path("quantization_settings.json").write_text(json.dumps(dict(zip(("attention", "mlp", "lm_head", "quantized_prefix"), sys.argv[1:])), indent=2)+"\n")' \

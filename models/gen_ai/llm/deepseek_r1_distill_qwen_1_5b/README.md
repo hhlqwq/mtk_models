@@ -284,4 +284,4 @@ SDK 旋转输出目录带 _rotate_hadamard_0 后缀,Shape 与编译入口按相�
 复用相同配置下已完成的 32 批校准数据,新建独立工作目录.量化成功后生成 quantization_settings.json,打包清单记录 Attention/MLP/LM Head 的真实精度.
 仍只编译 Prefill 128 Token 和 Decode 1 Token 两个 DLA,上下文 1024.全 W8 编译不再使用专属 W4 Decode 拆分选项.
 
-量化统一通过共享 quantize_native.py 传播 SDK 转换异常,并在成功标记前核对 29 个非空分片和唯一配置.兼容逻辑仅用于本次进程,保留已完成的全 W8 候选.
+量化统一通过共享 quantize_native.py 传播 SDK 转换异常,并在成功标记前核对 29 个非空分片及逐片 SDK 元数据.兼容逻辑仅用于本次进程,保留已完成的全 W8 候选.
