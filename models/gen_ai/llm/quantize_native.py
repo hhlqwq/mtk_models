@@ -51,14 +51,18 @@ def strict_temp_file(filename):
 
 
 def verify_mixed_weight_precision(args, utils):
-    """逐层核对 SDK 实际权重分组,拒绝与请求精度不同的混合产物."""
-    if len(args.precision) != 2:
-        return
+    """逐层核对统一或混合精度,拒绝与请求不同的实际权重配置."""
+    if len(args.precision) not in (1, 2):
+        raise ValueError("权重精度核对仅支持一个或两个配置.")
     if args.lora_config or args.tail_config or args.int8_cache or args.format != "tflite":
         raise ValueError("当前混合精度核对仅支持标准 TFLite 模型和 INT16 Cache.")
     config = json.loads(Path(args.config).read_text())
-    prefix = (f"{utils.get_exp_name(args.config)}_attn_{args.precision[0]}"
-              f"_mlp_{args.precision[1]}_{args.calibration_method}")
+    mlp_precision = args.precision[-1]
+    precision_name = args.precision[0]
+    if len(args.precision) == 2:
+        precision_name = f"attn_{args.precision[0]}_mlp_{mlp_precision}"
+    prefix = (f"{utils.get_exp_name(args.config)}_{precision_name}"
+              f"_{args.calibration_method}")
     if args.weight_optimization:
         prefix += f"_{args.weight_optimization}"
     if args.extra_converter_options:
@@ -77,12 +81,12 @@ def verify_mixed_weight_precision(args, utils):
                     raise ValueError(f"同一权重出现于多个精度组: {index},{name}")
                 seen.add(name)
                 if index == layers:
-                    expected = args.tail_precision or args.precision[1]
+                    expected = args.tail_precision or mlp_precision
                     kind = "tail_weights"
                 elif "/self_attn/" in name:
                     expected, kind = args.precision[0], "attention_weights"
                 elif "/mlp/" in name:
-                    expected, kind = args.precision[1], "mlp_weights"
+                    expected, kind = mlp_precision, "mlp_weights"
                 else:
                     raise ValueError(f"出现未支持的投影权重: {index},{name}")
                 if group["precision_name"] != expected:
@@ -91,12 +95,14 @@ def verify_mixed_weight_precision(args, utils):
     if counts != {"attention_weights": layers * 4,
                   "mlp_weights": layers * 3, "tail_weights": 1}:
         raise ValueError(f"标准 Attention/MLP 投影权重数量不符: {counts}")
-    Path("mixed_precision_audit.json").write_text(json.dumps({
+    audit_name = ("mixed_precision_audit.json" if len(args.precision) == 2
+                  else "weight_precision_audit.json")
+    Path(audit_name).write_text(json.dumps({
         "parts": layers + 1, "weight_groups_verified": counts,
-        "attention": args.precision[0], "mlp": args.precision[1],
-        "lm_head": args.tail_precision or args.precision[1],
+        "attention": args.precision[0], "mlp": mlp_precision,
+        "lm_head": args.tail_precision or mlp_precision,
     }, indent=2) + "\n")
-    print(f"[混合精度权重核对完成] {counts}", flush=True)
+    print(f"[实际权重精度核对完成] {counts}", flush=True)
 
 
 def main():

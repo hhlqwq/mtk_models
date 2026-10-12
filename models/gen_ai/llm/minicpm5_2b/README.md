@@ -185,3 +185,5 @@ SDK 2.7.5 的旋转混合入口固定要求两个模板精度组,当前 Converte
 新候选使用独立目录,旋转为 Hadamard seed=0.共享 `../prepare_calibration.py` 从已校验的 WikiText2 train 中按 seed=17 采样 64 段各 512 Token,保留原短对话,重新生成 128 批校准;测试集不参与校准.DeepSeek 使用已核实的 mask=-4096,MiniCPM5 保持 mask=-100.继续使用 Hessian 和累计层误差参数优化.
 
 保持 Prefill=128、上下文=1024、Decode=1,每款仅两个 DLA.新候选仍须三后端输出、统一 WikiText2 PPL 和板端性能验证,当前不代表精度合格.
+
+统一精度也逐层核对 SDK 实际权重分组,必须确认 Attention、MLP、LM Head 全部符合请求的 W4A16,成功后保存 `weight_precision_audit.json`;仅凭文件名不认定实际精度.
