@@ -110,9 +110,10 @@ SHA256 `f6af174133ee756ffedbd0db327c0247b0f6ae9509ee2599b37cf8bd01988201`.
 第二版实际结果: 主机 W4A16 PPL **57.29072**,相对 FP32 增加 **43.08%**;
 MDLA PPL **61.56529**,相对 FP32 增加 **53.76%**.累计误差优化改善了首版,
 但当前量化质量仍有明显退化,不能标为质量合格.
-板端中文输入 20 Token,生成 **44 Token**,Prefill **37.37 token/s**,Decode **11.13 token/s**;
-英文输入 20 Token,生成 **56 Token**,Prefill **38.91 token/s**,Decode **12.06 token/s**.
-两个样例均达到停止 Token,原生文本与官方 Token 输入的回答一致.
+板端性能统一汇总: Prefill **38.12 token/s**,Decode **11.63 token/s**.
+Prefill 使用总输入 40 Token / 总 Prompt 耗时 1.049237 秒;
+Decode 为 CLI 速度的生成 Token 加权调和平均.不按语言拆分性能表.
+固定样例均达到停止 Token,原生文本与官方 Token 输入的回答一致.
 本次进程峰值 RSS 约 **1142 MiB**,系统 MemAvailable 最大下降约 **1328 MiB**;
 这些观测不等同于独立测得的模型总内存.Prefill 时间不包含模型加载与切换,
 不能作为 TTFT.英文出现 `lightweight '--'` 和不准确的 `MiniCPM-N` 描述,

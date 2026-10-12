@@ -225,5 +225,14 @@
     "relative_to_fp32_percent": 53.75506302815356,
     "relative_to_host_tflite_percent": 7.461191438932735,
     "cpu_fallback": false
+  },
+  "performance_summary": {
+    "unit": "token/s",
+    "prefill_tokens_per_second": 38.122940765527716,
+    "decode_tokens_per_second": 11.629578658230246,
+    "prefill_input_tokens": 40,
+    "prefill_seconds": 1.049237,
+    "decode_aggregation": "generated_token_weighted_harmonic_mean_of_cli_rates",
+    "scope": "fixed_demo_samples_not_full_benchmark"
   }
 }
