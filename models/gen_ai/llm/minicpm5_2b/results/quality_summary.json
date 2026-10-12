@@ -17,7 +17,7 @@
   "fp32_report_sha256": "182f3373b9ebde70611deaeb5f54412197b9ccd3f2a325418be8216d853a18bb",
   "w4a16_perplexity": 57.29071807861328,
   "relative_ppl_increase_percent": 43.07961876220996,
-  "board_npu_accuracy_verified": true,
+  "board_npu_accuracy_verified": false,
   "failed_v1_basic_hessian": {
     "w4a16_perplexity": 143.71998596191406,
     "relative_ppl_increase_percent": 258.9307568413457,
@@ -38,5 +38,6 @@
   "npu_report_sha256": "2a86452d2970a719e4a07ba0d32a07a3720c85b9fce1031c66fcbe03c98da1fa",
   "board_npu_accuracy_scope": "board_fixed_text_subset_not_full_benchmark",
   "npu_graph_mode": "prefill_128_teacher_forcing",
-  "quality_qualified": false
+  "quality_qualified": false,
+  "board_npu_accuracy_evaluated": true
 }

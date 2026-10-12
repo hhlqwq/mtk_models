@@ -186,12 +186,13 @@ def summarize(args):
     result = {"scope": "prefill_logits_diagnostic_prefix_not_full_accuracy",
               "blocks": blocks, "positions": blocks * 127, "input_ids": ids,
               "decode_accuracy_verified": False, "quality_qualified": False,
+              "status": "diagnostic_evaluated_quality_not_qualified",
               "threshold": "not_assigned_no_pass_claim", "summary": summary,
               "details": pairs, "files": files}
     if args.decode_steps:
         result.update(scope="decode_teacher_forcing_diagnostic_not_full_accuracy",
                       positions=blocks * args.decode_steps, decode_input_ids=sequences,
-                      decode_steps=args.decode_steps, decode_accuracy_verified=True)
+                      decode_steps=args.decode_steps, decode_accuracy_evaluated=True)
     args.output.mkdir(parents=True, exist_ok=True)
     filename = "decode_logits_comparison.json" if args.decode_steps else "logits_comparison.json"
     (args.output / filename).write_text(

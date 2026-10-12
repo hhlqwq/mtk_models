@@ -40,5 +40,46 @@
   "raw_report_sha256": "80b7400d797426bb6edcad47b0932adf3b390dee0b717444a8d766ad8544cb25",
   "raw_report_path": "/tmp/hailongcodex/2026-10-12/logits_v1/DeepSeek-R1-Distill-Qwen-1.5B/comparison/logits_comparison.json",
   "source_commit": "3ddbf830",
-  "fix_candidates_status": "calibration_and_accuracy_compile_in_progress"
+  "fix_candidates_status": "calibration_and_accuracy_compile_in_progress",
+  "decode_accuracy_evaluated": true,
+  "decode_diagnostic": {
+    "scope": "decode_teacher_forcing_diagnostic_not_full_accuracy",
+    "blocks": 4,
+    "positions": 64,
+    "decode_steps": 16,
+    "summary": {
+      "pytorch_tflite": {
+        "cosine_mean": 0.8256339078555206,
+        "cosine_min": -0.4607017559323506,
+        "centered_cosine_mean": 0.7447284992092891,
+        "rmse": 1.6468274020211773,
+        "mae": 1.1718107805386437,
+        "max_abs_error": 15.899798393249512,
+        "top1_agreement": 0.59375,
+        "kl_mean": 1.1614771297339839
+      },
+      "pytorch_npu": {
+        "cosine_mean": 0.8234465273910485,
+        "cosine_min": -0.23588939762469482,
+        "centered_cosine_mean": 0.7389907384819511,
+        "rmse": 1.6882590865111191,
+        "mae": 1.2510611647575423,
+        "max_abs_error": 15.416585594415665,
+        "top1_agreement": 0.5625,
+        "kl_mean": 1.129047285675481
+      },
+      "tflite_npu": {
+        "cosine_mean": 0.9685086045366575,
+        "cosine_min": 0.8683870130927495,
+        "centered_cosine_mean": 0.9559650038350453,
+        "rmse": 0.7184932952569871,
+        "mae": 0.5366009964655785,
+        "max_abs_error": 6.803944110870361,
+        "top1_agreement": 0.78125,
+        "kl_mean": 0.16160063418890794
+      }
+    },
+    "raw_report_sha256": "3f6e92613f99b2d299f75c5be2583cfe166ce843eb8357ed17232695bcd70b6e",
+    "quality_qualified": false
+  }
 }

@@ -150,3 +150,7 @@ Decode 诊断新增 --decode-steps: 128 Token Prefill 后继续输入真实后�
 
 板端 Decode 实测 mask 逻辑长度 2050 字节,Runtime 要求 2064 字节.
 仅对已确认的单行 mask 补齐 16 字节尾部对齐,填充区保持屏蔽;其他输入输出大小仍严格匹配.
+
+原版本 Decode 实测: 4 段固定上下文,每段继续 16 个真实 Token,共 64 个输出位置.
+FP32→MDLA 平均余弦 0.947060,Top1 一致率 73.44%; TFLite→MDLA 平均余弦 0.959618.
+测试已执行使用 evaluated 标记,精度未验收使用 verified=false、quality_qualified=false,避免混淆.

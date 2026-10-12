@@ -40,5 +40,46 @@
   "raw_report_sha256": "c7c3093fce3569f1a8f44c29222842a6d529dc70e431d9f99a946a6e1ae13664",
   "raw_report_path": "/tmp/hailongcodex/2026-10-12/logits_v1/MiniCPM5-2B/comparison/logits_comparison.json",
   "source_commit": "3ddbf830",
-  "fix_candidates_status": "calibration_and_accuracy_compile_in_progress"
+  "fix_candidates_status": "calibration_and_accuracy_compile_in_progress",
+  "decode_accuracy_evaluated": true,
+  "decode_diagnostic": {
+    "scope": "decode_teacher_forcing_diagnostic_not_full_accuracy",
+    "blocks": 4,
+    "positions": 64,
+    "decode_steps": 16,
+    "summary": {
+      "pytorch_tflite": {
+        "cosine_mean": 0.9436156538016889,
+        "cosine_min": 0.3768265666405486,
+        "centered_cosine_mean": 0.9004630848192912,
+        "rmse": 1.3745848701870484,
+        "mae": 1.0502285566632796,
+        "max_abs_error": 11.308526992797852,
+        "top1_agreement": 0.6875,
+        "kl_mean": 0.41188179726535123
+      },
+      "pytorch_npu": {
+        "cosine_mean": 0.9470599937432076,
+        "cosine_min": 0.635319095308792,
+        "centered_cosine_mean": 0.8935782289156153,
+        "rmse": 1.3968642747200999,
+        "mae": 1.0777775199407331,
+        "max_abs_error": 10.979971170425415,
+        "top1_agreement": 0.734375,
+        "kl_mean": 0.40291445020023525
+      },
+      "tflite_npu": {
+        "cosine_mean": 0.9596183697547374,
+        "cosine_min": 0.6731107412115256,
+        "centered_cosine_mean": 0.9254756909913162,
+        "rmse": 1.1534339935401772,
+        "mae": 0.8937470509180367,
+        "max_abs_error": 9.618719577789307,
+        "top1_agreement": 0.703125,
+        "kl_mean": 0.27251794439505367
+      }
+    },
+    "raw_report_sha256": "8daf57ebaa85959ac0ca3d4363b2032fb7de6e9d8dc8445f1f020d1e42b864a1",
+    "quality_qualified": false
+  }
 }
