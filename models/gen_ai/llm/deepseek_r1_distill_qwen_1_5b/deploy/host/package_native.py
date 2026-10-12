@@ -103,6 +103,8 @@ def package(work, output, prefill, quantized_prefix=None):
                      (embedding, "tokenizer/embedding_int16.bin")):
         print(f"[打包] {dst}", flush=True)
         shutil.copyfile(src, output / dst)
+    shutil.copyfile(Path(__file__).resolve().parents[3] / "evaluate_native.py",
+                    output / "scripts/evaluate_native.py")
     tokenizer = json.loads((model / "tokenizer.json").read_text())
     with (output / "tokenizer/vocab.txt").open("wb") as stream:
         for text, index in tokenizer["model"]["vocab"].items():

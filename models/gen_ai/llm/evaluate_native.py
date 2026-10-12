@@ -66,7 +66,9 @@ def run_sample(root, folder, language, token_mode, limit):
         if found is None:
             raise ValueError("CLI 日志缺少生成 Token.")
         row["generated_tokens"] = [int(value) for value in found.group(1).split(",")]
-        row["eos_reached"] = row["generated_tokens"][-1] in (1, 130073)
+        preparation = json.loads((root / "manifest.json").read_text())["preparation"]
+        stop_ids = preparation.get("stop_token_ids", [preparation["eos_token_id"]])
+        row["eos_reached"] = row["generated_tokens"][-1] in stop_ids
         row["prefill_seconds"] = float(re.search(
             r"Done analyzing prompt in ([0-9.eE+-]+)s", text).group(1))
         prompt_path = root / f"scripts/prompts/{language}_demo.tokens.txt"

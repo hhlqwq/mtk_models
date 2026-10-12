@@ -41,7 +41,7 @@ WikiText2 测试集前 128 行原始文本,不额外添加特殊 Token,每块 12
 原生 tokenizer 使用 RE2,数字切分配置为最多三位; RE2 不支持官方空白规则的
 lookahead,默认使用官方 Token 输入.原生文本输入的兼容结论仅覆盖实际验证样例.
 
-板端证据入口为 `deploy/board/evaluate_native.py`,默认运行中英文 Token/文本输入,
+板端证据入口为 `models/gen_ai/llm/evaluate_native.py`,默认运行中英文 Token/文本输入,
 记录停止 Token、原始日志、Prefill/Decode 与本次内存观测,并核对两种输入结果.
 日志需归档后由打包入口检查哈希; 推理成功不表示正式量化质量达标.
 
@@ -154,3 +154,6 @@ Decode 诊断新增 --decode-steps: 128 Token Prefill 后继续输入真实后�
 原版本 Decode 实测: 4 段固定上下文,每段继续 16 个真实 Token,共 64 个输出位置.
 FP32→MDLA 平均余弦 0.947060,Top1 一致率 73.44%; TFLite→MDLA 平均余弦 0.959618.
 测试已执行使用 evaluated 标记,精度未验收使用 verified=false、quality_qualified=false,避免混淆.
+
+原生固定样例使用共享 evaluate_native.py,从各自交付清单读取停止 Token,避免两款模型 EOS 混用.
+新包包含独立 scripts/evaluate_native.py,运行日志与汇总性能保留在包内 results.

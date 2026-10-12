@@ -266,3 +266,6 @@ FP32→MDLA 平均余弦 0.823447,Top1 一致率 56.25%; TFLite→MDLA 平均余
 打包支持 --quantized-prefix 指定本次任务中带官方优化配置后缀的量化目录,仍要求独立空目录和两个 DLA.
 
 修复版静态 Prefill 图已确认 mask scale=0.30517578125,可表达 -10000; 输入准备会拒绝无法表达配置掩码的图,避免静默裁剪.
+
+原生固定样例使用共享 evaluate_native.py,从各自交付清单读取停止 Token,避免两款模型 EOS 混用.
+新包包含独立 scripts/evaluate_native.py,运行日志与汇总性能保留在包内 results.
