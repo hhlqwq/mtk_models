@@ -18,7 +18,7 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def prepare(source, output, context):
+def prepare(source, output, context, mask_value=-100.0, rotate=False):
     """校验官方文件并生成独立配置、双语校准输入和板端 Prompt."""
     manifest = json.loads((source / "source_manifest.json").read_text())
     for entry in manifest["files"]:
@@ -43,6 +43,10 @@ def prepare(source, output, context):
             shutil.copyfile(src, dst)
     tokenizer = AutoTokenizer.from_pretrained(source, local_files_only=True)
     config = json.loads((source / "config.json").read_text())
+    if not (-10000.0 <= mask_value < 0):
+        raise ValueError("掩码负值必须位于 [-10000,0).")
+    config.update(mask_value=mask_value, rotate=rotate,
+                  rotate_seed=0, rotate_mode="hadamard")
     # 推理特殊 Token 以官方 tokenizer/generation 配置为准,修正基础配置遗留值.
     config.update(bos_token_id=tokenizer.bos_token_id,
                   eos_token_id=tokenizer.eos_token_id,
@@ -108,6 +112,8 @@ def prepare(source, output, context):
         "bos_token_id": tokenizer.bos_token_id,
         "eos_token_id": tokenizer.eos_token_id,
         "rope_theta": config["rope_theta"],
+        "sdk_adaptation": {"mask_value": mask_value, "rotate": rotate,
+                           "rotate_mode": "hadamard", "rotate_seed": 0},
         "calibration_scope": "authored_bilingual_smoke_not_formal_accuracy",
         "calibration_samples": len(records),
         "demos": demos,
@@ -124,8 +130,10 @@ def main():
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--context", type=int, default=1024)
+    parser.add_argument("--mask-value", type=float, default=-100.0)
+    parser.add_argument("--rotate", action="store_true")
     args = parser.parse_args()
-    prepare(args.source, args.output, args.context)
+    prepare(args.source, args.output, args.context, args.mask_value, args.rotate)
 
 
 if __name__ == "__main__":

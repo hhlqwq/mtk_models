@@ -18,7 +18,8 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def prepare(source, output, context, calibration_train=None):
+def prepare(source, output, context, calibration_train=None, mask_value=-100.0,
+            rotate=False):
     """校验官方文件并生成独立配置、双语校准输入和板端 Prompt."""
     manifest = json.loads((source / "source_manifest.json").read_text())
     for entry in manifest["files"]:
@@ -55,6 +56,10 @@ def prepare(source, output, context, calibration_train=None):
     if not isinstance(stops, list) or tokenizer.eos_token_id not in stops:
         raise ValueError("官方停止 Token 配置不符.")
     config = json.loads((source / "config.json").read_text())
+    if not (-10000.0 <= mask_value < 0):
+        raise ValueError("掩码负值必须位于 [-10000,0).")
+    config.update(mask_value=mask_value, rotate=rotate,
+                  rotate_seed=0, rotate_mode="hadamard")
     # SDK 2.7.5 校准生成只兼容单 EOS,使用官方对话结束 Token.
     # 原生交付的 stopToken 仍保留官方两个停止 ID,不修改源配置.
     config.update(bos_token_id=tokenizer.bos_token_id,
@@ -145,6 +150,8 @@ def prepare(source, output, context, calibration_train=None):
         "eos_token_id": tokenizer.eos_token_id, "stop_token_ids": stops,
         "enable_thinking": False,
         "rope_theta": config["rope_theta"],
+        "sdk_adaptation": {"mask_value": mask_value, "rotate": rotate,
+                           "rotate_mode": "hadamard", "rotate_seed": 0},
         "calibration_scope": calibration_scope,
         "calibration_training_source": training_source,
         "calibration_samples": len(records),
@@ -163,8 +170,11 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--context", type=int, default=1024)
     parser.add_argument("--calibration-train", type=Path)
+    parser.add_argument("--mask-value", type=float, default=-100.0)
+    parser.add_argument("--rotate", action="store_true")
     args = parser.parse_args()
-    prepare(args.source, args.output, args.context, args.calibration_train)
+    prepare(args.source, args.output, args.context, args.calibration_train,
+            args.mask_value, args.rotate)
 
 
 if __name__ == "__main__":

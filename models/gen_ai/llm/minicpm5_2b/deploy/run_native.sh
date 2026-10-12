@@ -12,6 +12,8 @@ NCC_ROOT="${NCC_ROOT:-/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20
 CONTEXT="${CONTEXT_SIZE:-1024}"
 PREFILL="${PREFILL_TOKENS:-128}"
 CALIBRATION_BATCHES="${CALIBRATION_BATCHES:-32}"
+MASK_VALUE="${MASK_VALUE:--100}"
+ROTATE_WEIGHTS="${ROTATE_WEIGHTS:-0}"
 CALIBRATION_TRAIN="${CALIBRATION_TRAIN:-}"
 WEIGHT_OPT_CONFIG="${WEIGHT_OPT_CONFIG:-}"
 MODEL="${WORK}/MiniCPM5-2B"
@@ -22,6 +24,10 @@ if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then
 fi
 STAGE="${1:-all}"
 
+if [[ ! "${ROTATE_WEIGHTS}" =~ ^[01]$ ]]; then
+    echo '[错误] ROTATE_WEIGHTS 必须为 0 或 1.' >&2
+    exit 2
+fi
 if (( $# > 1 )) || [[ ! "${STAGE}" =~ ^(all|prepare|calibrate|quantize|shape|compile)$ ]]; then
     echo '[错误] 用法: bash run_native.sh [prepare|calibrate|quantize|shape|compile|all].' >&2
     exit 2
@@ -50,9 +56,10 @@ run_python() {
 if [[ "${STAGE}" == all || "${STAGE}" == prepare ]]; then
     echo '[1/5] 校验官方资源并生成 MiniCPM5 双语校准 Token.'
     run_python -c 'from pathlib import Path; Path("calibration_complete.txt").unlink(missing_ok=True)'
-    prepare_options=()
+    prepare_options=(--mask-value "${MASK_VALUE}")
+    if [[ "${ROTATE_WEIGHTS}" == 1 ]]; then prepare_options+=(--rotate); fi
     if [[ -n "${CALIBRATION_TRAIN}" ]]; then
-        prepare_options=(--calibration-train "${CALIBRATION_TRAIN}")
+        prepare_options+=(--calibration-train "${CALIBRATION_TRAIN}")
     fi
     run_python "${SCRIPT_DIR}/host/prepare_native.py" --source "${SOURCE}" \
         --output "${WORK}" --context "${CONTEXT}" "${prepare_options[@]}" \
@@ -105,7 +112,7 @@ for shape in "${3}t${4}c" "1t${4}c"; do
         extra=(--broadcast-act-wgt --broadcast-flow-distance=63 --split-large-conv-ic=1536)
     fi
     "${2}/bin/ncc-tflite" --arch=mdla5.3 --l1-size-kb=256 --num-mdla=1 \
-        --opt=3 --opt-footprint --opt-aggressive --stable-linearize \
+        --opt=3 --opt-footprint --opt-accuracy --stable-linearize \
         --gno=LTS,Inception --gno-exp --gno-non-4d-tiling --mlo \
         --disable-apusys --fc-to-conv --mdla-int16-lut \
         --suppress-input --suppress-output --show-memory-summary \

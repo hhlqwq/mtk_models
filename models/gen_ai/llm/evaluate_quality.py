@@ -48,7 +48,8 @@ def export_board_inputs(model, graph_path, output):
                                          bypass_tokenizer=True)[0]
     prefill = contract["inputs"][0]["shape"][1]
     mask = generate_utils.generate_mask(config.max_position_embeddings, 0,
-                                        prefill, prefill, dtype=np.float32)
+                                        prefill, prefill, mask_value=config.mask_value,
+                                        dtype=np.float32)
     position = generate_utils.get_master_rot_emb(config, np.float32)[:, :, :prefill, :]
     arrays = {}
     for name, values in (("mask", mask), ("pos_emb", position)):
