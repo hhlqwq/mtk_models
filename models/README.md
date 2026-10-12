@@ -207,10 +207,15 @@ models/
 对于机器人应用，还应在模型指标之外记录应用层输出，例如可通行区域、目标相对深度、
 稳定 `track_id`、手势防抖结果或环境声告警；单张可视化图片不能替代连续运行和安全边界验证。
 
-新增 [MiniCPM5-2B](gen_ai/llm/minicpm5_2b/README.md) 适配,官方 Llama 架构,目标 W4A16、Prefill 128、上下文 1024.当前尚未完成 MTK 板端验证.
+新增 [MiniCPM5-2B](gen_ai/llm/minicpm5_2b/README.md) 适配,官方 Llama 架构,目标 W4A16、Prefill 128、上下文 1024.已完成 MTK 板端验证与统一子集质量检查,当前 W4A16 质量明显退化,不标记质量合格.
 
 本次 DeepSeek 与 MiniCPM5 的统一主机质量检查使用
 `models/gen_ai/llm/evaluate_quality.py`,固定 WikiText2 测试集前 128 行文本,
 128 Token 分块并重置上下文.分别报告模型内部 FP32/W4A16 PPL 的相对变化,
 训练集校准与测试集评价分开.自编 Demo、旧版 Token 子集、其他平台的完整
-WikiText2 结果均不得混入此协议的比较表.该检查不代表中文能力或板端 NPU 精度.
+WikiText2 结果均不得混入此协议的比较表.主机与实际 MDLA 分别评价,该固定英文子集不代表中文能力或完整基准.
+
+LLM 原生交付使用两个 DLA,分别执行 Prefill 与 Decode,两阶段速度统一为 token/s.
+MiniCPM5-2B 第二版 FP32/TFLite/MDLA 子集 PPL 为 40.04115/57.29072/61.56529;
+DeepSeek-R1-Distill-Qwen-1.5B 为 118.70850/193.93135/205.99682.
+比较各模型自身的转换差距,不按不同 tokenizer 的绝对 PPL 排名.两款当前 W4A16 均有明显退化.

@@ -69,6 +69,12 @@ def run_sample(root, folder, language, token_mode, limit):
         row["eos_reached"] = row["generated_tokens"][-1] in (1, 130073)
         row["prefill_seconds"] = float(re.search(
             r"Done analyzing prompt in ([0-9.eE+-]+)s", text).group(1))
+        prompt_path = root / f"scripts/prompts/{language}_demo.tokens.txt"
+        row["prefill_input_tokens"] = len(re.findall(r"\d+", prompt_path.read_text()))
+        if row["prefill_seconds"] <= 0 or row["prefill_input_tokens"] == 0:
+            raise ValueError("Prefill 输入数量或耗时无效.")
+        row["prefill_tokens_per_second"] = (
+            row["prefill_input_tokens"] / row["prefill_seconds"])
         row["native_reported_decode_tokens_per_second"] = float(re.search(
             r"Generative Mode:\s*([0-9.eE+-]+) tok/s", text).group(1))
         if not row["eos_reached"]:

@@ -188,6 +188,12 @@ def record_board_results(work, output, results):
         if sha256(results / f"{row['id']}.log") != row["log_sha256"]:
             raise ValueError("原始板端日志哈希不符.")
         row["generated_token_count"] = len(row["generated_tokens"])
+        prompt_path = output / "scripts/prompts" / f"{row['id']}.tokens.txt"
+        row["prefill_input_tokens"] = len(re.findall(r"\d+", prompt_path.read_text()))
+        if row["prefill_seconds"] <= 0 or row["prefill_input_tokens"] == 0:
+            raise ValueError("Prefill 输入数量或耗时无效.")
+        row["prefill_tokens_per_second"] = (
+            row["prefill_input_tokens"] / row["prefill_seconds"])
         row["text"] = tokenizer.decode(
             row["generated_tokens"], skip_special_tokens=False,
             clean_up_tokenization_spaces=False)
@@ -218,10 +224,10 @@ def record_board_results(work, output, results):
         "当前状态为 board_verified,仅表示板端推理与双语样例完成,正式质量待评测.")
     readme += "\n默认总生成上限 768 Token.执行 `INPUT_MODE=text bash scripts/run.sh` 可使用原生文本分词.\n"
     readme += "两个固定样例的文本输入结果与官方 Token 输入结果一致.\n\n"
-    readme += "| Demo | 生成 Token | Prefill 秒 | Decode Token/s | EOS |\n| --- | ---: | ---: | ---: | --- |\n"
+    readme += "| Demo | 生成 Token | Prefill token/s | Decode token/s | EOS |\n| --- | ---: | ---: | ---: | --- |\n"
     for row in metrics["samples"]:
         readme += (f"| {row['id']} | {row['generated_token_count']} | "
-                   f"{row['prefill_seconds']:.6f} | "
+                   f"{row['prefill_tokens_per_second']:.4f} | "
                    f"{row['native_reported_decode_tokens_per_second']:.4f} | 是 |\n")
     readme += "\n英文样例存在不自然的语法,原始日志与 Token 均保留,不能将本次结果视为正式精度达标.\n"
     readme += "Prefill 时间不包含加载和模型切换,不作为 TTFT; Runtime 速度按原生 CLI 的 Decode 计数.\n"

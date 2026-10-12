@@ -204,4 +204,9 @@ python tools/check_registry.py
 
 各模型统一在编译主机评测 ONNX 核心精度,板端记录核心精度、推理耗时、峰值 RSS和相对 ONNX 的精度变化。量化方式、数据要求与测试步骤见各模型 README。
 
-新增 [MiniCPM5-2B](models/gen_ai/llm/minicpm5_2b/README.md) 适配,官方 Llama 架构,目标 W4A16、Prefill 128、上下文 1024.当前尚未完成 MTK 板端验证.
+新增 [MiniCPM5-2B](models/gen_ai/llm/minicpm5_2b/README.md) 适配,官方 Llama 架构,目标 W4A16、Prefill 128、上下文 1024.已完成 MTK 板端验证与统一子集质量检查,当前 W4A16 质量明显退化,不标记质量合格.
+
+LLM 原生交付使用两个 DLA,分别执行 Prefill 与 Decode,两阶段速度统一为 token/s.
+MiniCPM5-2B 第二版 FP32/TFLite/MDLA 子集 PPL 为 40.04115/57.29072/61.56529;
+DeepSeek-R1-Distill-Qwen-1.5B 为 118.70850/193.93135/205.99682.
+比较各模型自身的转换差距,不按不同 tokenizer 的绝对 PPL 排名.两款当前 W4A16 均有明显退化.

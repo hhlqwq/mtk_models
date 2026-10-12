@@ -7,7 +7,7 @@ OpenBMB 官方中英文纯文本 LLM,采用标准 Llama 架构.
 地瓜参考: https://github.com/D-Robotics/rdk_model_zoo/tree/rdk_s/samples/llm/minicpm5-2b .
 地瓜产物只作为交付参考,不作为 MTK 转换输入.
 
-当前处于适配中,尚未完成 MTK 编译、板端推理与正式质量评测.
+2026-10-10 已完成 MTK 编译、双语板端推理与统一测试子集质量检查.状态为 board_verified,当前 W4A16 质量明显退化,未达到质量合格交付状态.
 初始目标 W4A16,Prefill 128,上下文 1024,Decode 1.
 保留官方 RoPE 5000000、双停止 Token 1/130073 与独立 Chat Template,
 默认 `enable_thinking=false`.只在独立转换副本中将新版 BPE merge 数组
@@ -19,7 +19,7 @@ OpenBMB 官方中英文纯文本 LLM,采用标准 Llama 架构.
 各阶段保存日志并遇错停止,编译成功不能代替板端推理验证.
 打包入口为 `deploy/host/package_native.py`,要求输出为独立空目录.
 官方资源地址、大小和哈希归档到 `models/source_manifest.json` 和 `models/source_url.txt`.
-自编校准输入仅检查部署流程,正式量化质量需要独立的浮点/量化对比.
+第二版校准使用训练集与自编双语输入,测试集独立用于浮点/量化质量对比.
 
 当前环境检查: GAI SDK 已接受官方 Llama 配置、42 层、RoPE 和双停止 Token.
 通过独立目录安装 tokenizers 0.20.3 读取原始 tokenizer,与既有 0.19.1
@@ -37,7 +37,7 @@ SDK 2.7.5 校准生成对 EOS 列表存在维度错误,独立转换配置使用�
 WikiText2 测试集前 128 行原始文本,不额外添加特殊 Token,每块 128 Token,
 重置上下文并评分 127 次下一 Token,不足一块的末尾 Token 单独记录并舍弃.
 官方 Transformers FP32 与 SDK 量化 TFLite 使用相同 Token IDs,
-该协议为测试集子集的转换质量检查,不作为完整基准或板端 NPU 精度结论.
+该协议为测试集子集的转换质量检查.主机与实际 MDLA 分别计算,不作为完整基准.
 原生 tokenizer 使用 RE2,数字切分配置为最多三位; RE2 不支持官方空白规则的
 lookahead,默认使用官方 Token 输入.原生文本输入的兼容结论仅覆盖实际验证样例.
 
@@ -67,7 +67,7 @@ SDK 的 TFLite PPL 入口不接受 --dtype 参数,量化路径按实际静态图
 `CALIBRATION_TRAIN` 指向已校验的训练集 Parquet;
 `WEIGHT_OPT_CONFIG` 指向官方工具包的
 `post_training_quantize/wgt_opt_cum_layer_error.json`,启用累计层误差优化
-(512 个样本,batch size 1).质量与板端验证结果仍待实际运行.
+(512 个样本,batch size 1).实际结果见下文与质量报告.
 可选 pytablewriter 表格依赖缺失时,评测入口仅在唯一完整 SDK JSON 已保存后
 继续生成质量报告,其他异常仍直接报错.
 
@@ -86,10 +86,10 @@ SHA256 `f6af174133ee756ffedbd0db327c0247b0f6ae9509ee2599b37cf8bd01988201`.
 
 统一协议 FP32 参考 PPL 为 **40.04115**,评分 **7366** 个 Token.
 原始文本 SHA256 为 `6605c41acd8bc0bfeb0f1acb43e31437da857e03135b21b097d16756ccaba84c`,
-与 DeepSeek 一致.量化结果尚待完成,见 [质量报告](results/quality_summary.json).
+与 DeepSeek 一致.主机与板端量化结果均已完成,见 [质量报告](results/quality_summary.json).
 第一版基础 Hessian 按统一协议复核 PPL 为 **143.71999**,相对 FP32
 增加 **258.93%**,两个后端的 Token IDs 已核对完全一致.
-该失败结果与第二版待评测结果分开记录.
+该失败结果与第二版实际结果分开记录.
 
 打包时使用 `--quality-results` 归档两个后端的原始报告; 打包入口核对
 输入 Token、原始文本、分块协议、实际 TFLite 与 embedding 哈希,
@@ -110,13 +110,16 @@ SHA256 `f6af174133ee756ffedbd0db327c0247b0f6ae9509ee2599b37cf8bd01988201`.
 第二版实际结果: 主机 W4A16 PPL **57.29072**,相对 FP32 增加 **43.08%**;
 MDLA PPL **61.56529**,相对 FP32 增加 **53.76%**.累计误差优化改善了首版,
 但当前量化质量仍有明显退化,不能标为质量合格.
-板端中文生成 **44 Token**,Prefill **0.535208 秒**,Decode **11.1285 Token/s**;
-英文生成 **56 Token**,Prefill **0.514029 秒**,Decode **12.0561 Token/s**.
+板端中文输入 20 Token,生成 **44 Token**,Prefill **37.37 token/s**,Decode **11.13 token/s**;
+英文输入 20 Token,生成 **56 Token**,Prefill **38.91 token/s**,Decode **12.06 token/s**.
 两个样例均达到停止 Token,原生文本与官方 Token 输入的回答一致.
 本次进程峰值 RSS 约 **1142 MiB**,系统 MemAvailable 最大下降约 **1328 MiB**;
 这些观测不等同于独立测得的模型总内存.Prefill 时间不包含模型加载与切换,
 不能作为 TTFT.英文出现 `lightweight '--'` 和不准确的 `MiniCPM-N` 描述,
 保留原始日志与 Token,不修饰实际输出.
 
-待确认的下一版方案是 `sym8W_sym16A` W8A16,按两个分片导出,
-避免单个 W8 模型超过 FlatBuffer 容量; 需要修改精度与分片流程并重新验证内存.
+交付固定使用两个 DLA: `1024c/prompt.dla` 执行 Prefill,`1024c/gen.dla` 执行 Decode.
+Prefill token/s = 实际输入 Token 数 / 原生 Prompt 阶段耗时,不是 128 个填充位置 / 耗时.
+原始耗时、输入计数与双语回答见 [板端汇总](results/native_summary.json).
+2026-10-12 新要求为总共两个 DLA.此前 W8A16 两分片提案会产生四个 DLA,
+与此要求不符,尚未执行,后续精度方案需要重新评估.

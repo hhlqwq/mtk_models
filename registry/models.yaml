@@ -9,7 +9,7 @@ models:
     source: openbmb/MiniCPM5-2B
     delivery_reference: D-Robotics/rdk_model_zoo/rdk_s/samples/llm/minicpm5-2b
     platforms:
-      genio_720: environment_ready
+      genio_720: board_verified
       genio_5100: not_started
   - id: deepseek_r1_distill_qwen_1_5b
     batch: supplemental
