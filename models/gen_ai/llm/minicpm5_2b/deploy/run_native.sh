@@ -99,10 +99,13 @@ if [[ "${STAGE}" == all || "${STAGE}" == quantize ]]; then
     if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then
         quantize_options=(--extra_converter_options "${WEIGHT_OPT_CONFIG}")
     fi
-    run_python "${PYTHON%/python}/mtk_ptq_llm" converter "${MODEL}/config.json" \
+    run_python "${SCRIPT_DIR}/../../quantize_native.py" converter "${MODEL}/config.json" \
         -p "${precision_options[@]}" -tp "${TAIL_PRECISION}" -d "${WORK}/calibration_datasets/MiniCPM5-2B" \
         -m Overall -w hessian "${quantize_options[@]}" \
         2>&1 | tee "${WORK}/logs/quantization.log"
+    # SDK 某些版本会吞掉转换异常,还须核对所有分片与配置确实存在.
+    run_python -c 'import json,sys; from pathlib import Path; config=json.loads(Path(sys.argv[1]).read_text()); folder=Path(sys.argv[2]); count=config["num_hidden_layers"]+1; assert len(list(folder.glob("*.tflite")))==count, "量化分片不完整"; assert len(list(folder.glob("*.json")))==1, "量化配置不唯一"; assert all(path.stat().st_size>0 for path in folder.glob("*.tflite")), "存在空分片"' \
+        "${MODEL}/config.json" "${QUANTIZED}"
     # 仅量化成功后记录设置,打包时从此文件读取真实精度.
     run_python -c 'import json,sys; from pathlib import Path; Path("quantization_settings.json").write_text(json.dumps(dict(zip(("attention", "mlp", "lm_head", "quantized_prefix"), sys.argv[1:])), indent=2)+"\n")' \
         "${ATTENTION_PRECISION}" "${MLP_PRECISION}" "${TAIL_PRECISION}" "${QUANTIZED##*/}"
