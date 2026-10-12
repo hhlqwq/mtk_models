@@ -21,6 +21,9 @@ if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then
     opt_name="${WEIGHT_OPT_CONFIG##*/}"
     QUANTIZED="${QUANTIZED}_${opt_name%.json}"
 fi
+if [[ "${ROTATE_WEIGHTS}" == 1 ]]; then
+    QUANTIZED="${QUANTIZED}_rotate_hadamard_0"
+fi
 STAGE="${1:-all}"
 
 if [[ ! "${ROTATE_WEIGHTS}" =~ ^[01]$ ]]; then

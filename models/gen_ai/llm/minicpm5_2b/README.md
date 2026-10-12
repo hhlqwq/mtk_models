@@ -160,3 +160,6 @@ FP32→MDLA 平均余弦 0.947060,Top1 一致率 73.44%; TFLite→MDLA 平均余
 
 新候选的统一性能可用 --performance-input 指定固定 128 个真实 Token,最多生成 128 Token.
 性能独立于双语功能样例,统一为一行 Prefill/Decode token/s,不使用填充位置冒充有效输入.
+
+SDK 旋转输出目录带 _rotate_hadamard_0 后缀,Shape 与编译入口按相同配置定位该目录.
+旋转版已完成量化,首次 Shape 因目录定位失败的日志保留,修正后仅重跑 Shape.
