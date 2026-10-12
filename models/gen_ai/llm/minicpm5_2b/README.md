@@ -118,7 +118,7 @@ MDLA PPL **61.56529**,相对 FP32 增加 **53.76%**.累计误差优化改善了�
 不能作为 TTFT.英文出现 `lightweight '--'` 和不准确的 `MiniCPM-N` 描述,
 保留原始日志与 Token,不修饰实际输出.
 
-交付固定使用两个 DLA: `1024c/prompt.dla` 执行 Prefill,`1024c/gen.dla` 执行 Decode.
+交付固定使用两个 DLA: `1024c/prompt.dla` 执行 Prefill,`1024c/decode.dla` 执行 Decode.
 Prefill token/s = 实际输入 Token 数 / 原生 Prompt 阶段耗时,不是 128 个填充位置 / 耗时.
 原始耗时、输入计数与双语回答见 [板端汇总](results/native_summary.json).
 2026-10-12 新要求为总共两个 DLA.此前 W8A16 两分片提案会产生四个 DLA,

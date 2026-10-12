@@ -22,7 +22,7 @@ SDK 浮点诊断: 默认注意力 mask=-100 时 PPL 为 124.89242;
 因此转换差距还包含 mask 的实现兼容问题,不能全部归因为权重量化.
 该诊断未修改安装的 SDK、官方权重或已有交付 DLA; 当前 INT16 图不能直接沿用此浮点修改.
 
-原生交付使用两个 DLA: `1024c/prompt.dla` 执行 Prefill,`1024c/gen.dla` 执行 Decode.
+原生交付使用两个 DLA: `1024c/prompt.dla` 执行 Prefill,`1024c/decode.dla` 执行 Decode.
 两阶段性能单位统一为 token/s. Prefill 按实际输入 Token 数除以 Prompt 耗时计算,保留原始耗时,不作为 TTFT.
 
 中英文文本问答与推理模型.使用 DeepSeek 官方权重,参考地瓜 RDK S 系列的选型与指标展示,不使用厂商预编译模型作为转换输入.
