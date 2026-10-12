@@ -1,0 +1,44 @@
+{
+  "scope": "prefill_logits_diagnostic_prefix_not_full_accuracy",
+  "blocks": 4,
+  "positions": 508,
+  "summary": {
+    "pytorch_tflite": {
+      "cosine_mean": 0.9365683746727816,
+      "cosine_min": 0.17986850501808735,
+      "centered_cosine_mean": 0.9018685244182522,
+      "rmse": 1.5025358606902333,
+      "mae": 1.129697490593097,
+      "max_abs_error": 17.544133186340332,
+      "top1_agreement": 0.639763779527559,
+      "kl_mean": 0.49332821286525075
+    },
+    "pytorch_npu": {
+      "cosine_mean": 0.9277438794369582,
+      "cosine_min": -0.09815359910260013,
+      "centered_cosine_mean": 0.8811772588028128,
+      "rmse": 1.6748738868573734,
+      "mae": 1.2316802199906074,
+      "max_abs_error": 19.19128942489624,
+      "top1_agreement": 0.5885826771653543,
+      "kl_mean": 0.6584985199445642
+    },
+    "tflite_npu": {
+      "cosine_mean": 0.9508691260323838,
+      "cosine_min": 0.18948286477750043,
+      "centered_cosine_mean": 0.9071787020652485,
+      "rmse": 1.395350566379415,
+      "mae": 1.0374890009175597,
+      "max_abs_error": 17.398853302001953,
+      "top1_agreement": 0.6417322834645669,
+      "kl_mean": 0.4613499662580146
+    }
+  },
+  "quality_qualified": false,
+  "decode_accuracy_verified": false,
+  "threshold": "not_assigned_no_pass_claim",
+  "raw_report_sha256": "c7c3093fce3569f1a8f44c29222842a6d529dc70e431d9f99a946a6e1ae13664",
+  "raw_report_path": "/tmp/hailongcodex/2026-10-12/logits_v1/MiniCPM5-2B/comparison/logits_comparison.json",
+  "source_commit": "3ddbf830",
+  "fix_candidates_status": "calibration_and_accuracy_compile_in_progress"
+}
