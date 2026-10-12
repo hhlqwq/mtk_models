@@ -106,6 +106,12 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
             raise ValueError("新精度包缺少量化成功记录.")
         precision = "asym4W_sym16A"
         precision_settings = dict.fromkeys(("attention", "mlp", "lm_head"), precision)
+    adapter_path = work / "quantization_adapter.json"
+    adapter = json.loads(adapter_path.read_text()) if adapter_path.exists() else None
+    audit_path = work / "mixed_precision_audit.json"
+    mixed_audit = json.loads(audit_path.read_text()) if audit_path.exists() else None
+    if precision.startswith("mixed_") and mixed_audit is None:
+        raise ValueError("混合精度包缺少逐层实际权重精度核对.")
     prompt = single_file(Path(f"{base}_{prefill}t{context}c"), "*.dla")
     decode = single_file(Path(f"{base}_1t{context}c"), "*.dla")
     contracts = {"prompt": graph_contract(prompt.with_suffix(".tflite")),
@@ -224,6 +230,7 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
     (output / "manifest.json").write_text(json.dumps({
         "status": "compiled_pending_board", "preparation": preparation,
         "precision": precision, "precision_settings": precision_settings,
+        "quantization_adapter": adapter, "mixed_precision_audit": mixed_audit,
         "weight_optimization": "hessian",
         "quantized_prefix": base.name,
         "host_quality": quality,
