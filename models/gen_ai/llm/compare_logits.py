@@ -71,7 +71,7 @@ def export_tflite(args):
             transfer_cache(contract, raw_outputs, decode_contract, decode_inputs)
             values = []
             for step, token in enumerate(sequences[index][128:]):
-                decode_inputs[0] = embedding[token][None, None, :]
+                decode_inputs[0] = embedding[token][None, None, :].copy()
                 for offset, item in enumerate(decode_contract["inputs"]):
                     if item["name"] in ("mask", "pos_emb"):
                         decode_inputs[offset] = decode_arrays[item["name"]][step]

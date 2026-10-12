@@ -74,6 +74,7 @@ class HardwareModel:
                                         ctypes.byref(self.runtime)))
         self.inputs = [np.full(item["shape"], item["zero_point"], dtype="<i2")
                        for item in contract["inputs"]]
+        self.input_storage = list(self.inputs)
         self.outputs = [np.zeros(item["shape"], dtype="<i2") for item in contract["outputs"]]
         input_count, output_count = size(), size()
         try:
@@ -86,7 +87,20 @@ class HardwareModel:
                     actual = size()
                     check(self.library.ModelSize(self.runtime, index, output, ctypes.byref(actual)))
                     if actual.value != buffer.nbytes:
-                        raise ValueError(f"DLA 缓冲区大小不符: output={output},index={index}")
+                        item = contract["inputs"][index] if output == 0 else None
+                        # 已实测 Decode 单行 mask 的末尾按 16 字节填充,其余布局仍严格检查.
+                        if item is None or item["name"] != "mask" or \
+                                np.prod(buffer.shape[:-1]) != 1 or \
+                                actual.value != (buffer.nbytes + 15) // 16 * 16:
+                            raise ValueError(f"DLA 缓冲区大小不符: output={output},index={index},"
+                                             f"logical={buffer.nbytes},actual={actual.value}")
+                        storage = np.full(actual.value // 2, -32768, dtype="<i2")
+                        view = storage[:buffer.size].reshape(buffer.shape)
+                        np.copyto(view, buffer)
+                        self.input_storage[index] = storage
+                        self.inputs[index] = view
+                        print(f"[Runtime mask padding] {buffer.nbytes} -> {actual.value} 字节",
+                              flush=True)
         except Exception:
             self.close()
             raise
@@ -94,9 +108,9 @@ class HardwareModel:
     def run(self):
         """同步执行一次真实硬件推理并返回原始输出."""
         pointer, size = ctypes.c_void_p, ctypes.c_size_t
-        inputs = (pointer * len(self.inputs))(*(b.ctypes.data for b in self.inputs))
+        inputs = (pointer * len(self.input_storage))(*(b.ctypes.data for b in self.input_storage))
         outputs = (pointer * len(self.outputs))(*(b.ctypes.data for b in self.outputs))
-        input_sizes = (size * len(self.inputs))(*(b.nbytes for b in self.inputs))
+        input_sizes = (size * len(self.input_storage))(*(b.nbytes for b in self.input_storage))
         output_sizes = (size * len(self.outputs))(*(b.nbytes for b in self.outputs))
         check(self.library.RunModel(self.runtime, inputs, input_sizes, len(self.inputs),
                                     outputs, output_sizes, len(self.outputs)))
