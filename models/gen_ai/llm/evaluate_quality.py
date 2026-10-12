@@ -83,6 +83,9 @@ def evaluate(args):
     if blocks < 1 or tokens.numel() < length:
         raise ValueError("测试语料不足,不得重复填充语料.")
     excluded_tokens = tokens.numel() - length
+    if args.diagnostic_blocks:
+        blocks = min(blocks, args.diagnostic_blocks)
+        length = blocks * 128
     tokens = tokens[:, :length].contiguous()
     protocol = {
         "scope": "host_wikitext2_fixed_text_not_full_board_accuracy",
@@ -100,6 +103,9 @@ def evaluate(args):
         "native_prepare_sha256": sha256(args.model.parent / "native_prepare.json"),
     }
     args.output.mkdir(parents=True, exist_ok=True)
+    if args.diagnostic_blocks:
+        protocol["scope"] = "logits_diagnostic_prefix_not_full_accuracy"
+        protocol["diagnostic_blocks"] = blocks
     if args.backend == "pytorch":
         if args.device == "cpu":
             torch.set_num_threads(args.cpu_threads)
@@ -126,6 +132,9 @@ def evaluate(args):
             for index in range(blocks):
                 ids = tokens[:, index * 128:(index + 1) * 128].to(args.device)
                 logits = model(ids, use_cache=False).logits[:, :-1].float()
+                if args.diagnostic_blocks:
+                    np.save(args.output / f"pytorch_logits_{index:03d}.npy",
+                            logits[0].cpu().numpy())
                 loss = torch.nn.functional.cross_entropy(
                     logits.reshape(-1, logits.shape[-1]), ids[:, 1:].reshape(-1),
                     reduction="sum")
@@ -207,7 +216,11 @@ def main():
     parser.add_argument("--skip-demo", action="store_true")
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cuda")
     parser.add_argument("--cpu-threads", type=int, default=8)
+    parser.add_argument("--diagnostic-blocks", type=int, default=0,
+                        help="仅执行前 N 个固定文本块并保存逐位置 FP32 logits.")
     args = parser.parse_args()
+    if args.diagnostic_blocks < 0:
+        parser.error("诊断块数不能为负数.")
     if args.backend in ("tflite", "prepare_board") and args.tflite is None:
         parser.error("量化后端需要 --tflite.")
     evaluate(args)

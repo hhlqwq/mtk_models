@@ -111,6 +111,9 @@ def evaluate(args):
             contract["outputs"][0]["shape"] != [1, 128, len(embedding)]:
         raise ValueError("图的 embedding 或词表 logits 接口不符.")
     token_blocks = np.array(report["input_ids"], dtype=np.int64).reshape(-1, 128)
+    if args.diagnostic_blocks:
+        token_blocks = token_blocks[:args.diagnostic_blocks]
+    args.output.mkdir(parents=True, exist_ok=True)
     model = HardwareModel(args.library, model_path, contract)
     sdk_inputs = np.load(inputs_path)
     for index, item in enumerate(contract["inputs"]):
@@ -126,6 +129,9 @@ def evaluate(args):
             raw = model.run()[0][0, :-1, :]
             inference_seconds = time.perf_counter() - tick
             logits = (raw.astype(np.float64) - output_spec["zero_point"]) * output_spec["scale"]
+            if args.diagnostic_blocks:
+                np.save(args.output / f"npu_logits_{index:03d}.npy",
+                        logits.astype(np.float32))
             maximum = logits.max(axis=-1)
             normalizer = maximum + np.log(np.exp(logits - maximum[:, None]).sum(axis=-1))
             nll = normalizer - logits[np.arange(127), tokens[1:]]
@@ -143,6 +149,11 @@ def evaluate(args):
                   elapsed_seconds=time.perf_counter() - started, block_timings=rows,
                   dla_sha256=sha256(model_path), embedding_sha256=sha256(embedding_path),
                   bridge_sha256=sha256(args.library), cpu_fallback=False)
+    if args.diagnostic_blocks:
+        result.update(scope="logits_diagnostic_prefix_not_full_accuracy",
+                      blocks=len(token_blocks), scored_tokens=len(nll_values),
+                      input_ids=token_blocks.reshape(-1).tolist(),
+                      diagnostic_blocks=len(token_blocks))
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "npu_quality.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n")
@@ -156,7 +167,12 @@ def main():
     parser.add_argument("--quality-data", type=Path, required=True)
     parser.add_argument("--library", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    evaluate(parser.parse_args())
+    parser.add_argument("--diagnostic-blocks", type=int, default=0,
+                        help="仅执行前 N 个块并保存逐位置硬件 logits.")
+    args = parser.parse_args()
+    if args.diagnostic_blocks < 0:
+        parser.error("诊断块数不能为负数.")
+    evaluate(args)
 
 
 if __name__ == "__main__":

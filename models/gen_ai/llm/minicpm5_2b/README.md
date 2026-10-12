@@ -130,3 +130,7 @@ Prefill token/s = 实际输入 Token 数 / 原生 Prompt 阶段耗时,不是 128
 
 包含两个 DLA、tokenizer、运行脚本、来源与文件哈希、原始双语日志和统一质量报告.
 该包明确记录 quality_qualified=false,不得作为质量验收通过版本.
+
+2026-10-12 继续精度定位: 使用共享 compare_logits.py 对统一文本前 4 个块的全部 127 个预测位置做三后端 logits 对比.
+记录余弦、去均值余弦、RMSE、MAE、Top1 一致率与 KL.原始 INT16 输入与实际输出哈希用于核对.
+该诊断仅覆盖 Prefill 图,不能宣称 Decode 或完整精度验收通过.结果待实际运行.
