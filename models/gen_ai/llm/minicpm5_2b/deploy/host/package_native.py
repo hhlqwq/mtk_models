@@ -187,7 +187,8 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
         if not all(math.isfinite(value) and value > 0 for value in (float_ppl, quant_ppl)):
             raise ValueError("质量报告包含非法 PPL.")
         quality = {"protocol": reference["protocol"], "scope": reference["scope"],
-                   "fp32_perplexity": float_ppl, "w4a16_perplexity": quant_ppl,
+                   "fp32_perplexity": float_ppl, "quantized_perplexity": quant_ppl,
+                   "precision": precision,
                    "relative_ppl_increase_percent": (quant_ppl / float_ppl - 1) * 100,
                    "board_npu_accuracy_verified": False}
         folder = output / "results/quality"
@@ -307,7 +308,9 @@ def record_board_results(work, output, results):
             "relative_to_fp32_percent":
                 (npu["perplexity"] / reference["perplexity"] - 1) * 100,
             "relative_to_host_tflite_percent":
-                (npu["perplexity"] / metrics["host_quality"]["w4a16_perplexity"] - 1) * 100,
+                (npu["perplexity"] / metrics["host_quality"].get(
+                    "quantized_perplexity",
+                    metrics["host_quality"].get("w4a16_perplexity")) - 1) * 100,
             "cpu_fallback": False,
         }
     # Prefill 使用总输入数与总耗时,Decode 对 CLI 速度做 Token 加权调和汇总.
@@ -360,7 +363,7 @@ def record_board_results(work, output, results):
     quality = manifest.get("host_quality")
     if quality is not None:
         readme += (f"\n同协议主机测试子集 PPL: FP32 {quality['fp32_perplexity']:.5f},"
-                   f"W4A16 {quality['w4a16_perplexity']:.5f},"
+                   f"{manifest['precision']} {quality.get('quantized_perplexity', quality.get('w4a16_perplexity')):.5f},"
                    f"相对变化 {quality['relative_ppl_increase_percent']:.2f}%.\n"
                    "原始质量报告见 `results/quality/`,该结果不代表完整基准或板端 NPU 精度.\n")
     if "npu_subset_quality" in metrics:

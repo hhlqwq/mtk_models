@@ -168,3 +168,5 @@ SDK 旋转输出目录带 _rotate_hadamard_0 后缀,Shape 与编译入口按相�
 TFLite→MDLA 平均余弦为 0.999674/0.999761,但量化误差仍明显; 4 块诊断 MDLA PPL 为 38.65030,不能与 58 块统一子集结果混用.
 下一轮采用已确认的混合方案: ATTENTION_PRECISION=sym8W_sym16A,MLP_PRECISION=asym4W_sym16A,TAIL_PRECISION=sym8W_sym16A,ROTATE_WEIGHTS=1.
 复用同配置已完成的校准数据,保留每款两个 DLA.量化成功后生成 quantization_settings.json,打包清单与板端结果记录真实混合精度.
+
+新质量报告统一使用 quantized_perplexity 字段和实际 precision,读取历史包仍兼容旧 W4 字段.
