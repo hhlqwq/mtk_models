@@ -123,3 +123,9 @@ Prefill token/s = 实际输入 Token 数 / 原生 Prompt 阶段耗时,不是 128
 原始耗时、输入计数与双语回答见 [板端汇总](results/native_summary.json).
 2026-10-12 新要求为总共两个 DLA.此前 W8A16 两分片提案会产生四个 DLA,
 与此要求不符,尚未执行,后续精度方案需要重新评估.
+
+当前试验交付归档:
+/data/users/hailong.he/nas_smb/Docs_Internal/知识库(钉钉同构)/算法工具链/模型部署/MTK/G720/TFLite/GenerativeAI/LLM/MiniCPM5-2B/minicpm5-2b
+
+包含两个 DLA、tokenizer、运行脚本、来源与文件哈希、原始双语日志和统一质量报告.
+该包明确记录 quality_qualified=false,不得作为质量验收通过版本.
