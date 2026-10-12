@@ -264,3 +264,5 @@ FP32→MDLA 平均余弦 0.823447,Top1 一致率 56.25%; TFLite→MDLA 平均余
 测试已执行使用 evaluated 标记,精度未验收使用 verified=false、quality_qualified=false,避免混淆.
 
 打包支持 --quantized-prefix 指定本次任务中带官方优化配置后缀的量化目录,仍要求独立空目录和两个 DLA.
+
+修复版静态 Prefill 图已确认 mask scale=0.30517578125,可表达 -10000; 输入准备会拒绝无法表达配置掩码的图,避免静默裁剪.

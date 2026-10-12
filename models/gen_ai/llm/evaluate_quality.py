@@ -56,6 +56,9 @@ def export_board_inputs(model, graph_path, output, decode_steps=0):
         entry = next(item for item in contract["inputs"] if item["name"] == name)
         if list(values.shape) != entry["shape"]:
             raise ValueError(f"SDK 输入形状不符: {name}")
+        if name == "mask" and np.any(
+                values / entry["scale"] + entry["zero_point"] < -32768.5):
+            raise ValueError("配置掩码超过实际 INT16 输入范围,不能裁剪后宣称修复生效.")
         arrays[name] = np.clip(np.rint(values / entry["scale"] + entry["zero_point"]),
                                -32768, 32767).astype("<i2")
     if decode_steps:
@@ -73,6 +76,9 @@ def export_board_inputs(model, graph_path, output, decode_steps=0):
                 entry = next(item for item in contract["inputs"] if item["name"] == name)
                 if list(data.shape) != entry["shape"]:
                     raise ValueError(f"Decode SDK 输入形状不符: {name}")
+                if name == "mask" and np.any(
+                        data / entry["scale"] + entry["zero_point"] < -32768.5):
+                    raise ValueError("Decode 配置掩码超过实际 INT16 输入范围.")
                 arrays[name].append(np.clip(np.rint(data / entry["scale"] + entry["zero_point"]),
                                             -32768, 32767).astype("<i2"))
         arrays = {name: np.stack(data) for name, data in arrays.items()}
