@@ -157,3 +157,6 @@ FP32→MDLA 平均余弦 0.947060,Top1 一致率 73.44%; TFLite→MDLA 平均余
 
 原生固定样例使用共享 evaluate_native.py,从各自交付清单读取停止 Token,避免两款模型 EOS 混用.
 新包包含独立 scripts/evaluate_native.py,运行日志与汇总性能保留在包内 results.
+
+新候选的统一性能可用 --performance-input 指定固定 128 个真实 Token,最多生成 128 Token.
+性能独立于双语功能样例,统一为一行 Prefill/Decode token/s,不使用填充位置冒充有效输入.

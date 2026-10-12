@@ -234,6 +234,21 @@ def record_board_results(work, output, results):
         "decode_aggregation": "generated_token_weighted_harmonic_mean_of_cli_rates",
         "scope": "fixed_demo_samples_not_full_benchmark",
     }
+    performance = metrics.get("performance")
+    if performance is not None:
+        if performance["returncode"] != 0 or performance["prefill_input_tokens"] != 128 or \
+                len(performance["generated_tokens"]) < 2 or \
+                performance["native_reported_decode_tokens_per_second"] <= 0 or \
+                sha256(results / "performance_demo.log") != performance["log_sha256"]:
+            raise ValueError("统一性能结果或原始日志不符.")
+        metrics["performance_summary"] = {
+            "unit": "token/s", "scope": performance["scope"],
+            "prefill_tokens_per_second": performance["prefill_tokens_per_second"],
+            "decode_tokens_per_second": performance["native_reported_decode_tokens_per_second"],
+            "prefill_input_tokens": 128, "prefill_seconds": performance["prefill_seconds"],
+            "generated_token_count": len(performance["generated_tokens"]),
+            "decode_aggregation": "native_cli_fixed_prompt",
+        }
     (output / "results/summary.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
     write_run_script(output)
@@ -246,7 +261,10 @@ def record_board_results(work, output, results):
     readme += "| Prefill token/s | Decode token/s |\n| ---: | ---: |\n"
     readme += (f"| {performance['prefill_tokens_per_second']:.4f} | "
                f"{performance['decode_tokens_per_second']:.4f} |\n")
-    readme += "Prefill 按总输入 Token/总 Prompt 耗时汇总; Decode 为 CLI 速度的生成 Token 加权调和平均.\n"
+    if metrics.get("performance") is not None:
+        readme += "固定 128 Token 输入,最多生成 128 Token; Decode 使用原生 CLI 计数,不按语言分组.\n"
+    else:
+        readme += "Prefill 按总输入 Token/总 Prompt 耗时汇总; Decode 为 CLI 速度的生成 Token 加权调和平均.\n"
     readme += "\n英文样例存在不自然的语法,原始日志与 Token 均保留,不能将本次结果视为正式精度达标.\n"
     readme += "Prefill 时间不包含加载和模型切换,不作为 TTFT; Runtime 速度按原生 CLI 的 Decode 计数.\n"
     (output / "README.md").write_text(readme)

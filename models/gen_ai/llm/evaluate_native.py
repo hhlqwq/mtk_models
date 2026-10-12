@@ -24,7 +24,8 @@ def response_body(text):
     return match.group(1).strip()
 
 
-def run_sample(root, folder, language, token_mode, limit):
+def run_sample(root, folder, language, token_mode, limit, input_path=None,
+               require_eos=True):
     """执行一个固定输入并采样进程峰值 RSS 和系统可用内存."""
     name = f"{language}_demo" if token_mode else f"{language}_text_input"
     log = folder / f"{name}.log"
@@ -32,7 +33,8 @@ def run_sample(root, folder, language, token_mode, limit):
     command = ["llm_cmdline_tool", "scripts/config-yocto.yaml"]
     if token_mode:
         command.append("--read-tokens")
-    command += ["-i", f"scripts/prompts/{language}_demo{suffix}", "-m", str(limit - 1)]
+    prompt_input = input_path or root / f"scripts/prompts/{language}_demo{suffix}"
+    command += ["-i", str(prompt_input.resolve()), "-m", str(limit - 1)]
     before = available_memory()
     lowest = before
     peak = 0.0
@@ -71,7 +73,7 @@ def run_sample(root, folder, language, token_mode, limit):
         row["eos_reached"] = row["generated_tokens"][-1] in stop_ids
         row["prefill_seconds"] = float(re.search(
             r"Done analyzing prompt in ([0-9.eE+-]+)s", text).group(1))
-        prompt_path = root / f"scripts/prompts/{language}_demo.tokens.txt"
+        prompt_path = prompt_input
         row["prefill_input_tokens"] = len(re.findall(r"\d+", prompt_path.read_text()))
         if row["prefill_seconds"] <= 0 or row["prefill_input_tokens"] == 0:
             raise ValueError("Prefill 输入数量或耗时无效.")
@@ -79,7 +81,7 @@ def run_sample(root, folder, language, token_mode, limit):
             row["prefill_input_tokens"] / row["prefill_seconds"])
         row["native_reported_decode_tokens_per_second"] = float(re.search(
             r"Generative Mode:\s*([0-9.eE+-]+) tok/s", text).group(1))
-        if not row["eos_reached"]:
+        if require_eos and not row["eos_reached"]:
             raise ValueError(f"样例未完成停止 Token: {name}")
     return row, response_body(text)
 
@@ -90,6 +92,8 @@ def main():
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--max-new-tokens", type=int, default=768)
+    parser.add_argument("--performance-input", type=Path,
+                        help="可选固定 128 Token 输入,单独记录统一性能指标.")
     args = parser.parse_args()
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.run_id) or args.max_new_tokens < 2:
         parser.error("运行编号或生成上限无效.")
@@ -108,6 +112,14 @@ def main():
         report["text_input_checks"].append(check)
         if text != token_text:
             raise ValueError(f"文本输入与 Token 输入输出不同: {language}")
+    if args.performance_input:
+        if len(re.findall(r"\d+", args.performance_input.read_text())) != 128:
+            raise ValueError("统一性能输入必须恰好为 128 个真实 Token.")
+        row, unused_text = run_sample(args.root, folder, "performance", True, 128,
+                                      args.performance_input, require_eos=False)
+        row.update(unit="token/s", scope="fixed_128_input_max_128_generated_performance",
+                   generated_token_count=len(row["generated_tokens"]))
+        report["performance"] = row
     (folder / "board_metrics.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     print(f"[板端证据完成] {folder}", flush=True)
