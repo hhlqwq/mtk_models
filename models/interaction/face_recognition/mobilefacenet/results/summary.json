@@ -13,5 +13,25 @@
   "reference_accuracy": 0.9938333333333333,
   "accuracy_loss_percentage_points": 0.06666666666667043,
   "accuracy_change_percentage_points": -0.06666666666667043,
-  "reference_source": "本次 ONNX 浮点全量实测,使用与板端相同的评测协议"
+  "reference_source": "本次 ONNX 浮点全量实测,使用与板端相同的评测协议",
+  "model_size": {
+    "unit": "MB",
+    "source_weights": null,
+    "fp32_onnx": null,
+    "quantized_tflite": null,
+    "compiled_dla": 1.41,
+    "auxiliary_weights": null,
+    "deployment_total": 1.41,
+    "files": [
+      {
+        "file": "model_int8.dla",
+        "size_mb": 1.41,
+        "role": "compiled_dla"
+      }
+    ],
+    "source": "board_file_stat",
+    "directory": "/root/hailong.he/open_models/mobilefacenet/models",
+    "collected_on": "2026-10-12",
+    "scope": "current_deployment_files_not_reverified_original_run"
+  }
 }

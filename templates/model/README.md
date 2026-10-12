@@ -26,6 +26,12 @@ bash run.sh
 
 待上传 `results/summary.json` 后更新.记录 ONNX 核心精度、板端核心精度、精度变化、NPU 平均耗时和峰值 RSS.
 
+新模型必须记录 `model_size`,大小单位为 MB (十进制),保留两位小数.随板端程序上传
+仓库 `tools/model_size.py`,生成汇总后用 `--models-dir` 指定模型目录,
+用一个或多个 `--include` 选定本次实际部署文件,用 `--summary` 指定汇总文件.
+该入口只读取文件大小,不执行模型或评测; 多个 DLA 与外置 embedding 分项记录并合计,
+不扫描历史副本和评测输入输出.缺失或空的声明文件直接报错.
+
 ## 板端部署结构
 
 部署目录统一保留 `run.sh`、`board_paths.conf`、`models/`、`board/` 和测试结果.全量测试成功后保留 `BOARD_RESULTS_DIR/<运行编号>/summary.json` 及少量效果示例.

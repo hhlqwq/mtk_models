@@ -50,6 +50,9 @@ fi
 if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     source "${SCRIPT_DIR}/board_paths.conf"
     # 模型与参数位于 models/,板端程序与评测代码位于 board/.
+    # 新模型须上传 tools/model_size.py,在生成 summary.json 后记录文件大小.
+    # python3 "${SCRIPT_DIR}/board/model_size.py" --models-dir "${SCRIPT_DIR}/models" \
+    #     --include "本次使用的模型.dla" --summary "${RESULT_DIR}/summary.json"
     echo "[TODO] 在开发板执行模型测试,成功后仅保留 summary.json."
     exit 2
 fi

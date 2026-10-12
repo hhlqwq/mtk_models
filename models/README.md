@@ -36,6 +36,15 @@ Whisper 参数量统计原始完整网络,encoder / decoder 文件大小分别�
 
 根据已回收的各模型板端 `results/summary.json` 更新。参考基准必须与板端模型及评测协议匹配; 未上传结果的模型不预填数字。
 
+每个已部署模型的汇总必须保留 `model_size`,单位为 MB (十进制),保留两位小数.
+`compiled_dla` 为本次使用的 DLA 文件合计,`auxiliary_weights` 为外置 embedding,
+`deployment_total` 为二者合计,`files` 保存文件明细.Whisper 的 encoder/decoder、
+LLM 的全部实际使用分片须合计,不包含历史副本、评测输入输出或运行时 RSS.
+`source_weights`、`fp32_onnx`、`quantized_tflite` 没有实际文件时为 `null`.
+现有大小记录直接取自板端现存文件,没有重新执行推理或评测; 采集日期与原评测运行编号分别保留.
+原生 LLM 大小同时保存在 `native_summary.json`,与 FP16 部署分开记录.
+后续部署脚本通过 `tools/model_size.py` 自动补充大小,新模型须按模板接入该入口.
+
 | 模型 | 板端 NPU 平均耗时 (ms) | 峰值 RSS (MiB) | 核心精度 | 精度变化 (百分点) |
 | --- | ---: | ---: | --- | ---: |
 | [DeepSeek FP16](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md) | **220.11/Token** | **148.10** | 自编双语 26 Token 的 PPL **145.05**,非正式精度 | 不适用 |

@@ -127,3 +127,7 @@ models/audio/ambient_sound/yamnet/models/yamnet_class_map.csv
 
 # 保留本次双语 LLM 的真实板端和原始框架文本输出.
 !models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/examples/output/*.txt
+
+# 对内文档
+docs/MTK_models.xlsx
+docs/~$MTK_models.xlsx

@@ -1280,5 +1280,215 @@
   "dla_count": 38,
   "context": 1024,
   "mean_npu_ms_per_token": 220.11422999155153,
-  "numerical_check_passed": true
+  "numerical_check_passed": true,
+  "model_size": {
+    "unit": "MB",
+    "source_weights": null,
+    "fp32_onnx": null,
+    "quantized_tflite": null,
+    "compiled_dla": 3089.46,
+    "auxiliary_weights": 466.75,
+    "deployment_total": 3556.21,
+    "files": [
+      {
+        "file": "embedding_fp16.bin",
+        "size_mb": 466.75,
+        "role": "auxiliary_weights"
+      },
+      {
+        "file": "head_00.dla",
+        "size_mb": 50.35,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "head_01.dla",
+        "size_mb": 50.35,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "head_02.dla",
+        "size_mb": 50.35,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "head_03.dla",
+        "size_mb": 50.35,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "head_04.dla",
+        "size_mb": 50.35,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "head_05.dla",
+        "size_mb": 50.35,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "head_06.dla",
+        "size_mb": 50.35,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "head_07.dla",
+        "size_mb": 50.35,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "head_08.dla",
+        "size_mb": 50.35,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "head_09.dla",
+        "size_mb": 13.78,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_00.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_01.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_02.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_03.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_04.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_05.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_06.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_07.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_08.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_09.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_10.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_11.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_12.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_13.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_14.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_15.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_16.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_17.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_18.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_19.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_20.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_21.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_22.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_23.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_24.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_25.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_26.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "layer_27.dla",
+        "size_mb": 93.66,
+        "role": "compiled_dla"
+      }
+    ],
+    "source": "board_file_stat",
+    "directory": "/root/hailong.he/open_models/deepseek_r1_distill_qwen_1_5b/models",
+    "collected_on": "2026-10-12",
+    "scope": "current_deployment_files_not_reverified_original_run"
+  }
 }

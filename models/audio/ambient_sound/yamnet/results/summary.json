@@ -1068,5 +1068,25 @@
       "tail16": "810b476ec61df9c83e8e099ecbe4eef1b8e01385525a5e34dfecec7772f929df",
       "w8a16": "04692e6ec7cec50b8680aa36231699706f41ebd3948497ddc2d75b2f31238caf"
     }
+  },
+  "model_size": {
+    "unit": "MB",
+    "source_weights": null,
+    "fp32_onnx": null,
+    "quantized_tflite": null,
+    "compiled_dla": 3.99,
+    "auxiliary_weights": null,
+    "deployment_total": 3.99,
+    "files": [
+      {
+        "file": "model_w8a16.dla",
+        "size_mb": 3.99,
+        "role": "compiled_dla"
+      }
+    ],
+    "source": "board_file_stat",
+    "directory": "/root/hailong.he/open_models/yamnet/models",
+    "collected_on": "2026-10-12",
+    "scope": "current_deployment_files_not_reverified_original_run"
   }
 }

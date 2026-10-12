@@ -50,6 +50,10 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         --samples "${SCRIPT_DIR}/models/samples.json" \
         --output "${BOARD_RESULTS_DIR}/${RUN_ID}" --run-id "${RUN_ID}"
     echo "[回收] ${BOARD_RESULTS_DIR}/${RUN_ID}; 使用编译主机 summarize.py 汇总."
+    # 只读取实际部署文件大小,以 MB 补充汇总.
+    python3 "${SCRIPT_DIR}/board/model_size.py" \
+        --models-dir "${SCRIPT_DIR}/models" --include "*.dla" --include "embedding_fp16.bin" \
+        --summary "${BOARD_RESULTS_DIR}/${RUN_ID}/board_summary.json"
     exit 0
 fi
 
@@ -113,4 +117,8 @@ scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR
 printf 'BOARD_RESULTS_DIR=%q\n' "${BOARD_RESULTS_DIR}" | \
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
 echo "[下一步] 在板端执行: bash '${BOARD_DEPLOY_DIR}/run.sh'"
+# 上传统一大小记录工具,后续汇总自动保留模型大小.
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/model_size.py"
+
 echo "[汇总] 取回结果后在 Docker 执行: ${LLM_PYTHON} '${SCRIPT_DIR}/host/summarize.py' --source '${MODEL_SOURCE}' --models '${MODEL_OUTPUT_DIR}' --results '<已回收结果目录>'"

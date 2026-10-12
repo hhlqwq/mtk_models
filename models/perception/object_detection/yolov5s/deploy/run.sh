@@ -135,6 +135,10 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     test -s "${RESULT_DIR}/summary.json"
     rm -rf -- "${RUN_DIR}"
     echo "[OK] 全量测试结果: ${RESULT_DIR}/summary.json"
+    # 只读取实际部署文件大小,以 MB 补充汇总.
+    python3 "${SCRIPT_DIR}/board/model_size.py" \
+        --models-dir "${SCRIPT_DIR}/models" --include "model_int8.dla" \
+        --summary "${RESULT_DIR}/summary.json"
     exit 0
 fi
 
@@ -337,4 +341,8 @@ printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nFP32_MAP=%q\nFP32_BASELINE_S
         "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
 echo "[OK] DLA: ${OUTPUT_DLA}"
 echo "[OK] 板端文件: ${BOARD_HOST}:${BOARD_DEPLOY_DIR}"
+# 上传统一大小记录工具,后续汇总自动保留模型大小.
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/model_size.py"
+
 echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

@@ -36,6 +36,10 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     sha256sum "${SCRIPT_DIR}/models/"* "${SCRIPT_DIR}/board/yamnet_eval" > "${RESULT_DIR}/SHA256SUMS"
     uname -a > "${RESULT_DIR}/system.txt"
     echo "[OK] 板端汇总: ${RESULT_DIR}/summary.json"
+    # 只读取实际部署文件大小,以 MB 补充汇总.
+    python3 "${SCRIPT_DIR}/board/model_size.py" \
+        --models-dir "${SCRIPT_DIR}/models" --include "model_${BOARD_PRECISION}.dla" \
+        --summary "${RESULT_DIR}/summary.json"
     exit 0
 fi
 
@@ -129,4 +133,8 @@ printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nBOARD_PRECISION=%q\n' \
     "${BOARD_DATASET_DIR}" "${BOARD_DEPLOY_DIR}/results" "${PRECISION}" |
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
 ssh -n "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/yamnet_eval'"
+# 上传统一大小记录工具,后续汇总自动保留模型大小.
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/model_size.py"
+
 echo "[NEXT] 开发板执行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

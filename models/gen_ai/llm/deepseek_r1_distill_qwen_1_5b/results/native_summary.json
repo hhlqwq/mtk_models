@@ -993,5 +993,35 @@
   "qualitative_observations": [
     "英文样例出现不自然的语法,正式量化质量尚未验收."
   ],
-  "memory_scope": "process_vm_hwm_and_sampled_system_memavailable"
+  "memory_scope": "process_vm_hwm_and_sampled_system_memavailable",
+  "model_size": {
+    "unit": "MB",
+    "source_weights": null,
+    "fp32_onnx": null,
+    "quantized_tflite": null,
+    "compiled_dla": 1570.21,
+    "auxiliary_weights": 466.75,
+    "deployment_total": 2036.96,
+    "files": [
+      {
+        "file": "1024c/decode.dla",
+        "size_mb": 784.52,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "1024c/prompt.dla",
+        "size_mb": 785.7,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "tokenizer/embedding_int16.bin",
+        "size_mb": 466.75,
+        "role": "auxiliary_weights"
+      }
+    ],
+    "source": "board_file_stat",
+    "directory": "/root/hailong.he/open_models/deepseek_r1_distill_qwen_1_5b_native",
+    "collected_on": "2026-10-12",
+    "scope": "current_deployment_files_not_reverified_original_run"
+  }
 }

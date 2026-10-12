@@ -6,6 +6,8 @@ import math
 from pathlib import Path
 import re
 import shutil
+import subprocess
+import sys
 
 import yaml
 
@@ -275,6 +277,13 @@ def record_board_results(work, output, results):
             "generated_token_count": len(performance["generated_tokens"]),
             "decode_aggregation": "native_cli_fixed_prompt",
         }
+    # 只统计交付目录中的文件,不执行模型或重复质量评测.
+    metrics["model_size"] = json.loads(subprocess.check_output(
+        [sys.executable, str(Path(__file__).resolve().parents[6] /
+                              "tools/model_size.py"),
+         "--models-dir", str(output), "--include", "1024c/*.dla",
+         "--include", "tokenizer/embedding*.bin",
+         "--source", "package_file_stat"], text=True))
     (output / "results/summary.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
     write_run_script(output)

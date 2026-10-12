@@ -13,5 +13,30 @@
   "reference_accuracy": 0.07558413638335187,
   "accuracy_loss_percentage_points": 0.0018858317460915264,
   "accuracy_change_percentage_points": -0.0018858317460915264,
-  "reference_source": "本次 ONNX 浮点全量实测,使用与板端相同的评测协议"
+  "reference_source": "本次 ONNX 浮点全量实测,使用与板端相同的评测协议",
+  "model_size": {
+    "unit": "MB",
+    "source_weights": null,
+    "fp32_onnx": null,
+    "quantized_tflite": null,
+    "compiled_dla": 116.03,
+    "auxiliary_weights": null,
+    "deployment_total": 116.03,
+    "files": [
+      {
+        "file": "decoder_step_fp32.dla",
+        "size_mb": 99.43,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "encoder_fp32.dla",
+        "size_mb": 16.6,
+        "role": "compiled_dla"
+      }
+    ],
+    "source": "board_file_stat",
+    "directory": "/root/hailong.he/open_models/whisper_tiny/models",
+    "collected_on": "2026-10-12",
+    "scope": "current_deployment_files_not_reverified_original_run"
+  }
 }

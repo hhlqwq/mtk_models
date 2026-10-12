@@ -1,0 +1,66 @@
+{
+  "model": "minicpm5_2b",
+  "run_id": "20261010_minicpm5_w4a16_v2",
+  "scope": "authored_bilingual_smoke_not_formal_accuracy",
+  "status": "board_verified",
+  "precision": "asym4W_sym16A",
+  "prefill": 128,
+  "context": 1024,
+  "formal_accuracy_evaluated": false,
+  "memory_scope": "process_vm_hwm_and_sampled_system_memavailable",
+  "host_quality": {
+    "protocol": "fixed_text_rows_v1",
+    "scope": "host_wikitext2_fixed_text_not_full_board_accuracy",
+    "fp32_perplexity": 40.04114532470703,
+    "w4a16_perplexity": 57.29071807861328,
+    "relative_ppl_increase_percent": 43.07961876220996,
+    "board_npu_accuracy_verified": false
+  },
+  "npu_subset_quality": {
+    "protocol": "fixed_text_rows_v1",
+    "scope": "board_fixed_text_subset_not_full_benchmark",
+    "perplexity": 61.56528823119786,
+    "relative_to_fp32_percent": 53.75506302815356,
+    "relative_to_host_tflite_percent": 7.461191438932735,
+    "cpu_fallback": false
+  },
+  "performance_summary": {
+    "unit": "token/s",
+    "prefill_tokens_per_second": 38.122940765527716,
+    "decode_tokens_per_second": 11.629578658230246,
+    "prefill_input_tokens": 40,
+    "prefill_seconds": 1.049237,
+    "decode_aggregation": "generated_token_weighted_harmonic_mean_of_cli_rates",
+    "scope": "fixed_demo_samples_not_full_benchmark"
+  },
+  "model_size": {
+    "unit": "MB",
+    "source_weights": null,
+    "fp32_onnx": null,
+    "quantized_tflite": null,
+    "compiled_dla": 2280.54,
+    "auxiliary_weights": 534.77,
+    "deployment_total": 2815.31,
+    "files": [
+      {
+        "file": "1024c/decode.dla",
+        "size_mb": 1139.02,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "1024c/prompt.dla",
+        "size_mb": 1141.52,
+        "role": "compiled_dla"
+      },
+      {
+        "file": "tokenizer/embedding_int16.bin",
+        "size_mb": 534.77,
+        "role": "auxiliary_weights"
+      }
+    ],
+    "source": "board_file_stat",
+    "directory": "/root/hailong.he/open_models/minicpm5_2b_native",
+    "collected_on": "2026-10-12",
+    "scope": "current_deployment_files_not_reverified_original_run"
+  }
+}
