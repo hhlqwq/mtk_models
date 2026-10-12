@@ -169,6 +169,8 @@ def evaluate(args):
                 if args.diagnostic_blocks:
                     np.save(args.output / f"pytorch_logits_{index:03d}.npy",
                             logits[0].cpu().numpy())
+                    np.save(args.output / f"pytorch_prefill_last_logits_{index:03d}.npy",
+                            all_logits[0, 127:128].cpu().numpy())
                 if args.decode_steps:
                     np.save(args.output / f"pytorch_decode_logits_{index:03d}.npy",
                             all_logits[0, 128:].cpu().numpy())

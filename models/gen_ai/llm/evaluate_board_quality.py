@@ -185,12 +185,15 @@ def evaluate(args):
         for index, tokens in enumerate(token_blocks):
             np.copyto(model.inputs[0], embedding[tokens][None, :, :])
             tick = time.perf_counter()
-            raw = model.run()[0][0, :-1, :]
+            all_raw = model.run()[0][0]
+            raw = all_raw[:-1]
             inference_seconds = time.perf_counter() - tick
             logits = (raw.astype(np.float64) - output_spec["zero_point"]) * output_spec["scale"]
             if args.diagnostic_blocks:
                 np.save(args.output / f"npu_logits_{index:03d}.npy",
                         logits.astype(np.float32))
+                last = (all_raw[-1:].astype(np.float32) - output_spec["zero_point"]) * output_spec["scale"]
+                np.save(args.output / f"npu_prefill_last_logits_{index:03d}.npy", last)
             maximum = logits.max(axis=-1)
             normalizer = maximum + np.log(np.exp(logits - maximum[:, None]).sum(axis=-1))
             nll = normalizer - logits[np.arange(127), tokens[1:]]

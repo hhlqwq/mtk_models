@@ -66,6 +66,8 @@ def export_tflite(args):
             raw = raw.detach().cpu().numpy()
         values = (np.asarray(raw)[0, :-1].astype(np.float32) - spec["zero_point"]) * spec["scale"]
         np.save(args.output / f"tflite_logits_{index:03d}.npy", values)
+        last = (np.asarray(raw)[0, -1:].astype(np.float32) - spec["zero_point"]) * spec["scale"]
+        np.save(args.output / f"tflite_prefill_last_logits_{index:03d}.npy", last)
         if args.decode_steps:
             raw_outputs = raw_output_list(outputs, contract)
             transfer_cache(contract, raw_outputs, decode_contract, decode_inputs)
@@ -142,6 +144,22 @@ def compare_pair(reference, candidate):
             "kl_reference_candidate": (np.exp(log_left) * (log_left - log_right)).sum(axis=-1).tolist()}
 
 
+def summarize_pairs(pairs):
+    """汇总逐位置误差,可复用到完整 Prefill 和最后一个输出位置."""
+    summary = {}
+    for name, rows in pairs.items():
+        merged = {key: np.concatenate([np.array(row[key]) for row in rows]) for key in rows[0]}
+        summary[name] = {"cosine_mean": float(merged["cosine"].mean()),
+                         "cosine_min": float(merged["cosine"].min()),
+                         "centered_cosine_mean": float(merged["centered_cosine"].mean()),
+                         "rmse": float(np.sqrt(merged["mse"].mean())),
+                         "mae": float(merged["mae"].mean()),
+                         "max_abs_error": float(merged["max_abs_error"].max()),
+                         "top1_agreement": float(merged["top1_equal"].mean()),
+                         "kl_mean": float(merged["kl_reference_candidate"].mean())}
+    return summary
+
+
 def summarize(args):
     """核对相同 Token 与文件哈希,生成三个后端的配对诊断报告."""
     folders = {"pytorch": args.reference, "tflite": args.tflite, "npu": args.npu}
@@ -172,23 +190,34 @@ def summarize(args):
             left, right = name.split("_")
             pairs[name].append(compare_pair(values[left], values[right]))
         print(f"[logits 对比] {index + 1}/{blocks}", flush=True)
-    summary = {}
-    for name, rows in pairs.items():
-        merged = {key: np.concatenate([np.array(row[key]) for row in rows]) for key in rows[0]}
-        summary[name] = {"cosine_mean": float(merged["cosine"].mean()),
-                         "cosine_min": float(merged["cosine"].min()),
-                         "centered_cosine_mean": float(merged["centered_cosine"].mean()),
-                         "rmse": float(np.sqrt(merged["mse"].mean())),
-                         "mae": float(merged["mae"].mean()),
-                         "max_abs_error": float(merged["max_abs_error"].max()),
-                         "top1_agreement": float(merged["top1_equal"].mean()),
-                         "kl_mean": float(merged["kl_reference_candidate"].mean())}
+    summary = summarize_pairs(pairs)
     result = {"scope": "prefill_logits_diagnostic_prefix_not_full_accuracy",
               "blocks": blocks, "positions": blocks * 127, "input_ids": ids,
               "decode_accuracy_verified": False, "quality_qualified": False,
               "status": "diagnostic_evaluated_quality_not_qualified",
               "threshold": "not_assigned_no_pass_claim", "summary": summary,
               "details": pairs, "files": files}
+    if not args.decode_steps:
+        last_paths = {name: [path / f"{name}_prefill_last_logits_{index:03d}.npy"
+                            for index in range(blocks)] for name, path in folders.items()}
+        available = [path.exists() for paths in last_paths.values() for path in paths]
+        if any(available) and not all(available):
+            raise ValueError("Prefill 最后一行的三个后端证据不完整.")
+        if all(available):
+            last_pairs = {name: [] for name in pairs}
+            for index in range(blocks):
+                values = {name: np.load(paths[index]) for name, paths in last_paths.items()}
+                for name in last_pairs:
+                    left, right = name.split("_")
+                    last_pairs[name].append(compare_pair(values[left], values[right]))
+                for name, paths in last_paths.items():
+                    files.append({"backend": name, "block": index,
+                                  "stage": "prefill_last", "sha256": sha256(paths[index])})
+            complete = {name: pairs[name] + last_pairs[name] for name in pairs}
+            result.update(prefill_last_token_summary=summarize_pairs(last_pairs),
+                          prefill_complete_output_summary=summarize_pairs(complete),
+                          prefill_total_output_positions=blocks * 128,
+                          prefill_last_positions=blocks)
     if args.decode_steps:
         result.update(scope="decode_teacher_forcing_diagnostic_not_full_accuracy",
                       positions=blocks * args.decode_steps, decode_input_ids=sequences,
