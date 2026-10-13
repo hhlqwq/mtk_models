@@ -163,5 +163,18 @@
       "raw_report_path": "/tmp/hailongcodex/2026-10-12/minicpm5_rotation_validation_v3/comparison/decode_logits_comparison.json",
       "raw_report_sha256": "95496bd0a0b75e6396e8329071f2b6e0113bc3eaa830473de26ba3e6ba921581"
     }
-  }
+  },
+  "current_sdk_float_conversion": {
+    "positions": 508,
+    "fp32_sdk_float_cosine_mean": 0.9999999999994823,
+    "cosine_min": 0.9999999999883957,
+    "max_abs_error": 6.866455078125e-05,
+    "sdk_float_prefix_ppl": 33.08759307861328,
+    "scope": "four_blocks_508_positions_not_formal_accuracy",
+    "mask_value": -100,
+    "raw_report_sha256": "81e4cbc251126a88921e224843d2f4f1a1148e0d78ee636dc9aacfff3de81437",
+    "raw_report_path": "/tmp/hailongcodex/2026-10-13/sdk_float_stage_comparison.json",
+    "finding": "official_fp32_and_sdk_float_match_on_tested_positions"
+  },
+  "next_diagnostic": "check_actual_a16_interface_clipping_then_quantized_projection_error_and_calibration_domain"
 }

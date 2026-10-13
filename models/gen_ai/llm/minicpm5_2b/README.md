@@ -64,3 +64,5 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 首轮 WikiText 评价使用 `evaluate_quality.py --text-rows 128`,继续采用 128 Token 分块、重置上下文、每块评分 127 次下一 Token 的共同协议,记录不足一块的末尾 Token;首轮明确标为固定前 128 行子集,四块诊断不代替首轮结果;后续完整测试才使用 `--full-test`.余弦仅作为误差诊断,不代替上述正式指标.当前尚无新候选的首轮 MMLU/WikiText 结果.
 
 首轮 MMLU 通过 `--limit 1000 --seed 17` 按学科题数比例分层抽样,固定原测试集题目索引并由两个模型共享.结果明确标为首轮子集,不得冒充完整 MMLU Accuracy;后续 `--limit 0` 才执行完整题集.
+
+当前 4 块、508 个预测位置的官方 FP32 -> SDK 浮点平均余弦为 0.999999999999,最大 logits 差为 0.00006866.该诊断支持当前浮点转换一致,不代表首轮 Accuracy/PPL 或量化精度通过.后续核对逐层 A16 接口裁剪和权重量化误差.
