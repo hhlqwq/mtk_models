@@ -220,3 +220,17 @@ DeepSeek-R1-Distill-Qwen-1.5B 为 118.70850/193.93135/205.99682.
 
 已确认下一轮使用 DeepSeek 全 W8A16; MiniCPM5 使用 Attention/LM Head W8A16、MLP W4A16,保留 Hadamard 旋转.每款仍只交付 Prefill/Decode 两个 DLA.
 原生入口通过 ATTENTION_PRECISION、MLP_PRECISION、TAIL_PRECISION 指定设置,量化成功后记录精度,打包与板端结果从该记录读取,避免误标为 W4.
+
+### LLM 公共工具
+
+两款 LLM 的公共校准、W4A16 量化、精度诊断和板端评测脚本统一位于 `tools/llm/`.模型目录保存各自配置、适配、部署入口与结果;调用方式和精度修复状态见各模型 README.参数量面向阅读使用 B/亿单位,精确值保留在机器可读配置中.
+
+| 脚本 (`tools/llm/`) | 用途 | 执行位置 |
+|---|---|---|
+| `prepare_calibration.py` | 准备并记录固定校准样本 | 编译服务器 |
+| `quantize_native.py` | 调用官方 W4A16 量化并核对实际位宽 | 编译服务器 |
+| `evaluate_quality.py` | FP32/TFLite WikiText PPL,准备板端输入 | 编译服务器 |
+| `compare_logits.py` | 对比 FP32/TFLite/NPU 输出误差 | 编译服务器 |
+| `evaluate_mmlu.py` | 准备统一题目并计算 MMLU Accuracy | 服务器或开发板,按子命令选择 |
+| `evaluate_board_quality.py` | MDLA WikiText PPL 与输出诊断 | 开发板 |
+| `evaluate_native.py` | 原生运行工具的输出与 token/s 测试 | 开发板 |

@@ -99,7 +99,7 @@ if [[ "${STAGE}" == all || "${STAGE}" == quantize ]]; then
     if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then
         quantize_options=(--extra_converter_options "${WEIGHT_OPT_CONFIG}")
     fi
-    run_python "${SCRIPT_DIR}/../../quantize_native.py" converter "${MODEL}/config.json" \
+    run_python "${SCRIPT_DIR}/../../../../../tools/llm/quantize_native.py" converter "${MODEL}/config.json" \
         -p "${precision_options[@]}" -tp "${TAIL_PRECISION}" -d "${WORK}/calibration_datasets/MiniCPM5-2B" \
         -m Overall -w hessian "${quantize_options[@]}" \
         2>&1 | tee "${WORK}/logs/quantization.log"

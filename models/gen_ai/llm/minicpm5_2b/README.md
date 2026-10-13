@@ -2,7 +2,7 @@
 
 官方来源: [MiniCPM5-2B](https://huggingface.co/openbmb/MiniCPM5-2B),固定 revision `f97400052a43d642bbc6e9975e2397e3ae6a6b52`.
 转换输入为官方权重,其他 Model Zoo 仅作选型及交付结构参考.
-42 层,hidden=2048,Q/KV Head=16/2,RoPE=5000000,参数量 2,516,756,480.
+42 层,hidden=2048,Q/KV Head=16/2,RoPE=5000000,参数量约 2.52B (25.2 亿).
 
 ## 当前配置与状态
 
@@ -22,11 +22,11 @@ Hadamard 权重旋转 seed=0,注意力 mask=-100;只修改独立转换副本.
 设置 `NATIVE_WORK` 为独立候选目录,`MASK_VALUE=-100`,`ROTATE_WEIGHTS=1`,
 `CALIBRATION_BATCHES=128`;使用官方累计层误差优化 JSON 的 `WEIGHT_OPT_CONFIG`.
 
-`prepare` 后调用共享 `../prepare_calibration.py`,按 seed=17 从已校验的 WikiText2
+`prepare` 后调用共享 `../../../../tools/llm/prepare_calibration.py`,按 seed=17 从已校验的 WikiText2
 train 固定采样 64 段各 512 Token,保留短对话.记录来源哈希、采样位置和输入哈希,
 并使旧校准完成标记失效.测试集不参与校准.
 量化采用 Hessian 与累计层误差优化;每阶段保存日志,失败即停止.
-共享 `../quantize_native.py` 传播官方 SDK 异常,不修改安装文件.
+共享 `../../../../tools/llm/quantize_native.py` 传播官方 SDK 异常,不修改安装文件.
 量化后逐层核对实际权重配置并生成 `weight_precision_audit.json`.
 
 `deploy/host/package_native.py` 要求独立空输出目录,核对权重精度和实际分片数量,
@@ -44,7 +44,7 @@ train 固定采样 64 段各 512 Token,保留短对话.记录来源哈希、采�
 统一评价采用 WikiText2 test 前 128 行原始文本,不额外加入特殊 Token,
 每块 128 Token、重置上下文、评分 127 次下一 Token,舍弃并记录不足一块的尾部.
 当前官方 FP32 子集 PPL=40.04115;不同模型只比较自身的相对退化.
-共享评价入口为 `../evaluate_quality.py`、`../evaluate_board_quality.py`、`../compare_logits.py`.
+共享评价入口为 `../../../../tools/llm/evaluate_quality.py`、`../../../../tools/llm/evaluate_board_quality.py`、`../../../../tools/llm/compare_logits.py`.
 诊断覆盖四块完整 Prefill 共 512 个输出位置及 Decode 共 64 个后续位置,
 单独报告决定首个生成 Token 的 Prefill 最后一行.
 Decode mask 的 Runtime 尾部对齐按实际契约补齐,其他输入输出大小严格核对.
@@ -57,7 +57,7 @@ MiniCPM5 独立 tokenizer 副本仅转换 BPE merges 序列化格式.校准配�
 
 ## 正式精度指标
 
-首轮结果采用 MMLU 0-shot 固定 1000 题、覆盖 57 学科的 Accuracy,以及 WikiText-2 test 前 128 行的 PPL.共享 `../evaluate_mmlu.py` 固定题目提示、不加入 Chat Template 或额外特殊 Token,使用空格加 A/B/C/D 的单 Token 选项 logits 评分;记录每题分数、答案、预测和完整题数,不得截断或丢题.若输入超过上下文,必须先调整上下文再执行完整测试.
+首轮结果采用 MMLU 0-shot 固定 1000 题、覆盖 57 学科的 Accuracy,以及 WikiText-2 test 前 128 行的 PPL.共享 `../../../../tools/llm/evaluate_mmlu.py` 固定题目提示、不加入 Chat Template 或额外特殊 Token,使用空格加 A/B/C/D 的单 Token 选项 logits 评分;记录每题分数、答案、预测和完整题数,不得截断或丢题.若输入超过上下文,必须先调整上下文再执行完整测试.
 
 MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 revision `c30699e8356da336a370243923dbaf21066bb9fe`,test 文件 SHA256 `74a41822ce7d3def56e1682f958469c04642a5336a5ce912fa375fdb90fb25d7`.FP32 与 NPU 使用同一题目 Token 文件及评分协议,报告总题数加权 Accuracy.
 
@@ -65,8 +65,21 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 
 首轮 MMLU 通过 `--limit 1000 --seed 17` 按学科题数比例分层抽样,固定原测试集题目索引并由两个模型共享.结果明确标为首轮子集,不得冒充完整 MMLU Accuracy;后续 `--limit 0` 才执行完整题集.
 
-当前 4 块、508 个预测位置的官方 FP32 -> SDK 浮点平均余弦为 0.999999999999,最大 logits 差为 0.00006866.该诊断支持当前浮点转换一致,不代表首轮 Accuracy/PPL 或量化精度通过.后续核对逐层 A16 接口裁剪和权重量化误差.
+## 精度对比与修复状态
 
-多块 Prefill 的主机量化与板端执行使用相同 KV 转移和 SDK 掩码/RoPE.可用 `evaluate_mmlu.py tflite --diagnostic-questions 16` 覆盖不同输入长度,单独核对执行差异;该少量题目诊断不代替首轮千题 Accuracy.
+首轮正式结果见 [first_round_summary.json](results/first_round_summary.json).
 
-首轮官方 FP32 基线已完成: MMLU 55.9% (559/1000),WikiText 前 128 行 PPL 40.041145.新 W4 候选的板端成绩待完成,不将 FP32 基线标为 NPU 结果;见 `results/first_round_summary.json`.
+| 指标 | 官方 FP32 | 新 W4A16 NPU | 退化 |
+|---|---:|---:|---:|
+| MMLU Accuracy,固定 1000 题 | 55.9% (559/1000) | 待完成 | 待对比 |
+| WikiText PPL,固定前 128 行 | 40.04 | 待完成 | 待对比 |
+
+当前 SDK 浮点模型与官方 FP32 在 4 块、508 个预测位置的平均余弦接近 1,最大 logits 差约 0.000069.此结果只验证已测位置的浮点转换.
+
+旧旋转 W4 候选的 Prefill/Decode 平均余弦: TFLite→NPU 为 0.99967/0.99976,FP32→NPU 为 0.97916/0.98368.该候选的主要误差出现在量化阶段,仍需定位具体层及误差机制;这些诊断值不能替代首轮正式指标.
+
+已实施: Hadamard 旋转及 Hessian/累计层误差优化,扩充长序列校准,完成 128 批校准.旋转方案已有诊断改善,新校准方案的改善效果尚待验证.新 W4 候选尚未完成正式精度对比.
+
+待验证: A16 接口量化范围是否裁剪激活、逐层权重量化误差、长序列校准的改善效果,以及多块 Prefill 的 KV Cache 转移一致性.未获得诊断证据前,这些仅为排查方向.保持全 W4A16,不通过提高权重位宽替代问题定位.
+
+共享工具统一位于仓库 `tools/llm/`;`evaluate_mmlu.py tflite --diagnostic-questions 16` 用于不同输入长度的执行对比,不代替首轮千题 Accuracy.正式性能统一报告 Prefill 和 Decode 的 token/s.

@@ -92,7 +92,7 @@ if [[ "${STAGE}" == all || "${STAGE}" == quantize ]]; then
     quantize_options=()
     if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then quantize_options=(--extra_converter_options "${WEIGHT_OPT_CONFIG}"); fi
     echo "[3/5] 量化 Attention=${ATTENTION_PRECISION},MLP=${MLP_PRECISION},LM Head=${TAIL_PRECISION}."
-    run_python "${SCRIPT_DIR}/../../quantize_native.py" converter "${MODEL}/config.json" \
+    run_python "${SCRIPT_DIR}/../../../../../tools/llm/quantize_native.py" converter "${MODEL}/config.json" \
         -p "${precision_options[@]}" -tp "${TAIL_PRECISION}" -d "${WORK}/calibration_datasets/DeepSeek-R1-Distill-Qwen-1.5B" \
         -m Overall -w hessian "${quantize_options[@]}" 2>&1 | tee "${WORK}/logs/quantization.log"
     # SDK 某些版本会吞掉转换异常,还须核对所有分片与配置确实存在.

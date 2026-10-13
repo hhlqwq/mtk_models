@@ -135,7 +135,7 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
                      (embedding, "tokenizer/embedding_int16.bin")):
         print(f"[打包] {dst}", flush=True)
         shutil.copyfile(src, output / dst)
-    shutil.copyfile(Path(__file__).resolve().parents[3] / "evaluate_native.py",
+    shutil.copyfile(Path(__file__).resolve().parents[6] / "tools/llm/evaluate_native.py",
                     output / "scripts/evaluate_native.py")
     tokenizer = json.loads((model / "tokenizer.json").read_text())
     with (output / "tokenizer/vocab.txt").open("wb") as stream:
@@ -212,7 +212,7 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
                         folder / "board_quality_protocol.json")
         (folder / "summary.json").write_text(
             json.dumps(quality, ensure_ascii=False, indent=2) + "\n")
-        shutil.copyfile(Path(__file__).resolve().parents[3] / "evaluate_board_quality.py",
+        shutil.copyfile(Path(__file__).resolve().parents[6] / "tools/llm/evaluate_board_quality.py",
                         output / "scripts/evaluate_quality.py")
         if bridge_library is not None:
             header = bridge_library.read_bytes()[:20]

@@ -219,7 +219,7 @@ models/
 新增 [MiniCPM5-2B](gen_ai/llm/minicpm5_2b/README.md) 适配,官方 Llama 架构,目标 W4A16、Prefill 128、上下文 1024.已完成 MTK 板端验证与统一子集质量检查,当前 W4A16 质量明显退化,不标记质量合格.
 
 本次 DeepSeek 与 MiniCPM5 的统一主机质量检查使用
-`models/gen_ai/llm/evaluate_quality.py`,固定 WikiText2 测试集前 128 行文本,
+`tools/llm/evaluate_quality.py`,固定 WikiText2 测试集前 128 行文本,
 128 Token 分块并重置上下文.分别报告模型内部 FP32/W4A16 PPL 的相对变化,
 训练集校准与测试集评价分开.自编 Demo、旧版 Token 子集、其他平台的完整
 WikiText2 结果均不得混入此协议的比较表.主机与实际 MDLA 分别评价,该固定英文子集不代表中文能力或完整基准.
