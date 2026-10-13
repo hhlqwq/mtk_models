@@ -153,14 +153,50 @@ def load_reference(model_path):
     return model.eval()
 
 
+class QuantizedExecutor:
+    """用官方软件执行器复核多块 Prefill 与 KV,接口与硬件一致."""
+
+    def __init__(self, graph, contract):
+        """加载同一静态图并分配原始 INT16 缓冲区."""
+        from mtk_converter.python.tools.tflite_executor import TFLiteExecutor
+
+        self.executor = TFLiteExecutor(str(graph), cache_dequantized_weight=True)
+        self.contract = contract
+        self.inputs = [np.full(item["shape"], item["zero_point"], dtype="<i2")
+                       for item in contract["inputs"]]
+
+    def run(self):
+        """返回全部原始输出,避免重复量化或丢失 KV."""
+        from compare_logits import raw_output_list
+
+        feed = {item["name"]: value for item, value in
+                zip(self.contract["inputs"], self.inputs)}
+        output = self.executor.run(feed, quantize_input=False,
+                                   dequantize_output=False)
+        return raw_output_list(output, self.contract)
+
+    def close(self):
+        """释放软件执行器缓存,不影响其他评价进程."""
+        self.executor = None
+
+
 def evaluate(args):
     """统一评分完整题集,落盘每题选项分数和可恢复的进度."""
     protocol = json.loads((args.data / "protocol.json").read_text())
     if sha256(args.data / "cases.json") != protocol["cases_sha256"]:
         raise ValueError("MMLU 题目 Token 文件哈希不符.")
     cases = json.loads((args.data / "cases.json").read_text())
+    if args.diagnostic_questions:
+        if args.diagnostic_questions > len(cases):
+            raise ValueError("诊断题数超过当前固定题集.")
+        order = sorted(cases, key=lambda row: len(row["input_ids"]))
+        indices = np.linspace(0, len(order) - 1,
+                              args.diagnostic_questions, dtype=int)
+        cases = sorted((order[index] for index in indices), key=lambda row: row["id"])
     args.output.mkdir(parents=True, exist_ok=True)
     meta = {"backend": args.backend, "cases_sha256": protocol["cases_sha256"]}
+    if args.diagnostic_questions:
+        meta["diagnostic_case_ids"] = [row["id"] for row in cases]
     hardware = None
     if args.backend == "pytorch":
         import torch
@@ -182,23 +218,27 @@ def evaluate(args):
         if manifest["context"] != protocol["context"]:
             raise ValueError("交付上下文与 MMLU 协议不符.")
         contract = json.loads((args.data / "board_input_contract.json").read_text())
-        graph = args.package / f"{manifest['context']}c/prefill.dla"
+        graph = (args.package / f"{manifest['context']}c/prefill.dla"
+                 if args.backend == "npu" else args.graph)
         embeddings = args.package / "tokenizer/embedding_int16.bin"
-        for path in (graph, embeddings):
+        for path in ([graph, embeddings] if args.backend == "npu" else [embeddings]):
             entry = next(x for x in manifest["files"] if x["name"] ==
                          path.relative_to(args.package).as_posix())
             if sha256(path) != entry["sha256"]:
                 raise ValueError("实际板端交付文件哈希不符.")
-        meta["dla_sha256"] = sha256(graph)
+        meta["graph_sha256"] = sha256(graph)
+        if args.backend == "tflite" and meta["graph_sha256"] != contract["tflite_sha256"]:
+            raise ValueError("量化软件执行图与契约不一致.")
         if sha256(args.data / "mmlu_inputs.npz") != protocol["inputs_sha256"]:
             raise ValueError("多块 Prefill 输入哈希不符.")
         bank = np.load(args.data / "mmlu_inputs.npz")
         embedding = np.memmap(embeddings, dtype="<i2", mode="r").reshape(
             -1, contract["inputs"][0]["shape"][-1])
-        hardware = HardwareModel(args.library, graph, contract)
+        hardware = (HardwareModel(args.library, graph, contract)
+                    if args.backend == "npu" else QuantizedExecutor(graph, contract))
 
         def score(tokens):
-            """执行多块真实 NPU Prefill,读取最后有效位置的选项 logits."""
+            """执行同协议多块 Prefill,读取最后有效位置的选项 logits."""
             for entry, buffer in zip(contract["inputs"], hardware.inputs):
                 buffer.fill(entry["zero_point"])
             for offset in range(0, len(tokens), 128):
@@ -224,7 +264,7 @@ def evaluate(args):
     results = args.output / "questions.jsonl"
     done = [json.loads(line) for line in results.read_text().splitlines()] \
         if results.exists() else []
-    if [x["id"] for x in done] != list(range(len(done))):
+    if [x["id"] for x in done] != [row["id"] for row in cases[:len(done)]]:
         raise ValueError("断点题目顺序或数量不符.")
     started = time.perf_counter()
     try:
@@ -254,6 +294,9 @@ def evaluate(args):
                                     for name, values in groups.items()},
                   elapsed_seconds_this_run=time.perf_counter() - started,
                   quality_qualified=False)
+    if args.diagnostic_questions:
+        report["scope"] = "multiblock_diagnostic_not_first_round_accuracy"
+        report["diagnostic_case_ids"] = [row["id"] for row in cases]
     (args.output / "mmlu_accuracy.json").write_text(
         json.dumps(report, indent=2) + "\n")
     print(f"[MMLU完成] {correct}/{len(done)},Accuracy={report['accuracy']:.6f}.",
@@ -263,7 +306,7 @@ def evaluate(args):
 def main():
     """解析完整测试的准备、官方参考或板端执行参数."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("backend", choices=("prepare", "pytorch", "npu"))
+    parser.add_argument("backend", choices=("prepare", "pytorch", "tflite", "npu"))
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--model", type=Path)
     parser.add_argument("--graph", type=Path)
@@ -271,11 +314,15 @@ def main():
     parser.add_argument("--limit", type=int, default=1000,
                         help="首轮默认 1000 题,0 表示完整测试集.")
     parser.add_argument("--seed", type=int, default=17)
+    parser.add_argument("--diagnostic-questions", type=int, default=0,
+                        help="仅用于覆盖不同长度的多块执行诊断,不代替千题成绩.")
     parser.add_argument("--data", type=Path)
     parser.add_argument("--package", type=Path)
     parser.add_argument("--library", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if not 0 <= args.diagnostic_questions <= 1000:
+        parser.error("诊断题数须位于 [0,1000].")
     if args.backend == "prepare":
         prepare(args)
     else:

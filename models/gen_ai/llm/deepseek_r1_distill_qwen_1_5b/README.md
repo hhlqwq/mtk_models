@@ -64,3 +64,5 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 首轮 MMLU 通过 `--limit 1000 --seed 17` 按学科题数比例分层抽样,固定原测试集题目索引并由两个模型共享.结果明确标为首轮子集,不得冒充完整 MMLU Accuracy;后续 `--limit 0` 才执行完整题集.
 
 当前 4 块、508 个预测位置的官方 FP32 -> SDK 浮点平均余弦为 0.999999999998,最大 logits 差为 0.00013399.该诊断支持当前浮点转换一致,不代表首轮 Accuracy/PPL 或量化精度通过.后续核对逐层 A16 接口裁剪和权重量化误差.
+
+多块 Prefill 的主机量化与板端执行使用相同 KV 转移和 SDK 掩码/RoPE.可用 `evaluate_mmlu.py tflite --diagnostic-questions 16` 覆盖不同输入长度,单独核对执行差异;该少量题目诊断不代替首轮千题 Accuracy.
