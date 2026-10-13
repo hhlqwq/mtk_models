@@ -20,12 +20,12 @@ Hadamard 权重旋转 seed=0,注意力 mask=-4096;只修改独立转换副本.
 在 Ubuntu89 仓库调用 `bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/run_native.sh STAGE`.
 阶段依次为 `prepare`、`calibrate`、`quantize`、`shape`、`compile`.
 设置 `NATIVE_WORK` 为独立候选目录,`MASK_VALUE=-4096`,`ROTATE_WEIGHTS=1`,
-`CALIBRATION_BATCHES=128`;使用官方累计层误差优化 JSON 的 `WEIGHT_OPT_CONFIG`.
+`CALIBRATION_BATCHES=128`;默认 `WEIGHT_OPTIMIZATION=none`,清空 `WEIGHT_OPT_CONFIG`,复用已完成的校准数据.
 
 `prepare` 后调用共享 `../../../../tools/llm/prepare_calibration.py`,按 seed=17 从已校验的 WikiText2
 train 固定采样 64 段各 512 Token,保留短对话.记录来源哈希、采样位置和输入哈希,
 并使旧校准完成标记失效.测试集不参与校准.
-量化采用 Hessian 与累计层误差优化;每阶段保存日志,失败即停止.
+常规量化默认关闭 Hessian 与累计层误差优化,保持全 W4A16.只有短板端验证和正式对比明确需要时,才显式启用 `WEIGHT_OPTIMIZATION=hessian` 与优化 JSON;每阶段保存日志,失败即停止.
 共享 `../../../../tools/llm/quantize_native.py` 传播官方 SDK 异常,不修改安装文件.
 量化后逐层核对实际权重配置并生成 `weight_precision_audit.json`.
 
@@ -81,3 +81,5 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 待验证: A16 接口量化范围是否裁剪激活、逐层权重量化误差、长序列校准的改善效果,以及多块 Prefill 的 KV Cache 转移一致性.未获得诊断证据前,这些仅为排查方向.保持全 W4A16,不通过提高权重位宽替代问题定位.
 
 共享工具统一位于仓库 `tools/llm/`;`evaluate_mmlu.py tflite --diagnostic-questions 16` 用于不同输入长度的执行对比,不代替首轮千题 Accuracy.正式性能统一报告 Prefill 和 Decode 的 token/s.
+
+2026-10-13 按确认切换到常规全 W4A16 量化: 停止本次长耗时重优化,保留校准和历史产物.先生成 Prefill/Decode 两个 DLA 并短测,再进行首轮正式评价;重优化不作为默认部署步骤.

@@ -16,6 +16,7 @@ MASK_VALUE="${MASK_VALUE:--100}"
 ROTATE_WEIGHTS="${ROTATE_WEIGHTS:-0}"
 CALIBRATION_TRAIN="${CALIBRATION_TRAIN:-}"
 WEIGHT_OPT_CONFIG="${WEIGHT_OPT_CONFIG:-}"
+WEIGHT_OPTIMIZATION="${WEIGHT_OPTIMIZATION:-none}"
 ATTENTION_PRECISION="${ATTENTION_PRECISION:-asym4W_sym16A}"
 MLP_PRECISION="${MLP_PRECISION:-${ATTENTION_PRECISION}}"
 TAIL_PRECISION="${TAIL_PRECISION:-${ATTENTION_PRECISION}}"
@@ -32,7 +33,10 @@ if [[ "${ATTENTION_PRECISION}" != "${MLP_PRECISION}" ]]; then
     precision_options+=("${MLP_PRECISION}")
     precision_name="attn_${ATTENTION_PRECISION}_mlp_${MLP_PRECISION}"
 fi
-QUANTIZED="${WORK}/tflite/MiniCPM5-2B_${precision_name}_Overall_hessian"
+QUANTIZED="${WORK}/tflite/MiniCPM5-2B_${precision_name}_Overall"
+if [[ "${WEIGHT_OPTIMIZATION}" != none ]]; then
+    QUANTIZED="${QUANTIZED}_${WEIGHT_OPTIMIZATION}"
+fi
 if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then
     opt_name="${WEIGHT_OPT_CONFIG##*/}"
     QUANTIZED="${QUANTIZED}_${opt_name%.json}"
@@ -96,12 +100,28 @@ if [[ "${STAGE}" == all || "${STAGE}" == quantize ]]; then
     run_python -c 'from pathlib import Path; import sys; assert Path("calibration_complete.txt").read_text().strip()==sys.argv[1], "校准完成标记与批次数不符"' "${CALIBRATION_BATCHES}"
     echo "[3/5] 量化 Attention=${ATTENTION_PRECISION},MLP=${MLP_PRECISION},LM Head=${TAIL_PRECISION}."
     quantize_options=()
+    case "${WEIGHT_OPTIMIZATION}" in
+        none)
+            if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then
+                echo '[错误] 常规量化不能指定重优化 JSON,请清空 WEIGHT_OPT_CONFIG.' >&2
+                exit 2
+            fi
+            echo '[常规 W4A16] 不执行 Hessian 或累计层误差优化.'
+            ;;
+        hessian|gradient)
+            quantize_options+=(--weight_optimization "${WEIGHT_OPTIMIZATION}")
+            ;;
+        *)
+            echo '[错误] WEIGHT_OPTIMIZATION 仅支持 none/hessian/gradient.' >&2
+            exit 2
+            ;;
+    esac
     if [[ -n "${WEIGHT_OPT_CONFIG}" ]]; then
-        quantize_options=(--extra_converter_options "${WEIGHT_OPT_CONFIG}")
+        quantize_options+=(--extra_converter_options "${WEIGHT_OPT_CONFIG}")
     fi
     run_python "${SCRIPT_DIR}/../../../../../tools/llm/quantize_native.py" converter "${MODEL}/config.json" \
         -p "${precision_options[@]}" -tp "${TAIL_PRECISION}" -d "${WORK}/calibration_datasets/MiniCPM5-2B" \
-        -m Overall -w hessian "${quantize_options[@]}" \
+        -m Overall "${quantize_options[@]}" \
         2>&1 | tee "${WORK}/logs/quantization.log"
     # SDK 某些版本会吞掉转换异常,还须核对所有分片与配置确实存在.
     run_python -c 'import json,sys; from pathlib import Path; config=json.loads(Path(sys.argv[1]).read_text()); folder=Path(sys.argv[2]); count=config["num_hidden_layers"]+1; expected={f"{folder.name}_{i}.tflite" for i in range(count)}; assert {p.name for p in folder.glob("*.tflite")}==expected, "量化分片不完整"; assert all((folder/name).stat().st_size>0 and (folder/name).with_name(Path(name).stem+"_info.json").is_file() for name in expected), "分片为空或缺少SDK元数据"' \
