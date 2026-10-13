@@ -104,3 +104,5 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 2026-10-13 按确认切换到常规全 W4A16 量化: 停止本次长耗时重优化,保留校准和历史产物.先生成 Prefill/Decode 两个 DLA 并短测,再进行首轮正式评价;重优化不作为默认部署步骤.
 
 打包从量化成功记录读取实际分片前缀;常规量化的交付清单中 `weight_optimization=null`,不误标为 Hessian.
+
+常规量化未生成优化配置 JSON 时,审核直接读取实际 TFLite: 投影权重须为 INT4,所有图接口须为 INT16,并核对完整层数和文件哈希.可用 `tools/llm/quantize_native.py converter CONFIG -p asym4W_sym16A -tp asym4W_sym16A --audit-only` 恢复审核,不重新量化.
