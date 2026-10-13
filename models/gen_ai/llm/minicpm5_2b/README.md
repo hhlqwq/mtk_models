@@ -1,191 +1,56 @@
 # MiniCPM5-2B
 
-OpenBMB 官方中英文纯文本 LLM,采用标准 Llama 架构.
-实际参数量 2,516,756,480,42 层,hidden 2048,16 个 Query Head 和 2 个 KV Head.
-官方模型: https://huggingface.co/openbmb/MiniCPM5-2B .
-固定 revision: `f97400052a43d642bbc6e9975e2397e3ae6a6b52`,许可 Apache-2.0.
-地瓜参考: https://github.com/D-Robotics/rdk_model_zoo/tree/rdk_s/samples/llm/minicpm5-2b .
-地瓜产物只作为交付参考,不作为 MTK 转换输入.
+官方来源: [MiniCPM5-2B](https://huggingface.co/openbmb/MiniCPM5-2B),固定 revision `f97400052a43d642bbc6e9975e2397e3ae6a6b52`.
+转换输入为官方权重,其他 Model Zoo 仅作选型及交付结构参考.
+42 层,hidden=2048,Q/KV Head=16/2,RoPE=5000000,参数量 2,516,756,480.
 
-2026-10-10 已完成 MTK 编译、双语板端推理与统一测试子集质量检查.状态为 board_verified,当前 W4A16 质量明显退化,未达到质量合格交付状态.
-初始目标 W4A16,Prefill 128,上下文 1024,Decode 1.
-保留官方 RoPE 5000000、双停止 Token 1/130073 与独立 Chat Template,
-默认 `enable_thinking=false`.只在独立转换副本中将新版 BPE merge 数组
-序列化为旧版兼容字符串,官方资源保持原样.
+## 当前配置与状态
 
-在 Ubuntu89 仓库执行 `bash models/gen_ai/llm/minicpm5_2b/deploy/run_native.sh`,
-资源使用当天临时目录中的 `minicpm5_source`,沿用已隔离的 GAI 2.7.5 环境.
-可选阶段为 prepare、calibrate、quantize、shape、compile.
-各阶段保存日志并遇错停止,编译成功不能代替板端推理验证.
-打包入口为 `deploy/host/package_native.py`,要求输出为独立空目录.
-官方资源地址、大小和哈希归档到 `models/source_manifest.json` 和 `models/source_url.txt`.
-第二版校准使用训练集与自编双语输入,测试集独立用于浮点/量化质量对比.
+本项目仅使用全 W4A16: Attention、MLP、LM Head 全部 `asym4W_sym16A`.
+当前候选的 128 批校准已完成,量化、编译及板端精度验证待完成.
+现有 W4 诊断存在精度退化,不能因推理可运行而认定质量合格.
 
-当前环境检查: GAI SDK 已接受官方 Llama 配置、42 层、RoPE 和双停止 Token.
-通过独立目录安装 tokenizers 0.20.3 读取原始 tokenizer,与既有 0.19.1
-读取兼容副本对比,4 个中英文、数字、特殊 Token 样例的 Token IDs 一致.
-此检查只覆盖这些样例,不是完整 tokenizer 等价性证明.
-独立参考 wheel 的 URL、大小及哈希已记录,未升级转换环境依赖.
-官方权重 5033557096 字节已通过固定版本官方 SHA256 校验.
-沿用的隔离环境为 `/tmp/hailongcodex/2026-10-10/deepseek_gai_env`,
-新工作目录为 `/tmp/hailongcodex/2026-10-10/minicpm5_native`.
+Prefill=128 Token,上下文=1024,Decode=1 Token.每款只生成两个 DLA.
+当前候选: `/tmp/hailongcodex/2026-10-12/minicpm5_w4_train_v5`.
+官方 SDK=2.7.5,Converter=8.16.0,编译目标为 Genio720 MDLA5.3.
+Hadamard 权重旋转 seed=0,注意力 mask=-100;只修改独立转换副本.
 
-SDK 2.7.5 校准生成对 EOS 列表存在维度错误,独立转换配置使用官方对话结束 Token 130073.
-原生交付 stopToken 仍保留 1 和 130073,官方原始配置保持不变.
+## 执行流程
 
-主机质量对比使用共享入口 `models/gen_ai/llm/evaluate_quality.py`,
-WikiText2 测试集前 128 行原始文本,不额外添加特殊 Token,每块 128 Token,
-重置上下文并评分 127 次下一 Token,不足一块的末尾 Token 单独记录并舍弃.
-官方 Transformers FP32 与 SDK 量化 TFLite 使用相同 Token IDs,
-该协议为测试集子集的转换质量检查.主机与实际 MDLA 分别计算,不作为完整基准.
-原生 tokenizer 使用 RE2,数字切分配置为最多三位; RE2 不支持官方空白规则的
-lookahead,默认使用官方 Token 输入.原生文本输入的兼容结论仅覆盖实际验证样例.
+在 Ubuntu89 仓库调用 `bash models/gen_ai/llm/minicpm5_2b/deploy/run_native.sh STAGE`.
+阶段依次为 `prepare`、`calibrate`、`quantize`、`shape`、`compile`.
+设置 `NATIVE_WORK` 为独立候选目录,`MASK_VALUE=-100`,`ROTATE_WEIGHTS=1`,
+`CALIBRATION_BATCHES=128`;使用官方累计层误差优化 JSON 的 `WEIGHT_OPT_CONFIG`.
 
-板端证据入口为 `models/gen_ai/llm/evaluate_native.py`,默认运行中英文 Token/文本输入,
-记录停止 Token、原始日志、Prefill/Decode 与本次内存观测,并核对两种输入结果.
-日志需归档后由打包入口检查哈希; 推理成功不表示正式量化质量达标.
+`prepare` 后调用共享 `../prepare_calibration.py`,按 seed=17 从已校验的 WikiText2
+train 固定采样 64 段各 512 Token,保留短对话.记录来源哈希、采样位置和输入哈希,
+并使旧校准完成标记失效.测试集不参与校准.
+量化采用 Hessian 与累计层误差优化;每阶段保存日志,失败即停止.
+共享 `../quantize_native.py` 传播官方 SDK 异常,不修改安装文件.
+量化后逐层核对实际权重配置并生成 `weight_precision_audit.json`.
 
-浮点质量入口同时生成相同双语 Prompt 的官方 FP32 Greedy 参考,
-保留 Token 和实际文本以核对量化板端输出,不人工修饰差异.
+`deploy/host/package_native.py` 要求独立空输出目录,核对权重精度和实际分片数量,
+将核对记录及源文件哈希写入交付清单.编译成功不能代替板端验证.
 
-官方 Safetensors 缺少旧 Transformers 加载器所需的 format 元数据,
-浮点参考按官方索引直接加载全部 Tensor 并严格匹配模型参数,不重写原始权重.
+## 精度排查与评价
 
-Shape fixer 完成静态图后会复制真实 INT16 embedding.量化质量检查必须等该阶段完成,
-入口仅校验与使用该实际资源并记录哈希,不得提前修改转换目录.
+按官方 FP32 -> SDK 浮点 -> 量化 TFLite -> 板端 MDLA 定位误差:
 
-SDK 的 TFLite PPL 入口不接受 --dtype 参数,量化路径按实际静态图精度执行.
+- 先核对 tokenizer、特殊 Token、RoPE、注意力掩码、模型权重和浮点转换一致性.
+- 浮点一致后,核对校准代表性、权重旋转、量化范围及 Hessian 优化误差.
+- 主机量化与 NPU 差异单独检查输入输出量化尺度、KV Cache、图编译和运行契约.
+- 不通过提高权重位宽掩盖精度问题;不合格候选保持未通过状态.
 
-旧协议第一版基础 Hessian W4A16 的子集 PPL 为 148.45839,官方 FP32 为 39.55449,
-相对增加 275.33%,未通过质量检查.同协议 SDK FP32 为 39.55450,
-与官方参考一致.这版只保留转换证据,不能作为质量合格交付.
-这些旧数字采用前 8192 Token 的协议,仅用于定位量化问题,
-可通过 `--blocks 64` 复现,不能混入新的统一评价表.
+统一评价采用 WikiText2 test 前 128 行原始文本,不额外加入特殊 Token,
+每块 128 Token、重置上下文、评分 127 次下一 Token,舍弃并记录不足一块的尾部.
+当前官方 FP32 子集 PPL=40.04115;不同模型只比较自身的相对退化.
+共享评价入口为 `../evaluate_quality.py`、`../evaluate_board_quality.py`、`../compare_logits.py`.
+诊断覆盖四块完整 Prefill 共 512 个输出位置及 Decode 共 64 个后续位置,
+单独报告决定首个生成 Token 的 Prefill 最后一行.
+Decode mask 的 Runtime 尾部对齐按实际契约补齐,其他输入输出大小严格核对.
 
-第二版使用独立工作目录 `minicpm5_native_v2`,校准混合 WikiText2 训练集
-8 段各 256 Token 与 8 条自编中英文对话,不使用评测测试集进行校准.
-`CALIBRATION_TRAIN` 指向已校验的训练集 Parquet;
-`WEIGHT_OPT_CONFIG` 指向官方工具包的
-`post_training_quantize/wgt_opt_cum_layer_error.json`,启用累计层误差优化
-(512 个样本,batch size 1).实际结果见下文与质量报告.
-可选 pytablewriter 表格依赖缺失时,评测入口仅在唯一完整 SDK JSON 已保存后
-继续生成质量报告,其他异常仍直接报错.
+正式结果统一报告 Prefill、Decode 的 token/s,不区分中英文.
+保留原始 Token、输出、计时日志、版本、文件哈希和实际质量状态.
+最终 NAS 目录结构沿用官方模型交付布局;只有通过实际验证的候选才更新交付状态.
 
-校准成功后生成批次数完成标记,量化入口要求该标记匹配当前批次数,
-防止校准未完成时启动量化.第二版提前启动的量化已作废,经确认停止后
-保留日志与部分输出,等待 32 批校准完成再重新运行.
-
-工具归档目标为 `/data/users/hailong.he/data/MTKG720/GAI_Toolkit/MiniCPM5-2B/`.
-项目适配脚本与官方 SDK 分开标识,复用原 Qwen2.5 官方工具包中的 GAI 2.7.5,
-不存在本次已下载的 MiniCPM5 专用官方工具包.归档清单记录 Git 提交与 SHA256.
-
-统一 FP32 参考支持 `--device cpu --cpu-threads 8 --skip-demo`,
-与 GPU 量化错开资源,仍按官方模型 FP32 计算.报告记录实际设备与原始文本哈希.
-工具归档已核对完成: GAI SDK 2.7.5 wheel 为 124053292 字节,
-SHA256 `f6af174133ee756ffedbd0db327c0247b0f6ae9509ee2599b37cf8bd01988201`.
-
-统一协议 FP32 参考 PPL 为 **40.04115**,评分 **7366** 个 Token.
-原始文本 SHA256 为 `6605c41acd8bc0bfeb0f1acb43e31437da857e03135b21b097d16756ccaba84c`,
-与 DeepSeek 一致.主机与板端量化结果均已完成,见 [质量报告](results/quality_summary.json).
-第一版基础 Hessian 按统一协议复核 PPL 为 **143.71999**,相对 FP32
-增加 **258.93%**,两个后端的 Token IDs 已核对完全一致.
-该失败结果与第二版实际结果分开记录.
-
-打包时使用 `--quality-results` 归档两个后端的原始报告; 打包入口核对
-输入 Token、原始文本、分块协议、实际 TFLite 与 embedding 哈希,
-记录相对 PPL 变化,不把主机子集结果标为板端 NPU 精度.
-板端归档后的 README 与汇总报告同时保留主机 PPL 和板端 Demo 范围说明.
-
-统一板端 PPL 入口为 `models/gen_ai/llm/evaluate_board_quality.py`.
-主机入口导出 SDK 掩码、RoPE 和实际 INT16 输入输出契约;
-板端复用既有 `neuron_bridge.cpp` 的硬件 Runtime 接口,核对所有缓冲区大小,
-同一批 Token 每块重置 KV,从真实 MDLA logits 计算 NLL/PPL,不回退到 CPU.
-`--bridge-library` 支持打包现有 AArch64 桥接库,新包含独立评价脚本与输入资源.
-这仍是固定文本子集的板端质量检查,不是完整 WikiText2 基准.
-`--backend prepare_board` 仅准备真实图的 I/O 和测试 Token,不运行主机量化评价,
-用于独立启动板端 PPL.该模式不生成或虚构主机 PPL 数字.
-重新准备配置会使旧校准完成标记失效.板端质量报告明确记录
-`prefill_128_teacher_forcing`,Decode 图的功能另由原生双语 Demo 验证.
-
-第二版实际结果: 主机 W4A16 PPL **57.29072**,相对 FP32 增加 **43.08%**;
-MDLA PPL **61.56529**,相对 FP32 增加 **53.76%**.累计误差优化改善了首版,
-但当前量化质量仍有明显退化,不能标为质量合格.
-板端性能统一汇总: Prefill **38.12 token/s**,Decode **11.63 token/s**.
-Prefill 使用总输入 40 Token / 总 Prompt 耗时 1.049237 秒;
-Decode 为 CLI 速度的生成 Token 加权调和平均.不按语言拆分性能表.
-固定样例均达到停止 Token,原生文本与官方 Token 输入的回答一致.
-本次进程峰值 RSS 约 **1142 MiB**,系统 MemAvailable 最大下降约 **1328 MiB**;
-这些观测不等同于独立测得的模型总内存.Prefill 时间不包含模型加载与切换,
-不能作为 TTFT.英文出现 `lightweight '--'` 和不准确的 `MiniCPM-N` 描述,
-保留原始日志与 Token,不修饰实际输出.
-
-交付固定使用两个 DLA: `1024c/prompt.dla` 执行 Prefill,`1024c/decode.dla` 执行 Decode.
-Prefill token/s = 实际输入 Token 数 / 原生 Prompt 阶段耗时,不是 128 个填充位置 / 耗时.
-原始耗时、输入计数与双语回答见 [板端汇总](results/native_summary.json).
-2026-10-12 新要求为总共两个 DLA.此前 W8A16 两分片提案会产生四个 DLA,
-与此要求不符,尚未执行,后续精度方案需要重新评估.
-
-当前试验交付归档:
-/data/users/hailong.he/nas_smb/Docs_Internal/知识库(钉钉同构)/算法工具链/模型部署/MTK/G720/TFLite/GenerativeAI/LLM/MiniCPM5-2B/minicpm5-2b
-
-包含两个 DLA、tokenizer、运行脚本、来源与文件哈希、原始双语日志和统一质量报告.
-该包明确记录 quality_qualified=false,不得作为质量验收通过版本.
-
-2026-10-12 继续精度定位: 使用共享 compare_logits.py 对统一文本前 4 个块的全部 127 个预测位置做三后端 logits 对比.
-记录余弦、去均值余弦、RMSE、MAE、Top1 一致率与 KL.原始 INT16 输入与实际输出哈希用于核对.
-该诊断仅覆盖 Prefill 图,不能宣称 Decode 或完整精度验收通过.初版实际结果见 [logits 报告](results/logits_summary.json).
-
-修复候选: 旋转权重 rotate=true,Hadamard,seed=0; 保持 mask_value=-100.仅修改独立转换配置,官方权重保持原样.
-浮点诊断已核对与官方参考的平均余弦接近 1、Top1 100%; 量化后的效果仍待实际验证.
-编译改用 NCC --opt-accuracy,移除会牺牲精度的 --opt-aggressive; Prefill/Decode 仍各一个 DLA.
-环境变量 MASK_VALUE、ROTATE_WEIGHTS 控制可追溯的 SDK 设置,可选 WEIGHT_OPT_CONFIG 复用官方累计误差优化.
-新候选必须重新完成校准、量化、主机和板端验证,不得覆盖当前交付后直接标为通过.
-
-当前 W4A16 前 4 块、508 个预测位置: FP32→TFLite 平均余弦 0.936568,FP32→MDLA 0.927744,TFLite→MDLA 0.950869.
-FP32→MDLA Top1 一致率 58.86%,存在明显差异,当前输出精度未合格.
-
-Decode 诊断新增 --decode-steps: 128 Token Prefill 后继续输入真实后续 Token,各后端沿用自己的 KV.
-缓存布局按 SDK 掩码的有效后缀核对,缓存转移按实际 I/O 量化参数重编码.
-共享工具分别记录 Prefill 与 Decode 的输出比较,不按语言拆分,诊断通过也不代表完整验收.
-
-板端 Decode 实测 mask 逻辑长度 2050 字节,Runtime 要求 2064 字节.
-仅对已确认的单行 mask 补齐 16 字节尾部对齐,填充区保持屏蔽;其他输入输出大小仍严格匹配.
-
-原版本 Decode 实测: 4 段固定上下文,每段继续 16 个真实 Token,共 64 个输出位置.
-FP32→MDLA 平均余弦 0.947060,Top1 一致率 73.44%; TFLite→MDLA 平均余弦 0.959618.
-测试已执行使用 evaluated 标记,精度未验收使用 verified=false、quality_qualified=false,避免混淆.
-
-原生固定样例使用共享 evaluate_native.py,从各自交付清单读取停止 Token,避免两款模型 EOS 混用.
-新包包含独立 scripts/evaluate_native.py,运行日志与汇总性能保留在包内 results.
-
-新候选的统一性能可用 --performance-input 指定固定 128 个真实 Token,最多生成 128 Token.
-性能独立于双语功能样例,统一为一行 Prefill/Decode token/s,不使用填充位置冒充有效输入.
-
-SDK 旋转输出目录带 _rotate_hadamard_0 后缀,Shape 与编译入口按相同配置定位该目录.
-旋转版已完成量化,首次 Shape 因目录定位失败的日志保留,修正后仅重跑 Shape.
-
-旋转 W4 第三版已完成两个 DLA 的诊断: 4 块 Prefill 共 508 个位置、Decode 共 64 个位置,FP32→MDLA 平均余弦分别为 0.979157/0.983678.
-TFLite→MDLA 平均余弦为 0.999674/0.999761,但量化误差仍明显; 4 块诊断 MDLA PPL 为 38.65030,不能与 58 块统一子集结果混用.
-下一轮采用已确认的混合方案: ATTENTION_PRECISION=sym8W_sym16A,MLP_PRECISION=asym4W_sym16A,TAIL_PRECISION=sym8W_sym16A,ROTATE_WEIGHTS=1.
-复用同配置已完成的校准数据,保留每款两个 DLA.量化成功后生成 quantization_settings.json,打包清单与板端结果记录真实混合精度.
-
-新质量报告统一使用 quantized_perplexity 字段和实际 precision,读取历史包仍兼容旧 W4 字段.
-
-SDK 2.7.5 的旋转混合入口固定要求两个模板精度组,当前 Converter 为旋转图生成三个组.共享 quantize_native.py 在独立进程中合并 Attention 模板组并重映射策略,随后沿用官方权重分配逻辑; LM Head 使用官方独立 Tail 精度.
-转换异常向调用者传播,完成后还核对 43 个非空分片及逐片 SDK 元数据,避免 SDK 吞异常造成错误完成标记.安装目录和官方权重均无需改动.
-
-混合量化完成后逐层核对实际 SDK 精度配置中的 168 个 Attention、126 个 MLP 和 1 个 LM Head 权重;打包要求核对报告存在,并将结果及进程内兼容信息写入交付清单.
-
-新诊断额外保存 Prefill 最后一行 logits,该行决定首个生成 Token.保留原 127 行 PPL 评分协议,同时报告完整 128 行输出及最后一行的三后端余弦;四块完整输出共 512 个位置,Decode 共 64 个位置.
-
-## 全 W4A16 优化方向 (2026-10-12)
-
-根据最新确认,最终候选的 Attention、MLP、LM Head 均采用 `asym4W_sym16A`,不采用 W8 或 W8/W4 混合精度交付.此前 W8 产物仅保留为诊断参考.
-
-新候选使用独立目录,旋转为 Hadamard seed=0.共享 `../prepare_calibration.py` 从已校验的 WikiText2 train 中按 seed=17 采样 64 段各 512 Token,保留原短对话,重新生成 128 批校准;测试集不参与校准.DeepSeek 使用已核实的 mask=-4096,MiniCPM5 保持 mask=-100.继续使用 Hessian 和累计层误差参数优化.
-
-保持 Prefill=128、上下文=1024、Decode=1,每款仅两个 DLA.新候选仍须三后端输出、统一 WikiText2 PPL 和板端性能验证,当前不代表精度合格.
-
-统一精度也逐层核对 SDK 实际权重分组,必须确认 Attention、MLP、LM Head 全部符合请求的 W4A16,成功后保存 `weight_precision_audit.json`;仅凭文件名不认定实际精度.
-
-交付清单同步归档统一精度逐层核对结果,打包核对 Attention、MLP、LM Head 配置与分片数量,保留历史包兼容性.
+MiniCPM5 独立 tokenizer 副本仅转换 BPE merges 序列化格式.校准配置使用单 EOS=130073,运行保留官方停止 Token 1/130073,默认 enable_thinking=false.

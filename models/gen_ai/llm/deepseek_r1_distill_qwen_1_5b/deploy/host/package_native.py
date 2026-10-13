@@ -95,23 +95,17 @@ def package(work, output, prefill, quantized_prefix=None):
             raise ValueError("量化精度记录与打包目录不一致.")
         precision_values = [precision_settings[key]
                             for key in ("attention", "mlp", "lm_head")]
-        if any(value not in ("asym4W_sym16A", "sym8W_sym16A")
-               for value in precision_values):
-            raise ValueError("精度记录包含未支持的量化设置.")
-        precision = (precision_values[0] if len(set(precision_values)) == 1
-                     else "mixed_W8A16_W4A16")
+        if any(value != "asym4W_sym16A" for value in precision_values):
+            raise ValueError("本项目交付仅允许全 W4A16.")
+        precision = "asym4W_sym16A"
     else:
-        # 兼容已有 W4 包; 新 W8 或混合包必须提供量化成功后的精度记录.
+        # 兼容现有 W4 包,并核对量化目录的精度标识.
         if "_asym4W_sym16A_Overall_hessian" not in base.name:
             raise ValueError("新精度包缺少量化成功记录.")
         precision = "asym4W_sym16A"
         precision_settings = dict.fromkeys(("attention", "mlp", "lm_head"), precision)
     adapter_path = work / "quantization_adapter.json"
     adapter = json.loads(adapter_path.read_text()) if adapter_path.exists() else None
-    audit_path = work / "mixed_precision_audit.json"
-    mixed_audit = json.loads(audit_path.read_text()) if audit_path.exists() else None
-    if precision.startswith("mixed_") and mixed_audit is None:
-        raise ValueError("混合精度包缺少逐层实际权重精度核对.")
     # 归档统一精度的实际逐层核对记录,并核对其与交付配置一致.
     uniform_path = work / "weight_precision_audit.json"
     uniform_audit = (json.loads(uniform_path.read_text())
@@ -195,7 +189,7 @@ def package(work, output, prefill, quantized_prefix=None):
     (output / "manifest.json").write_text(json.dumps({
         "status": "compiled_pending_board", "preparation": preparation,
         "precision": precision, "precision_settings": precision_settings,
-        "quantization_adapter": adapter, "mixed_precision_audit": mixed_audit,
+        "quantization_adapter": adapter,
         "weight_precision_audit": uniform_audit,
         "weight_optimization": "hessian",
         "prefill": prefill, "context": context, "files": files,

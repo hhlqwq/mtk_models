@@ -20,8 +20,8 @@ MLP_PRECISION="${MLP_PRECISION:-${ATTENTION_PRECISION}}"
 TAIL_PRECISION="${TAIL_PRECISION:-${ATTENTION_PRECISION}}"
 MODEL="${WORK}/DeepSeek-R1-Distill-Qwen-1.5B"
 for precision in "${ATTENTION_PRECISION}" "${MLP_PRECISION}" "${TAIL_PRECISION}"; do
-    if [[ ! "${precision}" =~ ^(asym4W_sym16A|sym8W_sym16A)$ ]]; then
-        echo '[错误] 仅支持已确认的 W4A16 与 W8A16 精度.' >&2
+    if [[ "${precision}" != asym4W_sym16A ]]; then
+        echo '[错误] 本项目仅支持全 W4A16,禁止提高权重位宽替代误差排查.' >&2
         exit 2
     fi
 done

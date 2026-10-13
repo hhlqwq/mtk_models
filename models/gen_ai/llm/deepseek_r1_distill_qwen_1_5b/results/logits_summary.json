@@ -40,7 +40,7 @@
   "raw_report_sha256": "80b7400d797426bb6edcad47b0932adf3b390dee0b717444a8d766ad8544cb25",
   "raw_report_path": "/tmp/hailongcodex/2026-10-12/logits_v1/DeepSeek-R1-Distill-Qwen-1.5B/comparison/logits_comparison.json",
   "source_commit": "3ddbf830",
-  "fix_candidates_status": "calibration_and_accuracy_compile_in_progress",
+  "fix_candidates_status": "w4_only_expanded_calibration_complete_pending_quantization",
   "decode_accuracy_evaluated": true,
   "decode_diagnostic": {
     "scope": "decode_teacher_forcing_diagnostic_not_full_accuracy",

@@ -40,7 +40,7 @@
   "raw_report_sha256": "c7c3093fce3569f1a8f44c29222842a6d529dc70e431d9f99a946a6e1ae13664",
   "raw_report_path": "/tmp/hailongcodex/2026-10-12/logits_v1/MiniCPM5-2B/comparison/logits_comparison.json",
   "source_commit": "3ddbf830",
-  "fix_candidates_status": "rotation_w4_diagnostic_completed_mixed_precision_next",
+  "fix_candidates_status": "w4_only_expanded_calibration_complete_pending_quantization",
   "decode_accuracy_evaluated": true,
   "decode_diagnostic": {
     "scope": "decode_teacher_forcing_diagnostic_not_full_accuracy",
