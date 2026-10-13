@@ -1,16 +1,43 @@
-"""使用完整 MMLU 0-shot 测试集对比官方 FP32 与板端 NPU Accuracy."""
+"""使用固定 MMLU 0-shot 题集对比官方 FP32 与板端 NPU Accuracy."""
 
 import argparse
 from collections import defaultdict
 import hashlib
 import json
 from pathlib import Path
+import random
 import time
 
 import numpy as np
 
 
 DATA_SHA256 = "74a41822ce7d3def56e1682f958469c04642a5336a5ce912fa375fdb90fb25d7"
+
+
+def select_questions(rows, limit, seed):
+    """按学科题数比例分层采样,固定清单且不读取答案进行选择."""
+    if limit == 0:
+        return list(range(len(rows)))
+    if not 57 <= limit <= len(rows):
+        raise ValueError("首轮题数须覆盖 57 学科且不超过完整题数.")
+    groups = defaultdict(list)
+    for index, row in enumerate(rows):
+        groups[row["subject"]].append(index)
+    quotas = {name: max(1, int(limit * len(indices) / len(rows)))
+              for name, indices in groups.items()}
+    order = sorted(groups, key=lambda name: (
+        -(limit * len(groups[name]) / len(rows) - quotas[name]), name))
+    if sum(quotas.values()) > limit:
+        raise ValueError("题数过少,无法按该学科比例分配.")
+    for name in order[:limit - sum(quotas.values())]:
+        quotas[name] += 1
+    generator = random.Random(seed)
+    selected = []
+    for name in sorted(groups):
+        selected.extend(generator.sample(groups[name], quotas[name]))
+    if len(selected) != limit:
+        raise ValueError("分层抽样题数不符.")
+    return sorted(selected)
 
 
 def sha256(path):
@@ -32,13 +59,15 @@ def prepare(args):
     rows = parquet.read_table(args.dataset).to_pylist()
     if len(rows) != 14042 or len({row["subject"] for row in rows}) != 57:
         raise ValueError("完整 MMLU 题数或学科数不符.")
+    selected = select_questions(rows, args.limit, args.seed)
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
     choices = [tokenizer.encode(" " + letter, add_special_tokens=False)
                for letter in "ABCD"]
     if any(len(tokens) != 1 for tokens in choices):
         raise ValueError("选项并非单 Token,不能用最后一行 logits 替代序列评分.")
     cases = []
-    for index, row in enumerate(rows):
+    for index, source_index in enumerate(selected):
+        row = rows[source_index]
         subject = row["subject"].replace("_", " ")
         prompt = ("The following are multiple choice questions (with answers) "
                   f"about {subject}.\n\n{row['question']}\n")
@@ -46,14 +75,19 @@ def prepare(args):
                             zip("ABCD", row["choices"])) + "\nAnswer:"
         tokens = tokenizer.encode(prompt, add_special_tokens=False)
         cases.append({"id": index, "subject": row["subject"],
+                      "source_question_id": source_index,
                       "input_ids": tokens, "answer": int(row["answer"])})
     maximum = max(len(case["input_ids"]) for case in cases)
-    print(f"[MMLU 输入] 14042 题,57 学科,0-shot,最长 {maximum} Token.",
+    print(f"[MMLU 输入] {len(cases)} 题,57 学科,0-shot,最长 {maximum} Token.",
           flush=True)
     args.output.mkdir(parents=True, exist_ok=True)
     protocol = {"dataset": "cais/mmlu", "dataset_sha256": DATA_SHA256,
                 "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
                 "split": "test", "shots": 0, "subjects": 57,
+                "scope": "first_round_stratified_subset" if args.limit else "full_test",
+                "dataset_questions": len(rows), "sampling_seed": args.seed,
+                "sampling": "proportional_subject_largest_remainder",
+                "selected_source_question_ids": selected,
                 "questions": len(cases), "maximum_prompt_tokens": maximum,
                 "context": args.context, "choice_token_ids": [x[0] for x in choices],
                 "chat_template": False, "add_special_tokens": False,
@@ -198,6 +232,7 @@ def evaluate(args):
             for case in cases[len(done):]:
                 values = score(case["input_ids"])
                 row = {"id": case["id"], "subject": case["subject"],
+                       "source_question_id": case["source_question_id"],
                        "answer": case["answer"], "scores": values,
                        "prediction": int(np.argmax(values))}
                 stream.write(json.dumps(row) + "\n")
@@ -233,6 +268,9 @@ def main():
     parser.add_argument("--model", type=Path)
     parser.add_argument("--graph", type=Path)
     parser.add_argument("--context", type=int, default=1024)
+    parser.add_argument("--limit", type=int, default=1000,
+                        help="首轮默认 1000 题,0 表示完整测试集.")
+    parser.add_argument("--seed", type=int, default=17)
     parser.add_argument("--data", type=Path)
     parser.add_argument("--package", type=Path)
     parser.add_argument("--library", type=Path)
