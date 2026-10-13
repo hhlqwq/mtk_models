@@ -66,3 +66,5 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 当前 4 块、508 个预测位置的官方 FP32 -> SDK 浮点平均余弦为 0.999999999998,最大 logits 差为 0.00013399.该诊断支持当前浮点转换一致,不代表首轮 Accuracy/PPL 或量化精度通过.后续核对逐层 A16 接口裁剪和权重量化误差.
 
 多块 Prefill 的主机量化与板端执行使用相同 KV 转移和 SDK 掩码/RoPE.可用 `evaluate_mmlu.py tflite --diagnostic-questions 16` 覆盖不同输入长度,单独核对执行差异;该少量题目诊断不代替首轮千题 Accuracy.
+
+首轮官方 FP32 基线已完成: MMLU 37.2% (372/1000),WikiText 前 128 行 PPL 118.708504.新 W4 候选的板端成绩待完成,不将 FP32 基线标为 NPU 结果;见 `results/first_round_summary.json`.

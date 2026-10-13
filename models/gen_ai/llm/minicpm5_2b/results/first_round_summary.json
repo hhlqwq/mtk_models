@@ -1,0 +1,27 @@
+{
+  "status": "fp32_complete_npu_pending",
+  "scope": "first_round_subset_not_full_benchmark",
+  "mmlu": {
+    "shots": 0,
+    "questions": 1000,
+    "subjects": 57,
+    "seed": 17,
+    "correct": 559,
+    "fp32_accuracy": 0.559,
+    "npu_accuracy": null,
+    "cases_sha256": "d13e6f3c1a79d8dc8592fdfbf409e53035dda9e6186e6faf36bfdd48da138b6a"
+  },
+  "wikitext": {
+    "text_rows": 128,
+    "blocks": 58,
+    "scored_tokens": 7366,
+    "fp32_ppl": 40.04114532470703,
+    "npu_ppl": null,
+    "selected_text_sha256": "6605c41acd8bc0bfeb0f1acb43e31437da857e03135b21b097d16756ccaba84c"
+  },
+  "raw_report_sha256": {
+    "mmlu_fp32/mmlu_accuracy.json": "dde1527987479c7c5b916f0e3ea59cdb7b6e23aae5f0a5834c2be8d5dab56d91",
+    "wikitext_fp32/pytorch_quality.json": "2561d03c10acd097f26f0872f0fcbb7ea19b23ce8f517a1aeb9cff2acdcd477b"
+  },
+  "quality_qualified": false
+}
