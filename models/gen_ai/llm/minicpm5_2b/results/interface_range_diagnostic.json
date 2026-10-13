@@ -1,0 +1,875 @@
+{
+  "scope": "four_blocks_main_interfaces_not_all_internal_ops",
+  "rotation_sha256": "3bbae96fee9aaacf75a651bed24869480099402183a45dfe60daf86cfadfd624",
+  "fp_hidden_frame_check": {
+    "apply_r1": true,
+    "embedding_direct_mse": 0.0006061206804588437,
+    "embedding_rotated_mse": 1.0150481194820035e-12
+  },
+  "interfaces": [
+    {
+      "layer": 0,
+      "interface": "input",
+      "scale": 3.4940960631502094e-06,
+      "representable_absmax": 0.11449104570124291,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 0.08385263432137634,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 0,
+      "interface": "output",
+      "scale": 2.6899218937614933e-05,
+      "representable_absmax": 0.8814067069288285,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 0.680397716000765,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 1,
+      "interface": "input",
+      "scale": 2.6899218937614933e-05,
+      "representable_absmax": 0.8814067069288285,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 0.680397716000765,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 1,
+      "interface": "output",
+      "scale": 0.0004012025019619614,
+      "representable_absmax": 13.146202381787589,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 12.03133568678766,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 2,
+      "interface": "input",
+      "scale": 0.0004012025019619614,
+      "representable_absmax": 13.146202381787589,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 12.03133568678766,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 2,
+      "interface": "output",
+      "scale": 0.00042920035775750875,
+      "representable_absmax": 14.06360812264029,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 12.86964254322527,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 3,
+      "interface": "input",
+      "scale": 0.00042920035775750875,
+      "representable_absmax": 14.06360812264029,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 12.86964254322527,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 3,
+      "interface": "output",
+      "scale": 0.0004343598266132176,
+      "representable_absmax": 14.2326684386353,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 13.043178438148187,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 4,
+      "interface": "input",
+      "scale": 0.0004343598266132176,
+      "representable_absmax": 14.2326684386353,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 13.043178438148187,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 4,
+      "interface": "output",
+      "scale": 0.000434045767178759,
+      "representable_absmax": 14.222377653146395,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 13.03772374155409,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 5,
+      "interface": "input",
+      "scale": 0.000434045767178759,
+      "representable_absmax": 14.222377653146395,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 13.03772374155409,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 5,
+      "interface": "output",
+      "scale": 0.000435678637586534,
+      "representable_absmax": 14.27588191779796,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 13.045858385295674,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 6,
+      "interface": "input",
+      "scale": 0.000435678637586534,
+      "representable_absmax": 14.27588191779796,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 13.045858385295674,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 6,
+      "interface": "output",
+      "scale": 0.00044255985994823277,
+      "representable_absmax": 14.501358930923743,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 13.217527781749274,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 7,
+      "interface": "input",
+      "scale": 0.00044255985994823277,
+      "representable_absmax": 14.501358930923743,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 13.217527781749274,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 7,
+      "interface": "output",
+      "scale": 0.006867458578199148,
+      "representable_absmax": 225.0260152318515,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 225.18000768072335,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 8,
+      "interface": "input",
+      "scale": 0.006867458578199148,
+      "representable_absmax": 225.0260152318515,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 225.18000768072335,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 8,
+      "interface": "output",
+      "scale": 0.00710584782063961,
+      "representable_absmax": 232.8373155388981,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 232.84700804199554,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 9,
+      "interface": "input",
+      "scale": 0.00710584782063961,
+      "representable_absmax": 232.8373155388981,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 232.84700804199554,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 9,
+      "interface": "output",
+      "scale": 0.007265122607350349,
+      "representable_absmax": 238.0562724750489,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 238.05398388255352,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 10,
+      "interface": "input",
+      "scale": 0.007265122607350349,
+      "representable_absmax": 238.0562724750489,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 238.05398388255352,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 10,
+      "interface": "output",
+      "scale": 0.0073395161889493465,
+      "representable_absmax": 240.49392696330324,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 240.52789675271725,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 11,
+      "interface": "input",
+      "scale": 0.0073395161889493465,
+      "representable_absmax": 240.49392696330324,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 240.52789675271725,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 11,
+      "interface": "output",
+      "scale": 0.0074080610647797585,
+      "representable_absmax": 242.73993690963835,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 242.7588333483841,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 12,
+      "interface": "input",
+      "scale": 0.0074080610647797585,
+      "representable_absmax": 242.73993690963835,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 242.7588333483841,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 12,
+      "interface": "output",
+      "scale": 0.007456739898771048,
+      "representable_absmax": 244.33499626303092,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 244.350812263117,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 13,
+      "interface": "input",
+      "scale": 0.007456739898771048,
+      "representable_absmax": 244.33499626303092,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 244.350812263117,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 13,
+      "interface": "output",
+      "scale": 0.007511691190302372,
+      "representable_absmax": 246.13558523263782,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 246.16674873289318,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 14,
+      "interface": "input",
+      "scale": 0.007511691190302372,
+      "representable_absmax": 246.13558523263782,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 246.16674873289318,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 14,
+      "interface": "output",
+      "scale": 0.007596886716783047,
+      "representable_absmax": 248.9271870488301,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 248.93669331572627,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 15,
+      "interface": "input",
+      "scale": 0.007596886716783047,
+      "representable_absmax": 248.9271870488301,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 248.93669331572627,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 15,
+      "interface": "output",
+      "scale": 0.007600091863423586,
+      "representable_absmax": 249.03221008880064,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 249.05174424080295,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 16,
+      "interface": "input",
+      "scale": 0.007600091863423586,
+      "representable_absmax": 249.03221008880064,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 249.05174424080295,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 16,
+      "interface": "output",
+      "scale": 0.00761237321421504,
+      "representable_absmax": 249.43463311018422,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 249.44798648305948,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 17,
+      "interface": "input",
+      "scale": 0.00761237321421504,
+      "representable_absmax": 249.43463311018422,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 249.44798648305948,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 17,
+      "interface": "output",
+      "scale": 0.007632256951183081,
+      "representable_absmax": 250.086163519416,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 250.0963262525011,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 18,
+      "interface": "input",
+      "scale": 0.007632256951183081,
+      "representable_absmax": 250.086163519416,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 250.0963262525011,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 18,
+      "interface": "output",
+      "scale": 0.007658506743609905,
+      "representable_absmax": 250.94629046786577,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 250.95527606175037,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 19,
+      "interface": "input",
+      "scale": 0.007658506743609905,
+      "representable_absmax": 250.94629046786577,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 250.95527606175037,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 19,
+      "interface": "output",
+      "scale": 0.007665911223739386,
+      "representable_absmax": 251.18891306826845,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 251.20330499314105,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 20,
+      "interface": "input",
+      "scale": 0.007665911223739386,
+      "representable_absmax": 251.18891306826845,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 251.20330499314105,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 20,
+      "interface": "output",
+      "scale": 0.00769704207777977,
+      "representable_absmax": 252.20897776260972,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 252.22752189514992,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 21,
+      "interface": "input",
+      "scale": 0.00769704207777977,
+      "representable_absmax": 252.20897776260972,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 252.22752189514992,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 21,
+      "interface": "output",
+      "scale": 0.007720788475126028,
+      "representable_absmax": 252.98707596445456,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 252.9993796658802,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 22,
+      "interface": "input",
+      "scale": 0.007720788475126028,
+      "representable_absmax": 252.98707596445456,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 252.9993796658802,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 22,
+      "interface": "output",
+      "scale": 0.007751139346510172,
+      "representable_absmax": 253.9815829670988,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 253.97886929090106,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 23,
+      "interface": "input",
+      "scale": 0.007751139346510172,
+      "representable_absmax": 253.9815829670988,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 253.97886929090106,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 23,
+      "interface": "output",
+      "scale": 0.007764607667922974,
+      "representable_absmax": 254.42289945483208,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.44466984171487,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 24,
+      "interface": "input",
+      "scale": 0.007764607667922974,
+      "representable_absmax": 254.42289945483208,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.44466984171487,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 24,
+      "interface": "output",
+      "scale": 0.0077606323175132275,
+      "representable_absmax": 254.29263914795592,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.29409602518754,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 25,
+      "interface": "input",
+      "scale": 0.0077606323175132275,
+      "representable_absmax": 254.29263914795592,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.29409602518754,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 25,
+      "interface": "output",
+      "scale": 0.00775984488427639,
+      "representable_absmax": 254.26683732308447,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.2810286571778,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 26,
+      "interface": "input",
+      "scale": 0.00775984488427639,
+      "representable_absmax": 254.26683732308447,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.2810286571778,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 26,
+      "interface": "output",
+      "scale": 0.007768386974930763,
+      "representable_absmax": 254.54673600755632,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 254.52667648618663,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 27,
+      "interface": "input",
+      "scale": 0.007768386974930763,
+      "representable_absmax": 254.54673600755632,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 254.52667648618663,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 27,
+      "interface": "output",
+      "scale": 0.007764850743114948,
+      "representable_absmax": 254.4308642996475,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.45750052553163,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 28,
+      "interface": "input",
+      "scale": 0.007764850743114948,
+      "representable_absmax": 254.4308642996475,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.45750052553163,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 28,
+      "interface": "output",
+      "scale": 0.007771031931042671,
+      "representable_absmax": 254.6334032844752,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 254.6327844519304,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 29,
+      "interface": "input",
+      "scale": 0.007771031931042671,
+      "representable_absmax": 254.6334032844752,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 254.6327844519304,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 29,
+      "interface": "output",
+      "scale": 0.007775450125336647,
+      "representable_absmax": 254.7781742569059,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.78013544748103,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 30,
+      "interface": "input",
+      "scale": 0.007775450125336647,
+      "representable_absmax": 254.7781742569059,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.78013544748103,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 30,
+      "interface": "output",
+      "scale": 0.00777428550645709,
+      "representable_absmax": 254.74001319007948,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.7623598005309,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 31,
+      "interface": "input",
+      "scale": 0.00777428550645709,
+      "representable_absmax": 254.74001319007948,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.7623598005309,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 31,
+      "interface": "output",
+      "scale": 0.007775374222546816,
+      "representable_absmax": 254.77568715019152,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.7907570068706,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 32,
+      "interface": "input",
+      "scale": 0.007775374222546816,
+      "representable_absmax": 254.77568715019152,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.7907570068706,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 32,
+      "interface": "output",
+      "scale": 0.007772381883114576,
+      "representable_absmax": 254.67763716401532,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.70325129054388,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 33,
+      "interface": "input",
+      "scale": 0.007772381883114576,
+      "representable_absmax": 254.67763716401532,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.70325129054388,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 33,
+      "interface": "output",
+      "scale": 0.0077720205299556255,
+      "representable_absmax": 254.66579670505598,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.66917216540523,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 34,
+      "interface": "input",
+      "scale": 0.0077720205299556255,
+      "representable_absmax": 254.66579670505598,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.66917216540523,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 34,
+      "interface": "output",
+      "scale": 0.007770410273224115,
+      "representable_absmax": 254.6130334227346,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.62587241405467,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 35,
+      "interface": "input",
+      "scale": 0.007770410273224115,
+      "representable_absmax": 254.6130334227346,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.62587241405467,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 35,
+      "interface": "output",
+      "scale": 0.007767754606902599,
+      "representable_absmax": 254.52601520437747,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.56652636942573,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 36,
+      "interface": "input",
+      "scale": 0.007767754606902599,
+      "representable_absmax": 254.52601520437747,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 254.56652636942573,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 36,
+      "interface": "output",
+      "scale": 0.007750992197543383,
+      "representable_absmax": 253.97676133690402,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 253.96047314023548,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 37,
+      "interface": "input",
+      "scale": 0.007750992197543383,
+      "representable_absmax": 253.97676133690402,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 253.96047314023548,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 37,
+      "interface": "output",
+      "scale": 0.007746798451989889,
+      "representable_absmax": 253.8393448763527,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 253.84377443290717,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 38,
+      "interface": "input",
+      "scale": 0.007746798451989889,
+      "representable_absmax": 253.8393448763527,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 253.84377443290717,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 38,
+      "interface": "output",
+      "scale": 0.007737427484244108,
+      "representable_absmax": 253.5322863762267,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 253.5665326845384,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 39,
+      "interface": "input",
+      "scale": 0.007737427484244108,
+      "representable_absmax": 253.5322863762267,
+      "tested_values": 1048576,
+      "out_of_range_values": 1,
+      "observed_absmax": 253.5665326845384,
+      "out_of_range_fraction": 9.5367431640625e-07
+    },
+    {
+      "layer": 39,
+      "interface": "output",
+      "scale": 0.00772975804284215,
+      "representable_absmax": 253.28098178980872,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 253.2683214429674,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 40,
+      "interface": "input",
+      "scale": 0.00772975804284215,
+      "representable_absmax": 253.28098178980872,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 253.2683214429674,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 40,
+      "interface": "output",
+      "scale": 0.005854571238160133,
+      "representable_absmax": 191.8367357607931,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 191.69817176398394,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 41,
+      "interface": "input",
+      "scale": 0.005854571238160133,
+      "representable_absmax": 191.8367357607931,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 191.69817176398394,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 41,
+      "interface": "output",
+      "scale": 0.0050705596804618835,
+      "representable_absmax": 166.14702904969454,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 157.48284023960736,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 42,
+      "interface": "input",
+      "scale": 0.0050705596804618835,
+      "representable_absmax": 166.14702904969454,
+      "tested_values": 1048576,
+      "out_of_range_values": 0,
+      "observed_absmax": 157.48284023960736,
+      "out_of_range_fraction": 0.0
+    },
+    {
+      "layer": 42,
+      "interface": "output",
+      "scale": 0.0013031609123572707,
+      "representable_absmax": 42.70067361521069,
+      "tested_values": 66846720,
+      "out_of_range_values": 0,
+      "observed_absmax": 28.34695053100586,
+      "out_of_range_fraction": 0.0
+    }
+  ],
+  "candidate": "minicpm5_rotate_v3",
+  "candidate_precision": "asym4W_sym16A",
+  "formal_accuracy": false,
+  "interface_counts_include_adjacent_layer_duplicates": true
+}

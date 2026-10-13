@@ -83,3 +83,5 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 待验证: A16 接口量化范围是否裁剪激活、逐层权重量化误差、长序列校准的改善效果,以及多块 Prefill 的 KV Cache 转移一致性.未获得诊断证据前,这些仅为排查方向.保持全 W4A16,不通过提高权重位宽替代问题定位.
 
 共享工具统一位于仓库 `tools/llm/`;`evaluate_mmlu.py tflite --diagnostic-questions 16` 用于不同输入长度的执行对比,不代替首轮千题 Accuracy.正式性能统一报告 Prefill 和 Decode 的 token/s.
+
+2026-10-13 进一步检查旧旋转 W4 候选的 A16 主接口范围: 4 块数据、86 个接口,约 1.56 亿个数值中仅 54 个超出范围,包含相邻层输出/输入的重复统计.先对照量化 embedding 验证 hidden 的旋转坐标系后再统计.当前没有观察到主接口大面积裁剪,仍不能排除少量异常值的影响或图内算子激活裁剪.详见 [逐层接口报告](results/interface_range_diagnostic.json).下一步检查投影权重量化误差及逐层累积,并对比新校准候选;该报告不替代 MMLU/WikiText 正式成绩.

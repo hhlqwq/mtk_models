@@ -176,5 +176,15 @@
     "raw_report_path": "/tmp/hailongcodex/2026-10-13/sdk_float_stage_comparison.json",
     "finding": "official_fp32_and_sdk_float_match_on_tested_positions"
   },
-  "next_diagnostic": "check_actual_a16_interface_clipping_then_quantized_projection_error_and_calibration_domain"
+  "next_diagnostic": "compare_layerwise_quantized_projection_errors_and_accumulation_then_validate_expanded_calibration_candidate",
+  "a16_interface_range_diagnostic": {
+    "candidate": "minicpm5_rotate_v3",
+    "scope": "four_blocks_main_interfaces_not_all_internal_ops",
+    "interfaces": 86,
+    "tested_values": 155975680,
+    "out_of_range_values": 54,
+    "finding": "no_widespread_main_interface_clipping_observed_internal_ops_not_checked",
+    "raw_report": "interface_range_diagnostic.json",
+    "raw_report_sha256": "0b84fbc2e20c3f830c623855cc822f1cc5ace044464eeb6af4e9ee48bb82fa54"
+  }
 }
