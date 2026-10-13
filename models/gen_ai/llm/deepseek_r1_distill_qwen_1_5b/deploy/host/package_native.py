@@ -112,6 +112,16 @@ def package(work, output, prefill, quantized_prefix=None):
     mixed_audit = json.loads(audit_path.read_text()) if audit_path.exists() else None
     if precision.startswith("mixed_") and mixed_audit is None:
         raise ValueError("混合精度包缺少逐层实际权重精度核对.")
+    # 归档统一精度的实际逐层核对记录,并核对其与交付配置一致.
+    uniform_path = work / "weight_precision_audit.json"
+    uniform_audit = (json.loads(uniform_path.read_text())
+                     if uniform_path.exists() else None)
+    if uniform_audit is not None:
+        if any(uniform_audit[key] != precision_settings[key]
+               for key in ("attention", "mlp", "lm_head")):
+            raise ValueError("统一权重精度核对与交付配置不一致.")
+        if uniform_audit["parts"] != config["num_hidden_layers"] + 1:
+            raise ValueError("统一权重精度核对的分片数量不符.")
     prompt = single_file(Path(f"{base}_{prefill}t{context}c"), "*.dla")
     decode = single_file(Path(f"{base}_1t{context}c"), "*.dla")
     contracts = {"prompt": graph_contract(prompt.with_suffix(".tflite")),
@@ -186,6 +196,7 @@ def package(work, output, prefill, quantized_prefix=None):
         "status": "compiled_pending_board", "preparation": preparation,
         "precision": precision, "precision_settings": precision_settings,
         "quantization_adapter": adapter, "mixed_precision_audit": mixed_audit,
+        "weight_precision_audit": uniform_audit,
         "weight_optimization": "hessian",
         "prefill": prefill, "context": context, "files": files,
         "graph_contracts": contracts,

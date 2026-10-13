@@ -187,3 +187,5 @@ SDK 2.7.5 的旋转混合入口固定要求两个模板精度组,当前 Converte
 保持 Prefill=128、上下文=1024、Decode=1,每款仅两个 DLA.新候选仍须三后端输出、统一 WikiText2 PPL 和板端性能验证,当前不代表精度合格.
 
 统一精度也逐层核对 SDK 实际权重分组,必须确认 Attention、MLP、LM Head 全部符合请求的 W4A16,成功后保存 `weight_precision_audit.json`;仅凭文件名不认定实际精度.
+
+交付清单同步归档统一精度逐层核对结果,打包核对 Attention、MLP、LM Head 配置与分片数量,保留历史包兼容性.
