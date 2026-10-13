@@ -57,10 +57,10 @@ MiniCPM5 独立 tokenizer 副本仅转换 BPE merges 序列化格式.校准配�
 
 ## 正式精度指标
 
-首轮结果采用 MMLU 0-shot 固定 1000 题、覆盖 57 学科的 Accuracy,以及完整 WikiText-2 test 的 PPL.共享 `../evaluate_mmlu.py` 固定题目提示、不加入 Chat Template 或额外特殊 Token,使用空格加 A/B/C/D 的单 Token 选项 logits 评分;记录每题分数、答案、预测和完整题数,不得截断或丢题.若输入超过上下文,必须先调整上下文再执行完整测试.
+首轮结果采用 MMLU 0-shot 固定 1000 题、覆盖 57 学科的 Accuracy,以及 WikiText-2 test 前 128 行的 PPL.共享 `../evaluate_mmlu.py` 固定题目提示、不加入 Chat Template 或额外特殊 Token,使用空格加 A/B/C/D 的单 Token 选项 logits 评分;记录每题分数、答案、预测和完整题数,不得截断或丢题.若输入超过上下文,必须先调整上下文再执行完整测试.
 
 MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 revision `c30699e8356da336a370243923dbaf21066bb9fe`,test 文件 SHA256 `74a41822ce7d3def56e1682f958469c04642a5336a5ce912fa375fdb90fb25d7`.FP32 与 NPU 使用同一题目 Token 文件及评分协议,报告总题数加权 Accuracy.
 
-WikiText 评价使用 `evaluate_quality.py --full-test`,继续采用 128 Token 分块、重置上下文、每块评分 127 次下一 Token 的共同协议,记录不足一块的末尾 Token;不得将此前前 128 行或四块诊断 PPL 标为完整测试结果.余弦仅作为误差诊断,不代替上述正式指标.当前尚无新候选的首轮 MMLU/WikiText 结果.
+首轮 WikiText 评价使用 `evaluate_quality.py --text-rows 128`,继续采用 128 Token 分块、重置上下文、每块评分 127 次下一 Token 的共同协议,记录不足一块的末尾 Token;首轮明确标为固定前 128 行子集,四块诊断不代替首轮结果;后续完整测试才使用 `--full-test`.余弦仅作为误差诊断,不代替上述正式指标.当前尚无新候选的首轮 MMLU/WikiText 结果.
 
 首轮 MMLU 通过 `--limit 1000 --seed 17` 按学科题数比例分层抽样,固定原测试集题目索引并由两个模型共享.结果明确标为首轮子集,不得冒充完整 MMLU Accuracy;后续 `--limit 0` 才执行完整题集.
