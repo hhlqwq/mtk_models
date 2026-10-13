@@ -11,7 +11,7 @@
 现有 W4 诊断存在精度退化,不能因推理可运行而认定质量合格.
 
 Prefill=128 Token,上下文=1024,Decode=1 Token.每款只生成两个 DLA.
-当前候选: `/tmp/hailongcodex/2026-10-12/minicpm5_w4_train_v5`.
+当前候选: `/tmp/hailongcodex/2026-10-13/minicpm5_w4_fast_v6`.
 官方 SDK=2.7.5,Converter=8.16.0,编译目标为 Genio720 MDLA5.3.
 Hadamard 权重旋转 seed=0,注意力 mask=-100;只修改独立转换副本.
 
@@ -102,3 +102,5 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 该输入上,误差在 Transformer 层间累积并在后段明显增大;LM Head 单独执行的误差不足以解释累计 logits 误差.残差分支的单层相对误差在 34~38 层约 19%~20%,需要进一步区分注意力、MLP 权重与图内激活误差,尚不能指定某个投影为唯一原因.现有扩充校准和累计层误差优化针对这一累积问题,其效果仍需由新候选实测验证.完整记录见 [逐层误差报告](results/layer_error_diagnostic.json);不将此诊断当作正式精度合格证据.
 
 2026-10-13 按确认切换到常规全 W4A16 量化: 停止本次长耗时重优化,保留校准和历史产物.先生成 Prefill/Decode 两个 DLA 并短测,再进行首轮正式评价;重优化不作为默认部署步骤.
+
+打包从量化成功记录读取实际分片前缀;常规量化的交付清单中 `weight_optimization=null`,不误标为 Hessian.

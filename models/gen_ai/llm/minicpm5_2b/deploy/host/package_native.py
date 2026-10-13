@@ -87,7 +87,10 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
     context = preparation["context"]
     model = work / "MiniCPM5-2B"
     config = json.loads((model / "config.json").read_text())
-    base = quantized_prefix or work / "tflite/MiniCPM5-2B_asym4W_sym16A_Overall_hessian"
+    settings_path = work / "quantization_settings.json"
+    saved_settings = json.loads(settings_path.read_text()) if settings_path.exists() else {}
+    prefix = saved_settings.get("quantized_prefix", "MiniCPM5-2B_asym4W_sym16A_Overall_hessian")
+    base = quantized_prefix or work / "tflite" / prefix
     if base.resolve().parent != (work / "tflite").resolve():
         raise ValueError("量化目录必须位于本次任务的 tflite 目录.")
     settings_path = work / "quantization_settings.json"
@@ -238,7 +241,9 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
         "precision": precision, "precision_settings": precision_settings,
         "quantization_adapter": adapter,
         "weight_precision_audit": uniform_audit,
-        "weight_optimization": "hessian",
+        "weight_optimization": (
+            "hessian" if "_Overall_hessian" in base.name else
+            "gradient" if "_Overall_gradient" in base.name else None),
         "quantized_prefix": base.name,
         "host_quality": quality,
         "prefill": prefill, "context": context, "files": files,
