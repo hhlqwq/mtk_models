@@ -100,7 +100,9 @@ def evaluate(args):
     if sha256(args.corpus) != "5f1bea067869d04849c0f975a2b29c4ff47d867f484f5010ea5e861eab246d91":
         raise ValueError("固定 WikiText2 测试集哈希不符.")
     # 统一模式固定原始文本行,不同模型按官方词表编码,不固定跨模型 Token 数.
-    selected = texts if args.blocks is not None else texts[:args.text_rows]
+    if args.full_test and args.blocks is not None:
+        raise ValueError("完整测试集协议不能与旧固定 Token 块协议混用.")
+    selected = texts if args.full_test or args.blocks is not None else texts[:args.text_rows]
     text = "\n\n".join(selected)
     tokens = tokenizer(text, return_tensors="pt", verbose=False,
                        add_special_tokens=args.blocks is not None).input_ids
@@ -133,6 +135,10 @@ def evaluate(args):
     if args.diagnostic_blocks:
         protocol["scope"] = "logits_diagnostic_prefix_not_full_accuracy"
         protocol["diagnostic_blocks"] = blocks
+    elif args.full_test:
+        protocol["scope"] = "wikitext2_full_test_block128_reset_context"
+        protocol["protocol"] = "full_test_block128_v1"
+    protocol["full_test_requested"] = args.full_test
     if args.backend == "pytorch":
         if args.device == "cpu":
             torch.set_num_threads(args.cpu_threads)
@@ -260,6 +266,8 @@ def main():
     parser.add_argument("--tflite", type=Path)
     parser.add_argument("--decode-tflite", type=Path)
     parser.add_argument("--text-rows", type=int, default=128)
+    parser.add_argument("--full-test", action="store_true",
+                        help="使用完整 WikiText2 test 文本,记录尾部舍弃 Token.")
     parser.add_argument("--blocks", type=int, help="仅复现旧版固定 Token 子集结果.")
     parser.add_argument("--skip-demo", action="store_true")
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cuda")

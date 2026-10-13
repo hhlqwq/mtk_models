@@ -54,3 +54,11 @@ Decode mask 的 Runtime 尾部对齐按实际契约补齐,其他输入输出大�
 最终 NAS 目录结构沿用官方模型交付布局;只有通过实际验证的候选才更新交付状态.
 
 MiniCPM5 独立 tokenizer 副本仅转换 BPE merges 序列化格式.校准配置使用单 EOS=130073,运行保留官方停止 Token 1/130073,默认 enable_thinking=false.
+
+## 正式精度指标
+
+正式结果采用 MMLU 0-shot 完整 57 学科测试集 Accuracy,以及完整 WikiText-2 test 的 PPL.共享 `../evaluate_mmlu.py` 固定题目提示、不加入 Chat Template 或额外特殊 Token,使用空格加 A/B/C/D 的单 Token 选项 logits 评分;记录每题分数、答案、预测和完整题数,不得截断或丢题.若输入超过上下文,必须先调整上下文再执行完整测试.
+
+MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 revision `c30699e8356da336a370243923dbaf21066bb9fe`,test 文件 SHA256 `74a41822ce7d3def56e1682f958469c04642a5336a5ce912fa375fdb90fb25d7`.FP32 与 NPU 使用同一题目 Token 文件及评分协议,报告总题数加权 Accuracy.
+
+WikiText 评价使用 `evaluate_quality.py --full-test`,继续采用 128 Token 分块、重置上下文、每块评分 127 次下一 Token 的共同协议,记录不足一块的末尾 Token;不得将此前前 128 行或四块诊断 PPL 标为完整测试结果.余弦仅作为误差诊断,不代替上述正式指标.当前尚无新候选的完整 MMLU/WikiText 结果.
