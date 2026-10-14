@@ -1,6 +1,6 @@
 {
   "model": "minicpm5_2b",
-  "run_id": "20261014_minicpm5_w4_fast_v6",
+  "run_id": "20261014_minicpm5_w4_light_hessian_v8",
   "scope": "first_round_subset_not_full_benchmark",
   "status": "board_verified",
   "quality_qualified": false,
@@ -17,28 +17,28 @@
       "subjects": 57,
       "seed": 17,
       "fp32_correct": 559,
-      "npu_correct": 348,
+      "npu_correct": 413,
       "fp32_accuracy": 0.559,
-      "npu_accuracy": 0.348,
-      "accuracy_drop_percentage_points": 21.10000000000001,
-      "prediction_agreement": 0.416,
+      "npu_accuracy": 0.413,
+      "accuracy_drop_percentage_points": 14.600000000000007,
+      "prediction_agreement": 0.497,
       "cases_sha256": "d13e6f3c1a79d8dc8592fdfbf409e53035dda9e6186e6faf36bfdd48da138b6a",
-      "npu_scoring_seconds": 645.5093118068762
+      "npu_scoring_seconds": 649.2802480391692
     },
     "wikitext": {
       "text_rows": 128,
       "blocks": 58,
       "scored_tokens": 7366,
       "fp32_ppl": 40.04114532470703,
-      "npu_ppl": 75.64911396408469,
-      "relative_ppl_increase_percent": 88.92844685290777,
+      "npu_ppl": 48.382059098257,
+      "relative_ppl_increase_percent": 20.83085712436723,
       "selected_text_sha256": "6605c41acd8bc0bfeb0f1acb43e31437da857e03135b21b097d16756ccaba84c"
     }
   },
   "performance_summary": {
     "unit": "token/s",
-    "prefill_tokens_per_second": 292.1320619502554,
-    "decode_tokens_per_second": 8.30645,
+    "prefill_tokens_per_second": 288.6660246854555,
+    "decode_tokens_per_second": 8.14848,
     "input_tokens": 128,
     "generated_tokens": 128,
     "scope": "fixed_128_input_max_128_generated"
@@ -65,9 +65,11 @@
         "role": "auxiliary_weights"
       }
     ],
-    "scope": "fast_v6_verified_two_dla_files",
-    "directory": "/root/hailong.he/open_models/minicpm5_w4_fast_v6_native",
+    "scope": "light_hessian_v8_verified_two_dla_files",
+    "directory": "/root/hailong.he/open_models/minicpm5_w4_light_hessian_v8_native",
     "source_weights": 5033.56,
     "deployment_total": 2827.29
-  }
+  },
+  "weight_optimization": "hessian_16_samples",
+  "cumulative_layer_error": false
 }

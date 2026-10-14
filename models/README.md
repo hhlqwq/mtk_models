@@ -216,6 +216,6 @@ models/
 对于机器人应用，还应在模型指标之外记录应用层输出，例如可通行区域、目标相对深度、
 稳定 `track_id`、手势防抖结果或环境声告警；单张可视化图片不能替代连续运行和安全边界验证。
 
-[MiniCPM5-2B](gen_ai/llm/minicpm5_2b/README.md) 已完成常规全 W4A16 双 DLA、板端性能和首轮同协议精度对比.固定 1000 题 MMLU 0-shot: FP32 55.9%,NPU 34.8%;WikiText2 test 前 128 行 PPL: FP32 40.04,NPU 75.65.精度退化明显,保持未通过质量验收状态.
+[MiniCPM5-2B](gen_ai/llm/minicpm5_2b/README.md) 已完成轻量 Hessian 全 W4A16 双 DLA、板端性能和首轮同协议精度对比.固定 1000 题 MMLU 0-shot: FP32 55.9%,NPU 41.3%;WikiText2 test 前 128 行 PPL: FP32 40.04,NPU 48.38.精度退化明显,保持未通过质量验收状态.
 
 LLM 的 Prefill 与 Decode 各一个 DLA,速度统一 token/s.本次 MiniCPM5 固定 128 输入、最多 128 输出的 Prefill 292.13 token/s,Decode 8.31 token/s.使用 `tools/llm/` 公共工具;首轮子集、四块诊断和完整测试集分别记录,不混用范围.当前继续进行有时长上限的 W4 局部误差修复,详见模型 README.

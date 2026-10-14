@@ -2,7 +2,7 @@ schema_version: 1
 models:
   - id: minicpm5_2b
     quality_status: evaluated_quality_degraded
-    latest_run: 20261014_minicpm5_w4_fast_v6
+    latest_run: 20261014_minicpm5_w4_light_hessian_v8
     batch: supplemental
     pilot: false
     scenario: gen_ai

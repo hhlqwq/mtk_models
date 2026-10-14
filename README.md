@@ -211,9 +211,9 @@ python tools/check_registry.py
 
 各模型统一在编译主机评测 ONNX 核心精度,板端记录核心精度、推理耗时、峰值 RSS和相对 ONNX 的精度变化。量化方式、数据要求与测试步骤见各模型 README。
 
-[MiniCPM5-2B](models/gen_ai/llm/minicpm5_2b/README.md) 常规全 W4A16 已完成双 DLA、板端性能和首轮精度对比.固定 1000 题 MMLU 0-shot: FP32 55.9%,NPU 34.8%,下降 21.1 个百分点;WikiText 前 128 行 PPL: FP32 40.04,NPU 75.65.精度退化明显,不标记质量合格.
+[MiniCPM5-2B](models/gen_ai/llm/minicpm5_2b/README.md) 轻量 Hessian 全 W4A16 已完成双 DLA、板端性能和首轮精度对比.固定 1000 题 MMLU 0-shot: FP32 55.9%,NPU 41.3%,下降 14.6 个百分点;WikiText 前 128 行 PPL: FP32 40.04,NPU 48.38.精度退化明显,不标记质量合格.
 
-LLM 只交付 Prefill 与 Decode 两个 DLA,单位统一 token/s.本次 MiniCPM5 固定 128 输入、最多 128 输出的实测 Prefill 292.13 token/s,Decode 8.31 token/s;详细范围、哈希和排查证据见模型 README.
+LLM 只交付 Prefill 与 Decode 两个 DLA,单位统一 token/s.本次 MiniCPM5 固定 128 输入、最多 128 输出的实测 Prefill 288.67 token/s,Decode 8.15 token/s;详细范围、哈希和排查证据见模型 README.
 
 两款 LLM 保持全 W4A16.默认采用常规量化,不启用耗时累计层误差优化;已确认误差后只验证有限范围的局部修复.具体配置和实际质量状态见各模型 README.
 
