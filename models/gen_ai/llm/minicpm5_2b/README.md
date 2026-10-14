@@ -118,3 +118,5 @@ MMLU 板端入口使用交付布局中的 `1024c/prompt.dla`,并严格核对清�
 常规候选的四块诊断中,FP32→NPU 的 Prefill/Decode 平均余弦为 0.91796/0.93871,TFLite→NPU 为 0.99892/0.99957.结合首轮 Accuracy/PPL,主要误差已在量化阶段产生.旧旋转优化候选诊断更好,但校准配置也不同,不能将全部差异唯一归因于关闭优化.现有证据支持继续检查权重量化与逐层累积,不支持提高位宽替代修复.
 
 候选文件位于 Ubuntu89 `/tmp/hailongcodex/2026-10-13/minicpm5-w4-fast-native-v6`,板端 `/root/hailong.he/open_models/minicpm5_w4_fast_v6_native`.结果原始记录位于服务器 `/tmp/hailongcodex/2026-10-14/minicpm5_fast_first_round`;交付清单和 [首轮汇总](results/first_round_summary.json) 保存双 DLA 与原始报告哈希.精度尚未解决,不把该候选标为正式合格交付.
+
+局部修复的清单从成功记录读取 `optimized_layers`、校准样本数和累计层误差开关;不将部分分片优化误标为全模型优化.

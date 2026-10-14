@@ -241,9 +241,13 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
         "precision": precision, "precision_settings": precision_settings,
         "quantization_adapter": adapter,
         "weight_precision_audit": uniform_audit,
-        "weight_optimization": (
+        "weight_optimization": precision_settings.get(
+            "weight_optimization",
             "hessian" if "_Overall_hessian" in base.name else
             "gradient" if "_Overall_gradient" in base.name else None),
+        "optimized_layers": precision_settings.get("optimized_layers"),
+        "optimization_calibration_samples": precision_settings.get("calibration_samples"),
+        "cumulative_layer_error": precision_settings.get("cumulative_layer_error"),
         "quantized_prefix": base.name,
         "host_quality": quality,
         "prefill": prefill, "context": context, "files": files,
