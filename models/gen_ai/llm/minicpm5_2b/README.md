@@ -65,4 +65,4 @@ WikiText2 使用 test 前 128 行原始文本,不加特殊 Token,每块 128 Toke
 首轮原始记录: `/tmp/hailongcodex/2026-10-14/minicpm5_light_hessian_first_round`.
 工具归档目录: `/data/users/hailong.he/data/MTKG720/GAI_Toolkit/MiniCPM5-2B/`,明确标为项目适配脚本,不是 MTK 官方 MiniCPM5 专用 Toolkit.
 
-最终 NAS 路径待确认当前挂载中的实际目录;服务器模型可运行,精度尚未通过质量验收.
+最终 NAS 根目录采用用户指定的 G720 外部 `models/` 目录,模型包相对路径为 `gen_ai/llm/minicpm5_2b/minicpm5-2b/`.保留该模型目录已有的来源记录,复制后逐文件核对 SHA256,记录在模型包的 `delivery_verification.json` 中.服务器模型可运行,精度尚未通过质量验收.
