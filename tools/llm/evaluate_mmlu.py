@@ -218,12 +218,15 @@ def evaluate(args):
         if manifest["context"] != protocol["context"]:
             raise ValueError("交付上下文与 MMLU 协议不符.")
         contract = json.loads((args.data / "board_input_contract.json").read_text())
-        graph = (args.package / f"{manifest['context']}c/prefill.dla"
+        graph = (args.package / f"{manifest['context']}c/prompt.dla"
                  if args.backend == "npu" else args.graph)
         embeddings = args.package / "tokenizer/embedding_int16.bin"
         for path in ([graph, embeddings] if args.backend == "npu" else [embeddings]):
-            entry = next(x for x in manifest["files"] if x["name"] ==
-                         path.relative_to(args.package).as_posix())
+            relative = path.relative_to(args.package).as_posix()
+            entries = [x for x in manifest["files"] if x["name"] == relative]
+            if len(entries) != 1:
+                raise ValueError(f"交付清单缺少或重复评测文件: {relative}")
+            entry = entries[0]
             if sha256(path) != entry["sha256"]:
                 raise ValueError("实际板端交付文件哈希不符.")
         meta["graph_sha256"] = sha256(graph)

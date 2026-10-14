@@ -105,4 +105,6 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 
 打包从量化成功记录读取实际分片前缀;常规量化的交付清单中 `weight_optimization=null`,不误标为 Hessian.
 
-常规量化未生成优化配置 JSON 时,审核直接读取实际 TFLite: 投影权重须为 INT4,所有图接口须为 INT16,并核对完整层数和文件哈希.可用 `tools/llm/quantize_native.py converter CONFIG -p asym4W_sym16A -tp asym4W_sym16A --audit-only` 恢复审核,不重新量化.
+常规量化未生成优化配置 JSON 时,审核直接读取实际 TFLite: 投影权重须为 INT4,所有图接口须为 INT16,并核对完整层数和文件哈希.可用 `tools/llm/quantize_native.py --audit-only converter CONFIG -p asym4W_sym16A -tp asym4W_sym16A` 恢复审核,不重新量化.
+
+MMLU 板端入口使用交付布局中的 `1024c/prompt.dla`,并严格核对清单及哈希;不使用不存在的 `prefill.dla` 别名.
