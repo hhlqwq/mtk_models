@@ -10,6 +10,7 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 模型目录: 根据本脚本的位置自动确定.
     MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+    source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
 
     # 1. 模型与校准数据.
     # 模型文件: 原始权重或待编译的 ONNX 完整路径.
@@ -19,7 +20,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
 
     # 2. 产物与临时目录.
     # 模型输出目录: 转换与编译产物保存在这里.
-    MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
+    MODEL_OUTPUT_DIR="${MODEL_ASSETS_DIR}"
     # 临时构建目录: 缓存和中间文件保存在仓库外.
     BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/model_id"
 

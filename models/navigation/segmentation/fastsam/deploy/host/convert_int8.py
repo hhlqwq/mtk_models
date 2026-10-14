@@ -3,16 +3,8 @@
 import argparse
 import sys
 import json
+import subprocess
 from pathlib import Path
-
-import cv2
-import mtk_converter
-import numpy as np
-from tqdm import tqdm
-
-# 复用板端预处理,保持校准与推理输入一致.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
-from fastsam_utils import OUTPUT_NAMES, OUTPUT_SHAPES, preprocess
 
 
 def tensor_metadata(detail):
@@ -33,12 +25,58 @@ def tensor_metadata(detail):
 
 def main():
     """选取固定校准集,执行转换,按唯一形状映射运行时输出."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--onnx", type=Path, required=True)
-    parser.add_argument("--calibration-dir", type=Path, required=True)
-    parser.add_argument("--samples", type=int, default=100)
-    parser.add_argument("--output", type=Path, required=True)
+    parser = argparse.ArgumentParser(description=__doc__, add_help=False)
+    parser.add_argument("--config", type=Path, help="使用带备注的 YAML 配置.")
+    parser.add_argument("--work-dir", type=Path, help="复用指定的中间文件目录.")
+    parser.add_argument("--inside-container", action="store_true", help=argparse.SUPPRESS)
+    options, _ = parser.parse_known_args()
+    parser.add_argument("-h", "--help", action="help", help="显示参数说明.")
+    paths = None
+    samples = 100
+    if options.config:
+        from datetime import date
+        import os
+        import yaml
+        sys.path.insert(0, str(Path(__file__).resolve().parents[6] / "tools"))
+        from storage import load_model_config
+        config = load_model_config(options.config)
+        model = Path(__file__).resolve().parents[2]
+        dataset = Path(config["data"]["dataset_dir"])
+        work = options.work_dir or Path(config["build"]["work_root"]) / os.environ.get("FASTSAM_RUN_DATE", date.today().isoformat()) / "fastsam"
+        work = work.resolve()
+        for name in ("tmp", "cache"):
+            (work / name).mkdir(parents=True, exist_ok=True)
+        os.environ.update(PYTHONDONTWRITEBYTECODE="1", TMPDIR=str(work / "tmp"),
+                          XDG_CACHE_HOME=str(work / "cache"), TORCH_HOME=str(work / "cache/torch"))
+        paths = {"output": model / config["model"]["output_dir"],
+                 "calibration": dataset / config["data"]["calibration_dir"]}
+        samples = config["data"]["calibration_samples"]
+    parser.add_argument("--onnx", type=Path, required=paths is None,
+                        default=paths["output"] / "model_fp32.onnx" if paths else None)
+    parser.add_argument("--calibration-dir", type=Path, required=paths is None,
+                        default=paths["calibration"] if paths else None)
+    parser.add_argument("--samples", type=int, default=samples)
+    parser.add_argument("--output", type=Path, required=paths is None,
+                        default=paths["output"] / "model_int8.tflite" if paths else None)
     args = parser.parse_args()
+    if options.config and not args.inside_container and not Path("/.dockerenv").exists():
+        container = config["build"]["container"]
+        subprocess.run(["docker", "exec", "-e", "MTK_MODEL_STORAGE_ROOT", "-e", "MTK_DATASET_ROOT", container, "mkdir", "-p", str(work / "tmp"), str(work / "cache")], check=True)
+        print(f"[量化] 在 Docker {container} 中执行.", flush=True)
+        subprocess.run(["docker", "exec", "-e", "MTK_MODEL_STORAGE_ROOT", "-e", "MTK_DATASET_ROOT", "-e", "PYTHONDONTWRITEBYTECODE=1",
+                        "-e", f"TMPDIR={work / 'tmp'}", "-e", f"XDG_CACHE_HOME={work / 'cache'}",
+                        "-e", f"TORCH_HOME={work / 'cache/torch'}", "-w", str(work), container,
+                        "python", str(Path(__file__).resolve()), "--inside-container",
+                        "--config", str(args.config.resolve()), "--work-dir", str(work),
+                        "--onnx", str(args.onnx.resolve()), "--calibration-dir", str(args.calibration_dir.resolve()),
+                        "--samples", str(args.samples), "--output", str(args.output.resolve())], check=True)
+        return
+    # Converter 只在容器内加载,预处理继续复用板端实现.
+    import cv2
+    import mtk_converter
+    from tqdm import tqdm
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
+    from fastsam_utils import OUTPUT_NAMES, OUTPUT_SHAPES, preprocess
     paths = sorted(path for path in args.calibration_dir.iterdir()
                    if path.suffix.lower() in {".jpg", ".jpeg", ".png"})[:args.samples]
     if args.samples <= 0 or len(paths) != args.samples:

@@ -83,3 +83,7 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 共享工具统一位于仓库 `tools/llm/`;`evaluate_mmlu.py tflite --diagnostic-questions 16` 用于不同输入长度的执行对比,不代替首轮千题 Accuracy.正式性能统一报告 Prefill 和 Decode 的 token/s.
 
 2026-10-13 按确认切换到常规全 W4A16 量化: 停止本次长耗时重优化,保留校准和历史产物.先生成 Prefill/Decode 两个 DLA 并短测,再进行首轮正式评价;重优化不作为默认部署步骤.
+
+## 模型资源路径
+
+原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先在 89 编译主机配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/gen_ai/llm/deepseek_r1_distill_qwen_1_5b`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.

@@ -48,9 +48,10 @@ fi
 
 # 编译主机配置区: 默认复用现有 Genio 720 工具链和 COCO 数据.
 MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-MODEL_WEIGHTS="${YOLOV8_WEIGHTS:-${MODEL_ROOT}/models/yolov8n.pt}"
-MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
-CALIBRATION_DIR="${YOLOV8_CALIBRATION_DIR:-/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images}"
+source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
+MODEL_WEIGHTS="${YOLOV8_WEIGHTS:-${MODEL_ASSETS_DIR}/yolov8n.pt}"
+MODEL_OUTPUT_DIR="${MODEL_ASSETS_DIR}"
+CALIBRATION_DIR="${YOLOV8_CALIBRATION_DIR:-${MTK_DATASET_ROOT}/coco/coco_val2017/images}"
 DATASET_DIR="${CALIBRATION_DIR%/images}"
 BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yolov8n"
 CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"

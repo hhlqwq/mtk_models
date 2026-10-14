@@ -7,7 +7,10 @@ from pathlib import Path
 import torch
 
 
-SOURCE_ROOT = Path(__file__).resolve().parents[2] / "models" / "upstream"
+sys.path.insert(0, str(Path(__file__).resolve().parents[6] / "tools"))
+from storage import model_storage
+
+SOURCE_ROOT = model_storage(Path(__file__).resolve().parents[2]) / "upstream"
 sys.path.insert(0, str(SOURCE_ROOT))
 
 from mobilefacenet import MobileFaceNet  # noqa: E402

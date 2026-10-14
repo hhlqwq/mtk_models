@@ -130,3 +130,7 @@ Genio 5100 尚未执行,上述数字只对应 Genio 720.
 ![滑雪场景检测](examples/output/sample_3_detections.jpg)
 
 示例图片来源: 示例 1: [原图](http://farm9.staticflickr.com/8035/8024364858_9c41dc1666_z.jpg) / [图片许可](http://creativecommons.org/licenses/by-nc/2.0/); 示例 2: [原图](http://farm8.staticflickr.com/7434/9138147604_c6225224b8_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/); 示例 3: [原图](http://farm8.staticflickr.com/7015/6795644157_f019453ae7_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/).
+
+## 模型资源路径
+
+原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先在 89 编译主机配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/perception/object_detection/yolov8n`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.

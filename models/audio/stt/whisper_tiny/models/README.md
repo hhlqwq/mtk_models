@@ -10,3 +10,5 @@
 - `encoder_fp32.dla`、`decoder_step_fp32.dla`：Genio 720 DLA.
 
 实际文件、Shape、dtype 和编译参数必须以当前运行清单为准.
+
+模型文件已改为使用外部资源目录,详见上级 README 的模型资源路径说明.此目录只保留源码、文档和公开来源记录.

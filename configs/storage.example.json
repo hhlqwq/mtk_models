@@ -1,0 +1,4 @@
+{
+  "models_root": "/absolute/path/to/model-storage",
+  "dataset_root": "/absolute/path/to/dataset-storage"
+}

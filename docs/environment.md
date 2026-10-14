@@ -121,13 +121,15 @@ Git.工具目录为 `/data/users/hailong.he/data/MTKG720/cpp_toolchain/`.
 
 ## 数据集目录与原则
 
-89 服务器数据集根目录固定为：
+89 服务器模型和数据集根目录从不提交 Git 的本地配置读取：
 
 ```text
-/data/users/hailong.he/nas_smb/Datasets/open_source/raw
+configs/storage.local.json
 ```
 
-容器内以相同绝对路径只读挂载.模型脚本和报告统一记录真实 NAS 路径,不使用 `/datasets` 别名.
+配置字段为 `models_root` 和 `dataset_root`,参考 `configs/storage.example.json`.
+模型目录以相同绝对路径读写挂载,数据集目录只读挂载.
+完整内部路径仅保存在本地配置和本地运行记录中,不写入公开文档或提交的报告.
 
 - 数据集以相同绝对路径只读挂载到容器.
 - 校准子集与正式精度评测集必须分开记录.

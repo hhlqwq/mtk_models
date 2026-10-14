@@ -10,20 +10,21 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 模型目录: 根据本脚本的位置自动确定.
     MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+    source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
 
     # 1. 模型与校准数据.
     # 模型文件: 原始 PyTorch 权重.
-    MODEL_WEIGHTS="${MODEL_ROOT}/models/yolov5s.pt"
+    MODEL_WEIGHTS="${MODEL_ASSETS_DIR}/yolov5s.pt"
     # 源码文件: Ultralytics YOLOv5 压缩包.
-    SOURCE_ARCHIVE="${MODEL_ROOT}/models/yolov5-485da42.zip"
+    SOURCE_ARCHIVE="${MODEL_ASSETS_DIR}/yolov5-485da42.zip"
     # 补丁文件: MTK 模型转换补丁压缩包.
-    PATCH_ARCHIVE="${MODEL_ROOT}/models/model_conversion_YOLOv5s_example_20240916.zip"
+    PATCH_ARCHIVE="${MODEL_ASSETS_DIR}/model_conversion_YOLOv5s_example_20240916.zip"
     # 校准数据: 编译主机和 Docker 都能访问的图片目录,必须填写.
-    CALIBRATION_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images"
+    CALIBRATION_DIR="${MTK_DATASET_ROOT}/coco/coco_val2017/images"
 
     # 2. 产物与临时目录.
     # 模型输出目录: 转换与编译产物保存在这里.
-    MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
+    MODEL_OUTPUT_DIR="${MODEL_ASSETS_DIR}"
     # 临时构建目录: 缓存和中间文件保存在仓库外.
     BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yolov5s"
     # DLA 文件: 编译后的完整路径.

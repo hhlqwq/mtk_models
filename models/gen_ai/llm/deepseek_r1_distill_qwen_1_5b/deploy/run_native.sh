@@ -3,10 +3,12 @@
 # 原生 GAI 流程: 在 Ubuntu89 Docker 运行,保留各阶段日志和失败状态.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
 CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
 TASK_ROOT="${TASK_ROOT:-/tmp/hailongcodex/2026-10-10}"
-WORK="${NATIVE_WORK:-${TASK_ROOT}/deepseek_native}"
-SOURCE="${MODEL_SOURCE:-${TASK_ROOT}/deepseek_source}"
+WORK="${NATIVE_WORK:-${MODEL_ASSETS_DIR}/native}"
+SOURCE="${MODEL_SOURCE:-${MODEL_ASSETS_DIR}/original}"
 PYTHON="${GAI_PYTHON:-${TASK_ROOT}/deepseek_gai_env/bin/python}"
 NCC_ROOT="${NCC_ROOT:-/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host}"
 CONTEXT="${CONTEXT_SIZE:-1024}"

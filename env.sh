@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 # MTK Genio 720 项目公共环境变量.
-export MTK_MODELS_ROOT="/data/users/hailong.he/github/mtk_models"
+export MTK_MODELS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${MTK_MODELS_ROOT}/tools/storage.sh"
 export MTK_SDK_ROOT="/data/users/hailong.he/data/MTKG720"
-export MTK_DATASET_ROOT="/data/users/hailong.he/nas_smb/Datasets/open_source/raw"
 export MTK_NP_ROOT="${MTK_SDK_ROOT}/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211"
 export MTK_NCC_BIN="${MTK_NP_ROOT}/neuron_sdk/host/bin"
 export MTK_NCC_LIB="${MTK_NP_ROOT}/neuron_sdk/host/lib"

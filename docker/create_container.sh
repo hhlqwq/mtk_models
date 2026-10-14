@@ -2,14 +2,25 @@
 
 set -euo pipefail
 
-readonly PROJECT_ROOT="/data/users/hailong.he/github/mtk_models"
-readonly DATASET_ROOT="/data/users/hailong.he/nas_smb/Datasets/open_source/raw"
-readonly IMAGE_NAME="openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11"
+readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${PROJECT_ROOT}/tools/storage.sh"
+readonly DATASET_ROOT="${MTK_DATASET_ROOT}"
+readonly MODEL_STORAGE_ROOT="${MTK_MODEL_STORAGE_ROOT}"
+readonly IMAGE_NAME="${MTK_G720_IMAGE:-openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11}"
 readonly CONTAINER_NAME="hhl_g720_8011"
 
 echo "[1/4] 检查目录和同名容器."
 test -d "${PROJECT_ROOT}"
 test -d "${DATASET_ROOT}"
+test -d "${MODEL_STORAGE_ROOT}"
+# 先确认 NAS 实际挂载,防止失去挂载时将资源写入同名本地目录.
+for STORAGE_ROOT in "${MODEL_STORAGE_ROOT}" "${DATASET_ROOT}"; do
+    STORAGE_TYPE="$(findmnt -T "${STORAGE_ROOT}" -n -o FSTYPE)"
+    case "${STORAGE_TYPE}" in
+        cifs|nfs|nfs4) ;;
+        *) echo "[ERROR] 模型和数据集目录必须位于已挂载的 NAS." >&2; exit 1 ;;
+    esac
+done
 docker image inspect "${IMAGE_NAME}" >/dev/null
 
 if docker container inspect "${CONTAINER_NAME}" >/dev/null 2>&1; then
@@ -24,6 +35,16 @@ if docker container inspect "${CONTAINER_NAME}" >/dev/null 2>&1; then
     fi
     if [[ "$(docker inspect --format '{{.Config.WorkingDir}}' "${CONTAINER_NAME}")" != "${PROJECT_ROOT}" ]]; then
         echo "[ERROR] 同名容器的默认工作目录不一致,需要重新创建容器." >&2
+        exit 1
+    fi
+    if ! docker inspect --format '{{range .Mounts}}{{println .Source "=>" .Destination .RW}}{{end}}' \
+        "${CONTAINER_NAME}" | grep -Fxq "${MODEL_STORAGE_ROOT} => ${MODEL_STORAGE_ROOT} true"; then
+        echo "[ERROR] 现有容器缺少模型存储读写挂载,请先保存环境并安排重建." >&2
+        exit 1
+    fi
+    if ! docker inspect --format '{{range .Mounts}}{{println .Source "=>" .Destination .RW}}{{end}}' \
+        "${CONTAINER_NAME}" | grep -Fxq "${DATASET_ROOT} => ${DATASET_ROOT} false"; then
+        echo "[ERROR] 现有容器缺少数据集只读挂载,请安排重建." >&2
         exit 1
     fi
     echo "[INFO] 容器 ${CONTAINER_NAME} 已存在,不重复创建."
@@ -42,12 +63,12 @@ else
         --env NVIDIA_DRIVER_CAPABILITIES=compute,utility \
         --volume "${PROJECT_ROOT}:${PROJECT_ROOT}" \
         --volume "${DATASET_ROOT}:${DATASET_ROOT}:ro" \
+        --volume "${MODEL_STORAGE_ROOT}:${MODEL_STORAGE_ROOT}" \
         --workdir "${PROJECT_ROOT}" \
         "${IMAGE_NAME}" >/dev/null
 fi
 
-echo "[4/4] 验证镜像内工具, 不执行安装."
+echo "[4/4] 设置项目访问权限,不运行模型编译或测试."
 docker exec "${CONTAINER_NAME}" git config --global --add safe.directory \
     "${PROJECT_ROOT}"
-docker exec "${CONTAINER_NAME}" bash /opt/mtk-build/setup_container.sh
 echo "[OK] 容器 ${CONTAINER_NAME} 已就绪."

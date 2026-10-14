@@ -7,12 +7,13 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+    source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
     # 1. 官方资源与评测语料.资源必须离线准备,脚本不下载文件.
-    MODEL_SOURCE="${MODEL_SOURCE:-/tmp/hailongcodex/2026-10-10/deepseek_source}"
+    MODEL_SOURCE="${MODEL_SOURCE:-${MODEL_ASSETS_DIR}/original}"
     # 可选 JSONL: 每行包含 id 和 text; 不填写时仅运行自编双语样例.
     EVAL_CORPUS="${EVAL_CORPUS:-}"
     # 2. 模型产物与临时目录.
-    MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR:-${MODEL_ROOT}/models/generated}"
+    MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR:-${MODEL_ASSETS_DIR}/generated}"
     BUILD_WORK_DIR="${BUILD_WORK_DIR:-/tmp/hailongcodex/$(date +%F)/deepseek_r1_distill_qwen_1_5b}"
     # 3. 板端地址与结果目录.
     BOARD_HOST="${BOARD_HOST:-root@192.168.0.92}"

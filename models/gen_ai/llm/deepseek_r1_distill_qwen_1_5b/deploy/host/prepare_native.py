@@ -3,10 +3,15 @@
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 import shutil
 
 from transformers import AutoTokenizer
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[6] / "tools"))
+from storage import reuse_weight
 
 
 def sha256(path):
@@ -35,10 +40,7 @@ def prepare(source, output, context, mask_value=-100.0, rotate=False):
         src = source / entry["name"]
         dst = model / src.name
         if src.suffix == ".safetensors":
-            if not dst.exists():
-                dst.symlink_to(src.resolve())
-            elif dst.resolve() != src.resolve():
-                raise ValueError(f"权重目标已存在且来源不同: {dst}")
+            reuse_weight(src, dst, entry["sha256"])
         else:
             shutil.copyfile(src, dst)
     tokenizer = AutoTokenizer.from_pretrained(source, local_files_only=True)

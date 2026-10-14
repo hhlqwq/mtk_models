@@ -119,3 +119,7 @@ examples/
 - `results/summary.json`: 上传后的最新测试汇总.
 
 示例图片来源: 示例 1: [原图](http://farm7.staticflickr.com/6199/6207968507_effbfb5a1f_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/); 示例 2: [原图](http://farm6.staticflickr.com/5328/8789640387_14e10562cb_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/); 示例 3: [原图](http://farm4.staticflickr.com/3446/3232237447_13d84bd0a1_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/).
+
+## 模型资源路径
+
+原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先在 89 编译主机配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/interaction/pose_detection/rtmpose_body2d`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.

@@ -56,3 +56,7 @@ GitHub 仅提交构建代码, 模型和数据集继续由用户下载.
 板端正式性能以开发板 NPU 结果为准.
 
 ONNX GPU 兼容依据: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
+
+## 模型与数据挂载
+
+创建或进入容器前配置仓库根目录的 `configs/storage.local.json`.模型资源根目录读写挂载,数据集根目录只读挂载,两者在主机和容器中使用同一绝对路径.现有容器缺少挂载时先保存环境再重建,通过本地配置的 `container_image` 复用保存的镜像.此步骤不运行模型测试.

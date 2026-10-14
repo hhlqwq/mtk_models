@@ -4,41 +4,41 @@
 
 量化方式: INT8 训练后量化 (PTQ),采用逐输出通道权重量化.
 
-## 第一步: 编译并上传
+## 配置与执行
 
-所有配置均在脚本顶部,按模型与校准数据、产物与临时目录、板端地址与数据、ONNX 精度数据、编译环境分组.脚本已填写当前部署环境的路径,使用时按注释调整等号右侧的值; 编译主机和 Docker 须能访问相同数据,板端路径独立配置.
+路径和参数统一在模型根目录的 [config.yaml](config.yaml) 中修改,与 README 同级,按模型、数据、编译环境和开发板分组,每项带中文备注.模型相对路径以 FastSAM 目录为基准,校准图片与导出检查图片的相对路径以数据集根目录为基准.
 
-在 [run.sh](deploy/run.sh) 中配置原始权重、校准图、示例图、COCO val2017 数据集、模型输出目录、Docker 与交叉编译环境、板端地址和部署目录。
+89 主机与 Docker 须能访问同一个仓库路径、配置文件和主机数据集路径.板端数据集独立配置.权重与数据集需提前离线放置,资源地址见 [source_url.txt](models/source_url.txt).
 
-在编译主机的本模型目录运行:
+在 89 主机的模型目录执行:
 
 ```bash
 bash deploy/run.sh
 ```
 
-脚本在 Docker 中转换并编译 DLA，在主机交叉编译 C++ 程序并上传。
-
-## 第二步: 开发板测试
-
-登录所配置的开发板，执行脚本打印的 `bash .../run.sh` 命令。板端逐图保存检查点并计算 COCO 分割指标；结果写入 `BOARD_RESULTS_DIR`。
-
-进入实际配置的部署目录后也可运行:
+上传完成后,在 92 开发板的部署目录执行:
 
 ```bash
 bash run.sh
 ```
 
-## 数据与精度评测
+[run.sh](deploy/run.sh) 只判断主机或板端,按顺序调用独立文件并显示进度.配置读取和 Docker 环境处理由各 Python 步骤完成; Shell 不解析配置,不内嵌 Python 代码.需要人工执行时直接查看该文件,README 不重复维护逐步命令.
 
-在脚本顶部填写 `ONNX_DATASET_DIR`,必须与板端数据采用同一份样本、标注及评测协议。编译主机在 Docker 中自动评测 ONNX,只记录任务核心精度,不记录主机耗时或内存。
+`run.sh` 不接收命令行参数,通过上传后的 `config.json` 自动识别板端阶段.编译主机执行完成后,再登录开发板运行同一脚本.板端保留原来的 `EVAL_RUN_ID` 与 `EVAL_RESUME` 续跑环境变量.主机中间文件默认保存在 `/tmp/hailongcodex/当天日期/fastsam`.板端读取上传时生成的 `config.json` 快照,不读取旧的 `board_paths.conf`; 人工维护的配置仍是 YAML.
 
-数据目录要求: COCO val2017: images/ 和 annotations/instances_val2017.json,5000 张图片.
+主机及 Docker 读取 YAML 需要 PyYAML.导出使用 `ultralytics==8.0.111`,转换使用已有 MTK Converter 与 Neuron SDK.全量 ONNX 评测需要 ONNX Runtime、OpenCV、NumPy、tqdm 和 pycocotools; 板端需要 OpenCV、NumPy、pycocotools 及已有 Runtime 动态库.不会自动安装依赖或下载资源.
 
-精度变化以百分点表示,正数为改善,负数为下降.
+## 数据与结果
 
-Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm 和 pycocotools。
+主机和板端使用同一份 COCO val2017 样本与标注,数据目录包含 `images/` 和 `annotations/instances_val2017.json`,共 5000 张图片.校准默认按文件名排序选取 100 张,数量可在 YAML 中修改.
+
+固定评测协议见 [accuracy_protocol.json](deploy/board/accuracy_protocol.json).详细报告记录类别无关分割 AP 与 AR,最终核心指标为 `segm AR@100`.精度变化以百分点表示,正数为改善,负数为下降.
+
+板端结果保存在配置的结果目录下,每次运行使用独立编号.单图检查点在评测前保留; 汇总成功后清理本次 `work`,保留核心汇总、详细报告和已生成的效果示例.已有汇总不代表本次流程修改已完成运行验证.
 
 ## 当前测试结果
+
+以下为仓库已有的实测结果,不代表本次配置与流程重构已完成运行验证.
 
 COCO val2017 全量 5000 张,采用类别无关 segm AR@100.结果见 [summary.json](results/summary.json).
 
@@ -56,7 +56,7 @@ COCO val2017 全量 5000 张,采用类别无关 segm AR@100.结果见 [summary.j
 
 原图叠加板端实例分割区域,展示分数阈值为 0.25.
 
-输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
+输入已放在 `examples/input/`,上传时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 
 全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
 以下三张输出来自本次全量测试的板端预测,保存在 `examples/output/`.
@@ -81,26 +81,31 @@ COCO val2017 全量 5000 张,采用类别无关 segm AR@100.结果见 [summary.j
 
 ## 板端部署结构
 
-第一步上传到 `BOARD_DEPLOY_DIR` 后的布局统一为:
+执行 `upload` 后,配置的板端部署目录布局为:
 
 ```text
 部署目录/
 ├── run.sh
-├── board_paths.conf
+├── config.json          # 从人工 YAML 生成的配置快照.
 ├── models/              # 模型与推理所需参数.
 ├── board/               # 板端程序、评测代码及必要依赖.
 ├── examples/input/      # 少量示例输入及来源清单.
 └── results/             # 汇总及少量效果示例.
 ```
 
-全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后保留汇总和少量效果示例,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
+全量测试结果保存在配置的 `board.results_dir/<运行编号>/summary.json`.汇总成功后保留核心汇总、详细报告和已生成的少量效果示例,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
 ## 文件结构
 
-- `deploy/run.sh`: 编译上传和板端测试的唯一 Shell 入口.
-- `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
-- `deploy/board/`: 板端程序源码、预处理和评测代码.
+- `config.yaml`: 模型根目录下人工维护的带备注配置.
+- `deploy/run.sh`: 无参数自动入口,直接列出主机六步和板端四步.
+- `deploy/host/`: 独立的导出、量化、模型编译、ONNX 评测、C++ 编译与上传脚本.
+- `deploy/board/`: 独立的推理、精度评测、示例绘图和汇总脚本,以及 C++ 程序源码.
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
 - `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.
 
 示例图片来源: 示例 1: [原图](http://farm9.staticflickr.com/8035/8024364858_9c41dc1666_z.jpg) / [图片许可](http://creativecommons.org/licenses/by-nc/2.0/); 示例 2: [原图](http://farm8.staticflickr.com/7434/9138147604_c6225224b8_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/); 示例 3: [原图](http://farm8.staticflickr.com/7015/6795644157_f019453ae7_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/).
+
+## 模型资源路径
+
+原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先在 89 编译主机配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/navigation/segmentation/fastsam`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.

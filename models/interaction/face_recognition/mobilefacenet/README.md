@@ -106,3 +106,7 @@ LFW 全量 6000 对,采用 MTCNN 五点对齐后的 7701 张人脸,进行十折�
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
 - `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.
+
+## 模型资源路径
+
+原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先在 89 编译主机配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/interaction/face_recognition/mobilefacenet`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.

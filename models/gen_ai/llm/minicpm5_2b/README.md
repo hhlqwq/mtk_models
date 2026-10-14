@@ -63,3 +63,7 @@ WikiText2 使用 test 前 128 行原始文本,不加特殊 Token,每块 128 Toke
 工具归档目录: `/data/users/hailong.he/data/MTKG720/GAI_Toolkit/MiniCPM5-2B/`,明确标为项目适配脚本,不是 MTK 官方 MiniCPM5 专用 Toolkit.
 
 最终 NAS 根目录采用用户指定的 G720 外部 `models/` 目录,模型包相对路径为 `gen_ai/llm/minicpm5_2b/minicpm5-2b/`.保留该模型目录已有的来源记录,复制后逐文件核对 SHA256,记录在模型包的 `delivery_verification.json` 中.服务器模型可运行,精度尚未通过质量验收.
+
+## 模型资源路径
+
+89 编译主机通过不提交 Git 的 `configs/storage.local.json` 读取 `models_root` 和 `dataset_root`.本模型资源根目录为 `models_root/gen_ai/llm/minicpm5_2b/`: `original/` 保存官方模型,`native/` 保存当前转换、量化和校准资源,`compiled/` 保存编译包归档.原生入口自动读取这些配置,实际完整路径仅保存本地.现有交付包路径按上文记录使用.仓库中的 `models/` 只保留源码、文档和公开来源记录.

@@ -4,7 +4,7 @@
 Ubuntu 系统依赖使用基础镜像官方软件源, pip 镜像地址在容器内永久配置.
 Python 3.11.11 源码地址由 Docker 构建参数管理, 默认使用服务器已验证可达的镜像地址.
 2026-09-07 已将同名容器迁移到 Ubuntu 22.04 镜像,并删除旧 Debian 12 容器和旧镜像.
-创建容器时仅验证工具, 操作方法见 [Docker 说明](docker/README.md).
+创建容器时检查配置和挂载, 操作方法见 [Docker 说明](docker/README.md).
 
 本项目面向 MediaTek Genio 720（MT8189）和 Genio 5100,对开源模型进行兼容性修改、
 转换、量化、部署与板端验证.模型交付结构、文档完整度和结果展示方式参考
@@ -103,6 +103,8 @@ Genio 720 EVK.当前平台基线和刷写证据见
 ## 快速开始
 
 在编译主机准备 Docker 环境：
+
+首次使用前配置 `configs/storage.local.json`,填写模型和数据集根目录.已有本地配置时直接使用,不要用模板覆盖.
 
 ```bash
 source env.sh
@@ -230,3 +232,25 @@ LLM 只交付 Prefill 与 Decode 两个 DLA,单位统一 token/s.本次 MiniCPM5
 | `evaluate_mmlu.py` | 准备统一题目并计算 MMLU Accuracy | 服务器或开发板,按子命令选择 |
 | `evaluate_board_quality.py` | MDLA WikiText PPL 与输出诊断 | 开发板 |
 | `evaluate_native.py` | 原生运行工具的输出与 token/s 测试 | 开发板 |
+## 模型与数据存储
+
+仓库只保存代码、脚本、文档、公开来源记录和交付结果说明.原始权重、ONNX、量化模型、DLA 及配套运行参数统一保存在外部模型存储目录,数据集使用已有外部数据目录.
+
+在 89 编译主机复制 `configs/storage.example.json` 为 `configs/storage.local.json`,填写 `models_root` 和 `dataset_root` 的实际绝对路径.本地配置被 Git 忽略,完整内部路径不能写入提交的脚本、文档或报告.也可设置 `MTK_MODEL_STORAGE_ROOT` 和 `MTK_DATASET_ROOT`;环境变量优先于本地配置.
+
+映射规则: 代码目录 `models/场景/类别/模型名/` 对应外部 `models_root/场景/类别/模型名/`.原 `模型名/models/` 的资源直接放入该外部目录,不额外增加一层 `models/`.模型源码和公开来源记录仍保留在仓库.转换和编译产物写入外部资源目录,临时缓存继续使用 `/tmp/hailongcodex/当天日期/`.
+
+```bash
+source env.sh
+bash docker/create_container.sh
+bash docker/enter_container.sh
+```
+
+容器读写挂载模型目录、只读挂载数据集目录,挂载前后使用同一个绝对路径.已有容器缺少挂载时先保存现有环境,再重建;本地配置可通过 `container_image` 指定保存的环境镜像.不自动下载、安装或运行模型测试.
+
+各模型原有 `deploy/run.sh` 和 LLM `deploy/run_native.sh` 从本地配置读取资源路径.FastSAM 的 `config.yaml` 保留模型参数和相对数据路径,实际存储根目录也由本地配置提供.板端继续使用上传的独立部署配置和板端模型目录.
+
+LLM 资源目录中,`original/` 保存官方权重和 tokenizer,`native/` 保存当前原生转换及量化资源,`compiled/版本名/` 保存编译包的归档副本.已完成交付的模型包路径沿用该模型 README 的记录.历史精度和交付状态保持原记录,文件迁移不代表重新验证模型.
+
+一次性迁移工具为 `tools/migrate_model_storage.py`.先记录迁移清单,确认后使用 `--apply`;每个文件在移除来源前核对大小与 SHA256,同名不同内容的旧目标保存在 `_previous/哈希/` 下.本次 Windows 与服务器不同内容的模型保存在 `_variants/windows/哈希/` 下,服务器现用资源保持主路径.迁移记录应保存在仓库外,不能提交包含内部路径的清单.
+

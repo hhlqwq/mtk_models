@@ -10,18 +10,19 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 模型目录: 根据本脚本的位置自动确定.
     MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+    source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
 
     # 1. 模型与校准数据.
     # 模型文件: 用于量化的 MTK 兼容 ONNX.
-    MODEL_ONNX="${MODEL_ROOT}/models/model_mtk_compatible.onnx"
+    MODEL_ONNX="${MODEL_ASSETS_DIR}/model_mtk_compatible.onnx"
     # INT8 校准图片目录.
-    CALIBRATION_IMAGES="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/images"
+    CALIBRATION_IMAGES="${MTK_DATASET_ROOT}/coco/coco_val2017/images"
     # INT8 校准标注文件.
-    CALIBRATION_ANNOTATIONS="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017/annotations/coco_wholebody_val_v1.0.json"
+    CALIBRATION_ANNOTATIONS="${MTK_DATASET_ROOT}/coco/coco_val2017/annotations/coco_wholebody_val_v1.0.json"
 
     # 2. 产物与临时目录.
     # 模型输出目录: 转换与编译产物保存在这里.
-    MODEL_OUTPUT_DIR="${MODEL_ROOT}/models"
+    MODEL_OUTPUT_DIR="${MODEL_ASSETS_DIR}"
     # 临时构建目录: 缓存和中间文件保存在仓库外.
     BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/rtmpose_body2d"
 
@@ -37,7 +38,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
 
     # 4. ONNX 精度数据.
     # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录,必须填写.
-    ONNX_DATASET_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/coco/coco_val2017"
+    ONNX_DATASET_DIR="${MTK_DATASET_ROOT}/coco/coco_val2017"
 
     # 5. 编译环境: 通常无需修改.
     # Docker 容器: 编译主机上的 Genio 720 编译环境.

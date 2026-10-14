@@ -45,8 +45,9 @@ fi
 
 # 编译主机配置: 模型资源离线准备,原始数据固定保存在 NAS.
 MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-MODELS_DIR="${MODEL_ROOT}/models"
-DATASET_DIR="/data/users/hailong.he/nas_smb/Datasets/open_source/raw/ESC-50"
+source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
+MODELS_DIR="${MODEL_ASSETS_DIR}"
+DATASET_DIR="${MTK_DATASET_ROOT}/ESC-50"
 BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yamnet"
 EXPORT_PYTHON="${YAMNET_EXPORT_PYTHON:-${BUILD_WORK_DIR}/venv/bin/python}"
 PRECISION="${YAMNET_PRECISION:-w8a16}"
@@ -93,23 +94,24 @@ aarch64-linux-gnu-g++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/board/yamnet_eval.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" -Wl,--allow-shlib-undefined -pthread -ldl \
     -o "${BUILD_WORK_DIR}/yamnet_eval"
-docker exec -i -e MODEL_ROOT="${MODEL_ROOT}" -e DATASET_DIR="${DATASET_DIR}" \
+docker exec -i -e MODEL_ROOT="${MODEL_ROOT}" -e MODELS_DIR="${MODELS_DIR}" -e DATASET_DIR="${DATASET_DIR}" \
     -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" "${CONTAINER}" python - <<'REFERENCE'
 import hashlib,json,os,sys,shutil
 from pathlib import Path
 root=Path(os.environ['MODEL_ROOT']); dataset=Path(os.environ['DATASET_DIR']); work=Path(os.environ['BUILD_WORK_DIR'])
 sys.path.insert(0,str(root/'deploy/board'))
 from audio_utils import load_records,mapping
-labels=root/'models/upstream/yamnet_class_map.csv'
+assets=Path(os.environ['MODELS_DIR'])
+labels=assets/'upstream/yamnet_class_map.csv'
 reference={backend:json.loads((work/backend/'summary.json').read_text()) for backend in ['tensorflow','onnx']}
 reference['annotations_sha256']=hashlib.sha256((dataset/'meta/esc50.csv').read_bytes()).hexdigest()
 reference['mapping']=mapping(labels)
-(root/'models/fp32_reference.json').write_text(json.dumps(reference,indent=2))
-shutil.copy2(labels,root/'models/yamnet_class_map.csv')
+(assets/'fp32_reference.json').write_text(json.dumps(reference,indent=2))
+shutil.copy2(labels,assets/'yamnet_class_map.csv')
 inputs=root/'examples/input'; inputs.mkdir(parents=True,exist_ok=True)
 records=load_records(dataset); samples=[]
 reference['audio_sha256']={row['filename']:hashlib.sha256((dataset/'audio'/row['filename']).read_bytes()).hexdigest() for row in records}
-(root/'models/fp32_reference.json').write_text(json.dumps(reference,indent=2))
+(assets/'fp32_reference.json').write_text(json.dumps(reference,indent=2))
 for number,target in enumerate([0,39,42],1):
     row=next(row for row in records if int(row['target'])==target)
     shutil.copy2(dataset/'audio'/row['filename'],inputs/f'sample_{number}.wav')

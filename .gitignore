@@ -10,6 +10,7 @@ __pycache__/
 .eval/
 
 # 本地环境和日志.
+configs/storage.local.json
 .env
 *.log
 logs/
@@ -20,6 +21,14 @@ models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/models/generated/
 *.pt
 *.pth
 *.safetensors
+*.gguf
+*.ggml
+*.pdparams
+*.ckpt
+*.pb
+*.weights
+*.onnx.data
+models/**/models/*.data
 *.torchscript
 *.onnx
 *.tflite
@@ -70,8 +79,6 @@ models/perception/object_detection/yolov8n/results/predictions.json
 
 
 
-!models/perception/object_detection/yolov5s/models/yolov5-485da42.zip
-!models/perception/object_detection/yolov5s/models/model_conversion_YOLOv5s_example_20240916.zip
 
 # 数据集和样例输出.
 datasets/
@@ -129,5 +136,4 @@ models/audio/ambient_sound/yamnet/models/yamnet_class_map.csv
 !models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/examples/output/*.txt
 
 # 对内文档
-docs/MTK_models.xlsx
-docs/~$MTK_models.xlsx
+docs/*.xlsx

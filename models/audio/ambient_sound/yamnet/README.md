@@ -86,9 +86,10 @@ ESC-50 整体为 CC BY-NC 3.0,各音频出处和许可见原始数据的 `LICENS
 在 89 仓库根目录准备资源:
 
 ```bash
+source env.sh
 python3 models/audio/ambient_sound/yamnet/deploy/host/prepare_assets.py \
-  --models-dir /data/users/hailong.he/github/mtk_models/models/audio/ambient_sound/yamnet/models \
-  --dataset-dir /data/users/hailong.he/nas_smb/Datasets/open_source/raw/ESC-50
+  --models-dir "${MTK_MODEL_STORAGE_ROOT}/audio/ambient_sound/yamnet" \
+  --dataset-dir "${MTK_DATASET_ROOT}/ESC-50"
 ```
 
 若需要已有代理,使用 `--proxy socks5h://主机:端口`,脚本不修改代理配置.
@@ -362,3 +363,7 @@ ReLU 来修复量化误差,这样会改变原模型函数.当前已验证结果�
 
 示例对 5 秒音频的 10 窗分数求均值,短促声音可能被静音背景主导;以上保留真实输出,
 没有按期望类别修改模型分数.样例逐条归属和许可见 [ESC-50 原始 LICENSE](https://github.com/karolpiczak/ESC-50/blob/33c8ce9eb2cf0b1c2f8bcf322eb349b6be34dbb6/LICENSE).
+
+## 模型资源路径
+
+原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先在 89 编译主机配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/audio/ambient_sound/yamnet`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.

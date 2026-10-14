@@ -4,18 +4,10 @@ import argparse
 import sys
 import copy
 import json
+import shutil
+import subprocess
 import types
 from pathlib import Path
-
-import cv2
-import numpy as np
-import onnx
-import torch
-import ultralytics
-
-# 复用板端预处理,保持校准与推理输入一致.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
-from fastsam_utils import OUTPUT_NAMES, OUTPUT_SHAPES, decode_heads, preprocess
 
 
 def raw_forward(self, features):
@@ -31,6 +23,8 @@ def raw_forward(self, features):
 
 def load_model(weights):
     """只加载已在本地放置的可信官方权重,禁止自动下载与依赖安装."""
+    import torch
+    import ultralytics
     if ultralytics.__version__ != "8.0.111":
         raise RuntimeError(f"要求 ultralytics==8.0.111,实际 {ultralytics.__version__}.")
     if not weights.is_file():
@@ -57,11 +51,57 @@ def load_model(weights):
 
 def main():
     """检查前向等价并导出固定 opset 13 模型."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--weights", type=Path, required=True)
-    parser.add_argument("--image", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, required=True)
+    parser = argparse.ArgumentParser(description=__doc__, add_help=False)
+    parser.add_argument("--config", type=Path, help="使用带备注的 YAML 配置.")
+    parser.add_argument("--work-dir", type=Path, help="复用指定的中间文件目录.")
+    parser.add_argument("--inside-container", action="store_true", help=argparse.SUPPRESS)
+    options, _ = parser.parse_known_args()
+    parser.add_argument("-h", "--help", action="help", help="显示参数说明.")
+    paths = None
+    if options.config:
+        from datetime import date
+        import os
+        import yaml
+        sys.path.insert(0, str(Path(__file__).resolve().parents[6] / "tools"))
+        from storage import load_model_config
+        config = load_model_config(options.config)
+        model = Path(__file__).resolve().parents[2]
+        dataset = Path(config["data"]["dataset_dir"])
+        work = options.work_dir or Path(config["build"]["work_root"]) / os.environ.get("FASTSAM_RUN_DATE", date.today().isoformat()) / "fastsam"
+        work = work.resolve()
+        for name in ("tmp", "cache"):
+            (work / name).mkdir(parents=True, exist_ok=True)
+        os.environ.update(PYTHONDONTWRITEBYTECODE="1", TMPDIR=str(work / "tmp"),
+                          XDG_CACHE_HOME=str(work / "cache"), TORCH_HOME=str(work / "cache/torch"))
+        paths = {"weights": model / config["model"]["weights"],
+                 "image": dataset / config["data"]["sample_image"], "work": work,
+                 "output": model / config["model"]["output_dir"]}
+    parser.add_argument("--weights", type=Path, required=paths is None,
+                        default=paths["weights"] if paths else None)
+    parser.add_argument("--image", type=Path, required=paths is None,
+                        default=paths["image"] if paths else None)
+    parser.add_argument("--output-dir", type=Path, required=paths is None,
+                        default=paths["work"] / "export" if paths else None)
     args = parser.parse_args()
+    if paths and not args.inside_container and not Path("/.dockerenv").exists():
+        container = config["build"]["container"]
+        subprocess.run(["docker", "exec", "-e", "MTK_MODEL_STORAGE_ROOT", "-e", "MTK_DATASET_ROOT", container, "mkdir", "-p", str(work / "tmp"), str(work / "cache")], check=True)
+        print(f"[导出] 在 Docker {container} 中执行.", flush=True)
+        subprocess.run(["docker", "exec", "-e", "MTK_MODEL_STORAGE_ROOT", "-e", "MTK_DATASET_ROOT", "-e", "PYTHONDONTWRITEBYTECODE=1",
+                        "-e", f"TMPDIR={work / 'tmp'}", "-e", f"XDG_CACHE_HOME={work / 'cache'}",
+                        "-e", f"TORCH_HOME={work / 'cache/torch'}", "-w", str(work), container,
+                        "python", str(Path(__file__).resolve()), "--inside-container",
+                        "--config", str(args.config.resolve()), "--work-dir", str(work),
+                        "--weights", str(args.weights.resolve()), "--image", str(args.image.resolve()),
+                        "--output-dir", str(args.output_dir.resolve())], check=True)
+        return
+    # SDK 与模型依赖只在实际导出环境加载,89 主机只负责启动容器命令.
+    import cv2
+    import numpy as np
+    import onnx
+    import torch
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
+    from fastsam_utils import OUTPUT_NAMES, OUTPUT_SHAPES, decode_heads, preprocess
     args.output_dir.mkdir(parents=True, exist_ok=True)
     print("[1/4] 离线加载官方 FastSAM-s 权重.", flush=True)
     original = load_model(args.weights)
@@ -104,6 +144,11 @@ def main():
     }
     (args.output_dir / "export_manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    if paths:
+        paths["output"].mkdir(parents=True, exist_ok=True)
+        destination = paths["output"] / "model_fp32.onnx"
+        if onnx_path.resolve() != destination.resolve():
+            shutil.copy2(onnx_path, destination)
     print("[4/4] 导出完成,ONNX 数值验证和 NPU 验证仍需单独执行.", flush=True)
 
 
