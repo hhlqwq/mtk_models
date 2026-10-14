@@ -7,11 +7,11 @@
 ## 当前配置与状态
 
 本项目仅使用全 W4A16: Attention、MLP、LM Head 全部 `asym4W_sym16A`.
-当前候选的 128 批校准已完成,量化、编译及板端精度验证待完成.
+当前常规 W4 候选已完成校准、量化、双 DLA 编译、板端性能和首轮精度评价;精度明显退化,不标为质量合格.
 现有 W4 诊断存在精度退化,不能因推理可运行而认定质量合格.
 
 Prefill=128 Token,上下文=1024,Decode=1 Token.每款只生成两个 DLA.
-当前候选: `/tmp/hailongcodex/2026-10-13/minicpm5_w4_fast_v6`.
+当前候选: `/tmp/hailongcodex/2026-10-13/minicpm5_w4_fast_v6`,已测出明显精度退化.
 官方 SDK=2.7.5,Converter=8.16.0,编译目标为 Genio720 MDLA5.3.
 Hadamard 权重旋转 seed=0,注意力 mask=-100;只修改独立转换副本.
 
@@ -61,7 +61,7 @@ MiniCPM5 独立 tokenizer 副本仅转换 BPE merges 序列化格式.校准配�
 
 MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 revision `c30699e8356da336a370243923dbaf21066bb9fe`,test 文件 SHA256 `74a41822ce7d3def56e1682f958469c04642a5336a5ce912fa375fdb90fb25d7`.FP32 与 NPU 使用同一题目 Token 文件及评分协议,报告总题数加权 Accuracy.
 
-首轮 WikiText 评价使用 `evaluate_quality.py --text-rows 128`,继续采用 128 Token 分块、重置上下文、每块评分 127 次下一 Token 的共同协议,记录不足一块的末尾 Token;首轮明确标为固定前 128 行子集,四块诊断不代替首轮结果;后续完整测试才使用 `--full-test`.余弦仅作为误差诊断,不代替上述正式指标.当前尚无新候选的首轮 MMLU/WikiText 结果.
+首轮 WikiText 评价使用 `evaluate_quality.py --text-rows 128`,继续采用 128 Token 分块、重置上下文、每块评分 127 次下一 Token 的共同协议,记录不足一块的末尾 Token;首轮明确标为固定前 128 行子集,四块诊断不代替首轮结果;后续完整测试才使用 `--full-test`.余弦仅作为误差诊断,不代替上述正式指标.常规 W4 候选的首轮结果已完成,见后文对比表.
 
 首轮 MMLU 通过 `--limit 1000 --seed 17` 按学科题数比例分层抽样,固定原测试集题目索引并由两个模型共享.结果明确标为首轮子集,不得冒充完整 MMLU Accuracy;后续 `--limit 0` 才执行完整题集.
 
@@ -71,14 +71,14 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 
 | 指标 | 官方 FP32 | 新 W4A16 NPU | 退化 |
 |---|---:|---:|---:|
-| MMLU Accuracy,固定 1000 题 | 55.9% (559/1000) | 待完成 | 待对比 |
-| WikiText PPL,固定前 128 行 | 40.04 | 待完成 | 待对比 |
+| MMLU Accuracy,固定 1000 题 | 55.9% (559/1000) | 34.8% (348/1000) | 下降 21.1 个百分点 |
+| WikiText PPL,固定前 128 行 | 40.04 | 75.65 | 增加 88.9% |
 
 当前 SDK 浮点模型与官方 FP32 在 4 块、508 个预测位置的平均余弦接近 1,最大 logits 差约 0.000069.此结果只验证已测位置的浮点转换.
 
 旧旋转 W4 候选的 Prefill/Decode 平均余弦: TFLite→NPU 为 0.99967/0.99976,FP32→NPU 为 0.97916/0.98368.该候选的主要误差出现在量化阶段,仍需定位具体层及误差机制;这些诊断值不能替代首轮正式指标.
 
-已实施: Hadamard 旋转及 Hessian/累计层误差优化,扩充长序列校准,完成 128 批校准.旋转方案已有诊断改善,新校准方案的改善效果尚待验证.新 W4 候选尚未完成正式精度对比.
+已实施: Hadamard 旋转及 Hessian/累计层误差优化,扩充长序列校准,完成 128 批校准.旋转方案已有诊断改善,新校准加常规量化方案已验证,未能消除精度退化.常规 W4 候选的正式精度对比已完成,结果显示明显退化.
 
 待验证: A16 接口量化范围是否裁剪激活、逐层权重量化误差、长序列校准的改善效果,以及多块 Prefill 的 KV Cache 转移一致性.未获得诊断证据前,这些仅为排查方向.保持全 W4A16,不通过提高权重位宽替代问题定位.
 
@@ -101,10 +101,20 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 
 该输入上,误差在 Transformer 层间累积并在后段明显增大;LM Head 单独执行的误差不足以解释累计 logits 误差.残差分支的单层相对误差在 34~38 层约 19%~20%,需要进一步区分注意力、MLP 权重与图内激活误差,尚不能指定某个投影为唯一原因.现有扩充校准和累计层误差优化针对这一累积问题,其效果仍需由新候选实测验证.完整记录见 [逐层误差报告](results/layer_error_diagnostic.json);不将此诊断当作正式精度合格证据.
 
-2026-10-13 按确认切换到常规全 W4A16 量化: 停止本次长耗时重优化,保留校准和历史产物.先生成 Prefill/Decode 两个 DLA 并短测,再进行首轮正式评价;重优化不作为默认部署步骤.
+2026-10-13 按确认切换到常规全 W4A16 量化: 停止本次长耗时重优化,保留校准和历史产物.已生成 Prefill/Decode 两个 DLA 并完成短测和首轮正式评价;重优化不作为默认部署步骤.
 
 打包从量化成功记录读取实际分片前缀;常规量化的交付清单中 `weight_optimization=null`,不误标为 Hessian.
 
 常规量化未生成优化配置 JSON 时,审核直接读取实际 TFLite: 投影权重须为 INT4,所有图接口须为 INT16,并核对完整层数和文件哈希.可用 `tools/llm/quantize_native.py --audit-only converter CONFIG -p asym4W_sym16A -tp asym4W_sym16A` 恢复审核,不重新量化.
 
 MMLU 板端入口使用交付布局中的 `1024c/prompt.dla`,并严格核对清单及哈希;不使用不存在的 `prefill.dla` 别名.
+
+### 常规 W4 候选的板端实测
+
+固定 128 Token 输入、最多 128 Token 输出的统一性能: Prefill **292.13 token/s**,Decode **8.31 token/s**.板端使用 MDLA,没有 CPU 回退;仍只有 `1024c/prompt.dla` 与 `1024c/decode.dla` 两个模型.
+
+首轮 MMLU 覆盖 57 学科固定 1000 题,0-shot、seed=17.逐题核对 FP32/NPU 的 ID、原测试集索引和答案相同;WikiText 前 128 行的原始文本、Token、58 块及 7366 个评分位置完全对齐.常规量化耗时 17 分 8 秒,MMLU 板端评分约 10 分 46 秒,WikiText 板端评测含加载约 40 秒.
+
+常规候选的四块诊断中,FP32→NPU 的 Prefill/Decode 平均余弦为 0.91796/0.93871,TFLite→NPU 为 0.99892/0.99957.结合首轮 Accuracy/PPL,主要误差已在量化阶段产生.旧旋转优化候选诊断更好,但校准配置也不同,不能将全部差异唯一归因于关闭优化.现有证据支持继续检查权重量化与逐层累积,不支持提高位宽替代修复.
+
+候选文件位于 Ubuntu89 `/tmp/hailongcodex/2026-10-13/minicpm5-w4-fast-native-v6`,板端 `/root/hailong.he/open_models/minicpm5_w4_fast_v6_native`.结果原始记录位于服务器 `/tmp/hailongcodex/2026-10-14/minicpm5_fast_first_round`;交付清单和 [首轮汇总](results/first_round_summary.json) 保存双 DLA 与原始报告哈希.精度尚未解决,不把该候选标为正式合格交付.

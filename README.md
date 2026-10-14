@@ -211,14 +211,11 @@ python tools/check_registry.py
 
 各模型统一在编译主机评测 ONNX 核心精度,板端记录核心精度、推理耗时、峰值 RSS和相对 ONNX 的精度变化。量化方式、数据要求与测试步骤见各模型 README。
 
-新增 [MiniCPM5-2B](models/gen_ai/llm/minicpm5_2b/README.md) 适配,官方 Llama 架构,目标 W4A16、Prefill 128、上下文 1024.已完成 MTK 板端验证与统一子集质量检查,当前 W4A16 质量明显退化,不标记质量合格.
+[MiniCPM5-2B](models/gen_ai/llm/minicpm5_2b/README.md) 常规全 W4A16 已完成双 DLA、板端性能和首轮精度对比.固定 1000 题 MMLU 0-shot: FP32 55.9%,NPU 34.8%,下降 21.1 个百分点;WikiText 前 128 行 PPL: FP32 40.04,NPU 75.65.精度退化明显,不标记质量合格.
 
-LLM 原生交付使用两个 DLA,分别执行 Prefill 与 Decode,两阶段速度统一为 token/s.
-MiniCPM5-2B 第二版 FP32/TFLite/MDLA 子集 PPL 为 40.04115/57.29072/61.56529;
-DeepSeek-R1-Distill-Qwen-1.5B 为 118.70850/193.93135/205.99682.
-比较各模型自身的转换差距,不按不同 tokenizer 的绝对 PPL 排名.两款当前 W4A16 均有明显退化.
+LLM 只交付 Prefill 与 Decode 两个 DLA,单位统一 token/s.本次 MiniCPM5 固定 128 输入、最多 128 输出的实测 Prefill 292.13 token/s,Decode 8.31 token/s;详细范围、哈希和排查证据见模型 README.
 
-两款 LLM 当前仅采用全 W4A16,Attention、MLP 与 LM Head 均为 `asym4W_sym16A`.已完成扩充校准,新候选量化及正式板端对比待完成.精度下降按浮点转换、量化与板端执行分阶段定位,已实施修复与待验证项见各模型 README.
+两款 LLM 保持全 W4A16.默认采用常规量化,不启用耗时累计层误差优化;已确认误差后只验证有限范围的局部修复.具体配置和实际质量状态见各模型 README.
 
 ### LLM 公共工具
 

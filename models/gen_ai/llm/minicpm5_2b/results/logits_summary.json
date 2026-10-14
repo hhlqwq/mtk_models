@@ -186,5 +186,79 @@
     "finding": "no_widespread_main_interface_clipping_observed_internal_ops_not_checked",
     "raw_report": "interface_range_diagnostic.json",
     "raw_report_sha256": "0b84fbc2e20c3f830c623855cc822f1cc5ace044464eeb6af4e9ee48bb82fa54"
+  },
+  "fast_w4_v6_candidate": {
+    "status": "evaluated_quality_degraded",
+    "scope": "four_blocks_508_prefill_and_64_decode_positions",
+    "precision": "asym4W_sym16A",
+    "weight_optimization": null,
+    "prefill": {
+      "pytorch_tflite": {
+        "cosine_mean": 0.9173982254430818,
+        "cosine_min": 0.11291694023924512,
+        "centered_cosine_mean": 0.8575148007296058,
+        "rmse": 1.7509644896128413,
+        "mae": 1.3259399976778112,
+        "max_abs_error": 18.623798370361328,
+        "top1_agreement": 0.5492125984251969,
+        "kl_mean": 0.7990595799668011
+      },
+      "pytorch_npu": {
+        "cosine_mean": 0.9179616423959103,
+        "cosine_min": 0.09452141076410789,
+        "centered_cosine_mean": 0.8577110152469343,
+        "rmse": 1.7460057221612035,
+        "mae": 1.3231117340806835,
+        "max_abs_error": 18.728374004364014,
+        "top1_agreement": 0.5433070866141733,
+        "kl_mean": 0.8008737273490928
+      },
+      "tflite_npu": {
+        "cosine_mean": 0.9989199508440697,
+        "cosine_min": 0.8137353712409725,
+        "centered_cosine_mean": 0.998481031776547,
+        "rmse": 0.18169002054323807,
+        "mae": 0.11831715401000817,
+        "max_abs_error": 8.079874992370605,
+        "top1_agreement": 0.9547244094488189,
+        "kl_mean": 0.010205010869365438
+      }
+    },
+    "decode": {
+      "pytorch_tflite": {
+        "cosine_mean": 0.9385623131916401,
+        "cosine_min": 0.4342579694879266,
+        "centered_cosine_mean": 0.8652549678824072,
+        "rmse": 1.5454622179548794,
+        "mae": 1.1927669042006108,
+        "max_abs_error": 12.43336832523346,
+        "top1_agreement": 0.5625,
+        "kl_mean": 0.6273787106255959
+      },
+      "pytorch_npu": {
+        "cosine_mean": 0.9387131690939203,
+        "cosine_min": 0.4206796170926317,
+        "centered_cosine_mean": 0.8657302643163836,
+        "rmse": 1.5342836744108845,
+        "mae": 1.1865727932547099,
+        "max_abs_error": 12.297096848487854,
+        "top1_agreement": 0.59375,
+        "kl_mean": 0.6224549133103587
+      },
+      "tflite_npu": {
+        "cosine_mean": 0.999568932737309,
+        "cosine_min": 0.9956049649350232,
+        "centered_cosine_mean": 0.9988989177042337,
+        "rmse": 0.1398236601203755,
+        "mae": 0.099725678844293,
+        "max_abs_error": 2.128986358642578,
+        "top1_agreement": 0.9375,
+        "kl_mean": 0.004823663682515245
+      }
+    },
+    "fp32_diagnostic_ppl": 33.08759307861328,
+    "npu_diagnostic_ppl": 60.16159964952234,
+    "quality_qualified": false,
+    "first_round_report": "first_round_summary.json"
   }
 }
