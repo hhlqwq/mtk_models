@@ -132,7 +132,7 @@ if [[ "${STAGE}" == all || "${STAGE}" == quantize ]]; then
 fi
 if [[ "${STAGE}" == all || "${STAGE}" == shape ]]; then
     echo "[4/5] 导出 ${PREFILL}t${CONTEXT}c 和 1t${CONTEXT}c,各一个分片."
-    run_python "${PYTHON%/python}/mtk_fix_llm_shape" "${QUANTIZED}" \
+    run_python "${SCRIPT_DIR}/../../../../../tools/llm/quantize_native.py" shape "${QUANTIZED}" \
         "${PREFILL}t${CONTEXT}c" "1t${CONTEXT}c" -n 1 \
         2>&1 | tee "${WORK}/logs/shape.log"
 fi

@@ -3,6 +3,7 @@
 from contextlib import contextmanager
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 
@@ -124,8 +125,80 @@ def verify_weight_precision(args, utils):
     print(f"[实际权重精度核对完成] {counts}", flush=True)
 
 
+def fix_native_shapes():
+    """导出两张静态图,显式转换不同 A16 尺度并传播 SDK 异常."""
+    import argparse
+    from mtk_converter.python.tools import builder
+    from mtk_converter.python.utils import tensor_utils
+    from mtk_llm_sdk import shape_fixer
+    from mtk_llm_sdk.utils import utils
+
+    parser = argparse.ArgumentParser(description="导出 Prefill/Decode 单分片静态图.")
+    parser.add_argument("folder", type=Path)
+    parser.add_argument("shapes", nargs=2)
+    parser.add_argument("-n", type=int, default=1)
+    args = parser.parse_args(sys.argv[2:])
+    if args.n != 1:
+        raise ValueError("本项目每阶段只允许一个分片.")
+    original = builder.ModelBuilder.import_subgraph
+    adapters = []
+
+    def import_with_requantize(self, filename_or_object, input_name_mappings=None,
+                              subgraph_idx=0):
+        """仅为同形状 INT16 线性量化接口插入真实重量化算子."""
+        if isinstance(filename_or_object, (str, Path)):
+            model = builder.nrp_pb2.ModelProto()
+            model.ParseFromString(Path(filename_or_object).read_bytes())
+        else:
+            model = filename_or_object
+        mappings = dict(input_name_mappings or {})
+        graph = model.subgraphs[subgraph_idx]
+        for source_name, target_name in list(mappings.items()):
+            source = graph.tensor_map[source_name]
+            target = self._cur_subgraph.tensor_map[target_name]
+            if tensor_utils.have_same_type_and_quant_param([source, target]):
+                continue
+            if tensor_utils.get_shape(source) != tensor_utils.get_shape(target):
+                raise ValueError(f"分片接口形状不一致: {source_name},{target_name}")
+            for tensor in (source, target):
+                dtype = tensor.DESCRIPTOR.fields_by_name["type"].enum_type.values_by_number[tensor.type].name
+                if dtype != "DT_INT16" or len(tensor.quant_param.linear.scale_vals) != 1:
+                    raise ValueError("仅支持 INT16 单尺度接口转换.")
+            name = f"{target_name}_requant_{len(adapters)}"
+            self._cur_subgraph.tensor_map[name].CopyFrom(source)
+            self.op("Requantize", [target_name], [name])
+            mappings[source_name] = name
+            row = {"source": target_name, "target": source_name,
+                   "input_scale": target.quant_param.linear.scale_vals[0],
+                   "output_scale": source.quant_param.linear.scale_vals[0]}
+            adapters.append(row)
+            print(f"[分片 A16 尺度转换] {row}", flush=True)
+        return original(self, model, mappings, subgraph_idx)
+
+    builder.ModelBuilder.import_subgraph = import_with_requantize
+    utils.temp_file = strict_temp_file
+    saved_argv = sys.argv
+    try:
+        sys.argv = [saved_argv[0], str(args.folder), *args.shapes, "-n", "1"]
+        shape_fixer.main()
+        for shape in args.shapes:
+            files = list(Path(f"{args.folder}_{shape}").glob("*.tflite"))
+            if len(files) != 1 or files[0].stat().st_size == 0:
+                raise ValueError(f"静态图未完整生成: {shape}")
+        Path("shape_adapter.json").write_text(json.dumps({
+            "installed_sdk_modified": False, "adapters": adapters,
+            "shapes": args.shapes,
+        }, indent=2) + "\n")
+    finally:
+        sys.argv = saved_argv
+        builder.ModelBuilder.import_subgraph = original
+
+
 def main():
     """执行固定 SDK 的进程内兼容逻辑,不修改安装文件或官方模型."""
+    if len(sys.argv) > 1 and sys.argv[1] == "shape":
+        fix_native_shapes()
+        return
     from mtk_llm_sdk import ptq
     from mtk_llm_sdk.utils import utils
 
