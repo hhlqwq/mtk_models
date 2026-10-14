@@ -4,41 +4,41 @@
 
 ## 当前实测
 
-2026-10-14 的 `minicpm5_w4_light_hessian_v8` 已完成全 W4A16 量化、Prefill/Decode 双 DLA 编译、Genio720 MDLA 板端性能及首轮精度评价.相比常规 W4 候选明显改善,但与官方 FP32 仍有差距,保持 `quality_qualified=false`.
+当前交付模型已完成全 W4A16 量化、Prefill/Decode 双 DLA 编译、Genio720 MDLA 板端性能及首轮精度评价.与官方 FP32 仍有明显差距,保持 `quality_qualified=false`.结果表只展示当前交付模型,优化过程见后文.
 
 Attention、MLP、LM Head 全部 `asym4W_sym16A`,没有 W8 或混合精度.使用 Hadamard 旋转 seed=0、mask=-100,仅修改独立转换副本.官方 SDK=2.7.5,Converter=8.16.0,编译目标 MDLA5.3.
 
-| 首轮指标 | 官方 FP32 | 常规 W4 v6 | 当前 W4 v8 |
-|---|---:|---:|---:|
-| MMLU Accuracy,0-shot 固定 1000 题 | 55.9% (559/1000) | 34.8% (348/1000) | 41.3% (413/1000) |
-| WikiText2 PPL,测试集前 128 行 | 40.0411 | 75.6491 | 48.3821 |
+| 首轮指标 | 官方 FP32 基线 | 当前交付 W4A16 |
+|---|---:|---:|
+| MMLU Accuracy,0-shot 固定 1000 题 | 55.9% (559/1000) | 41.3% (413/1000) |
+| WikiText2 PPL,测试集前 128 行 | 40.0411 | 48.3821 |
 
-当前 MMLU 相对 FP32 下降 14.6 个百分点,比 v6 提升 6.5 个百分点.WikiText PPL 相对 FP32 增加 20.83%,比 v6 降低 36.04%.这是首轮固定子集成绩,不代表完整测试集.
+当前 MMLU 相对 FP32 下降 14.6 个百分点,WikiText PPL 相对 FP32 增加 20.83%.这是首轮固定子集成绩,不代表完整测试集.当前候选完成了相同协议的完整首轮评测;先前的小范围诊断不能用于选出另一款“最好”交付模型.
 
 Prefill=128 Token,Decode=1 Token,上下文=1024.只有 `1024c/prompt.dla` 和 `1024c/decode.dla` 两个 DLA.固定 128 Token 输入、最多 128 Token 输出,Prefill **288.67 token/s**,Decode **8.15 token/s**.使用 MDLA,没有 CPU 回退.性能输入生成 128 Token,未到 EOS;计时不代表自由生成质量通过.
 
 结果及哈希: [首轮汇总](results/first_round_summary.json)、[性能记录](results/native_summary.json)、[Prefill 误差](results/logits_summary.json)、[Decode 误差](results/decode_logits_summary.json).
 
-## 精度下降原因与修复
+## 模型适配与优化过程
 
-按官方 FP32 -> SDK 浮点 -> 量化 TFLite -> NPU 分段比较.四块、508 个预测位置的 SDK 浮点与官方 FP32 平均余弦接近 1,最大 logits 差约 0.000069;此结论限于已测位置.
+1. **固定官方输入与部署配置.** 使用固定 revision 的官方权重,保留原始文件及来源哈希.先确定 Prefill=128、Decode=1、上下文=1024,后续始终保持全 W4A16 和两个 DLA.独立 tokenizer 副本只调整 BPE merges 的序列化格式,不改词表含义;运行保留官方停止 Token.
+2. **验证浮点转换.** 在独立转换副本中适配模型结构、RoPE 和注意力掩码,按官方 FP32 -> SDK 浮点逐项核对输入和 logits.四块、508 个预测位置的平均余弦接近 1,最大 logits 差约 0.000069.由此确认已测位置的浮点转换一致,再进入量化.
+3. **准备训练集校准并生成常规量化模型.** 按 seed=17 从 WikiText2 train 固定采样 64 段各 512 Token,保留短对话校准数据,完成 128 批校准.记录文本来源、采样位置和输入哈希,测试集不参与校准.应用 Hadamard 旋转后先执行常规全 W4A16 量化,编译两个 DLA 并进行同协议板端评价;发现明显精度退化后进入误差排查.
+4. **分段定位掉点.** 对照 FP32、量化 TFLite 和 NPU,主要损失发生在量化阶段.逐层诊断显示误差在后段累积,LM Head 单独误差不足以解释整模损失.主接口范围检查没有发现大面积 A16 裁剪,但不能排除图内激活误差.相关过程记录见 [逐层报告](results/layer_error_diagnostic.json) 和 [范围报告](results/interface_range_diagnostic.json);它们不作为当前模型的成绩展示.
+5. **实施有时长上限的量化修复.** 先固定同一训练校准样本和旋转矩阵,对单层比较常规量化与 Hessian,确认权重量化误差可以改善.随后每层选用 16 个训练校准样本进行 Hessian,先处理首层、后段层和 LM Head,再复用这些结果并处理剩余层,最终覆盖全部 43 分片.关闭耗时累计层误差优化,不训练或微调原始 FP32 权重.SDK 量化合计约 15 分 14 秒,不含初始化、导出和编译.
+6. **合并双图并完成板端验证.** 分片 A16 hidden 尺度不同时,显式使用官方 `Requantize`,仅接受同形状 INT16 单尺度接口并保留 Builder 检查.修复 SDK 临时目录清理导致的导出误报.审核实际权重与接口精度后编译两个 DLA,完成 Prefill/Decode 诊断、统一性能、固定 1000 题 MMLU 和前 128 行 WikiText 评价.按当前实测结果打包,复制到 NAS 后逐文件核对 SHA256.
 
-| 当前 v8 平均余弦 | Prefill,508 个评分位置 | Decode,64 个位置 |
+过程记录保留每一步的配置、依据和处理结论,当前结果表不保留实验编号或历史候选成绩.
+
+## 当前精度分析
+
+| 当前模型平均余弦 | Prefill,508 个评分位置 | Decode,64 个位置 |
 |---|---:|---:|
 | FP32 -> TFLite | 0.97083 | 0.97338 |
 | FP32 -> NPU | 0.97115 | 0.97385 |
 | TFLite -> NPU | 0.99955 | 0.99971 |
 
 Prefill 完整 512 个输出位置的 FP32 -> NPU 平均余弦为 0.97105.四块诊断用于定位误差,不替代 MMLU Accuracy 与 WikiText PPL.主要损失已在量化阶段产生,板端新增误差较小.
-
-已确认和实施的处理:
-
-- 旧旋转 W4 逐层诊断显示后段误差累积: 第 41 层累计相对 RMSE 13.04%,LM Head 单层 4.24%、累计 14.95%.仅优化 LM Head 不能解决全部损失.详见 [逐层报告](results/layer_error_diagnostic.json).
-- A16 主接口四块约 1.56 亿个数值中仅 54 个超范围,含相邻接口重复统计.未观察到主接口大面积裁剪,不能排除图内激活误差.详见 [范围报告](results/interface_range_diagnostic.json).
-- 第 34 层同一 16 个训练校准样本、同一 R1 的消融中,常规量化 RMSE=0.15042,Hessian=0.10360,减少 31.1%.支持权重量化误差是可修复的一部分,不能指定某个投影为唯一原因.
-- 当前 43 分片每层使用 16 个训练校准样本的 Hessian,累计层误差优化关闭.先优化 10 分片,再复用并优化剩余 33 分片.SDK 量化分别约 3 分 56 秒、11 分 18 秒,合计 15 分 14 秒,不含初始化、导出、编译.复用已完成的 128 批校准,没有训练或微调原始 FP32 权重.
-- 分片 A16 hidden 尺度不同,静态图使用官方 `Requantize` 显式转换,只接受同形状 INT16 单尺度接口,保留 Builder 检查.算子数值验证与实际双图导出已完成.
-- SDK 临时对象可能为目录,兼容入口保留目录供审查,仅清理临时文件,避免双图成功导出后因目录清理异常误判失败.
 
 修复已完成整模首轮实测.剩余 14.6 个百分点 Accuracy 差距仍未解决;需继续区分投影误差、图内激活误差及后段累积,不能用接近 1 的 TFLite/NPU 余弦宣称精度合格.
 
@@ -54,15 +54,12 @@ WikiText2 使用 test 前 128 行原始文本,不加特殊 Token,每块 128 Toke
 
 公共脚本统一位于仓库 `tools/llm/`.在 Ubuntu89 仓库调用 `bash models/gen_ai/llm/minicpm5_2b/deploy/run_native.sh STAGE`,阶段为 `prepare`、`calibrate`、`quantize`、`shape`、`compile`.
 
-常规入口默认 `WEIGHT_OPTIMIZATION=none`,不默认开启长耗时优化.当前 v8 使用归档的 16 样本、分阶段 Hessian 实验脚本;直接运行默认入口不会生成同一 v8.量化记录须保存实际优化分片、样本数、累计层误差开关和旋转配置.测试集不参与校准.
+常规入口默认 `WEIGHT_OPTIMIZATION=none`,不默认开启长耗时优化.当前交付模型使用归档的 16 样本、分阶段 Hessian 配方;直接运行默认入口不会生成相同模型.量化记录须保存实际优化分片、样本数、累计层误差开关和旋转配置.测试集不参与校准.
 
 量化后审核实际 TFLite 的 295 个投影权重为 INT4、接口为 INT16及完整 43 分片哈希.可用 `tools/llm/quantize_native.py --audit-only converter CONFIG -p asym4W_sym16A -tp asym4W_sym16A` 单独审核.打包读取成功记录中的实际前缀与优化配置;MMLU 使用 `1024c/prompt.dla` 并核对契约和清单.
 
 独立 tokenizer 副本仅转换 BPE merges 序列化格式.校准配置使用单 EOS=130073,运行保留官方停止 Token 1/130073,默认 enable_thinking=false.
 
-服务器模型包: `/tmp/hailongcodex/2026-10-14/minicpm5-w4-light-hessian-native-v8`.
-板端模型包: `/root/hailong.he/open_models/minicpm5_w4_light_hessian_v8_native`.
-首轮原始记录: `/tmp/hailongcodex/2026-10-14/minicpm5_light_hessian_first_round`.
 工具归档目录: `/data/users/hailong.he/data/MTKG720/GAI_Toolkit/MiniCPM5-2B/`,明确标为项目适配脚本,不是 MTK 官方 MiniCPM5 专用 Toolkit.
 
 最终 NAS 根目录采用用户指定的 G720 外部 `models/` 目录,模型包相对路径为 `gen_ai/llm/minicpm5_2b/minicpm5-2b/`.保留该模型目录已有的来源记录,复制后逐文件核对 SHA256,记录在模型包的 `delivery_verification.json` 中.服务器模型可运行,精度尚未通过质量验收.
