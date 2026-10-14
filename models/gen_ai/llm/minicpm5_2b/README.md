@@ -42,6 +42,8 @@ Prefill 完整 512 个输出位置的 FP32 -> NPU 平均余弦为 0.97105.四块
 
 修复已完成整模首轮实测.剩余 14.6 个百分点 Accuracy 差距仍未解决;需继续区分投影误差、图内激活误差及后段累积,不能用接近 1 的 TFLite/NPU 余弦宣称精度合格.
 
+逐题分析中,FP32 正确而 NPU 错误 252 题,反向改善 106 题.不超过 128 Token 的 756 题只需一次 Prefill,FP32 正确 440 题、NPU 正确 323 题;因此剩余退化不能只归因于多块 Prefill 的 KV Cache 转移.长于 512 Token 的首轮题目仅 9 道,不据此推断长上下文精度.详见 [逐题误差统计](results/mmlu_error_analysis.json).
+
 ## 统一评价协议
 
 MMLU 使用 [cais/mmlu](https://huggingface.co/datasets/cais/mmlu),固定 revision `c30699e8356da336a370243923dbaf21066bb9fe`,test SHA256 `74a41822ce7d3def56e1682f958469c04642a5336a5ce912fa375fdb90fb25d7`.0-shot,seed=17,按 57 学科题数比例固定抽样 1000 题.不加 Chat Template 或额外特殊 Token,取空格加 A/B/C/D 的单 Token logits 评分.最长题目 968 Token,没有截断或丢题.FP32/NPU 的题目 ID、原始索引、学科、答案和 cases SHA 已逐项核对.板端千题评分约 10 分 49 秒.

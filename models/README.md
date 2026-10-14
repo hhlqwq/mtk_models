@@ -218,4 +218,4 @@ models/
 
 [MiniCPM5-2B](gen_ai/llm/minicpm5_2b/README.md) 已完成轻量 Hessian 全 W4A16 双 DLA、板端性能和首轮同协议精度对比.固定 1000 题 MMLU 0-shot: FP32 55.9%,NPU 41.3%;WikiText2 test 前 128 行 PPL: FP32 40.04,NPU 48.38.精度退化明显,保持未通过质量验收状态.
 
-LLM 的 Prefill 与 Decode 各一个 DLA,速度统一 token/s.本次 MiniCPM5 固定 128 输入、最多 128 输出的 Prefill 292.13 token/s,Decode 8.31 token/s.使用 `tools/llm/` 公共工具;首轮子集、四块诊断和完整测试集分别记录,不混用范围.当前继续进行有时长上限的 W4 局部误差修复,详见模型 README.
+LLM 的 Prefill 与 Decode 各一个 DLA,速度统一 token/s.本次 MiniCPM5 固定 128 输入、最多 128 输出的 Prefill 288.67 token/s,Decode 8.15 token/s.使用 `tools/llm/` 公共工具;首轮子集、四块诊断和完整测试集分别记录,不混用范围.16 个训练校准样本的 Hessian 修复已完成首轮实测,累计层误差优化关闭,详见模型 README.
