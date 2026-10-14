@@ -120,3 +120,5 @@ MMLU 板端入口使用交付布局中的 `1024c/prompt.dla`,并严格核对清�
 候选文件位于 Ubuntu89 `/tmp/hailongcodex/2026-10-13/minicpm5-w4-fast-native-v6`,板端 `/root/hailong.he/open_models/minicpm5_w4_fast_v6_native`.结果原始记录位于服务器 `/tmp/hailongcodex/2026-10-14/minicpm5_fast_first_round`;交付清单和 [首轮汇总](results/first_round_summary.json) 保存双 DLA 与原始报告哈希.精度尚未解决,不把该候选标为正式合格交付.
 
 局部修复的清单从成功记录读取 `optimized_layers`、校准样本数和累计层误差开关;不将部分分片优化误标为全模型优化.
+
+2026-10-14 单层消融: 同一 16 个训练校准样本、相同 R1、同一独立 128 Token 诊断输入,第 34 层常规量化 RMSE=0.15042,局部 Hessian RMSE=0.10360,减少 31.1%.局部量化约 18.8 秒,未启用累计层误差优化;这只证明单层平均误差收益,不代表整模精度恢复.基于此证据,限时修复第 0 层、34~41 层及 LM Head,其余 33 分片复用常规候选;10 分片量化实测约 3 分 56 秒,新双 DLA 的整模收益待测.

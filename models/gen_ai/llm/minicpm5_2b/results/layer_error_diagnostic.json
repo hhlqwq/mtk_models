@@ -1084,5 +1084,33 @@
     "local_error_includes_weight_and_internal_activation_quantization",
     "not_full_mmlu_or_wikitext",
     "no_claim_of_fix_qualification"
-  ]
+  ],
+  "matched_layer34_probe": {
+    "scope": "one_layer_one_128_token_block_not_formal_accuracy",
+    "layer": 34,
+    "baseline": {
+      "cosine": 0.9999127357827097,
+      "rmse": 0.15038160057053135,
+      "relative_rmse": 0.013214286342808862,
+      "max_abs_error": 0.7688848135117603
+    },
+    "local_hessian": {
+      "cosine": 0.9999585682181932,
+      "rmse": 0.10359834242874691,
+      "relative_rmse": 0.00910336208884646,
+      "max_abs_error": 0.812975685539044
+    },
+    "rmse_reduction_percent": 31.1096955773139,
+    "calibration_samples": 16,
+    "cumulative_layer_error": false,
+    "r1_equal": true,
+    "control_same_16_samples": {
+      "cosine": 0.9999126877317901,
+      "rmse": 0.15042013866617854,
+      "relative_rmse": 0.013217672750647697,
+      "max_abs_error": 0.9166591572187315
+    },
+    "hessian_vs_same_calibration_rmse_reduction_percent": 31.12734548220394,
+    "calibration_file_hashes_equal": true
+  }
 }
