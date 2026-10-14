@@ -11,11 +11,13 @@ from pathlib import Path
 
 @contextmanager
 def strict_temp_file(filename):
-    """保留 SDK 临时文件清理行为,同时向调用者传播转换异常."""
+    """传播 SDK 异常,清理临时文件并保留可审查的临时目录."""
     try:
         yield
     finally:
-        Path(filename).unlink(missing_ok=True)
+        path = Path(filename)
+        if not path.is_dir():
+            path.unlink(missing_ok=True)
 
 
 def verify_tflite_precision(args, config, prefix):
