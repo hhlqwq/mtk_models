@@ -71,5 +71,16 @@
     "deployment_total": 2827.29
   },
   "weight_optimization": "hessian_16_samples",
-  "cumulative_layer_error": false
+  "cumulative_layer_error": false,
+  "functional_checks": {
+    "scope": "four_authored_functional_cases_not_benchmark",
+    "cases": 4,
+    "answers_present": 4,
+    "eos_reached": 4,
+    "text_token_parity": 4,
+    "exact_token_match_fp32": 3,
+    "strict_answer_only_format_passed": 3,
+    "evidence": "native_smoke.json",
+    "quality_qualified": false
+  }
 }

@@ -1,5 +1,5 @@
 {
-  "candidate": "minicpm5_rotate_v3",
+  "candidate": "current_delivered_w4a16",
   "scope": "one_block_128_tokens_isolated_and_accumulated_quantized_layers",
   "completed_layers": 43,
   "expected_layers": 43,
@@ -138,979 +138,943 @@
       "layer": 0,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9975294194505612,
-        "rmse": 0.0057210671559081334,
-        "relative_rmse": 0.07025990913756144,
-        "max_abs_error": 0.06489022837389752
+        "cosine": 0.9968315187614649,
+        "rmse": 0.006494570131471207,
+        "relative_rmse": 0.07975923196844029,
+        "max_abs_error": 0.07208887498255297
       },
       "accumulated_error": {
-        "cosine": 0.9975294194505612,
-        "rmse": 0.0057210671559081334,
-        "relative_rmse": 0.07025990913756144,
-        "max_abs_error": 0.06489022837389752
+        "cosine": 0.9968315187614649,
+        "rmse": 0.006494570131471207,
+        "relative_rmse": 0.07975923196844029,
+        "max_abs_error": 0.07208887498255297
       },
       "local_residual_error": {
-        "cosine": 0.9972616036206841,
-        "rmse": 0.0057210671483324095,
-        "relative_rmse": 0.07396172746396078,
-        "max_abs_error": 0.06489022464860722
+        "cosine": 0.9964910877624499,
+        "rmse": 0.006494570134737578,
+        "relative_rmse": 0.0839615461549617,
+        "max_abs_error": 0.07208887311990782
       }
     },
     {
       "layer": 1,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9993825036200141,
-        "rmse": 0.009522923352267567,
-        "relative_rmse": 0.03925540478813398,
-        "max_abs_error": 0.09889018398710991
+        "cosine": 0.9985707936792159,
+        "rmse": 0.013562729181208861,
+        "relative_rmse": 0.05590830749060256,
+        "max_abs_error": 0.2746738495437624
       },
       "accumulated_error": {
-        "cosine": 0.9986144291461121,
-        "rmse": 0.01626900156954769,
-        "relative_rmse": 0.06706409560246111,
-        "max_abs_error": 0.25253258467641615
+        "cosine": 0.9955128704108478,
+        "rmse": 0.023122030832674653,
+        "relative_rmse": 0.09531367856193872,
+        "max_abs_error": 0.37537772955142357
       },
       "local_residual_error": {
-        "cosine": 0.9992792992547889,
-        "rmse": 0.009522923342470497,
-        "relative_rmse": 0.04265063095195144,
-        "max_abs_error": 0.09889034789988305
+        "cosine": 0.9983329002023201,
+        "rmse": 0.013562729142453697,
+        "relative_rmse": 0.060743855574636546,
+        "max_abs_error": 0.2746737899391176
       }
     },
     {
       "layer": 2,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9993218234342339,
-        "rmse": 0.011064625845357532,
-        "relative_rmse": 0.03682246024129692,
-        "max_abs_error": 0.10620087222958918
+        "cosine": 0.9990169870614909,
+        "rmse": 0.013334793278928206,
+        "relative_rmse": 0.0443774585022902,
+        "max_abs_error": 0.10091090082116974
       },
       "accumulated_error": {
-        "cosine": 0.9980791910817712,
-        "rmse": 0.021380026363221886,
-        "relative_rmse": 0.07115154020756487,
-        "max_abs_error": 0.27141131399829055
+        "cosine": 0.9955946261169004,
+        "rmse": 0.028601367838866788,
+        "relative_rmse": 0.09518377884295674,
+        "max_abs_error": 0.40332147379872385
       },
       "local_residual_error": {
-        "cosine": 0.9927689061348559,
-        "rmse": 0.011064625845878858,
-        "relative_rmse": 0.12006529261232572,
-        "max_abs_error": 0.10620087222958918
+        "cosine": 0.989669801611033,
+        "rmse": 0.013334793280384557,
+        "relative_rmse": 0.14469950548175076,
+        "max_abs_error": 0.10091090082116974
       }
     },
     {
       "layer": 3,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9991488093519452,
-        "rmse": 0.013398086241547494,
-        "relative_rmse": 0.041252264376227483,
-        "max_abs_error": 0.11615990369751839
+        "cosine": 0.9987220881548822,
+        "rmse": 0.01642073413376379,
+        "relative_rmse": 0.050558904682900925,
+        "max_abs_error": 0.1200621115773603
       },
       "accumulated_error": {
-        "cosine": 0.9968387702675956,
-        "rmse": 0.027700584394439415,
-        "relative_rmse": 0.08528918311272428,
-        "max_abs_error": 0.2751745378820747
+        "cosine": 0.99418196056058,
+        "rmse": 0.03546969233941906,
+        "relative_rmse": 0.10921002553918494,
+        "max_abs_error": 0.39841257310429956
       },
       "local_residual_error": {
-        "cosine": 0.9853251845270993,
-        "rmse": 0.013398086237286874,
-        "relative_rmse": 0.17096029717423356,
-        "max_abs_error": 0.11615990369751839
+        "cosine": 0.9782466230258848,
+        "rmse": 0.016420734137320134,
+        "relative_rmse": 0.20952945563086808,
+        "max_abs_error": 0.12006210785207
       }
     },
     {
       "layer": 4,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9989550339301783,
-        "rmse": 0.01606975553484145,
-        "relative_rmse": 0.04571318032509326,
-        "max_abs_error": 0.11852646672236866
+        "cosine": 0.9983905844956138,
+        "rmse": 0.019971975424759553,
+        "relative_rmse": 0.05681372225344842,
+        "max_abs_error": 0.13872941312369844
       },
       "accumulated_error": {
-        "cosine": 0.9955805503723703,
-        "rmse": 0.03433048293607372,
-        "relative_rmse": 0.09765895652249938,
-        "max_abs_error": 0.29211836306407735
+        "cosine": 0.9925588006337283,
+        "rmse": 0.04334568546757798,
+        "relative_rmse": 0.12330426423353957,
+        "max_abs_error": 0.4040226313192976
       },
       "local_residual_error": {
-        "cosine": 0.9876865334880544,
-        "rmse": 0.016069755541779595,
-        "relative_rmse": 0.15673884194078466,
-        "max_abs_error": 0.11852647417294926
+        "cosine": 0.9814206852191649,
+        "rmse": 0.019971975429699043,
+        "relative_rmse": 0.1947997521117996,
+        "max_abs_error": 0.13872941312369844
       }
     },
     {
       "layer": 5,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9987330865258728,
-        "rmse": 0.01871426577690901,
-        "relative_rmse": 0.05036550857379009,
-        "max_abs_error": 0.12363406802535692
+        "cosine": 0.9980878403687066,
+        "rmse": 0.023015930029483135,
+        "relative_rmse": 0.06194253866697754,
+        "max_abs_error": 0.16147515847617333
       },
       "accumulated_error": {
-        "cosine": 0.9939819451622012,
-        "rmse": 0.04149475726562953,
-        "relative_rmse": 0.11167440805548863,
-        "max_abs_error": 0.32159349990293384
+        "cosine": 0.9905246343515118,
+        "rmse": 0.051890992383251344,
+        "relative_rmse": 0.13965370063473231,
+        "max_abs_error": 0.4019150734995227
       },
       "local_residual_error": {
-        "cosine": 0.9893946349489694,
-        "rmse": 0.01871426577380422,
-        "relative_rmse": 0.14541039918019524,
-        "max_abs_error": 0.12363406802535692
+        "cosine": 0.9843945615712116,
+        "rmse": 0.02301593001827351,
+        "relative_rmse": 0.1788344661007137,
+        "max_abs_error": 0.16147515847617333
       }
     },
     {
       "layer": 6,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9981840683506301,
-        "rmse": 0.022395151843993603,
-        "relative_rmse": 0.06025488413862305,
-        "max_abs_error": 0.18927031632745006
+        "cosine": 0.9973110057456306,
+        "rmse": 0.027341386018913345,
+        "relative_rmse": 0.07356288877186955,
+        "max_abs_error": 0.18174814645470205
       },
       "accumulated_error": {
-        "cosine": 0.9911274703626122,
-        "rmse": 0.04969165767441988,
-        "relative_rmse": 0.13369702052863403,
-        "max_abs_error": 0.4063698732570009
+        "cosine": 0.9869605235508212,
+        "rmse": 0.06176566698302915,
+        "relative_rmse": 0.16618253687102186,
+        "max_abs_error": 0.4253822007248944
       },
       "local_residual_error": {
-        "cosine": 0.9944167344157601,
-        "rmse": 0.022395151830215072,
-        "relative_rmse": 0.10555907525757871,
-        "max_abs_error": 0.18927031632745006
+        "cosine": 0.9917744726182319,
+        "rmse": 0.027341386017573778,
+        "relative_rmse": 0.12887305383973582,
+        "max_abs_error": 0.18174808685005717
       }
     },
     {
       "layer": 7,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999804073595657,
-        "rmse": 0.060382935276361266,
-        "relative_rmse": 0.00629480644505079,
-        "max_abs_error": 1.047259344564215
+        "cosine": 0.999974048019691,
+        "rmse": 0.13223402194439426,
+        "relative_rmse": 0.013785147949340977,
+        "max_abs_error": 2.844794900886683
       },
       "accumulated_error": {
-        "cosine": 0.9999663956408473,
-        "rmse": 0.07893570435408011,
-        "relative_rmse": 0.00822889742339518,
-        "max_abs_error": 1.012922062383429
+        "cosine": 0.9999520764353472,
+        "rmse": 0.11636163220161751,
+        "relative_rmse": 0.012130481187365086,
+        "max_abs_error": 2.09232137622044
       },
       "local_residual_error": {
-        "cosine": 0.9999802687546264,
-        "rmse": 0.06038293656108603,
-        "relative_rmse": 0.0063184961560080665,
-        "max_abs_error": 1.0472593445642149
+        "cosine": 0.9999739963437967,
+        "rmse": 0.13223402275432322,
+        "relative_rmse": 0.013837026428461546,
+        "max_abs_error": 2.8447878079339546
       }
     },
     {
       "layer": 8,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999967823751158,
-        "rmse": 0.025231041786633844,
-        "relative_rmse": 0.0025371385218795213,
-        "max_abs_error": 0.15398201696405694
+        "cosine": 0.9999949083043601,
+        "rmse": 0.031735098603258884,
+        "relative_rmse": 0.003191162428528322,
+        "max_abs_error": 1.2987342693418782
       },
       "accumulated_error": {
-        "cosine": 0.9999656365496661,
-        "rmse": 0.08275855597712822,
-        "relative_rmse": 0.008321888654471905,
-        "max_abs_error": 0.8842402610118253
+        "cosine": 0.9999496598721012,
+        "rmse": 0.12122474981574308,
+        "relative_rmse": 0.01218990594155644,
+        "max_abs_error": 2.071738028108541
       },
       "local_residual_error": {
-        "cosine": 0.9980147335659689,
-        "rmse": 0.0252310417773317,
-        "relative_rmse": 0.06298455376653075,
-        "max_abs_error": 0.15398201696405694
+        "cosine": 0.9968668167603665,
+        "rmse": 0.03173509860730242,
+        "relative_rmse": 0.0792207133673373,
+        "max_abs_error": 1.2987342693418782
       }
     },
     {
       "layer": 9,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999960221327766,
-        "rmse": 0.0285898860868533,
-        "relative_rmse": 0.0028205883639682338,
-        "max_abs_error": 0.19881911701413807
+        "cosine": 0.9999938585288979,
+        "rmse": 0.03554706946919938,
+        "relative_rmse": 0.0035069627068499303,
+        "max_abs_error": 0.7906712684437309
       },
       "accumulated_error": {
-        "cosine": 0.999961938967627,
-        "rmse": 0.08873687752230316,
-        "relative_rmse": 0.00875450162459288,
-        "max_abs_error": 0.7945744684920619
+        "cosine": 0.9999432648720231,
+        "rmse": 0.12876950681267618,
+        "relative_rmse": 0.01270399683897443,
+        "max_abs_error": 2.129591334321276
       },
       "local_residual_error": {
-        "cosine": 0.9943212120613721,
-        "rmse": 0.028589886074309852,
-        "relative_rmse": 0.10650935675132442,
-        "max_abs_error": 0.19881911701413807
+        "cosine": 0.9912816241575744,
+        "rmse": 0.03554706947010136,
+        "relative_rmse": 0.13242777302047556,
+        "max_abs_error": 0.7906712684437309
       }
     },
     {
       "layer": 10,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999955812920098,
-        "rmse": 0.03052974220151427,
-        "relative_rmse": 0.0029730117458462877,
-        "max_abs_error": 0.2872625386233894
+        "cosine": 0.9999934375212862,
+        "rmse": 0.037202754296128925,
+        "relative_rmse": 0.003622835717069749,
+        "max_abs_error": 0.770214084521001
       },
       "accumulated_error": {
-        "cosine": 0.9999600069230834,
-        "rmse": 0.09216435936243081,
-        "relative_rmse": 0.00897504214494528,
-        "max_abs_error": 0.6585906811912867
+        "cosine": 0.9999395966282182,
+        "rmse": 0.13299128003378216,
+        "relative_rmse": 0.012950803468208389,
+        "max_abs_error": 2.160685636455497
       },
       "local_residual_error": {
-        "cosine": 0.9912458996522113,
-        "rmse": 0.030529742202191436,
-        "relative_rmse": 0.13209660406517032,
-        "max_abs_error": 0.2872625386233894
+        "cosine": 0.9872607329998591,
+        "rmse": 0.0372027543112072,
+        "relative_rmse": 0.16096949656083956,
+        "max_abs_error": 0.770214084521001
       }
     },
     {
       "layer": 11,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999948758229334,
-        "rmse": 0.0333596621836819,
-        "relative_rmse": 0.0032016555916021586,
-        "max_abs_error": 0.18796769379411116
+        "cosine": 0.9999925031897897,
+        "rmse": 0.040347687571595015,
+        "relative_rmse": 0.0038723238872573253,
+        "max_abs_error": 0.8004057444000239
       },
       "accumulated_error": {
-        "cosine": 0.9999579215409545,
-        "rmse": 0.09594277634706193,
-        "relative_rmse": 0.009207998710360538,
-        "max_abs_error": 0.8580444538190869
+        "cosine": 0.9999364130397523,
+        "rmse": 0.137171802202027,
+        "relative_rmse": 0.013164909274726196,
+        "max_abs_error": 2.1564066592739266
       },
       "local_residual_error": {
-        "cosine": 0.9918007981193833,
-        "rmse": 0.03335966219468659,
-        "relative_rmse": 0.12791729386889772,
-        "max_abs_error": 0.18796769379411116
+        "cosine": 0.9882405962655711,
+        "rmse": 0.04034768756129307,
+        "relative_rmse": 0.15471279453650985,
+        "max_abs_error": 0.8004057444000239
       }
     },
     {
       "layer": 12,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.999994707399521,
-        "rmse": 0.034077323469075715,
-        "relative_rmse": 0.003253526875179027,
-        "max_abs_error": 0.21677762917358048
+        "cosine": 0.9999924328464903,
+        "rmse": 0.04074667395441926,
+        "relative_rmse": 0.0038902825365481025,
+        "max_abs_error": 0.7957821184753584
       },
       "accumulated_error": {
-        "cosine": 0.9999537975230492,
-        "rmse": 0.10104096140295162,
-        "relative_rmse": 0.009646869235981879,
-        "max_abs_error": 0.8315264440713896
+        "cosine": 0.9999299109779154,
+        "rmse": 0.1427481879073732,
+        "relative_rmse": 0.013628861662700484,
+        "max_abs_error": 2.143738620805493
       },
       "local_residual_error": {
-        "cosine": 0.9888173641920323,
-        "rmse": 0.03407732345779583,
-        "relative_rmse": 0.1494540157446323,
-        "max_abs_error": 0.2167776142724193
+        "cosine": 0.9842111675723445,
+        "rmse": 0.04074667395993519,
+        "relative_rmse": 0.17870399387837968,
+        "max_abs_error": 0.7957821184753584
       }
     },
     {
       "layer": 13,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999947708001292,
-        "rmse": 0.0342042246563166,
-        "relative_rmse": 0.003234366899370249,
-        "max_abs_error": 0.18359456312444766
+        "cosine": 0.9999925142248302,
+        "rmse": 0.040919851486614006,
+        "relative_rmse": 0.003869399772156846,
+        "max_abs_error": 0.7873270567030488
       },
       "accumulated_error": {
-        "cosine": 0.9999484191437026,
-        "rmse": 0.10778633760641596,
-        "relative_rmse": 0.010192324663443515,
-        "max_abs_error": 0.9115149298153298
+        "cosine": 0.9999217659474523,
+        "rmse": 0.15008760513410613,
+        "relative_rmse": 0.014192352220522005,
+        "max_abs_error": 2.1294971693064895
       },
       "local_residual_error": {
-        "cosine": 0.9905176642702925,
-        "rmse": 0.03420422465421727,
-        "relative_rmse": 0.13769416046347568,
-        "max_abs_error": 0.18359456312444766
+        "cosine": 0.986627998668793,
+        "rmse": 0.04091985148772114,
+        "relative_rmse": 0.16472864126536843,
+        "max_abs_error": 0.7873270567030488
       }
     },
     {
       "layer": 14,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999949282713337,
-        "rmse": 0.034043276131136446,
-        "relative_rmse": 0.003184877937550686,
-        "max_abs_error": 0.2186555539088617
+        "cosine": 0.9999923437763573,
+        "rmse": 0.04182740584914154,
+        "relative_rmse": 0.003913113046447397,
+        "max_abs_error": 0.7657857452853989
       },
       "accumulated_error": {
-        "cosine": 0.9999424757452038,
-        "rmse": 0.11500640734459253,
-        "relative_rmse": 0.010759286738967932,
-        "max_abs_error": 0.9352932733383004
+        "cosine": 0.9999115629553774,
+        "rmse": 0.1588846135220656,
+        "relative_rmse": 0.014864260439563163,
+        "max_abs_error": 2.16630724963278
       },
       "local_residual_error": {
-        "cosine": 0.9919719671836364,
-        "rmse": 0.03404327613208783,
-        "relative_rmse": 0.12671091394231693,
-        "max_abs_error": 0.2186555688100229
+        "cosine": 0.9880761500809108,
+        "rmse": 0.04182740584651476,
+        "relative_rmse": 0.15568385573470023,
+        "max_abs_error": 0.7657857452853989
       }
     },
     {
       "layer": 15,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999939591283425,
-        "rmse": 0.03720937897493095,
-        "relative_rmse": 0.003475890244479049,
-        "max_abs_error": 0.2276994392746987
+        "cosine": 0.999991159595105,
+        "rmse": 0.04501426793420661,
+        "relative_rmse": 0.004204978760168243,
+        "max_abs_error": 0.7738523978091223
       },
       "accumulated_error": {
-        "cosine": 0.9999405182450959,
-        "rmse": 0.11710631034706291,
-        "relative_rmse": 0.010939410786095961,
-        "max_abs_error": 1.0062688080836708
+        "cosine": 0.9999078613214979,
+        "rmse": 0.1616134018920861,
+        "relative_rmse": 0.015097011536609676,
+        "max_abs_error": 2.1507584145996645
       },
       "local_residual_error": {
-        "cosine": 0.9865159091066031,
-        "rmse": 0.037209378987208504,
-        "relative_rmse": 0.1641428735188475,
-        "max_abs_error": 0.2276994392746987
+        "cosine": 0.9807836961313897,
+        "rmse": 0.04501426794769857,
+        "relative_rmse": 0.1985727584450962,
+        "max_abs_error": 0.7738523978091223
       }
     },
     {
       "layer": 16,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999946638944222,
-        "rmse": 0.035044382914961675,
-        "relative_rmse": 0.0032668963674217437,
-        "max_abs_error": 0.20862384959163993
+        "cosine": 0.9999925482539102,
+        "rmse": 0.041412291699613496,
+        "relative_rmse": 0.0038605233838320875,
+        "max_abs_error": 0.7803843015881569
       },
       "accumulated_error": {
-        "cosine": 0.9999346920010191,
-        "rmse": 0.12295010868113226,
-        "relative_rmse": 0.011461616099766295,
-        "max_abs_error": 1.0244060419684728
+        "cosine": 0.9999008323917992,
+        "rmse": 0.16671222088107251,
+        "relative_rmse": 0.015541193222300402,
+        "max_abs_error": 2.149121254304646
       },
       "local_residual_error": {
-        "cosine": 0.9872168306256986,
-        "rmse": 0.035044382921968334,
-        "relative_rmse": 0.159435257877282,
-        "max_abs_error": 0.20862384959163993
+        "cosine": 0.9826984942723477,
+        "rmse": 0.04141229170899117,
+        "relative_rmse": 0.18840620669000147,
+        "max_abs_error": 0.7803843015881569
       }
     },
     {
       "layer": 17,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999954454513057,
-        "rmse": 0.03248756893807836,
-        "relative_rmse": 0.003018167154492011,
-        "max_abs_error": 0.16527373462338352
+        "cosine": 0.9999932990162704,
+        "rmse": 0.03940806707343196,
+        "relative_rmse": 0.003661096618396061,
+        "max_abs_error": 0.8144061483813232
       },
       "accumulated_error": {
-        "cosine": 0.9999334284459706,
-        "rmse": 0.1245658452513277,
-        "relative_rmse": 0.01157244309125366,
-        "max_abs_error": 1.0019593206539108
+        "cosine": 0.999898195939679,
+        "rmse": 0.16874063867360986,
+        "relative_rmse": 0.0156763786582782,
+        "max_abs_error": 2.1595478539967985
       },
       "local_residual_error": {
-        "cosine": 0.9866593413679523,
-        "rmse": 0.03248756893547773,
-        "relative_rmse": 0.16325979846858774,
-        "max_abs_error": 0.16527373462338352
+        "cosine": 0.981055937064212,
+        "rmse": 0.03940806707824272,
+        "relative_rmse": 0.19803737133377466,
+        "max_abs_error": 0.8144061483813232
       }
     },
     {
       "layer": 18,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999955525804533,
-        "rmse": 0.032222408668260503,
-        "relative_rmse": 0.002982458586706139,
-        "max_abs_error": 0.20609446124036201
+        "cosine": 0.9999936169522575,
+        "rmse": 0.03860342523092947,
+        "relative_rmse": 0.0035730759157620133,
+        "max_abs_error": 0.8254557194587733
       },
       "accumulated_error": {
-        "cosine": 0.9999298763487408,
-        "rmse": 0.12831142876356666,
-        "relative_rmse": 0.011876316461263827,
-        "max_abs_error": 1.1444427096940604
+        "cosine": 0.9998928346648085,
+        "rmse": 0.17300996681410122,
+        "relative_rmse": 0.01601354651594387,
+        "max_abs_error": 2.173825915594847
       },
       "local_residual_error": {
-        "cosine": 0.9853648137125524,
-        "rmse": 0.03222240865535522,
-        "relative_rmse": 0.1711222606632904,
-        "max_abs_error": 0.20609444633920082
+        "cosine": 0.9793374474634419,
+        "rmse": 0.038603425228865396,
+        "relative_rmse": 0.20500966127143486,
+        "max_abs_error": 0.8254557194587733
       }
     },
     {
       "layer": 19,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.99999507522011,
-        "rmse": 0.03395819071044956,
-        "relative_rmse": 0.0031384201822719543,
-        "max_abs_error": 0.20182410794513694
+        "cosine": 0.9999933298646486,
+        "rmse": 0.03953150642855524,
+        "relative_rmse": 0.0036535065615615806,
+        "max_abs_error": 0.7835205020679439
       },
       "accumulated_error": {
-        "cosine": 0.9999264462827714,
-        "rmse": 0.1315794449363464,
-        "relative_rmse": 0.012160588562608493,
-        "max_abs_error": 1.0190971770426376
+        "cosine": 0.9998880044327108,
+        "rmse": 0.17605718314162405,
+        "relative_rmse": 0.016271225964547196,
+        "max_abs_error": 2.1505439980260235
       },
       "local_residual_error": {
-        "cosine": 0.9828559207156088,
-        "rmse": 0.033958190700055055,
-        "relative_rmse": 0.18518051627277976,
-        "max_abs_error": 0.20182412284629814
+        "cosine": 0.9774640364980252,
+        "rmse": 0.039531506433604945,
+        "relative_rmse": 0.21557287407912104,
+        "max_abs_error": 0.7835205020679439
       }
     },
     {
       "layer": 20,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999948987116598,
-        "rmse": 0.03471532751158098,
-        "relative_rmse": 0.0031941931162825492,
-        "max_abs_error": 0.21951362127138396
+        "cosine": 0.9999926290846112,
+        "rmse": 0.041729130996952794,
+        "relative_rmse": 0.003839540260115878,
+        "max_abs_error": 0.8030080590357898
       },
       "accumulated_error": {
-        "cosine": 0.9999241383970939,
-        "rmse": 0.1342268389462452,
-        "relative_rmse": 0.012350349995673629,
-        "max_abs_error": 0.952534055981527
+        "cosine": 0.9998843942075003,
+        "rmse": 0.17919561897305755,
+        "relative_rmse": 0.01648797319871534,
+        "max_abs_error": 2.173040997970844
       },
       "local_residual_error": {
-        "cosine": 0.9854162972870626,
-        "rmse": 0.034715327509590166,
-        "relative_rmse": 0.17079957657241768,
-        "max_abs_error": 0.21951362127138396
+        "cosine": 0.9795204869983745,
+        "rmse": 0.04172913099056923,
+        "relative_rmse": 0.2053075178040729,
+        "max_abs_error": 0.8030080590357898
       }
     },
     {
       "layer": 21,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999944693264353,
-        "rmse": 0.03630854270606927,
-        "relative_rmse": 0.0033259793072179214,
-        "max_abs_error": 0.2065950443130855
+        "cosine": 0.9999918490134604,
+        "rmse": 0.044077004746361205,
+        "relative_rmse": 0.004037595258600115,
+        "max_abs_error": 0.8193569846226865
       },
       "accumulated_error": {
-        "cosine": 0.9999204617581311,
-        "rmse": 0.1380658824297275,
-        "relative_rmse": 0.012647278953371387,
-        "max_abs_error": 0.9457486410945235
+        "cosine": 0.9998777895957673,
+        "rmse": 0.18431981626401267,
+        "relative_rmse": 0.016884287407824834,
+        "max_abs_error": 2.152766853322561
       },
       "local_residual_error": {
-        "cosine": 0.992188116043962,
-        "rmse": 0.03630854270513994,
-        "relative_rmse": 0.1250357074735926,
-        "max_abs_error": 0.2065950443130855
+        "cosine": 0.9886516686966645,
+        "rmse": 0.04407700475738782,
+        "relative_rmse": 0.15178795115415053,
+        "max_abs_error": 0.8193569846226865
       }
     },
     {
       "layer": 22,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999945422528557,
-        "rmse": 0.03672326552362942,
-        "relative_rmse": 0.003304051963187973,
-        "max_abs_error": 0.2723296688486945
+        "cosine": 0.9999919418711848,
+        "rmse": 0.04476222978676525,
+        "relative_rmse": 0.0040273305092029515,
+        "max_abs_error": 0.7979178600599823
       },
       "accumulated_error": {
-        "cosine": 0.9999173682621769,
-        "rmse": 0.1432618700869198,
-        "relative_rmse": 0.012889503598368619,
-        "max_abs_error": 0.9893287824403982
+        "cosine": 0.9998714970698449,
+        "rmse": 0.19250754323682578,
+        "relative_rmse": 0.017320216303402372,
+        "max_abs_error": 2.2113852309095137
       },
       "local_residual_error": {
-        "cosine": 0.9952998517629527,
-        "rmse": 0.03672326550945898,
-        "relative_rmse": 0.0969123055732812,
-        "max_abs_error": 0.27232968374985567
+        "cosine": 0.9930031910377899,
+        "rmse": 0.044762229795617975,
+        "relative_rmse": 0.11812703465067527,
+        "max_abs_error": 0.7979178600599823
       }
     },
     {
       "layer": 23,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999936393797995,
-        "rmse": 0.039699498535281694,
-        "relative_rmse": 0.003566693111524835,
-        "max_abs_error": 0.20298850968913207
+        "cosine": 0.9999911525281852,
+        "rmse": 0.04682126974563486,
+        "relative_rmse": 0.004206529052851454,
+        "max_abs_error": 0.8027660606702511
       },
       "accumulated_error": {
-        "cosine": 0.9999122543686949,
-        "rmse": 0.14781614524865175,
-        "relative_rmse": 0.01328013820028419,
-        "max_abs_error": 1.078974139273571
+        "cosine": 0.9998620874361928,
+        "rmse": 0.19872515043585742,
+        "relative_rmse": 0.0178539181739864,
+        "max_abs_error": 2.2028359071632906
       },
       "local_residual_error": {
-        "cosine": 0.9903941418995919,
-        "rmse": 0.03969949854059892,
-        "relative_rmse": 0.13878425045268625,
-        "max_abs_error": 0.20298850968913207
+        "cosine": 0.9868068631950839,
+        "rmse": 0.046821269736121475,
+        "relative_rmse": 0.16368103546835183,
+        "max_abs_error": 0.8027660606702511
       }
     },
     {
       "layer": 24,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999939761675058,
-        "rmse": 0.03866763108922719,
-        "relative_rmse": 0.0034709792021653846,
-        "max_abs_error": 0.2499880557389777
+        "cosine": 0.9999910693299405,
+        "rmse": 0.04708211339282153,
+        "relative_rmse": 0.0042263005421013435,
+        "max_abs_error": 0.7921309491043758
       },
       "accumulated_error": {
-        "cosine": 0.999901036574372,
-        "rmse": 0.15706472043889336,
-        "relative_rmse": 0.014098830538113914,
-        "max_abs_error": 1.0114766190894828
+        "cosine": 0.9998441639087349,
+        "rmse": 0.20961204751075999,
+        "relative_rmse": 0.018815712511341207,
+        "max_abs_error": 2.2143057108471282
       },
       "local_residual_error": {
-        "cosine": 0.989151893445046,
-        "rmse": 0.03866763108678095,
-        "relative_rmse": 0.14717187368324633,
-        "max_abs_error": 0.24998805573897775
+        "cosine": 0.9842645341052476,
+        "rmse": 0.047082113391349975,
+        "relative_rmse": 0.17919802522871156,
+        "max_abs_error": 0.7921309491043758
       }
     },
     {
       "layer": 25,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999920537688369,
-        "rmse": 0.044455498847279395,
-        "relative_rmse": 0.003986667357399731,
-        "max_abs_error": 0.2390848749619996
+        "cosine": 0.9999884893393759,
+        "rmse": 0.053504171128111594,
+        "relative_rmse": 0.004798131389735605,
+        "max_abs_error": 0.8076129024474028
       },
       "accumulated_error": {
-        "cosine": 0.9998875336834223,
-        "rmse": 0.16753982133491743,
-        "relative_rmse": 0.015024587601076358,
-        "max_abs_error": 1.269206147708059
+        "cosine": 0.9998231994542204,
+        "rmse": 0.22166217748486883,
+        "relative_rmse": 0.019878155838741463,
+        "max_abs_error": 2.2619286336922357
       },
       "local_residual_error": {
-        "cosine": 0.991831290374337,
-        "rmse": 0.04445549883718935,
-        "relative_rmse": 0.12792199892180478,
-        "max_abs_error": 0.2390848451596772
+        "cosine": 0.9883357483724978,
+        "rmse": 0.05350417112143463,
+        "relative_rmse": 0.15395981809970194,
+        "max_abs_error": 0.8076129024474028
       }
     },
     {
       "layer": 26,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999842464791874,
-        "rmse": 0.06268899319855091,
-        "relative_rmse": 0.0056131548239392055,
-        "max_abs_error": 0.3896324058514611
+        "cosine": 0.9999795542831162,
+        "rmse": 0.07141693800914539,
+        "relative_rmse": 0.00639465230871728,
+        "max_abs_error": 0.8182148632588735
       },
       "accumulated_error": {
-        "cosine": 0.9998584751025429,
-        "rmse": 0.18812411132433038,
-        "relative_rmse": 0.01684458003073896,
-        "max_abs_error": 1.197984299448513
+        "cosine": 0.9997757707423467,
+        "rmse": 0.2468529232629229,
+        "relative_rmse": 0.022103140510654734,
+        "max_abs_error": 2.2498076955452007
       },
       "local_residual_error": {
-        "cosine": 0.9912537950339664,
-        "rmse": 0.06268899317158527,
-        "relative_rmse": 0.13231433077229174,
-        "max_abs_error": 0.3896324058514611
+        "cosine": 0.9887090940347459,
+        "rmse": 0.07141693802552586,
+        "relative_rmse": 0.15073595232351944,
+        "max_abs_error": 0.8182148632588735
       }
     },
     {
       "layer": 27,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999871328503703,
-        "rmse": 0.056732353166987236,
-        "relative_rmse": 0.005072942937478249,
-        "max_abs_error": 0.7585605419807808
+        "cosine": 0.9999833140716455,
+        "rmse": 0.06460418004370284,
+        "relative_rmse": 0.005776832590065027,
+        "max_abs_error": 0.8072974208019446
       },
       "accumulated_error": {
-        "cosine": 0.9998292677765549,
-        "rmse": 0.2068697780629229,
-        "relative_rmse": 0.01849806188213377,
-        "max_abs_error": 1.32045697945335
+        "cosine": 0.9997256012628787,
+        "rmse": 0.27122890690668744,
+        "relative_rmse": 0.02425298158302359,
+        "max_abs_error": 2.256341288548981
       },
       "local_residual_error": {
-        "cosine": 0.9904953531644275,
-        "rmse": 0.05673235317646826,
-        "relative_rmse": 0.137546480083163,
-        "max_abs_error": 0.7585605419807808
+        "cosine": 0.9878504165692038,
+        "rmse": 0.06460418003351902,
+        "relative_rmse": 0.15663158016216092,
+        "max_abs_error": 0.8072974208019446
       }
     },
     {
       "layer": 28,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999830656590921,
-        "rmse": 0.06524615912561714,
-        "relative_rmse": 0.005819688963850505,
-        "max_abs_error": 0.7856962368677485
+        "cosine": 0.999975993248055,
+        "rmse": 0.07768494682783501,
+        "relative_rmse": 0.006929177394081179,
+        "max_abs_error": 0.8127668238128649
       },
       "accumulated_error": {
-        "cosine": 0.9997916917198327,
-        "rmse": 0.22902467111563785,
-        "relative_rmse": 0.020428058429846498,
-        "max_abs_error": 1.4831306477624653
+        "cosine": 0.999659406722283,
+        "rmse": 0.30071716621170524,
+        "relative_rmse": 0.026822733041759507,
+        "max_abs_error": 2.249290014034159
       },
       "local_residual_error": {
-        "cosine": 0.9901037525249241,
-        "rmse": 0.06524615913098837,
-        "relative_rmse": 0.14038750269907715,
-        "max_abs_error": 0.7856962368677485
+        "cosine": 0.9862067656078994,
+        "rmse": 0.0776849468229026,
+        "relative_rmse": 0.16715153855878373,
+        "max_abs_error": 0.8127668238128649
       }
     },
     {
       "layer": 29,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999817490662348,
-        "rmse": 0.06783959080105328,
-        "relative_rmse": 0.006041657309783347,
-        "max_abs_error": 0.9207376475955726
+        "cosine": 0.9999772293848876,
+        "rmse": 0.0757763691116709,
+        "relative_rmse": 0.006748490551654685,
+        "max_abs_error": 0.8112377294460202
       },
       "accumulated_error": {
-        "cosine": 0.9997425511162882,
-        "rmse": 0.2549395422206718,
-        "relative_rmse": 0.022704402114206556,
-        "max_abs_error": 1.6083850693502488
+        "cosine": 0.999583794410046,
+        "rmse": 0.33111099274735956,
+        "relative_rmse": 0.029488076986264655,
+        "max_abs_error": 2.2604186674723508
       },
       "local_residual_error": {
-        "cosine": 0.989699806795294,
-        "rmse": 0.06783959076420937,
-        "relative_rmse": 0.1431650842762737,
-        "max_abs_error": 0.9207376475955726
+        "cosine": 0.9875306802482392,
+        "rmse": 0.07577636913022547,
+        "relative_rmse": 0.15991445973258467,
+        "max_abs_error": 0.8112377294460202
       }
     },
     {
       "layer": 30,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999780064865683,
-        "rmse": 0.07461700436475027,
-        "relative_rmse": 0.006632235194225996,
-        "max_abs_error": 0.7208563574316067
+        "cosine": 0.9999711438773712,
+        "rmse": 0.08546904939234405,
+        "relative_rmse": 0.007596804797702233,
+        "max_abs_error": 0.8026018115832585
       },
       "accumulated_error": {
-        "cosine": 0.9996860216344661,
-        "rmse": 0.2820373763452668,
-        "relative_rmse": 0.025068524653448828,
-        "max_abs_error": 1.6511309541561752
+        "cosine": 0.9994922627396798,
+        "rmse": 0.36470126164896033,
+        "relative_rmse": 0.03241599519265338,
+        "max_abs_error": 2.4373729738222405
       },
       "local_residual_error": {
-        "cosine": 0.9865509158291129,
-        "rmse": 0.07461700436616776,
-        "relative_rmse": 0.16378288126615068,
-        "max_abs_error": 0.7208563574316067
+        "cosine": 0.9827438461773856,
+        "rmse": 0.08546904940089714,
+        "relative_rmse": 0.18760293209243348,
+        "max_abs_error": 0.8026018115832585
       }
     },
     {
       "layer": 31,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999789570079638,
-        "rmse": 0.07313528920053791,
-        "relative_rmse": 0.00648734907879246,
-        "max_abs_error": 0.5564298607553959
+        "cosine": 0.999971025420457,
+        "rmse": 0.08582111311191182,
+        "relative_rmse": 0.007612624561835198,
+        "max_abs_error": 0.7920288346922177
       },
       "accumulated_error": {
-        "cosine": 0.9996243225418878,
-        "rmse": 0.3090812394548202,
-        "relative_rmse": 0.027416557943063576,
-        "max_abs_error": 1.9425264072235475
+        "cosine": 0.9993925126513857,
+        "rmse": 0.3981642724886646,
+        "relative_rmse": 0.03531852490004284,
+        "max_abs_error": 2.7334707833856875
       },
       "local_residual_error": {
-        "cosine": 0.9854494497105227,
-        "rmse": 0.07313528918700779,
-        "relative_rmse": 0.17008971212358984,
-        "max_abs_error": 0.5564298607553959
+        "cosine": 0.9806067975528474,
+        "rmse": 0.08582111308948306,
+        "relative_rmse": 0.19959297525140593,
+        "max_abs_error": 0.7920288346922177
       }
     },
     {
       "layer": 32,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999758758451829,
-        "rmse": 0.07849695832520358,
-        "relative_rmse": 0.006946059065369564,
-        "max_abs_error": 0.6428053527193764
+        "cosine": 0.9999677754295915,
+        "rmse": 0.09072616930768626,
+        "relative_rmse": 0.008028200351165232,
+        "max_abs_error": 0.8278287858069007
       },
       "accumulated_error": {
-        "cosine": 0.9995454909926285,
-        "rmse": 0.34074308868000586,
-        "relative_rmse": 0.03015176219035544,
-        "max_abs_error": 2.1622884180133
+        "cosine": 0.9992772635539786,
+        "rmse": 0.43406447352261357,
+        "relative_rmse": 0.038409607562559914,
+        "max_abs_error": 2.630054117774231
       },
       "local_residual_error": {
-        "cosine": 0.9852214975546334,
-        "rmse": 0.07849695831521288,
-        "relative_rmse": 0.17148182890756275,
-        "max_abs_error": 0.6428053527193764
+        "cosine": 0.9808014919911817,
+        "rmse": 0.09072616932910851,
+        "relative_rmse": 0.19819738716438295,
+        "max_abs_error": 0.8278287858069007
       }
     },
     {
       "layer": 33,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.999972008447344,
-        "rmse": 0.08491233908023012,
-        "relative_rmse": 0.0074821459736193596,
-        "max_abs_error": 0.5350363729021761
+        "cosine": 0.9999605014197007,
+        "rmse": 0.10086995771361436,
+        "relative_rmse": 0.00888826912642174,
+        "max_abs_error": 0.8359550854319764
       },
       "accumulated_error": {
-        "cosine": 0.9994439255877025,
-        "rmse": 0.3784365959934601,
-        "relative_rmse": 0.033346365011889506,
-        "max_abs_error": 2.187669484284034
+        "cosine": 0.9991169577436559,
+        "rmse": 0.48038479617702046,
+        "relative_rmse": 0.04232964352761219,
+        "max_abs_error": 3.0552655775799624
       },
       "local_residual_error": {
-        "cosine": 0.9878033869028638,
-        "rmse": 0.08491233911022593,
-        "relative_rmse": 0.15590285807949864,
-        "max_abs_error": 0.5350363729021761
+        "cosine": 0.9832006127613606,
+        "rmse": 0.1008699576855397,
+        "relative_rmse": 0.18520179335456946,
+        "max_abs_error": 0.8359550854319764
       }
     },
     {
       "layer": 34,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999688801130032,
-        "rmse": 0.08978155495160438,
-        "relative_rmse": 0.007889257535044582,
-        "max_abs_error": 0.7561917203870672
+        "cosine": 0.9999585620131989,
+        "rmse": 0.10360595787822972,
+        "relative_rmse": 0.00910403095931265,
+        "max_abs_error": 0.8130561693928371
       },
       "accumulated_error": {
-        "cosine": 0.999344752126638,
-        "rmse": 0.4119140393363743,
-        "relative_rmse": 0.036195585389191015,
-        "max_abs_error": 2.481866616218185
+        "cosine": 0.9989610504981187,
+        "rmse": 0.5215559792707112,
+        "relative_rmse": 0.045830007072333756,
+        "max_abs_error": 3.4334068579867214
       },
       "local_residual_error": {
-        "cosine": 0.9806135521778352,
-        "rmse": 0.08978155494200916,
-        "relative_rmse": 0.1964303618939975,
-        "max_abs_error": 0.7561917203870672
+        "cosine": 0.9751010595394963,
+        "rmse": 0.10360595787770734,
+        "relative_rmse": 0.22667638854682787,
+        "max_abs_error": 0.8130561693928371
       }
     },
     {
       "layer": 35,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999646005711067,
-        "rmse": 0.09611679671238905,
-        "relative_rmse": 0.008414140523808912,
-        "max_abs_error": 0.6840531831704282
+        "cosine": 0.9999513403453046,
+        "rmse": 0.11269573516429451,
+        "relative_rmse": 0.009865473586547569,
+        "max_abs_error": 0.8463917259437608
       },
       "accumulated_error": {
-        "cosine": 0.9992456868875763,
-        "rmse": 0.4436088253639042,
-        "relative_rmse": 0.03883386798025263,
-        "max_abs_error": 2.645974104715395
+        "cosine": 0.9987971570760406,
+        "rmse": 0.5624048553398063,
+        "relative_rmse": 0.04923336484040141,
+        "max_abs_error": 3.2096911149982525
       },
       "local_residual_error": {
-        "cosine": 0.9815860256741599,
-        "rmse": 0.09611679668192863,
-        "relative_rmse": 0.19133572029937157,
-        "max_abs_error": 0.6840531831704282
+        "cosine": 0.9756686298029167,
+        "rmse": 0.1126957351603311,
+        "relative_rmse": 0.22433873003274474,
+        "max_abs_error": 0.8463917259437608
       }
     },
     {
       "layer": 36,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999598576347148,
-        "rmse": 0.1022673269997522,
-        "relative_rmse": 0.008960556914445354,
-        "max_abs_error": 2.111698783602364
+        "cosine": 0.9999436978376776,
+        "rmse": 0.12111510337091373,
+        "relative_rmse": 0.010611979123629756,
+        "max_abs_error": 0.8550922277300192
       },
       "accumulated_error": {
-        "cosine": 0.9991210414438874,
-        "rmse": 0.4784187650229334,
-        "relative_rmse": 0.04191855501353858,
-        "max_abs_error": 2.7784574598736818
+        "cosine": 0.9986095862457951,
+        "rmse": 0.6036119157310053,
+        "relative_rmse": 0.05288784693428996,
+        "max_abs_error": 3.8626604296159
       },
       "local_residual_error": {
-        "cosine": 0.9790292305026644,
-        "rmse": 0.10226732698861378,
-        "relative_rmse": 0.20431125312786078,
-        "max_abs_error": 2.1116987538000416
+        "cosine": 0.9718131321519793,
+        "rmse": 0.12111510336745794,
+        "relative_rmse": 0.24196566352985385,
+        "max_abs_error": 0.8550922277300192
       }
     },
     {
       "layer": 37,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999534795457727,
-        "rmse": 0.11056171828435508,
-        "relative_rmse": 0.009646058752883015,
-        "max_abs_error": 0.9235648380760102
+        "cosine": 0.9999285499201921,
+        "rmse": 0.1370135672262177,
+        "relative_rmse": 0.01195387422838903,
+        "max_abs_error": 1.0358370464667739
       },
       "accumulated_error": {
-        "cosine": 0.9989863021920485,
-        "rmse": 0.5159751183667124,
-        "relative_rmse": 0.04501672354612237,
-        "max_abs_error": 3.3274355177809243
+        "cosine": 0.9983929676711829,
+        "rmse": 0.6511168055082155,
+        "relative_rmse": 0.05680728236339426,
+        "max_abs_error": 4.272040255941448
       },
       "local_residual_error": {
-        "cosine": 0.9816654844419805,
-        "rmse": 0.11056171829804651,
-        "relative_rmse": 0.19131310800058002,
-        "max_abs_error": 0.9235648380760102
+        "cosine": 0.9725764862503801,
+        "rmse": 0.1370135672396276,
+        "relative_rmse": 0.23708474253132727,
+        "max_abs_error": 1.0358370464667739
       }
     },
     {
       "layer": 38,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.999943280238392,
-        "rmse": 0.12253424002244072,
-        "relative_rmse": 0.010650733330936121,
-        "max_abs_error": 1.1207942504691828
+        "cosine": 0.9999158101192327,
+        "rmse": 0.14930814695115507,
+        "relative_rmse": 0.012977933380660146,
+        "max_abs_error": 1.3336497774020097
       },
       "accumulated_error": {
-        "cosine": 0.9988315849920507,
-        "rmse": 0.5560211301286704,
-        "relative_rmse": 0.04832961613245121,
-        "max_abs_error": 3.7931103193506637
+        "cosine": 0.998129048010448,
+        "rmse": 0.7045591241893654,
+        "relative_rmse": 0.06124060584220589,
+        "max_abs_error": 4.0441945379514115
       },
       "local_residual_error": {
-        "cosine": 0.9818120344756491,
-        "rmse": 0.12253424003210073,
-        "relative_rmse": 0.19081356450585024,
-        "max_abs_error": 1.1207942504691828
+        "cosine": 0.9740499829451537,
+        "rmse": 0.14930814688646188,
+        "relative_rmse": 0.23250663672648697,
+        "max_abs_error": 1.3336498221054933
       }
     },
     {
       "layer": 39,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9999308446970271,
-        "rmse": 0.1360478997397855,
-        "relative_rmse": 0.011760717939932577,
-        "max_abs_error": 1.1164919016998307
+        "cosine": 0.9999014773200567,
+        "rmse": 0.16238599491509229,
+        "relative_rmse": 0.014037525179706722,
+        "max_abs_error": 1.44047343673147
       },
       "accumulated_error": {
-        "cosine": 0.9986499336395096,
-        "rmse": 0.6009962800152424,
-        "relative_rmse": 0.05195337631618735,
-        "max_abs_error": 3.7537796115413133
+        "cosine": 0.9978543554173769,
+        "rmse": 0.7581912165067032,
+        "relative_rmse": 0.06554215650376963,
+        "max_abs_error": 4.872346310942604
       },
       "local_residual_error": {
-        "cosine": 0.9847104319096853,
-        "rmse": 0.13604789974868847,
-        "relative_rmse": 0.17480938563334072,
-        "max_abs_error": 1.1164919016998307
+        "cosine": 0.9788123462527372,
+        "rmse": 0.16238599488956718,
+        "relative_rmse": 0.2086515046685922,
+        "max_abs_error": 1.4404734888855342
       }
     },
     {
       "layer": 40,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9998496748450206,
-        "rmse": 0.14416776132865353,
-        "relative_rmse": 0.017377378909181323,
-        "max_abs_error": 1.3762982821616818
+        "cosine": 0.999789974566388,
+        "rmse": 0.17016172445810376,
+        "relative_rmse": 0.020510584794818452,
+        "max_abs_error": 1.7503788826256117
       },
       "accumulated_error": {
-        "cosine": 0.9969332559754969,
-        "rmse": 0.650188395641066,
-        "relative_rmse": 0.07837098952830793,
-        "max_abs_error": 4.284039626269164
+        "cosine": 0.9951021179379993,
+        "rmse": 0.8201129995323286,
+        "relative_rmse": 0.09885300158898132,
+        "max_abs_error": 5.474807986144681
       },
       "local_residual_error": {
-        "cosine": 0.9994658250708218,
-        "rmse": 0.14416776144217103,
-        "relative_rmse": 0.03283758316997218,
-        "max_abs_error": 1.3762982821616818
+        "cosine": 0.9992487406116616,
+        "rmse": 0.17016172399836788,
+        "relative_rmse": 0.03875829693790961,
+        "max_abs_error": 1.7503789720325789
       }
     },
     {
       "layer": 41,
       "kind": "transformer",
       "local_error": {
-        "cosine": 0.9993946733224095,
-        "rmse": 0.22657452480224852,
-        "relative_rmse": 0.03483309254178484,
-        "max_abs_error": 1.6699391829185117
+        "cosine": 0.9992637112583934,
+        "rmse": 0.24999298047477606,
+        "relative_rmse": 0.03843341200475177,
+        "max_abs_error": 5.435029546447225
       },
       "accumulated_error": {
-        "cosine": 0.9916009813873332,
-        "rmse": 0.8483887911464557,
-        "relative_rmse": 0.13042951452379783,
-        "max_abs_error": 5.551296402670808
+        "cosine": 0.9855427720057948,
+        "rmse": 1.1105518677236446,
+        "relative_rmse": 0.17073398382550187,
+        "max_abs_error": 7.536568893119023
       },
       "local_residual_error": {
-        "cosine": 0.9992386250183881,
-        "rmse": 0.2265745243534862,
-        "relative_rmse": 0.0391085079622152,
-        "max_abs_error": 1.6699391829185117
+        "cosine": 0.9990720870750037,
+        "rmse": 0.2499929795730941,
+        "relative_rmse": 0.04315067867424731,
+        "max_abs_error": 5.435029546447225
       }
     },
     {
       "layer": 42,
       "kind": "lm_head",
       "local_error": {
-        "cosine": 0.999103827557359,
-        "rmse": 0.21676720939626823,
-        "relative_rmse": 0.042351806578258856,
-        "max_abs_error": 2.4930553436279297
+        "cosine": 0.9989346233193106,
+        "rmse": 0.23643535062818313,
+        "relative_rmse": 0.04619455419652613,
+        "max_abs_error": 2.831460952758789
       },
       "accumulated_error": {
-        "cosine": 0.9890059195259164,
-        "rmse": 0.7652814160414512,
-        "relative_rmse": 0.14952008009141976,
-        "max_abs_error": 8.524196147918701
+        "cosine": 0.9815409352553549,
+        "rmse": 1.0161863185047177,
+        "relative_rmse": 0.1985416894690832,
+        "max_abs_error": 10.855993747711182
       }
     }
   ],
-  "formal_accuracy": false,
-  "layer_indices_zero_based": true,
-  "relative_rmse_definition": "RMSE(error)/RMS(reference)",
-  "input_list_copied_before_executor": true,
-  "limitations": [
-    "one_128_token_block_only",
-    "local_error_includes_weight_and_internal_activation_quantization",
-    "not_full_mmlu_or_wikitext",
-    "no_claim_of_fix_qualification"
-  ],
-  "matched_layer34_probe": {
-    "scope": "one_layer_one_128_token_block_not_formal_accuracy",
-    "layer": 34,
-    "baseline": {
-      "cosine": 0.9999127357827097,
-      "rmse": 0.15038160057053135,
-      "relative_rmse": 0.013214286342808862,
-      "max_abs_error": 0.7688848135117603
-    },
-    "local_hessian": {
-      "cosine": 0.9999585682181932,
-      "rmse": 0.10359834242874691,
-      "relative_rmse": 0.00910336208884646,
-      "max_abs_error": 0.812975685539044
-    },
-    "rmse_reduction_percent": 31.1096955773139,
-    "calibration_samples": 16,
-    "cumulative_layer_error": false,
-    "r1_equal": true,
-    "control_same_16_samples": {
-      "cosine": 0.9999126877317901,
-      "rmse": 0.15042013866617854,
-      "relative_rmse": 0.013217672750647697,
-      "max_abs_error": 0.9166591572187315
-    },
-    "hessian_vs_same_calibration_rmse_reduction_percent": 31.12734548220394,
-    "calibration_file_hashes_equal": true
-  }
+  "diagnostic_date": "2026-10-15",
+  "formal_accuracy": false
 }
