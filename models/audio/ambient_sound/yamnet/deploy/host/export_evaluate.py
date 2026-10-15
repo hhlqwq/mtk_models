@@ -17,10 +17,13 @@ def original_models(models_dir):
     """加载锁定的 Google Keras 实现,构造原始音频和固定窗口模型."""
     os.environ.setdefault("TF_NUM_INTEROP_THREADS", "2")
     os.environ.setdefault("TF_NUM_INTRAOP_THREADS", "2")
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     import tensorflow as tf
     import tf_keras
     sys.path.insert(0, str(models_dir / "upstream"))
+    # 上游源码目录由参数指定并校验后加载,不能在解析参数前导入.
     import params
+    # 上游源码目录由参数指定并校验后加载,不能在解析参数前导入.
     import yamnet
     parameters = params.Params()
     frames = yamnet.yamnet_frames_model(parameters)
@@ -35,6 +38,7 @@ def original_models(models_dir):
 
 def export_model(args):
     """比较原始前向、NumPy 前处理和分块窗口,再导出固定 ONNX."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     import tensorflow as tf
     import tf2onnx
     frames, model = original_models(args.models_dir)
@@ -75,6 +79,7 @@ def evaluate(args):
     if args.mode == "tensorflow":
         frames, _ = original_models(args.models_dir)
     else:
+        # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
         import onnxruntime as ort
         options = ort.SessionOptions()
         options.intra_op_num_threads = 2

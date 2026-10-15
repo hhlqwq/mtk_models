@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 无参数入口.主机完成后,登录开发板直接执行同一个脚本.
+# 编译步骤在容器内执行,请先从仓库根目录运行 bash docker/enter_container.sh.
+# 无参数入口.先用 docker/enter_container.sh 进入容器,完成后在开发板执行同一个脚本.
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,19 +26,18 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     echo "[板端 4/4] 汇总指标与模型大小."
     python3 "${SCRIPT_DIR}/board/summarize.py" --config "${CONFIG}" --run-id "${RUN_ID}"
 else
-    # 89 主机: 各 Python 文件自行读取 YAML,需要 SDK 的步骤自行进入 Docker.
+    # 编译容器: 各 Python 文件读取 YAML 并直接执行当前步骤.
     CONFIG="${SCRIPT_DIR}/../config.yaml"
-    export FASTSAM_RUN_DATE="$(date +%F)"
-    echo "[主机 1/6] 导出 FP32 ONNX."
+    echo "[容器 1/6] 导出 FP32 ONNX."
     python3 "${SCRIPT_DIR}/host/export_model.py" --config "${CONFIG}"
-    echo "[主机 2/6] INT8 校准与量化."
+    echo "[容器 2/6] INT8 校准与量化."
     python3 "${SCRIPT_DIR}/host/convert_int8.py" --config "${CONFIG}"
-    echo "[主机 3/6] 编译 DLA."
+    echo "[容器 3/6] 编译 DLA."
     python3 "${SCRIPT_DIR}/host/compile_model.py" --config "${CONFIG}"
-    echo "[主机 4/6] 全量 ONNX 精度评测."
+    echo "[容器 4/6] 全量 ONNX 精度评测."
     python3 "${SCRIPT_DIR}/host/evaluate_onnx.py" --config "${CONFIG}"
-    echo "[主机 5/6] 交叉编译板端 C++ 程序."
+    echo "[容器 5/6] 交叉编译板端 C++ 程序."
     python3 "${SCRIPT_DIR}/host/build_cpp.py" --config "${CONFIG}"
-    echo "[主机 6/6] 上传到开发板."
+    echo "[容器 6/6] 上传到开发板."
     python3 "${SCRIPT_DIR}/host/upload.py" --config "${CONFIG}"
 fi

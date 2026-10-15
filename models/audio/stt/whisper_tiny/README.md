@@ -1,5 +1,7 @@
 # Whisper-Tiny
 
+编译与转换步骤统一在 Docker 容器内执行: 先在仓库根目录运行 `bash docker/enter_container.sh`,再进入本模型目录运行原有 `deploy/run.sh` 或 `deploy/run_native.sh` 入口.模型脚本不再调用 Docker 或在主机和容器之间复制文件; 上传完成后,板端入口仍在开发板执行.
+
 多语言语音识别。输入为 16 kHz 单声道音频，板端运行 Encoder 和 Decoder 两个 DLA。模型来源见[模型卡](model_card.md)。
 
 量化方式: 未进行整数定点量化,采用浮点模型部署.

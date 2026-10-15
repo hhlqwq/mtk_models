@@ -3,7 +3,7 @@
 model:
   # 已离线放置的官方 FastSAM-s 权重.
   weights: FastSAM-s.pt
-  # ONNX、TFLite、DLA 和运行时参数的保存目录.
+  # 最终 ONNX 和 DLA 的保存目录,中间文件保存到其 build 子目录.
   output_dir: .
 
 data:
@@ -16,21 +16,7 @@ data:
   # 导出一致性检查图片,相对于 dataset_dir.
   sample_image: images/000000000139.jpg
 
-build:
-  # 89 主机上已有的编译容器,不自动创建或安装依赖.
-  container: hhl_g720_8011
-  # 中间文件保存在 work_root/当天日期/fastsam,方便分步操作复用.
-  work_root: /tmp/hailongcodex
-  # Docker 内的模型编译器目录.
-  ncc_root: /opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host
-  # 以下路径与编译命令用于 89 主机上的 C++ 交叉编译.
-  cpp_toolchain_root: /data/users/hailong.he/data/MTKG720/cpp_toolchain
-  neuron_include: /data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include
-  cross_cxx: aarch64-linux-gnu-g++
-
 board:
-  # 开发板 SSH 地址.
-  host: root@192.168.0.92
   # 模型、程序和配置的部署目录.
   deploy_dir: /root/hailong.he/open_models/fastsam
   # 板端同协议 COCO val2017 数据集,包含 images/ 与 annotations/.

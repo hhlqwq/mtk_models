@@ -1,15 +1,14 @@
 """编译 FastSAM DLA,在 Docker 内执行."""
 
 import argparse
-from datetime import date
 import os
 from pathlib import Path
 import shlex
 import subprocess
-import sys
 
-sys.dont_write_bytecode = True
 import yaml
+
+from tools.storage import REPO_ROOT, load_model_config
 
 
 def run_command(command: list, **kwargs) -> None:
@@ -21,12 +20,16 @@ def run_command(command: list, **kwargs) -> None:
 
 def compile_model(config: dict, paths: dict, config_path: Path) -> None:
     """调用 Neuron 编译器生成 Genio 720 使用的 DLA."""
-    ncc = Path(config["build"]["ncc_root"])
+    toolchain_path = paths["repo"] / "configs/toolchains/neuropilot_8_0_11.yaml"
+    toolchain = yaml.safe_load(toolchain_path.read_text(encoding="utf-8"))
+    default_ncc = Path(toolchain["container_sdk_root"]) / "neuron_sdk/host"
+    ncc = Path(os.environ.get("NCC_ROOT", str(default_ncc)))
     environment = dict(os.environ)
     environment["LD_LIBRARY_PATH"] = f"{ncc / 'lib'}:{environment.get('LD_LIBRARY_PATH', '')}"
     run_command([ncc / "bin/ncc-tflite", "--arch=mdla5.3", "--suppress-output",
-                 "--disallow-bridge", paths["output"] / "model_int8.tflite",
+                 "--disallow-bridge", paths["work"] / "model_int8.tflite",
                  "-o", paths["output"] / "model_int8.dla"], env=environment)
+    print(f"[DLA] 文件路径: {(paths['output'] / 'model_int8.dla').resolve()}", flush=True)
 
 
 def main() -> None:
@@ -34,26 +37,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path,
                         default=Path(__file__).resolve().parents[2] / "config.yaml")
-    parser.add_argument("--work-dir", type=Path, help="跨天执行时复用原来的中间目录.")
-    parser.add_argument("--inside-container", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--work-dir", type=Path, help="覆盖默认的模型外部资源 build 目录.")
     args = parser.parse_args()
     config_path = args.config.resolve()
-    sys.path.insert(0, str(Path(__file__).resolve().parents[6] / "tools"))
-    from storage import load_model_config
     config = load_model_config(config_path)
     model = Path(__file__).resolve().parents[2]
-    work = args.work_dir or Path(config["build"]["work_root"]) / os.environ.get("FASTSAM_RUN_DATE", date.today().isoformat()) / "fastsam"
+    work = args.work_dir or Path(config["model"]["output_dir"]) / "build"
     work = work.resolve()
-    if not args.inside_container and not Path("/.dockerenv").exists():
-        container = config["build"]["container"]
-        run_command(["docker", "exec", "-e", "MTK_MODEL_STORAGE_ROOT", "-e", "MTK_DATASET_ROOT", container, "python", Path(__file__).resolve(),
-                     "--inside-container", "--config", config_path, "--work-dir", work])
-        return
     for name in ("tmp", "cache"):
         (work / name).mkdir(parents=True, exist_ok=True)
     os.environ.update(PYTHONDONTWRITEBYTECODE="1", TMPDIR=str(work / "tmp"),
                       XDG_CACHE_HOME=str(work / "cache"), TORCH_HOME=str(work / "cache/torch"))
-    paths = {"model": model, "repo": model.parents[3], "work": work,
+    paths = {"model": model, "repo": REPO_ROOT, "work": work,
              "dataset": Path(config["data"]["dataset_dir"]),
              "output": model / config["model"]["output_dir"]}
     print(f"[步骤] {Path(__file__).stem}; 工作目录: {work}", flush=True)

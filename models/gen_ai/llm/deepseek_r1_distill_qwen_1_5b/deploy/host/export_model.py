@@ -7,8 +7,9 @@ from pathlib import Path
 import shutil
 
 import numpy as np
-import torch
 from torch import nn
+import torch
+from transformers import AutoModelForCausalLM
 
 
 def stable_rms_norm(hidden, norm):
@@ -103,7 +104,6 @@ def export_graph(module, inputs, path, input_names, output_names):
 
 def export_model(args):
     """读取官方离线权重并按层导出,显示每个分片的进度."""
-    from transformers import AutoModelForCausalLM
 
     args.output.mkdir(parents=True, exist_ok=True)
     record = json.loads((args.source / "source_manifest.json").read_text(encoding="utf-8-sig"))

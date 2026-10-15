@@ -9,6 +9,9 @@ import shutil
 import subprocess
 import sys
 
+from mtk_converter.python.converters.tflite.schema.tflite.Model import Model
+from mtk_converter.python.converters.tflite.schema.tflite.TensorType import TensorType
+from transformers import AutoTokenizer
 import yaml
 
 from prepare_native import sha256
@@ -16,8 +19,6 @@ from prepare_native import sha256
 
 def graph_contract(path):
     """读取原生静态图 I/O,要求配置声明的所有接口实际为 INT16."""
-    from mtk_converter.python.converters.tflite.schema.tflite.Model import Model
-    from mtk_converter.python.converters.tflite.schema.tflite.TensorType import TensorType
 
     graph = Model.GetRootAsModel(path.read_bytes(), 0).Subgraphs(0)
     result = {"inputs": [], "outputs": []}
@@ -209,7 +210,6 @@ def package(work, output, prefill, quantized_prefix=None):
 
 def record_board_results(work, output, results):
     """验证原始板端证据后更新交付状态,不把运行成功视为正式质量达标."""
-    from transformers import AutoTokenizer
 
     manifest = json.loads((output / "manifest.json").read_text())
     for entry in manifest["files"]:

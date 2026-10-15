@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import tempfile
 from types import SimpleNamespace
 
 import cv2
@@ -89,6 +90,7 @@ def evaluate_vit(args, deploy: Path) -> tuple:
 
 def evaluate_face(args, deploy: Path) -> tuple:
     """复用对齐人脸预处理与 LFW 十折阈值协议."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from face_utils import load_aligned_face
     helper = load_module("face_metrics", deploy / "full_accuracy_board.py")
     pairs = helper.load_pairs(args.dataset_root)
@@ -108,6 +110,7 @@ def evaluate_face(args, deploy: Path) -> tuple:
 
 def evaluate_depth(args, deploy: Path) -> tuple:
     """复用 DA-2K 预处理、原图坐标恢复和点对判定."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from depth_utils import preprocess, INPUT_SIZE
     helper = load_module("depth_metrics", deploy / "full_accuracy_board.py")
     annotations = helper.load_protocol(args.dataset_root)
@@ -126,6 +129,7 @@ def evaluate_depth(args, deploy: Path) -> tuple:
 
 def coco_score(annotation, records: list, kind: str, index: int) -> float:
     """隐藏非核心 COCO 指标打印,同时正确处理没有检测结果的情况."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from pycocotools.coco import COCO
     from pycocotools.cocoeval import COCOeval
     print("[ONNX] 计算 COCO 核心精度,请等待.", flush=True)
@@ -150,8 +154,10 @@ def coco_score(annotation, records: list, kind: str, index: int) -> float:
 
 def evaluate_coco(args, deploy: Path) -> tuple:
     """评测 FastSAM 类别无关分割,复用已有后处理."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from pycocotools import mask as mask_utils
-    from fastsam_utils import preprocess, postprocess
+    from models.navigation.segmentation.fastsam.deploy.board.fastsam_utils import (
+        preprocess, postprocess)
     helper = load_module("fastsam_metrics", deploy / "full_accuracy_board.py")
     with contextlib.redirect_stdout(io.StringIO()):
         annotation = helper.make_class_agnostic_ground_truth(args.dataset_root /
@@ -162,13 +168,14 @@ def evaluate_coco(args, deploy: Path) -> tuple:
         raise ValueError("COCO 图片与标注必须覆盖相同的 5000 张图片.")
     session = make_session(args.onnx)
     records = []
-    for path in tqdm.tqdm(paths, desc=f"ONNX {args.model}", unit="img"):
+    for path in tqdm.tqdm(paths, desc=f"ONNX {args.model}", unit="img", mininterval=1.0):
         image = cv2.imread(str(path))
         if image is None:
             raise ValueError(f"无法读取图片: {path}")
         tensor, geometry = preprocess(image)
         _, scores, masks = postprocess(infer(session, tensor), geometry,
-            protocol["confidence"], protocol["nms_iou"], protocol["max_detections"])
+            protocol["confidence"], protocol["nms_iou"], protocol["max_detections"],
+            show_progress=False)
         for score, mask in zip(scores, masks):
             encoded = mask_utils.encode(np.asfortranarray(mask.astype(np.uint8)))
             encoded["counts"] = encoded["counts"].decode("ascii")
@@ -180,6 +187,7 @@ def evaluate_coco(args, deploy: Path) -> tuple:
 
 def evaluate_pose(args, deploy: Path) -> tuple:
     """复用官方人体检测框、SimCC 解码和 WholeBody OKS-NMS 协议."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from rtmpose_utils import preprocess_image, decode_prediction
     metrics = load_module("pose_metrics", deploy / "evaluate_coco_wholebody.py")
     detections = json.loads((args.dataset_root /
@@ -239,6 +247,7 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
     if ffmpeg is None:
         raise RuntimeError(
             "Whisper ONNX 评测需要 ffmpeg,请在编译 Docker 中安装该依赖.")
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     import whisper
     from whisper.tokenizer import get_tokenizer
     helper = load_module("whisper_metrics", deploy / "evaluate_accuracy.py")
@@ -317,15 +326,18 @@ def main() -> None:
     parser.add_argument("--decoder-onnx", type=Path)
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--temp-dir", type=Path, help="评测临时文件的父目录.")
     args = parser.parse_args()
     if args.model == "whisper_tiny" and args.decoder_onnx is None:
         parser.error("Whisper 精度评测需要 --decoder-onnx.")
     deploy = ROOT / "models" / MODELS[args.model] / "deploy" / "board"
-    sys.path.insert(0, str(deploy))
+    if args.model != "fastsam":
+        sys.path.insert(0, str(deploy))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     # 临时目录由工具创建,成功后仅清理此目录; 失败保留现场.
-    import tempfile
-    args.work_dir = Path(tempfile.mkdtemp(prefix="onnx_accuracy_", dir=args.output.parent))
+    temp_root = args.temp_dir or args.output.parent
+    temp_root.mkdir(parents=True, exist_ok=True)
+    args.work_dir = Path(tempfile.mkdtemp(prefix="onnx_accuracy_", dir=temp_root))
     adapters = {"vit_base_patch16_224": evaluate_vit, "mobilefacenet": evaluate_face,
         "depth_anything_v2_small": evaluate_depth, "rtmpose_body2d": evaluate_pose,
         "fastsam": evaluate_coco, "whisper_tiny": evaluate_whisper}

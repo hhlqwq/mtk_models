@@ -1,5 +1,7 @@
 # DeepSeek-R1-Distill-Qwen-1.5B
 
+编译与转换步骤统一在 Docker 容器内执行: 先在仓库根目录运行 `bash docker/enter_container.sh`,再进入本模型目录运行原有 `deploy/run.sh` 或 `deploy/run_native.sh` 入口.模型脚本不再调用 Docker 或在主机和容器之间复制文件; 上传完成后,板端入口仍在开发板执行.
+
 官方来源: [DeepSeek-R1-Distill-Qwen-1.5B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B),固定 revision `ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562`.
 转换输入为官方权重,其他 Model Zoo 仅作选型及交付结构参考.
 28 层,hidden=1536,Q/KV Head=12/2,RoPE=10000.

@@ -1,10 +1,18 @@
 """执行全 W4A16 量化,传播 SDK 异常并核对实际权重位宽."""
 
+import argparse
 from contextlib import contextmanager
 import hashlib
 import json
-import sys
 from pathlib import Path
+import sys
+
+from mtk_converter.python.converters.tflite import importer
+from mtk_converter.python.tools import builder
+from mtk_converter.python.utils import tensor_utils
+from mtk_llm_sdk import ptq
+from mtk_llm_sdk import shape_fixer
+from mtk_llm_sdk.utils import utils
 
 
 
@@ -22,7 +30,6 @@ def strict_temp_file(filename):
 
 def verify_tflite_precision(args, config, prefix):
     """直接读取常规量化图的权重编码和接口类型,不执行推理."""
-    from mtk_converter.python.converters.tflite import importer
 
     layers = config["num_hidden_layers"]
     counts = {"attention_weights": 0, "mlp_weights": 0, "tail_weights": 0}
@@ -129,11 +136,6 @@ def verify_weight_precision(args, utils):
 
 def fix_native_shapes():
     """导出两张静态图,显式转换不同 A16 尺度并传播 SDK 异常."""
-    import argparse
-    from mtk_converter.python.tools import builder
-    from mtk_converter.python.utils import tensor_utils
-    from mtk_llm_sdk import shape_fixer
-    from mtk_llm_sdk.utils import utils
 
     parser = argparse.ArgumentParser(description="导出 Prefill/Decode 单分片静态图.")
     parser.add_argument("folder", type=Path)
@@ -201,8 +203,6 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == "shape":
         fix_native_shapes()
         return
-    from mtk_llm_sdk import ptq
-    from mtk_llm_sdk.utils import utils
 
     parser = ptq.get_argument_parser()
     parser.add_argument("--audit-only", action="store_true",

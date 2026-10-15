@@ -60,3 +60,7 @@ ONNX GPU 兼容依据: https://onnxruntime.ai/docs/execution-providers/CUDA-Exec
 ## 模型与数据挂载
 
 创建或进入容器前配置仓库根目录的 `configs/storage.local.json`.模型资源根目录读写挂载,数据集根目录只读挂载,两者在主机和容器中使用同一绝对路径.现有容器缺少挂载时先保存环境再重建,通过本地配置的 `container_image` 复用保存的镜像.此步骤不运行模型测试.
+
+## 模型执行入口
+
+进入编译环境统一使用仓库根目录的 `bash docker/enter_container.sh`.进入后执行模型的 run.sh 或独立 Python 文件,模型脚本不再调用 Docker.编译、交叉编译和上传在容器内完成,板端任务仍在开发板执行.新镜像包含 `g++-aarch64-linux-gnu` 和 rsync,创建容器时只读挂载 C++ 工具目录; 不自动重建或重启旧容器.当前容器已补齐工具并复制现有 C++ 资源,包下载地址和资源清单保存在 89 主机 `/tmp/hailongcodex/2026-10-15/container_import_cleanup/`.

@@ -11,11 +11,6 @@ import shutil
 from storage import REPO_ROOT, storage_roots
 
 
-MODEL_SUFFIXES = {".onnx", ".pt", ".pth", ".tflite", ".dla", ".bin",
-                  ".safetensors", ".h5", ".pb", ".npz", ".npy", ".data",
-                  ".ckpt", ".pte", ".weights", ".pkl", ".torchscript",
-                  ".gguf", ".ggml", ".pdparams"}
-STANDALONE_MODEL_SUFFIXES = MODEL_SUFFIXES - {".bin", ".npz", ".npy", ".pkl", ".data"}
 CODE_SUFFIXES = {".py", ".sh", ".cpp", ".cc", ".c", ".h", ".hpp", ".md"}
 SOURCE_RECORDS = {"LICENSE", "LICENSE.txt", "source_url.txt",
                   "source_manifest.json", ".gitignore", "CMakeLists.txt"}
@@ -37,7 +32,6 @@ def sha256(path):
 def inventory(repo, destination):
     """列出资源映射,文档和源码保留在代码目录并复制配套源码."""
     entries = []
-    seen = set()
     for model in sorted((repo / "models").glob("*/*/*/models")):
         target = destination / model.parent.relative_to(repo / "models")
         for source in sorted(model.rglob("*")):
@@ -48,27 +42,7 @@ def inventory(repo, destination):
             relative = source.relative_to(model)
             keep = source.suffix in CODE_SUFFIXES or source.name in SOURCE_RECORDS
             entries.append((source, target / relative, not keep))
-            seen.add(source)
-    # 仓库其他目录中的实际权重和临时模型也迁出,原始推理输出不视为模型.
-    candidates = []
-    for parent, directories, files in os.walk(repo):
-        directories[:] = [name for name in directories
-                          if name not in {".git", "__pycache__", ".venv", "venv",
-                                          "site-packages", "node_modules"}]
-        candidates.extend(Path(parent) / name for name in files
-                          if Path(name).suffix in STANDALONE_MODEL_SUFFIXES
-                          or name.endswith(".onnx.data"))
-    for source in sorted(candidates):
-        if (not source.is_file() or source.is_symlink() or source in seen
-                or ".git" in source.parts or source.suffix not in MODEL_SUFFIXES):
-            continue
-        relative = source.relative_to(repo)
-        if len(relative.parts) >= 5 and relative.parts[0] == "models":
-            target = destination.joinpath(*relative.parts[1:4],
-                                          "_workspace_artifacts", *relative.parts[4:])
-        else:
-            target = destination / "_workspace_artifacts" / relative
-        entries.append((source, target, True))
+    # 只迁移标准模型资源目录,散落的临时模型留在本地,不写入 NAS.
     return entries
 
 

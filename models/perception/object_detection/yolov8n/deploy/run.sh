@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# 编译步骤在容器内执行,请先从仓库根目录运行 bash docker/enter_container.sh.
 # 两步交付: 编译主机转换并上传,开发板执行全量测试.
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
@@ -54,10 +55,10 @@ MODEL_OUTPUT_DIR="${MODEL_ASSETS_DIR}"
 CALIBRATION_DIR="${YOLOV8_CALIBRATION_DIR:-${MTK_DATASET_ROOT}/coco/coco_val2017/images}"
 DATASET_DIR="${CALIBRATION_DIR%/images}"
 BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yolov8n"
-CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
+
 NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
 TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
-NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
+NEURON_INCLUDE="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
 BOARD_HOST="root@192.168.0.92"
 BOARD_DEPLOY_DIR="/root/hailong.he/open_models/yolov8n"
 BOARD_DATASET_DIR="/root/hailong.he/datasets/coco/val2017"
@@ -69,18 +70,16 @@ mkdir -p "${BUILD_WORK_DIR}"
 
 # 从配置的数据集生成示例清单,仅写入仓库外的构建目录.
 mkdir -p "${BUILD_WORK_DIR}/examples"
-docker exec -e PYTHONDONTWRITEBYTECODE=1 "${CONTAINER}" \
+env PYTHONDONTWRITEBYTECODE=1 \
     python "${MODEL_ROOT}/../../../../tools/prepare_examples.py" \
     --model "yolov8n" --dataset-root "${DATASET_DIR}" \
     --output "${BUILD_WORK_DIR}/examples/samples.json"
-docker cp "${CONTAINER}:${BUILD_WORK_DIR}/examples/samples.json" \
-    "${BUILD_WORK_DIR}/examples/samples.json"
 
-echo "[编译主机 1/4] 离线导出、量化并编译 MDLA 5.3 模型."
-docker exec -i -e MODEL_ROOT="${MODEL_ROOT}" -e MODEL_WEIGHTS="${MODEL_WEIGHTS}" \
-    -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
-    -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e NCC_ROOT="${NCC_ROOT}" \
-    -e PYTHONDONTWRITEBYTECODE=1 "${CONTAINER}" bash -s <<'BUILD'
+echo "[容器 1/4] 离线导出、量化并编译 MDLA 5.3 模型."
+env MODEL_ROOT="${MODEL_ROOT}"  MODEL_WEIGHTS="${MODEL_WEIGHTS}" \
+     MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}"  CALIBRATION_DIR="${CALIBRATION_DIR}" \
+     BUILD_WORK_DIR="${BUILD_WORK_DIR}"  NCC_ROOT="${NCC_ROOT}" \
+     PYTHONDONTWRITEBYTECODE=1 bash -s <<'BUILD'
 set -euo pipefail
 mkdir -p "${BUILD_WORK_DIR}/tmp" "${BUILD_WORK_DIR}/cache"
 export TMPDIR="${BUILD_WORK_DIR}/tmp" XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
@@ -98,7 +97,7 @@ sha256sum "${MODEL_OUTPUT_DIR}/yolov8n.pt" "${MODEL_OUTPUT_DIR}/model_fp32.onnx"
     "${MODEL_OUTPUT_DIR}/runtime_config.csv" > "${MODEL_OUTPUT_DIR}/SHA256SUMS"
 BUILD
 
-echo "[编译主机 2/4] 交叉编译 C++ 板端评测程序."
+echo "[容器 2/4] 交叉编译 C++ 板端评测程序."
 OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
@@ -112,24 +111,24 @@ aarch64-linux-gnu-g++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
     "${TARGET_LIBS}/libopencv_imgproc.so.409" "${TARGET_LIBS}/libopencv_core.so.409" \
     -Wl,--allow-shlib-undefined -pthread -ldl -o "${BUILD_WORK_DIR}/yolov8n_board_eval"
 
-echo "[编译主机 3/4] 评测同协议 PyTorch 和 ONNX 浮点基准."
+echo "[容器 3/4] 评测同协议 PyTorch 和 ONNX 浮点基准."
 for backend in pytorch onnx; do
     if [[ "${backend}" == pytorch ]]; then
         INPUT_ARGS=(--weights "${MODEL_WEIGHTS}")
     else
         INPUT_ARGS=(--onnx "${MODEL_OUTPUT_DIR}/model_fp32.onnx")
     fi
-    docker exec -e PYTHONDONTWRITEBYTECODE=1 "${CONTAINER}" \
+    env PYTHONDONTWRITEBYTECODE=1 \
         python "${SCRIPT_DIR}/host/evaluate_fp32.py" "${INPUT_ARGS[@]}" \
         --dataset-root "${DATASET_DIR}" \
         --output "${BUILD_WORK_DIR}/fp32_accuracy/${backend}/summary.json"
 done
-FP32_MAP="$(docker exec "${CONTAINER}" python -c \
+FP32_MAP="$(python -c \
     'import json,sys; print(json.load(open(sys.argv[1]))["map_50_95"])' \
     "${BUILD_WORK_DIR}/fp32_accuracy/onnx/summary.json")"
 FP32_SOURCE="本次 ONNX FP32 全量实测,COCO val2017,conf=0.001,IoU=0.6,max_det=300,单最佳类别"
 
-echo "[编译主机 4/4] 上传模型、程序、示例和板端配置."
+echo "[容器 4/4] 上传模型、程序、示例和板端配置."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board' '${BOARD_DEPLOY_DIR}/examples/input'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \

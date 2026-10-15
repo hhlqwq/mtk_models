@@ -137,3 +137,8 @@ models/audio/ambient_sound/yamnet/models/yamnet_class_map.csv
 
 # 对内文档
 docs/*.xlsx
+
+# Python 可编辑安装生成的元数据和构建缓存.
+*.egg-info/
+/build/
+/dist/

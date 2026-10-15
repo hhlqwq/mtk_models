@@ -4,9 +4,9 @@ import argparse
 import csv
 import json
 import os
+from pathlib import Path
 import shutil
 import sys
-from pathlib import Path
 
 import cv2
 
@@ -44,6 +44,7 @@ def load_upstream(upstream_root: Path):
             raise FileNotFoundError(path)
     os.chdir(upstream_root)
     sys.path.insert(0, str(upstream_root))
+    # 上游源码目录由参数指定并校验后加载,不能在解析参数前导入.
     from utils import align_face, get_central_face_attributes
 
     return align_face, get_central_face_attributes

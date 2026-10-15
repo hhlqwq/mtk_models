@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# 编译步骤在容器内执行,请先从仓库根目录运行 bash docker/enter_container.sh.
 # 单脚本两步流程: 在编译主机编译并上传,在开发板执行测试.
 
 set -euo pipefail
@@ -37,12 +38,11 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     BOARD_DATASET_DIR="/root/hailong.he/datasets/ImageNet"
 
     # 4. ONNX 精度数据.
-    # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录,必须填写.
+    # 浮点精度数据: 编译容器 可访问的数据集根目录,必须填写.
     ONNX_DATASET_DIR="${MTK_DATASET_ROOT}/ImageNet"
 
     # 5. 编译环境: 通常无需修改.
-    # Docker 容器: 编译主机上的 Genio 720 编译环境.
-    MTK_G720_CONTAINER="hhl_g720_8011"
+
     # C++ 工具链: 编译主机上的 AArch64 编译工具和 OpenCV 库目录.
     MTK_G720_CPP_TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
     # 环境脚本: Docker 内 MTK SDK 初始化脚本.
@@ -50,7 +50,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 模型编译器: Docker 内 Neuron SDK host 目录,包含 bin/ 和 lib/.
     NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
     # Runtime 头文件: 编译主机上的 Neuron Runtime include 目录.
-    MTK_NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
+    MTK_NEURON_INCLUDE="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
     # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
     CROSS_CXX="aarch64-linux-gnu-g++"
     # SSH 选项: 首次连接接受主机密钥,之后验证保存的密钥.
@@ -129,7 +129,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
 fi
 
 if (( $# != 0 )); then
-    echo "[ERROR] 在编译主机直接运行 bash deploy/run.sh,无需参数." >&2
+    echo "[ERROR] 先用 docker/enter_container.sh 进入容器,再运行 bash deploy/run.sh,无需参数." >&2
     exit 2
 fi
 
@@ -137,13 +137,13 @@ fi
 : "${ONNX_DATASET_DIR:?请在脚本顶部指定编译主机的全量精度数据集}"
 test -d "${ONNX_DATASET_DIR}"
 if [[ "${ONNX_DATASET_DIR}" != /* ]]; then
-    echo "[ERROR] ONNX_DATASET_DIR 必须是编译主机与 Docker 共用的绝对路径." >&2
+    echo "[ERROR] ONNX_DATASET_DIR 必须是编译容器 共用的绝对路径." >&2
     exit 2
 fi
 : "${CALIBRATION_DIR:?请指定 ImageNet 校准图片目录}"
 : "${BOARD_DATASET_DIR:?请指定板端 ImageNet 数据集目录}"
 : "${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
-readonly CONTAINER="${MTK_G720_CONTAINER}"
+
 readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}"
 readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE}"
 readonly CXX="${CROSS_CXX}"
@@ -161,19 +161,16 @@ fi
 
 # 从配置的数据集生成示例清单,仅写入仓库外的构建目录.
 mkdir -p "${BUILD_WORK_DIR}/examples"
-docker exec -e PYTHONDONTWRITEBYTECODE=1 "${CONTAINER}" \
+env PYTHONDONTWRITEBYTECODE=1 \
     python "${MODEL_ROOT}/../../../../tools/prepare_examples.py" \
     --model "vit_base_patch16_224" --dataset-root "${ONNX_DATASET_DIR}" \
     --output "${BUILD_WORK_DIR}/examples/samples.json"
-docker cp "${CONTAINER}:${BUILD_WORK_DIR}/examples/samples.json" \
-    "${BUILD_WORK_DIR}/examples/samples.json"
 
-echo "[编译主机 1] 在 Docker 中量化、编译 DLA 并提取量化元数据."
-docker exec -i -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e PYTHONDONTWRITEBYTECODE=1 -e MODEL_ROOT="${MODEL_ROOT}" -e MODEL_ONNX="${MODEL_ONNX}" \
-    -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
-    -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
-    -e MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT}" -e NCC_ROOT="${NCC_ROOT}" \
-    "${CONTAINER}" bash -s <<'DOCKER_BUILD'
+echo "[容器 1] 在 Docker 中量化、编译 DLA 并提取量化元数据."
+env BUILD_WORK_DIR="${BUILD_WORK_DIR}"  PYTHONDONTWRITEBYTECODE=1  MODEL_ROOT="${MODEL_ROOT}"  MODEL_ONNX="${MODEL_ONNX}" \
+     CALIBRATION_DIR="${CALIBRATION_DIR}" \
+     MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
+     MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT}"  NCC_ROOT="${NCC_ROOT}"  bash -s <<'DOCKER_BUILD'
 set -euo pipefail
 mkdir -p "${MODEL_OUTPUT_DIR}" "${BUILD_WORK_DIR}/tmp" "${BUILD_WORK_DIR}/cache"
 export TMPDIR="${BUILD_WORK_DIR}/tmp"
@@ -191,10 +188,9 @@ export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 DOCKER_BUILD
 
 echo "[ONNX] 在编译主机 Docker 中评测全量浮点精度."
-docker exec -i -e PYTHONDONTWRITEBYTECODE=1 \
-    -e MODEL_ROOT="${MODEL_ROOT}" -e ONNX_DATASET_DIR="${ONNX_DATASET_DIR}" \
-    -e ONNX_REFERENCE="${MODEL_ONNX}" -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" \
-    "${CONTAINER}" bash -s <<'ONNX_ACCURACY'
+env PYTHONDONTWRITEBYTECODE=1 \
+     MODEL_ROOT="${MODEL_ROOT}"  ONNX_DATASET_DIR="${ONNX_DATASET_DIR}" \
+     ONNX_REFERENCE="${MODEL_ONNX}"  BUILD_WORK_DIR="${BUILD_WORK_DIR}"  bash -s <<'ONNX_ACCURACY'
 set -euo pipefail
 test -d "${ONNX_DATASET_DIR}"
 export TMPDIR="${BUILD_WORK_DIR}/tmp"
@@ -217,14 +213,14 @@ python "${REPO_ROOT}/tools/accuracy/evaluate_onnx.py" \
     --output "${BUILD_WORK_DIR}/onnx_accuracy/summary.json"
 ONNX_ACCURACY
 # 将本次实测精度写入板端配置,不传递主机预测、耗时或内存.
-REFERENCE_ACCURACY="$(docker exec "${CONTAINER}" python -c \
+REFERENCE_ACCURACY="$(python -c \
     'import json,sys; print(json.load(open(sys.argv[1]))["accuracy"])' \
     "${BUILD_WORK_DIR}/onnx_accuracy/summary.json")"
 REFERENCE_SOURCE="本次 ONNX 浮点全量实测,使用与板端相同的评测协议"
 test -s "${MODEL_OUTPUT_DIR}/model_int8.dla"
 test -s "${MODEL_OUTPUT_DIR}/quantization.json"
 
-echo "[编译主机 2] 在编译主机交叉编译板端 C++ 测试程序."
+echo "[容器 2] 在当前容器交叉编译板端 C++ 测试程序."
 readonly OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
@@ -244,7 +240,7 @@ mkdir -p "$(dirname "${BINARY_OUTPUT}")"
     -Wl,--allow-shlib-undefined -pthread -ldl -o "${BINARY_OUTPUT}"
 file "${BINARY_OUTPUT}"
 
-echo "[编译主机 上传] 上传模型、程序、评测代码和路径配置到板端."
+echo "[容器 上传] 上传模型、程序、评测代码和路径配置到板端."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board'"
 scp "${SSH_OPTIONS[@]}" \

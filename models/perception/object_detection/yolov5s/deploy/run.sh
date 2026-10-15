@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# 编译步骤在容器内执行,请先从仓库根目录运行 bash docker/enter_container.sh.
 # 单脚本两步流程: 在编译主机编译并上传,在开发板执行测试.
 
 set -euo pipefail
@@ -29,7 +30,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yolov5s"
     # DLA 文件: 编译后的完整路径.
     OUTPUT_DLA="${MODEL_OUTPUT_DIR}/model_int8.dla"
-    # C++ 输出: 编译主机上的临时程序,该目录与 Docker 临时目录各自独立.
+    # C++ 输出: 编译容器中的临时程序,与其他步骤共用构建目录.
     BOARD_BINARY="${BUILD_WORK_DIR}/yolov5s_board_eval"
 
     # 3. 板端地址与数据.
@@ -49,8 +50,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     FP32_ANNOTATIONS="${FP32_IMAGES_DIR%/images}/annotations/instances_val2017.json"
 
     # 5. 编译环境: 通常无需修改.
-    # Docker 容器: 编译主机上的 Genio 720 编译环境.
-    MTK_G720_CONTAINER="hhl_g720_8011"
+
     # 环境脚本: Docker 内 MTK SDK 初始化脚本.
     MTK_SETUP_SCRIPT="/opt/mtk-build/setup_container.sh"
     # 模型编译器: Docker 内 ncc-tflite 可执行文件.
@@ -60,7 +60,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # C++ 工具链: 编译主机上的 AArch64 编译工具和 OpenCV 库目录.
     MTK_G720_CPP_TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
     # Runtime 头文件: 编译主机上的 Neuron Runtime include 目录.
-    MTK_NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
+    MTK_NEURON_INCLUDE="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
     # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
     CROSS_CXX="aarch64-linux-gnu-g++"
     # SSH 选项: 首次连接接受主机密钥,之后验证保存的密钥.
@@ -144,7 +144,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
 fi
 
 if (( $# != 0 )); then
-    echo "[ERROR] 在编译主机直接运行 bash deploy/run.sh,无需参数." >&2
+    echo "[ERROR] 先用 docker/enter_container.sh 进入容器,再运行 bash deploy/run.sh,无需参数." >&2
     exit 2
 fi
 
@@ -179,30 +179,27 @@ fi
 
 # 从配置的数据集生成示例清单,仅写入仓库外的构建目录.
 mkdir -p "${BUILD_WORK_DIR}/examples"
-docker exec -e PYTHONDONTWRITEBYTECODE=1 "${MTK_G720_CONTAINER}" \
+env PYTHONDONTWRITEBYTECODE=1 \
     python "${MODEL_ROOT}/../../../../tools/prepare_examples.py" \
     --model "yolov5s" --dataset-root "${FP32_IMAGES_DIR%/images}" \
     --output "${BUILD_WORK_DIR}/examples/samples.json"
-docker cp "${MTK_G720_CONTAINER}:${BUILD_WORK_DIR}/examples/samples.json" \
-    "${BUILD_WORK_DIR}/examples/samples.json"
 
-echo "[编译主机 1] 在 Docker 中转换模型并编译 DLA: ${OUTPUT_DLA}"
-docker exec -i \
-    -e PYTHONDONTWRITEBYTECODE=1 \
-    -e MODEL_ROOT="${MODEL_ROOT}" \
-    -e MODEL_WEIGHTS="${MODEL_WEIGHTS}" \
-    -e SOURCE_ARCHIVE="${SOURCE_ARCHIVE}" \
-    -e PATCH_ARCHIVE="${PATCH_ARCHIVE}" \
-    -e CALIBRATION_DIR="${CALIBRATION_DIR}" \
-    -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
-    -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" \
-    -e OUTPUT_DLA="${OUTPUT_DLA}" \
-    -e FP32_IMAGES_DIR="${FP32_IMAGES_DIR}" \
-    -e FP32_ANNOTATIONS="${FP32_ANNOTATIONS}" \
-    -e MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT}" \
-    -e NCC_BIN="${NCC_BIN}" \
-    -e NCC_LIB="${NCC_LIB}" \
-    "${MTK_G720_CONTAINER}" bash -s <<'DOCKER_BUILD'
+echo "[容器 1] 在 Docker 中转换模型并编译 DLA: ${OUTPUT_DLA}"
+env \
+     PYTHONDONTWRITEBYTECODE=1 \
+     MODEL_ROOT="${MODEL_ROOT}" \
+     MODEL_WEIGHTS="${MODEL_WEIGHTS}" \
+     SOURCE_ARCHIVE="${SOURCE_ARCHIVE}" \
+     PATCH_ARCHIVE="${PATCH_ARCHIVE}" \
+     CALIBRATION_DIR="${CALIBRATION_DIR}" \
+     MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
+     BUILD_WORK_DIR="${BUILD_WORK_DIR}" \
+     OUTPUT_DLA="${OUTPUT_DLA}" \
+     FP32_IMAGES_DIR="${FP32_IMAGES_DIR}" \
+     FP32_ANNOTATIONS="${FP32_ANNOTATIONS}" \
+     MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT}" \
+     NCC_BIN="${NCC_BIN}" \
+     NCC_LIB="${NCC_LIB}"  bash -s <<'DOCKER_BUILD'
 set -euo pipefail
 
 readonly SOURCE_DIR="${BUILD_WORK_DIR}/yolov5"
@@ -265,11 +262,10 @@ DOCKER_BUILD
 test -s "${OUTPUT_DLA}"
 
 echo "[ONNX] 在编译主机 Docker 中评测 FP32 全量精度."
-docker exec -i -e PYTHONDONTWRITEBYTECODE=1 \
-    -e MODEL_ROOT="${MODEL_ROOT}" -e MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
-    -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" -e FP32_IMAGES_DIR="${FP32_IMAGES_DIR}" \
-    -e FP32_ANNOTATIONS="${FP32_ANNOTATIONS}" \
-    "${MTK_G720_CONTAINER}" bash -s <<'ONNX_ACCURACY'
+env PYTHONDONTWRITEBYTECODE=1 \
+     MODEL_ROOT="${MODEL_ROOT}"  MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
+     BUILD_WORK_DIR="${BUILD_WORK_DIR}"  FP32_IMAGES_DIR="${FP32_IMAGES_DIR}" \
+     FP32_ANNOTATIONS="${FP32_ANNOTATIONS}"  bash -s <<'ONNX_ACCURACY'
 set -euo pipefail
 test -d "${FP32_IMAGES_DIR}"
 test -f "${FP32_ANNOTATIONS}"
@@ -282,13 +278,13 @@ python "${REPO_ROOT}/tools/accuracy/yolov5s_val_coco.py" \
     --summary "${BUILD_WORK_DIR}/fp32_accuracy/summary.json" \
     --image-size 640 --confidence 0.001 --iou 0.6 --max-det 300
 ONNX_ACCURACY
-# 传回实测数值; Docker 与编译主机的临时目录各自独立.
-FP32_MAP="$(docker exec "${MTK_G720_CONTAINER}" python -c \
+# 传回实测数值; 各步骤在当前编译容器内复用同一构建目录.
+FP32_MAP="$(python -c \
     'import json,sys; print(json.load(open(sys.argv[1]))["map_50_95"])' \
     "${BUILD_WORK_DIR}/fp32_accuracy/summary.json")"
 FP32_BASELINE_SOURCE="本次 ONNX FP32 全量实测,COCO val2017,conf=0.001,IoU=0.6,max_det=300"
 
-echo "[编译主机 2] 在编译主机 交叉编译板端 C++ 测试程序."
+echo "[容器 2] 在当前容器交叉编译板端 C++ 测试程序."
 readonly OPENCV_SOURCE="${MTK_G720_CPP_TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 readonly OPENCV_BUILD="${MTK_G720_CPP_TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 readonly TARGET_LIBS="${MTK_G720_CPP_TOOLCHAIN_ROOT}/genio720-libs"
@@ -313,7 +309,7 @@ mkdir -p "$(dirname "${BOARD_BINARY}")"
 file "${BOARD_BINARY}"
 test -s "${BOARD_BINARY}"
 
-echo "[编译主机 3] 创建板端目录并上传 DLA、程序和评测代码."
+echo "[容器 3] 创建板端目录并上传 DLA、程序和评测代码."
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board'"
 scp "${SSH_OPTIONS[@]}" "${OUTPUT_DLA}" \
@@ -327,7 +323,7 @@ scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/board/evaluate_coco.py" \
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "chmod 755 '${BOARD_DEPLOY_DIR}/board/yolov5s_board_eval'"
 
-echo "[编译主机 4] 写入板端数据集和结果路径."
+echo "[容器 4] 写入板端数据集和结果路径."
 # 上传统一可视化工具和少量示例输入,不增加 Shell 入口.
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/examples/input'"

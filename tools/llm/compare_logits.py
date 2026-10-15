@@ -19,6 +19,7 @@ def sha256(path):
 
 def export_tflite(args):
     """用官方执行器运行原始 INT16 输入,保持与硬件输入一致."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from mtk_converter.python.tools.tflite_executor import TFLiteExecutor
     from evaluate_board_quality import transfer_cache
 

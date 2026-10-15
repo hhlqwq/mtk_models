@@ -51,6 +51,7 @@ def sha256(path):
 
 def prepare(args):
     """生成两后端共享的原始题目 Token,严格拒绝截断或丢题."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     import pyarrow.parquet as parquet
     from transformers import AutoTokenizer
 
@@ -102,6 +103,7 @@ def prepare(args):
     (args.output / "cases.json").write_text(json.dumps(cases) + "\n")
     protocol["cases_sha256"] = sha256(args.output / "cases.json")
     if args.graph:
+        # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
         from evaluate_quality import export_board_inputs
         from mtk_llm_sdk.utils import generate_utils, utils
 
@@ -134,6 +136,7 @@ def prepare(args):
 
 def load_reference(model_path):
     """按官方 Safetensors 严格加载 FP32 权重,不重写官方资源."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     import torch
     from safetensors.torch import load_file
     from transformers import AutoConfig, AutoModelForCausalLM
@@ -158,6 +161,7 @@ class QuantizedExecutor:
 
     def __init__(self, graph, contract):
         """加载同一静态图并分配原始 INT16 缓冲区."""
+        # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
         from mtk_converter.python.tools.tflite_executor import TFLiteExecutor
 
         self.executor = TFLiteExecutor(str(graph), cache_dequantized_weight=True)
@@ -167,6 +171,7 @@ class QuantizedExecutor:
 
     def run(self):
         """返回全部原始输出,避免重复量化或丢失 KV."""
+        # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
         from compare_logits import raw_output_list
 
         feed = {item["name"]: value for item, value in
@@ -199,6 +204,7 @@ def evaluate(args):
         meta["diagnostic_case_ids"] = [row["id"] for row in cases]
     hardware = None
     if args.backend == "pytorch":
+        # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
         import torch
 
         meta["config_sha256"] = sha256(args.model / "config.json")
@@ -212,6 +218,7 @@ def evaluate(args):
                 output = reference(torch.tensor([tokens])).logits[0, -1]
             return output[protocol["choice_token_ids"]].numpy().tolist()
     else:
+        # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
         from evaluate_board_quality import HardwareModel, transfer_cache
 
         manifest = json.loads((args.package / "manifest.json").read_text())

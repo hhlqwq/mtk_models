@@ -1,19 +1,27 @@
 # FastSAM 模型产物
 
-此目录只存放由官方权重自行转换的本地输出,模型二进制不进入普通 Git.
+模型二进制保存在外部资源目录,不进入普通 Git.本目录只保留资源布局说明与公开来源记录.
 
-| 文件 | 内容 |
+| 外部资源目录内的路径 | 内容 |
 | --- | --- |
-| model_fp32.onnx | opset 13,静态 640,10 个原始输出 |
-| pytorch_reference.npz | 同一真实图片的 FP32 输入及原始输出 |
-| export_manifest.json | 权重、源码实现、图片及导出检查结果 |
-| model_int8.tflite | MTK INT8 校准产物 |
-| model_int8.json | 量化参数、输出索引语义映射、校准图片清单 |
-| runtime_config.csv | C++ 板端程序使用的输入输出张量契约 |
+| FastSAM-s.pt | 官方原始权重 |
+| model_fp32.onnx | 唯一一份 FP32 ONNX,opset 13,静态 640,10 个原始输出 |
+| build/model_int8.tflite | MTK INT8 校准产物 |
+| build/model_int8.json | 量化参数、输出索引语义映射、校准图片清单 |
+| build/runtime_config.csv | C++ 板端程序使用的输入输出张量契约 |
 | model_int8.dla | MDLA 5.3 无桥接编译产物 |
+| build/pytorch_reference.npz | 当前导出检查图片的 FP32 输入及原始输出 |
+| build/export_manifest.json | 导出实现、图片、检查结果与最终 ONNX 路径及 SHA-256 |
+| build/fastsam_board | 交叉编译的板端程序 |
+| build/samples.json | 示例清单 |
+| build/onnx_reference.json | 完整 5000 张同协议 ONNX 评测报告,成功评测后生成 |
+| build/config.json | 上传时生成的板端配置快照 |
+| build/cache/、build/tmp/ | 缓存与临时文件 |
+| build/source_url.txt | 原始模型和依赖的公开来源记录 |
+| build/README.md | 本资源布局说明 |
 
-2026-09-23 已从本次用户提供的官方权重生成 ONNX、INT8 TFLite 和 Genio 720 DLA.
-本次仅使用 16 张校准图进行冒烟转换,产物保存在编译主机项目目录,
-尚未按正式精度协议发布模型文件.
+资源根目录只保留原始 PT 权重、最终 ONNX、最终 DLA 和 build 目录.build 中间文件平铺,子目录只保留 cache 和 tmp.评测临时文件先保存到 tmp,报告校验通过后发布为 onnx_reference.json; 缺失时上传直接停止,不生成占位报告.
 
-模型文件已改为使用外部资源目录,详见上级 README 的模型资源路径说明.此目录只保留源码、文档和公开来源记录.
+导出 ONNX 直接写入最终产物目录,不再在 build 中另存一份模型.历史归档已移至 89 主机本地磁盘的 `/tmp/hailongcodex/2026-10-15/nas_cleanup/_archive/2026-10-15/fastsam_01a12f77/`,不保存在 NAS.归档索引保留整理时的原路径与哈希,本次迁移记录见 `nas_cleanup/migration.json`.
+
+2026-10-15 的整理仅核对文件哈希并调整布局,未重新导出、编译或评测.旧 deployment_manifest.json 的部分哈希已过期,已归档,不再作为当前产物的有效交付清单.当前 DLA 是否对应最新量化和实际板端精度,需以对应运行证据为准.

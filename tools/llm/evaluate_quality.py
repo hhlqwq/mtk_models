@@ -9,8 +9,8 @@ from types import SimpleNamespace
 
 import numpy as np
 import pyarrow.parquet as parquet
-import torch
 from safetensors.torch import load_file
+import torch
 from transformers import AutoConfig
 from transformers import AutoModelForCausalLM
 from transformers import AutoTokenizer
@@ -27,6 +27,7 @@ def sha256(path):
 
 def export_board_inputs(model, graph_path, output, decode_steps=0):
     """导出 SDK 同协议的掩码、RoPE 和原始 INT16 I/O 契约."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from mtk_converter.python.converters.tflite.schema.tflite.Model import Model
     from mtk_converter.python.converters.tflite.schema.tflite.TensorType import TensorType
     from mtk_llm_sdk.utils import generate_utils, utils
@@ -91,6 +92,7 @@ def export_board_inputs(model, graph_path, output, decode_steps=0):
 
 def evaluate(args):
     """在同一连续 Token 子集与重置上下文协议下计算两个后端的 PPL."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     import mtk_llm_sdk.benchmark as benchmark
 
     if args.text_rows < 1 or (args.blocks is not None and args.blocks < 1):

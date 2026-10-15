@@ -1,5 +1,7 @@
 # MiniCPM5-2B
 
+编译与转换步骤统一在 Docker 容器内执行: 先在仓库根目录运行 `bash docker/enter_container.sh`,再进入本模型目录运行原有 `deploy/run.sh` 或 `deploy/run_native.sh` 入口.模型脚本不再调用 Docker 或在主机和容器之间复制文件; 上传完成后,板端入口仍在开发板执行.
+
 官方来源: [openbmb/MiniCPM5-2B](https://huggingface.co/openbmb/MiniCPM5-2B),固定 revision `f97400052a43d642bbc6e9975e2397e3ae6a6b52`,Apache-2.0.使用官方权重作为转换输入,其他 Model Zoo 仅作选型和交付结构参考.42 层,hidden=2048,Q/KV Head=16/2,RoPE=5000000,参数量约 2.52B (25.2 亿).
 
 ## 当前实测

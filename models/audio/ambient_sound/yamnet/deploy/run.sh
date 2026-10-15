@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# 编译步骤在容器内执行,请先从仓库根目录运行 bash docker/enter_container.sh.
 # 两步交付: 89 编译量化并上传,92 开发板执行真实音频全量测试.
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=2 OMP_NUM_THREADS=2
@@ -52,9 +53,9 @@ BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yamnet"
 EXPORT_PYTHON="${YAMNET_EXPORT_PYTHON:-${BUILD_WORK_DIR}/venv/bin/python}"
 PRECISION="${YAMNET_PRECISION:-w8a16}"
 case "${PRECISION}" in fp16|int8|w8a16|int8_tail16) ;; *) exit 1 ;; esac
-CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
+
 NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
-NEURON_INCLUDE="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
+NEURON_INCLUDE="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
 TARGET_LIBS="/data/users/hailong.he/data/MTKG720/cpp_toolchain/genio720-libs"
 BOARD_HOST="root@192.168.0.92"
 BOARD_DEPLOY_DIR="/root/hailong.he/open_models/yamnet"
@@ -64,38 +65,38 @@ test -s "${MODELS_DIR}/yamnet.h5"
 echo '13c3308955bbfaef262f175ac9c40e47b134573a93984f009220dd7cc12a1744 '"${MODELS_DIR}/yamnet.h5" | sha256sum -c -
 test -s "${DATASET_DIR}/meta/esc50.csv"
 mkdir -p "${BUILD_WORK_DIR}"
-docker exec "${CONTAINER}" test -x "${EXPORT_PYTHON}"
-echo '[编译主机 1/4] 官方前向比较、固定 ONNX 导出和三后端参考准备.'
-docker exec -e OPENBLAS_NUM_THREADS=2 -e OMP_NUM_THREADS=2 "${CONTAINER}" \
+ test -x "${EXPORT_PYTHON}"
+echo '[容器 1/4] 官方前向比较、固定 ONNX 导出和三后端参考准备.'
+env OPENBLAS_NUM_THREADS=2  OMP_NUM_THREADS=2 \
     "${EXPORT_PYTHON}" "${SCRIPT_DIR}/host/export_evaluate.py" --mode export \
     --models-dir "${MODELS_DIR}" --dataset "${DATASET_DIR}"
-docker exec -e OPENBLAS_NUM_THREADS=2 -e OMP_NUM_THREADS=2 "${CONTAINER}" \
+env OPENBLAS_NUM_THREADS=2  OMP_NUM_THREADS=2 \
     "${EXPORT_PYTHON}" "${SCRIPT_DIR}/host/export_evaluate.py" --mode tensorflow \
     --models-dir "${MODELS_DIR}" --dataset "${DATASET_DIR}" --output "${BUILD_WORK_DIR}/tensorflow"
-docker exec -e OPENBLAS_NUM_THREADS=2 -e OMP_NUM_THREADS=2 "${CONTAINER}" \
+env OPENBLAS_NUM_THREADS=2  OMP_NUM_THREADS=2 \
     python "${SCRIPT_DIR}/host/export_evaluate.py" --mode onnx \
     --models-dir "${MODELS_DIR}" --dataset "${DATASET_DIR}" \
     --output "${BUILD_WORK_DIR}/onnx" --reference "${BUILD_WORK_DIR}/tensorflow"
 
-echo "[编译主机 2/4] ${PRECISION} 转换和 MDLA 5.3 DLA 编译."
-docker exec -e OPENBLAS_NUM_THREADS=2 -e OMP_NUM_THREADS=2 "${CONTAINER}" \
+echo "[容器 2/4] ${PRECISION} 转换和 MDLA 5.3 DLA 编译."
+env OPENBLAS_NUM_THREADS=2  OMP_NUM_THREADS=2 \
     python "${SCRIPT_DIR}/host/convert_int8.py" --models-dir "${MODELS_DIR}" --dataset "${DATASET_DIR}" \
     --precision "${PRECISION}"
 NCC_FLAGS=(--arch=mdla5.3 --suppress-output --disallow-bridge)
 if [[ "${PRECISION}" == fp16 ]]; then
     NCC_FLAGS+=(--relax-fp32 --suppress-input)
 fi
-docker exec -e LD_LIBRARY_PATH="${NCC_ROOT}/lib" "${CONTAINER}" \
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
     "${NCC_ROOT}/bin/ncc-tflite" "${NCC_FLAGS[@]}" \
     "${MODELS_DIR}/model_${PRECISION}.tflite" -o "${MODELS_DIR}/model_${PRECISION}.dla"
 
-echo '[编译主机 3/4] 交叉编译 C++ Runtime 程序并准备参考与示例.'
+echo '[容器 3/4] 交叉编译 C++ Runtime 程序并准备参考与示例.'
 aarch64-linux-gnu-g++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/board/yamnet_eval.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" -Wl,--allow-shlib-undefined -pthread -ldl \
     -o "${BUILD_WORK_DIR}/yamnet_eval"
-docker exec -i -e MODEL_ROOT="${MODEL_ROOT}" -e MODELS_DIR="${MODELS_DIR}" -e DATASET_DIR="${DATASET_DIR}" \
-    -e BUILD_WORK_DIR="${BUILD_WORK_DIR}" "${CONTAINER}" python - <<'REFERENCE'
+env MODEL_ROOT="${MODEL_ROOT}"  MODELS_DIR="${MODELS_DIR}"  DATASET_DIR="${DATASET_DIR}" \
+     BUILD_WORK_DIR="${BUILD_WORK_DIR}" python - <<'REFERENCE'
 import hashlib,json,os,sys,shutil
 from pathlib import Path
 root=Path(os.environ['MODEL_ROOT']); dataset=Path(os.environ['DATASET_DIR']); work=Path(os.environ['BUILD_WORK_DIR'])
@@ -119,7 +120,7 @@ for number,target in enumerate([0,39,42],1):
 (inputs/'samples.json').write_text(json.dumps(samples,indent=2))
 REFERENCE
 
-echo '[编译主机 4/4] 同步板端原始音频、模型、程序及运行入口.'
+echo '[容器 4/4] 同步板端原始音频、模型、程序及运行入口.'
 ssh -n "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board' '${BOARD_DEPLOY_DIR}/examples/input' '${BOARD_DATASET_DIR}'"
 rsync -a --info=progress2 "${DATASET_DIR}/audio" "${DATASET_DIR}/meta" \

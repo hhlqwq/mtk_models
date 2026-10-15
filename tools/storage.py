@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 import shlex
 
+import yaml
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -75,7 +77,6 @@ def model_storage(model_directory):
 
 def load_model_config(config_path):
     """读取 FastSAM YAML,将资源相对路径映射到本地存储配置."""
-    import yaml
 
     config_path = Path(config_path)
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))

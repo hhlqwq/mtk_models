@@ -6,6 +6,13 @@
 
 ## 版本基线
 
+FastSAM 的编译环境路径统一记录在
+[neuropilot_8_0_11.yaml](../configs/toolchains/neuropilot_8_0_11.yaml).
+其中 `sdk_root` 用于主机 Runtime 头文件,`container_sdk_root` 用于容器 NCC,
+`cpp_toolchain_root` 用于 AArch64 OpenCV 与 Runtime 库,`cross_cxx` 指定主机编译器.
+模型 YAML 不再重复这些环境路径.已有 `NCC_ROOT`、`MTK_G720_CPP_TOOLCHAIN_ROOT`、
+`MTK_NEURON_INCLUDE`、`CROSS_CXX` 环境变量可以覆盖对应值,不自动修改系统环境.
+
 服务器 `/data/users/hailong.he/data/MTKG720` 已包含以下官方工具：
 
 | 工具 | 版本 | 用途 |
@@ -109,11 +116,13 @@ cuDNN 实际不可运行.
 
 ## Genio 720 C++ 交叉编译补充
 
-板端正式模型评测由 89 的 `/usr/bin/aarch64-linux-gnu-g++` 交叉编译.OpenCV 头文件固定为
+板端正式评测程序在 89 的编译容器内使用 `aarch64-linux-gnu-g++` 交叉编译.OpenCV 头文件固定为
 官方 4.9.0 源码,下载地址为
 `https://github.com/opencv/opencv/archive/refs/tags/4.9.0.tar.gz`.交叉链接所用
 OpenCV 4.9 和 `libneuronusdk_runtime.mtk.so.8` 来自当前 92 板端,只用于 ABI 对齐,不纳入
 Git.工具目录为 `/data/users/hailong.he/data/MTKG720/cpp_toolchain/`.
+
+执行编译流程前使用 `bash docker/enter_container.sh` 进入容器.模型脚本和 Python 不再调用 Docker.容器需具备 `g++-aarch64-linux-gnu`、SSH/SCP 和 rsync; 新建镜像安装交叉编译器与 rsync,新建容器以只读方式挂载 C++ 工具目录.现有容器已在不重启的情况下安装工具并复制现有 C++ 资源,SDK 头文件直接使用容器的 `/opt/mtk/NeuroPilotSDK/` 内容.本次环境补齐没有运行模型编译或评测; 安装日志、包下载具体地址和资源复制清单保存在 89 主机 `/tmp/hailongcodex/2026-10-15/container_import_cleanup/`.
 
 板端标准 COCO 指标使用 `pycocotools 2.0.10` AArch64 wheel,来源为
 `https://pypi.org/project/pycocotools/2.0.10/`.pycocotools 只计算

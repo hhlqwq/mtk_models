@@ -1,9 +1,9 @@
 """从固定的官方 Depth Anything V2 Small 权重导出静态 ONNX。"""
 
 import argparse
+from pathlib import Path
 import subprocess
 import sys
-from pathlib import Path
 
 import torch
 
@@ -51,6 +51,7 @@ def export_model(upstream: Path, weights: Path, output: Path, size: int) -> None
         raise ValueError(f"官方源码提交不匹配: {revision}")
 
     sys.path.insert(0, str(upstream))
+    # 上游源码目录由参数指定并校验后加载,不能在解析参数前导入.
     from depth_anything_v2.dpt import DepthAnythingV2
 
     model = DepthAnythingV2(

@@ -8,6 +8,7 @@ source "${PROJECT_ROOT}/tools/storage.sh"
 
 docker start "${CONTAINER_NAME}" >/dev/null
 exec docker exec -it \
+    --env PYTHONDONTWRITEBYTECODE=1 \
     --env MTK_MODEL_STORAGE_ROOT="${MTK_MODEL_STORAGE_ROOT}" \
     --env MTK_DATASET_ROOT="${MTK_DATASET_ROOT}" \
     --env MTK_BOARD_HOST="root@192.168.0.92" \

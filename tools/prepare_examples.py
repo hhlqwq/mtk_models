@@ -39,6 +39,7 @@ def coco_samples(dataset: Path, model: str) -> dict:
 
 def classification_samples(dataset: Path) -> dict:
     """使用 TorchVision 类别顺序与数据集标签生成 ViT 三图清单."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from torchvision.models import ViT_B_16_Weights
 
     names = ViT_B_16_Weights.IMAGENET1K_V1.meta["categories"]

@@ -136,6 +136,7 @@ def pose(args, manifest) -> None:
 
 def segmentation(args, manifest) -> None:
     """从选定样本的 RLE 检查点恢复实例分割可视化."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from pycocotools import mask as mask_utils
 
     colors = ((40, 180, 255), (255, 120, 40), (80, 220, 80),
@@ -162,6 +163,7 @@ def segmentation(args, manifest) -> None:
 
 def depth(args, manifest) -> None:
     """复用深度输出展示原图与相对深度,颜色较暖表示更近."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from full_accuracy_board import load_output
 
     metadata = read_json(args.models_dir / "model_int8.json")
@@ -201,6 +203,7 @@ def face(args, manifest) -> None:
 
 def speech(args, manifest) -> None:
     """解码两段真实板端 Token,只保留可读的识别文本."""
+    # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from whisper.tokenizer import get_tokenizer
 
     tokenizer = get_tokenizer(multilingual=True, language="en", task="transcribe")

@@ -6,6 +6,10 @@ Python 3.11.11 源码地址由 Docker 构建参数管理, 默认使用服务器�
 2026-09-07 已将同名容器迁移到 Ubuntu 22.04 镜像,并删除旧 Debian 12 容器和旧镜像.
 创建容器时检查配置和挂载, 操作方法见 [Docker 说明](docker/README.md).
 
+执行模型编译流程前,先从仓库根目录运行 `bash docker/enter_container.sh`,再在容器内执行各模型原有入口或独立 Python 步骤.模型入口只编排步骤,不再负责进入 Docker.编译、交叉编译和上传都在当前容器执行,板端评测仍在开发板执行.
+
+Python 导入按标准库、第三方依赖、项目模块分组放在文件顶部,去除重复导入.多模型或多后端共用工具确有环境差异时,允许在对应分支加载可选依赖并注明原因; 从命令行指定并校验的上游源码须在确认路径后加载.不为兼容容器外执行而把普通导入散落在函数中.
+
 本项目面向 MediaTek Genio 720（MT8189）和 Genio 5100,对开源模型进行兼容性修改、
 转换、量化、部署与板端验证.模型交付结构、文档完整度和结果展示方式参考
 [Qualcomm AI Hub Models](https://huggingface.co/qualcomm/models),但不使用 Qualcomm
@@ -250,7 +254,17 @@ bash docker/enter_container.sh
 
 各模型原有 `deploy/run.sh` 和 LLM `deploy/run_native.sh` 从本地配置读取资源路径.FastSAM 的 `config.yaml` 保留模型参数和相对数据路径,实际存储根目录也由本地配置提供.板端继续使用上传的独立部署配置和板端模型目录.
 
+FastSAM 编译步骤按仓库真实目录导入 `tools.storage` 和 `models.navigation.segmentation.fastsam.deploy.board.fastsam_utils`.进入容器后在仓库根目录,使用容器的 Python 执行一次,注册仓库根目录:
+
+```bash
+python3 -m pip install --no-index --no-deps --no-build-isolation --config-settings editable_mode=compat -e .
+```
+
+此操作使用环境已有的 setuptools>=64,不下载或安装模型依赖.兼容可编辑模式通过 Python 环境中的 `.pth` 文本文件注册仓库根目录,不生成源码链接目录或副本,不改写各步骤的 `sys.path`.直接编辑原始源码即可,新增源码模块无需更新链接; 移动仓库后需重新安装.生成的 `*.egg-info/` 为安装元数据,已加入 Git 忽略规则.若系统 Python 提示由系统包管理器管理,应使用已有虚拟环境; 本次 89 主机采用用户级安装,不覆盖系统包.VS Code 应选择完成安装的同一个 Python 解释器,无需指向 build 的额外搜索路径.其他模型既有入口和板端独立部署方式保持不变.
+
 LLM 资源目录中,`original/` 保存官方权重和 tokenizer,`native/` 保存当前原生转换及量化资源,`compiled/版本名/` 保存编译包的归档副本.已完成交付的模型包路径沿用该模型 README 的记录.历史精度和交付状态保持原记录,文件迁移不代表重新验证模型.
 
 一次性迁移工具为 `tools/migrate_model_storage.py`.先记录迁移清单,确认后使用 `--apply`;每个文件在移除来源前核对大小与 SHA256,同名不同内容的旧目标保存在 `_previous/哈希/` 下.本次 Windows 与服务器不同内容的模型保存在 `_variants/windows/哈希/` 下,服务器现用资源保持主路径.迁移记录应保存在仓库外,不能提交包含内部路径的清单.
+
+默认迁移只处理 `models/任务/类别/模型/models/` 中的资源,不再扫描和迁移 `.eval`、`.vendor`、`tmp` 等目录中的临时模型.历史 `_archive` 和 `_workspace_artifacts` 已移出 NAS,保存在 89 主机本地磁盘的 `/tmp/hailongcodex/2026-10-15/nas_cleanup/`; 该目录用于临时保留,不作为长期交付存储.
 

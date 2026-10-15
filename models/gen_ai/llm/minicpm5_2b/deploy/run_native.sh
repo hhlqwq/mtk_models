@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
+# 编译步骤在容器内执行,请先从仓库根目录运行 bash docker/enter_container.sh.
 
 # 原生 GAI 流程: 在 Ubuntu89 Docker 运行,保留各阶段日志和失败状态.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
-CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
+
 TASK_ROOT="${TASK_ROOT:-/tmp/hailongcodex/2026-10-10}"
 WORK="${NATIVE_WORK:-${MODEL_ASSETS_DIR}/native}"
 SOURCE="${MODEL_SOURCE:-${MODEL_ASSETS_DIR}/original}"
@@ -68,13 +69,14 @@ for path in "${WORK}" "${SOURCE}" "${PYTHON}" "${NCC_ROOT}"; do
     fi
 done
 mkdir -p "${WORK}/logs"
-docker exec "${CONTAINER}" mkdir -p "${WORK}"
 
 run_python() {
-    # 在隔离 Python 中执行已准备的命令,离线读取官方模型.
-    docker exec -e PYTHONUNBUFFERED=1 -e PYTHONDONTWRITEBYTECODE=1 \
-        -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 \
-        -w "${WORK}" "${CONTAINER}" "${PYTHON}" "$@"
+    # 在当前容器的独立 Python 环境执行,工作目录不影响调用者.
+    (
+        cd "${WORK}"
+        PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
+            HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 "${PYTHON}" "$@"
+    )
 }
 
 if [[ "${STAGE}" == all || "${STAGE}" == prepare ]]; then
@@ -140,8 +142,7 @@ if [[ "${STAGE}" == all || "${STAGE}" == shape ]]; then
 fi
 if [[ "${STAGE}" == all || "${STAGE}" == compile ]]; then
     echo '[5/5] 编译 Genio720 MDLA5.3 单核模型,禁止 CPU 桥接.'
-    docker exec -i -e LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
-        "${CONTAINER}" bash -s -- "${QUANTIZED}" "${NCC_ROOT}" "${PREFILL}" "${CONTEXT}" "${MLP_PRECISION}" \
+    env LD_LIBRARY_PATH="${NCC_ROOT}/lib"  bash -s -- "${QUANTIZED}" "${NCC_ROOT}" "${PREFILL}" "${CONTEXT}" "${MLP_PRECISION}" \
         2>&1 <<'COMPILE' | tee "${WORK}/logs/compile.log"
 set -euo pipefail
 for shape in "${3}t${4}c" "1t${4}c"; do

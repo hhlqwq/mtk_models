@@ -1,14 +1,20 @@
 """在编译主机运行 YOLOv5s ONNX FP32 COCO 全量精度评测."""
 
 import argparse
+import contextlib
+import io
 import json
+import math
 from pathlib import Path
 
 import cv2
 import numpy as np
+import onnxruntime
+from pycocotools.coco import COCO
+from pycocotools.cocoeval import COCOeval
 import torch
-import tqdm
 from torchvision.ops import batched_nms
+import tqdm
 
 COCO_91_CLASSES = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21,
@@ -92,7 +98,6 @@ def rescale_to_original(boxes: torch.Tensor, meta: dict,
 
 def build_fp32_infer(args: argparse.Namespace):
     """构造 ONNX Runtime 推理函数,仅使用 ONNX 模型进行精度评测."""
-    import onnxruntime
 
     providers = [provider for provider in ["CUDAExecutionProvider", "CPUExecutionProvider"]
                  if provider in onnxruntime.get_available_providers()]
@@ -122,11 +127,6 @@ def build_fp32_infer(args: argparse.Namespace):
 
 def evaluate_onnx_accuracy(args: argparse.Namespace) -> None:
     """在编译主机评测 ONNX 全量精度,仅保存核心 mAP 汇总."""
-    import contextlib
-    import io
-    import math
-    from pycocotools.coco import COCO
-    from pycocotools.cocoeval import COCOeval
 
     with contextlib.redirect_stdout(io.StringIO()):
         annotation = COCO(str(args.ann))

@@ -71,8 +71,9 @@ def box_iou(box, boxes):
     return intersection / np.maximum(union, 1e-9)
 
 
-def postprocess(outputs, geometry, confidence=0.4, iou=0.9, max_det=100):
-    """执行类别无关 NMS,逐个还原原图掩码以限制临时内存."""
+def postprocess(outputs, geometry, confidence=0.4, iou=0.9, max_det=100,
+                *, show_progress=True):
+    """执行类别无关 NMS 并逐个还原掩码,全量评测可关闭掩码进度."""
     if not 0 <= confidence <= 1 or not 0 <= iou <= 1 or max_det <= 0:
         raise ValueError("阈值必须位于 [0,1], max_det 必须为正数.")
     boxes, scores, coefficients = decode_heads(outputs)
@@ -114,7 +115,7 @@ def postprocess(outputs, geometry, confidence=0.4, iou=0.9, max_det=100):
                  & (np.arange(height)[:, None] >= y1)
                  & (np.arange(height)[:, None] < y2))
         masks.append(mask)
-        if (index + 1) % 25 == 0:
+        if show_progress and (index + 1) % 25 == 0:
             print(f"[MASK] {index + 1}/{len(boxes)}", flush=True)
     return boxes, scores, masks
 

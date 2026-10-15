@@ -3,14 +3,15 @@
 import argparse
 import hashlib
 import json
-import sys
 from pathlib import Path
 import shutil
+import sys
 
 from transformers import AutoTokenizer
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[6] / "tools"))
+import pyarrow.parquet as parquet
 from storage import reuse_weight
 
 
@@ -113,7 +114,6 @@ def prepare(source, output, context, calibration_train=None, mask_value=-100.0,
     training_source = None
     if calibration_train is not None:
         # 训练集参与校准,测试集只用于独立 PPL 对比.
-        import pyarrow.parquet as parquet
 
         expected = "e83889baabc497075506f91975be5fac0d45c5290b6b20582c8cd1e853d0c9f7"
         if sha256(calibration_train) != expected:

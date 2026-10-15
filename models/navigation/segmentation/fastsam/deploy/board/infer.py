@@ -10,6 +10,10 @@ import shutil
 import subprocess
 import sys
 
+import cv2
+import numpy
+import pycocotools.mask
+
 sys.dont_write_bytecode = True
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
@@ -49,9 +53,6 @@ def infer(args: argparse.Namespace, paths: dict, protocol: dict) -> None:
         raise ValueError(f"数据集需要 {protocol['images']} 张图片,实际 {len(images)}.")
     require_file(paths["annotations"])
     # 提前检查编码依赖,避免推理后才发现无法保存 RLE 检查点.
-    import cv2
-    import numpy
-    import pycocotools.mask
     work = paths["work"]
     if args.resume:
         if not work.is_dir():

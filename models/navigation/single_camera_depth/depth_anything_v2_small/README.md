@@ -1,5 +1,7 @@
 # Depth Anything V2 Small
 
+编译与转换步骤统一在 Docker 容器内执行: 先在仓库根目录运行 `bash docker/enter_container.sh`,再进入本模型目录运行原有 `deploy/run.sh` 或 `deploy/run_native.sh` 入口.模型脚本不再调用 Docker 或在主机和容器之间复制文件; 上传完成后,板端入口仍在开发板执行.
+
 单目相对深度估计，输入为 518×518 RGB 图像。输出只表达单张图内的相对结构，不能直接用于米制测距。来源见[模型卡](model_card.md),资源下载地址见 [source_url.txt](models/source_url.txt)。
 
 量化方式: INT8 训练后量化 (PTQ),采用逐输出通道权重量化.

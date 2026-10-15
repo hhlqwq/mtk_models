@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# 编译步骤在容器内执行,请先从仓库根目录运行 bash docker/enter_container.sh.
 
 # 两步流程: Ubuntu89 Docker 导出编译并上传,92 开发板单独运行测试.
 set -euo pipefail
@@ -23,10 +24,10 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     CONTEXT_SIZE="${CONTEXT_SIZE:-1024}"
     MAX_NEW_TOKENS="${MAX_NEW_TOKENS:-512}"
     # 5. 既有编译环境,依赖在隔离环境手动准备.
-    MTK_G720_CONTAINER="${MTK_G720_CONTAINER:-hhl_g720_8011}"
+
     LLM_PYTHON="${LLM_PYTHON:-/tmp/hailongcodex/2026-10-10/deepseek_env/bin/python}"
     NCC_ROOT="${NCC_ROOT:-/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host}"
-    SDK_HOST="${SDK_HOST:-/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host}"
+    SDK_HOST="${SDK_HOST:-/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host}"
     TARGET_LIBS="${TARGET_LIBS:-/data/users/hailong.he/data/MTKG720/cpp_toolchain/genio720-libs}"
     CROSS_CXX="${CROSS_CXX:-aarch64-linux-gnu-g++}"
     SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=yes)
@@ -66,42 +67,39 @@ for path in "${MODEL_SOURCE}" "${MODEL_OUTPUT_DIR}" "${BUILD_WORK_DIR}" "${BOARD
 done
 test -s "${MODEL_SOURCE}/source_manifest.json"
 command -v "${CROSS_CXX}" >/dev/null
-docker exec "${MTK_G720_CONTAINER}" test -x "${LLM_PYTHON}"
+ test -x "${LLM_PYTHON}"
 mkdir -p "${BUILD_WORK_DIR}/logs"
 
-echo '[编译主机 1/5] 在 Docker 校验官方资源并导出静态 ONNX 分片.'
-docker exec -e PYTHONUNBUFFERED=1 -e PYTHONDONTWRITEBYTECODE=1 \
-    "${MTK_G720_CONTAINER}" "${LLM_PYTHON}" "${SCRIPT_DIR}/host/export_model.py" \
+echo '[容器 1/5] 在 Docker 校验官方资源并导出静态 ONNX 分片.'
+env PYTHONUNBUFFERED=1  PYTHONDONTWRITEBYTECODE=1  "${LLM_PYTHON}" "${SCRIPT_DIR}/host/export_model.py" \
     --source "${MODEL_SOURCE}" --output "${MODEL_OUTPUT_DIR}" --context "${CONTEXT_SIZE}" \
     2>&1 | tee "${BUILD_WORK_DIR}/logs/export.log"
 
-echo '[编译主机 2/5] 计算官方 PyTorch 与 ONNX 同协议参考.'
+echo '[容器 2/5] 计算官方 PyTorch 与 ONNX 同协议参考.'
 CORPUS_ARGUMENTS=()
 if [[ -n "${EVAL_CORPUS}" ]]; then CORPUS_ARGUMENTS=(--corpus "${EVAL_CORPUS}"); fi
-docker exec -e PYTHONUNBUFFERED=1 -e PYTHONDONTWRITEBYTECODE=1 \
-    "${MTK_G720_CONTAINER}" "${LLM_PYTHON}" "${SCRIPT_DIR}/host/evaluate_reference.py" \
+env PYTHONUNBUFFERED=1  PYTHONDONTWRITEBYTECODE=1  "${LLM_PYTHON}" "${SCRIPT_DIR}/host/evaluate_reference.py" \
     --source "${MODEL_SOURCE}" --models "${MODEL_OUTPUT_DIR}" \
     --max-new-tokens "${MAX_NEW_TOKENS}" "${CORPUS_ARGUMENTS[@]}" \
     2>&1 | tee "${BUILD_WORK_DIR}/logs/reference.log"
 
-echo '[编译主机 3/5] 转换 TFLite 并编译 MDLA 5.3 DLA,禁止桥接.'
-docker exec -e PYTHONUNBUFFERED=1 -e PYTHONDONTWRITEBYTECODE=1 \
-    "${MTK_G720_CONTAINER}" "${LLM_PYTHON}" "${SCRIPT_DIR}/host/convert_model.py" \
+echo '[容器 3/5] 转换 TFLite 并编译 MDLA 5.3 DLA,禁止桥接.'
+env PYTHONUNBUFFERED=1  PYTHONDONTWRITEBYTECODE=1  "${LLM_PYTHON}" "${SCRIPT_DIR}/host/convert_model.py" \
     --models "${MODEL_OUTPUT_DIR}" --ncc-root "${NCC_ROOT}" \
     2>&1 | tee "${BUILD_WORK_DIR}/logs/compile.log"
 
-echo '[编译主机 4/5] 交叉编译 Neuron Runtime 桥接库.'
+echo '[容器 4/5] 交叉编译 Neuron Runtime 桥接库.'
 "${CROSS_CXX}" -std=c++17 -O2 -shared -fPIC -Wall -Wextra -Wpedantic \
     -I"${SDK_HOST}/include" "${SCRIPT_DIR}/board/neuron_bridge.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" -Wl,--allow-shlib-undefined \
     -o "${BUILD_WORK_DIR}/libneuron_bridge.so"
 
-echo '[编译主机 5/5] 取回 Docker 产物并上传板端.'
+echo '[容器 5/5] 取回 Docker 产物并上传板端.'
 mkdir -p "${BUILD_WORK_DIR}/models"
 for name in export_manifest.json source_manifest.json artifact_manifest.json samples.json reference.json embedding_fp16.bin; do
-    docker cp "${MTK_G720_CONTAINER}:${MODEL_OUTPUT_DIR}/${name}" "${BUILD_WORK_DIR}/models/${name}"
+    cp -- "${MODEL_OUTPUT_DIR}/${name}" "${BUILD_WORK_DIR}/models/${name}"
 done
-docker exec "${MTK_G720_CONTAINER}" sh -c \
+ sh -c \
     "cd '${MODEL_OUTPUT_DIR}' && tar -cf - ./*.dla" > "${BUILD_WORK_DIR}/dla.tar"
 tar -xf "${BUILD_WORK_DIR}/dla.tar" -C "${BUILD_WORK_DIR}/models"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \

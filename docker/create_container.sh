@@ -6,6 +6,7 @@ readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${PROJECT_ROOT}/tools/storage.sh"
 readonly DATASET_ROOT="${MTK_DATASET_ROOT}"
 readonly MODEL_STORAGE_ROOT="${MTK_MODEL_STORAGE_ROOT}"
+readonly CPP_TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT:-/data/users/hailong.he/data/MTKG720/cpp_toolchain}"
 readonly IMAGE_NAME="${MTK_G720_IMAGE:-openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11}"
 readonly CONTAINER_NAME="hhl_g720_8011"
 
@@ -13,6 +14,7 @@ echo "[1/4] 检查目录和同名容器."
 test -d "${PROJECT_ROOT}"
 test -d "${DATASET_ROOT}"
 test -d "${MODEL_STORAGE_ROOT}"
+test -d "${CPP_TOOLCHAIN_ROOT}"
 # 先确认 NAS 实际挂载,防止失去挂载时将资源写入同名本地目录.
 for STORAGE_ROOT in "${MODEL_STORAGE_ROOT}" "${DATASET_ROOT}"; do
     STORAGE_TYPE="$(findmnt -T "${STORAGE_ROOT}" -n -o FSTYPE)"
@@ -61,9 +63,11 @@ else
         --shm-size 8g \
         --env NVIDIA_VISIBLE_DEVICES=all \
         --env NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+        --env MTK_G720_CPP_TOOLCHAIN_ROOT="${CPP_TOOLCHAIN_ROOT}" \
         --volume "${PROJECT_ROOT}:${PROJECT_ROOT}" \
         --volume "${DATASET_ROOT}:${DATASET_ROOT}:ro" \
         --volume "${MODEL_STORAGE_ROOT}:${MODEL_STORAGE_ROOT}" \
+        --volume "${CPP_TOOLCHAIN_ROOT}:${CPP_TOOLCHAIN_ROOT}:ro" \
         --workdir "${PROJECT_ROOT}" \
         "${IMAGE_NAME}" >/dev/null
 fi
