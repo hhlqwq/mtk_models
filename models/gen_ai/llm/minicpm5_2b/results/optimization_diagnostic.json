@@ -82,5 +82,11 @@
     }
   ],
   "executor_loading": "one_part_at_a_time_after_initial_all_parts_cache_oom",
-  "notes": "Local RMSE improvements did not imply end-to-end perplexity improvements. No new DLA compiled; official source weights and deployed DLA unchanged."
+  "notes": "Local RMSE improvements did not imply end-to-end perplexity improvements. These probes did not replace the delivered model. R1 matched, but layer-specific R2 differed: rejection remains valid, while isolated method attribution is confounded. See root_cause_diagnostic.json for corrected rotation controls.",
+  "rotation_control_correction": {
+    "date": "2026-10-16",
+    "r1_equal": true,
+    "r2_equal": false,
+    "single_variable_method_attribution_valid": false
+  }
 }

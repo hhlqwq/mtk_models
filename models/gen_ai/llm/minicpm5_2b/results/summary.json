@@ -82,5 +82,14 @@
     "strict_answer_only_format_passed": 3,
     "evidence": "native_smoke.json",
     "quality_qualified": false
+  },
+  "error_diagnosis": {
+    "date": "2026-10-16",
+    "evidence": "root_cause_diagnostic.json",
+    "confirmed": ["late_layer_mlp_int4_approximation_loss", "rare_a16_activation_clipping"],
+    "global_range_guard_adopted": false,
+    "current_delivery_replaced": false,
+    "main_quality_gap_resolved": false,
+    "optimization_limit_proven": false
   }
 }
