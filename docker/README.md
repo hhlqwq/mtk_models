@@ -1,66 +1,40 @@
-# Ubuntu 预装工具链镜像
+# Docker 编译环境
 
-镜像: `openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11`,
-容器: `hhl_g720_8011`.
+容器提供 Ubuntu 22.04、Python 3.11.11、Torch 2.0.0+cu118、NeuroPilot SDK 8.0.11、Converter 8.16.0、Quantization 8.2.1 和 NCC 8.2.31,并包含 C++ 交叉编译器、SSH/SCP 和 rsync.
 
-> 2026-09-07 部署结果：同名容器已迁移到目标镜像,旧 Debian 12 容器和旧镜像已经删除.
-> 当前 `hhl_g720_8011` 实际为 Ubuntu 22.04.5 LTS,并已通过工具版本、NCC、Torch CUDA 和
-> ONNX Runtime CUDA 运行验证.详细证据见
-> [Genio 720 环境与官方资料核对记录](../docs/genio_720_environment_audit_20260907.md).
+ONNX 使用 1.13.1,满足当前 Converter 的 `>=1.3,<1.14` 约束.ONNX Runtime GPU 1.18.0 对应 CUDA 11.8/cuDNN 8; 库兼容关系见 [ONNX Runtime CUDA 文档](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html).
 
-构建时安装 Ubuntu 22.04、Python 3.11.11、CUDA 11.8 Torch 2.0.0、NeuroPilot SDK 8.0.11、
-Converter 8.16.0、Quantization 8.2.1、NCC 8.2.31 和 YOLOv5/COCO 依赖.
-ONNX Runtime GPU 1.18.0 对齐 CUDA 11.8/cuDNN 8, pip 永久使用阿里镜像.
-`onnx` 固定 1.13.1: `mtk_converter.OnnxConverter` 硬性要求 1.14.0 > onnx >= 1.3.0,
-ONNX 输入路线 (ViT 等) 依赖此约束; onnxruntime 与 torch 已验证兼容.
-CUDA EP 依赖的 curand/cufft/cusolver/cusparse 通过 nvidia-*-cu11 pip 包补齐,
-并把 torch 与 nvidia wheel 的全部 .so 统一软链到 /usr/local/lib 后 ldconfig,
-否则 `InferenceSession(CUDAExecutionProvider)` 静默回退 CPU.
-2026-09-07 已在原 Ubuntu 22.04 工具链镜像上验证:新建容器仅执行
-setup_container.sh 即通过 pip check、Torch CUDA、ONNX Runtime CUDA 与 NCC 校验.
-2026-09-11 镜像规范化为
-`openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11`,容器名规范化为
-`hhl_g720_8011`.
+## 配置
 
-## 构建与创建
+- [平台配置](../configs/platforms/genio_720.yaml): 容器名称、SDK 路径、交叉编译器和开发板连接信息.
+- `configs/storage.local.json`: 模型与数据集根目录,可通过 `container_image` 指定已准备的镜像; 该文件不提交 Git.
+- 构建参数 `PYTHON_SOURCE_URL`: Python 源码下载地址,默认值见 Dockerfile.
 
-在编译主机的仓库根目录执行:
+SDK、模型、数据集和交叉编译库需按各自来源记录提前准备.下载地址和资源哈希应随本地资源清单保存,不将个人目录写入公共文档.
+
+## 构建与进入
+
+需要创建环境时,在项目根目录执行:
 
 ```bash
 bash docker/build_image.sh
 bash docker/create_container.sh
 ```
 
-构建使用命名上下文读取服务器已有 SDK, 完整复制到镜像 /opt/mtk.运行时不再挂载
-Dockerfile 使用 Docker 内置前端, 不额外下载 docker/dockerfile 镜像.
-Ubuntu 系统包保留基础镜像的官方软件源, 避免第三方镜像索引不可用导致构建失败.
-Python 3.11.11 源码默认从可达的阿里云镜像获取, 可通过 `PYTHON_SOURCE_URL` 构建参数覆盖.
-宿主机 SDK, 创建和模型转换均不再安装 pip 包.构建日志和 GPU 校验通过后才视为环境就绪.
+已有容器时,在项目根目录进入环境:
 
-项目目录在宿主机和容器内使用相同的绝对路径。数据集以用户指定的原绝对路径挂载。
-创建脚本会把项目挂载目录加入容器 root 的 Git `safe.directory`,避免宿主机用户与容器
-root 所有权不同导致 Git 拒绝访问.
-容器支持 GPU, 启动校验执行 Torch Conv2d 和 ONNX Runtime CUDA 运算.
-实际依赖版本保存在镜像 /opt/mtk-build/installed-requirements.txt.
+```bash
+bash docker/enter_container.sh
+```
 
-旧同名容器不会被脚本自动删除, 镜像不匹配时明确报错.2026-09-07 的迁移由人工留存证据后
-停止并删除旧容器,再使用既有创建脚本建立目标容器；备份位于
-用户环境中的迁移备份目录。
-SDK 属于本地供应商资料，镜像保存在编译主机，不推送公共镜像仓库。
-GitHub 仅提交构建代码, 模型和数据集继续由用户下载.
+进入后执行对应模型的运行入口或独立步骤.容器终端自动加载平台环境,模型入口不负责进入 Docker.板端任务仍在开发板执行.
 
-## GPU 证据边界
+## 挂载与维护
 
-此前"MTK PTQ 必然只使用 CPU"的结论证据不足: 没有显式 CUDA 参数不能证明内部执行设备.
-已观察到 GPU 导出后 PTQ 加快, 具体原因需通过运行时 GPU 进程监测验证.
-板端正式性能以开发板 NPU 结果为准.
+项目目录和模型资源目录按相同绝对路径挂载,模型资源可写,数据集和 C++ 工具目录只读.容器默认工作目录为项目根目录,创建脚本配置 Git `safe.directory`.
 
-ONNX GPU 兼容依据: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
+构建使用本地 SDK 作为命名上下文,不把模型或数据集打入镜像.镜像内的依赖版本记录在 `/opt/mtk-build/installed-requirements.txt`.SDK 镜像按其许可使用,不推送公共镜像仓库.
 
-## 模型与数据挂载
+现有容器的镜像或挂载不匹配时,先保留环境再安排重建,创建脚本不自动删除旧容器.平台和资源环境在进入容器时自动初始化,无需手动执行环境脚本.修改配置后重新进入终端即可.
 
-创建或进入容器前配置仓库根目录的 `configs/storage.local.json`.模型资源根目录读写挂载,数据集根目录只读挂载,两者在主机和容器中使用同一绝对路径.现有容器缺少挂载时先保存环境再重建,通过本地配置的 `container_image` 复用保存的镜像.此步骤不运行模型测试.
-
-## 模型执行入口
-
-进入编译环境统一使用仓库根目录的 `bash docker/enter_container.sh`.进入后执行模型的 run.sh 或独立 Python 文件,模型脚本不再调用 Docker.编译、交叉编译和上传在容器内完成,板端任务仍在开发板执行.新镜像包含 `g++-aarch64-linux-gnu` 和 rsync,创建容器时只读挂载 C++ 工具目录; 不自动重建或重启旧容器.当前容器已补齐工具并复制现有 C++ 资源,包下载地址和资源清单保存在 89 主机 `/tmp/hailongcodex/2026-10-15/container_import_cleanup/`.
+GPU 是否实际参与任务应以执行提供程序和运行证据为准.最终部署性能以开发板 NPU 实测为准,不能用编译主机的 GPU 性能替代.历史环境验证见[环境核对记录](../docs/genio_720_environment_audit_20260907.md).

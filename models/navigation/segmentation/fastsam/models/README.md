@@ -21,7 +21,3 @@
 | build/README.md | 本资源布局说明 |
 
 资源根目录只保留原始 PT 权重、最终 ONNX、最终 DLA 和 build 目录.build 中间文件平铺,子目录只保留 cache 和 tmp.评测临时文件先保存到 tmp,报告校验通过后发布为 onnx_reference.json; 缺失时上传直接停止,不生成占位报告.
-
-导出 ONNX 直接写入最终产物目录,不再在 build 中另存一份模型.历史归档已移至 89 主机本地磁盘的 `/tmp/hailongcodex/2026-10-15/nas_cleanup/_archive/2026-10-15/fastsam_01a12f77/`,不保存在 NAS.归档索引保留整理时的原路径与哈希,本次迁移记录见 `nas_cleanup/migration.json`.
-
-2026-10-15 的整理仅核对文件哈希并调整布局,未重新导出、编译或评测.旧 deployment_manifest.json 的部分哈希已过期,已归档,不再作为当前产物的有效交付清单.当前 DLA 是否对应最新量化和实际板端精度,需以对应运行证据为准.

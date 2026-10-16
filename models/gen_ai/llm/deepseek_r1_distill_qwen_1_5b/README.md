@@ -13,13 +13,13 @@
 现有 W4 诊断存在精度退化,不能因推理可运行而认定质量合格.
 
 Prefill=128 Token,上下文=1024,Decode=1 Token.每款只生成两个 DLA.
-当前候选: `/tmp/hailongcodex/2026-10-12/deepseek_w4_rotate_train_v5`.
+当前候选编号: `deepseek_w4_rotate_train_v5`.实际工作目录通过 `NATIVE_WORK` 指定.
 官方 SDK=2.7.5,Converter=8.16.0,编译目标为 Genio720 MDLA5.3.
 Hadamard 权重旋转 seed=0,注意力 mask=-4096;只修改独立转换副本.
 
 ## 执行流程
 
-在 Ubuntu89 仓库调用 `bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/run_native.sh STAGE`.
+在编译容器的项目根目录调用 `bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/run_native.sh STAGE`.
 阶段依次为 `prepare`、`calibrate`、`quantize`、`shape`、`compile`.
 设置 `NATIVE_WORK` 为独立候选目录,`MASK_VALUE=-4096`,`ROTATE_WEIGHTS=1`,
 `CALIBRATION_BATCHES=128`;默认 `WEIGHT_OPTIMIZATION=none`,清空 `WEIGHT_OPT_CONFIG`,复用已完成的校准数据.
@@ -88,4 +88,4 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 
 ## 模型资源路径
 
-原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先在 89 编译主机配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/gen_ai/llm/deepseek_r1_distill_qwen_1_5b`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.
+原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/gen_ai/llm/deepseek_r1_distill_qwen_1_5b`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.

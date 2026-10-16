@@ -38,7 +38,7 @@ Top-1、包含校准折的全量投影指标及逐轮耗时保留在
 <details>
 <summary>性能补充与两种方案的部署信息</summary>
 
-随后在92板端使用同一批前200条音频缓存,每轮2000窗,交替运行三轮,
+随后在目标板端使用同一批前200条音频缓存,每轮2000窗,交替运行三轮,
 每个模型合计6000窗,每次加载后先预热20次.计时仅覆盖硬件模式的
 `NeuronRuntime_inference`调用,排除音频解码、特征提取和窗口等待.
 
@@ -60,9 +60,8 @@ Top-1、包含校准折的全量投影指标及逐轮耗时保留在
 | DLA 大小 | 3986767 bytes | 4043567 bytes |
 | 精度运行编号 | `20261009_yamnet_esc50_w8a16_v1` | `20261009_yamnet_tail16_diagnosis` |
 
-全W8A16产物保留在板端 `/root/hailong.he/open_models/yamnet/models/`.
-局部方案已验证产物保留在主机、Docker及板端
-`/tmp/hailongcodex/2026-10-09/yamnet/operator_diagnosis/`,文件为
+全W8A16产物保存在配置的板端模型目录.
+局部方案已验证产物保留在对应诊断工作目录,文件为
 `tail16.tflite` / `tail16.dla` / `tail16_config.csv`;板端仅保留DLA和运行配置.
 局部DLA SHA256为 `810b476ec61df9c83e8e099ecbe4eef1b8e01385525a5e34dfecec7772f929df`.
 同条件交替测试的原始计时位于板端同目录的 `paired_w8a16_093230/`.
@@ -85,10 +84,9 @@ Top-1、包含校准折的全量投影指标及逐轮耗时保留在
 ESC-50 原始资源保存 NAS,板端保留原始 WAV 与元数据.
 ESC-50 整体为 CC BY-NC 3.0,各音频出处和许可见原始数据的 `LICENSE`.
 
-在 89 仓库根目录准备资源:
+进入编译容器后,在项目根目录准备资源:
 
 ```bash
-source env.sh
 python3 models/audio/ambient_sound/yamnet/deploy/host/prepare_assets.py \
   --models-dir "${MTK_MODEL_STORAGE_ROOT}/audio/ambient_sound/yamnet" \
   --dataset-dir "${MTK_DATASET_ROOT}/ESC-50"
@@ -100,11 +98,12 @@ python3 models/audio/ambient_sound/yamnet/deploy/host/prepare_assets.py \
 导出依赖安装在临时目录的独立环境,不升级 Docker 全局包:
 
 ```bash
-work=/tmp/hailongcodex/$(date +%F)/yamnet
-docker exec hhl_g720_8011 python -m venv "$work/venv"
-docker exec hhl_g720_8011 "$work/venv/bin/pip" install \
+work="${TMPDIR:-/tmp}/yamnet"
+python -m venv "$work/venv"
+"$work/venv/bin/pip" install \
   tensorflow-cpu==2.15.1 tf2onnx==1.16.1 onnx==1.16.1 numpy==1.26.4 scipy==1.11.4 tqdm==4.66.5
-docker exec hhl_g720_8011 "$work/venv/bin/pip" install --no-deps tf-keras==2.15.0
+"$work/venv/bin/pip" install --no-deps tf-keras==2.15.0
+export YAMNET_EXPORT_PYTHON="$work/venv/bin/python"
 ```
 
 已有环境可用 `YAMNET_EXPORT_PYTHON` 指定实际 Python 路径.编译主机和板端需要
@@ -114,7 +113,7 @@ ffmpeg,板端 Python 需要 NumPy;MTK Converter 和 ONNX Runtime 复用现有 Do
 
 ## 两步运行
 
-Windows 修改提交后,89 拉取,在仓库根目录执行:
+通过 `bash docker/enter_container.sh` 进入编译容器后,在项目根目录执行:
 
 ```bash
 bash models/audio/ambient_sound/yamnet/deploy/run.sh
@@ -132,17 +131,17 @@ W8A16 入口为 `YAMNET_PRECISION=w8a16 bash models/audio/ambient_sound/yamnet/d
 全连接的实际精度,板端全量结果见下方 W8A16 实测表.
 各精度使用独立的 `runtime_config_精度.csv` 和 `quantization_精度.json`,
 保留旧版 `runtime_config.csv` 作为既有部署的兼容入口.
-主机评测与缓存写入 `/tmp/hailongcodex/当天日期/yamnet`,模型产物保存在 `models/`.
+评测与缓存写入脚本配置的构建目录,模型产物保存在配置的外部资源目录.
 
-92 开发板执行:
+上传完成后登录开发板,在配置的模型部署目录执行:
 
 ```bash
-EVAL_RUN_ID=自定义运行编号 bash /root/hailong.he/open_models/yamnet/run.sh
+EVAL_RUN_ID=自定义运行编号 bash run.sh
 ```
 
-原始数据同步到 `/root/hailong.he/datasets/ESC-50/`.板端从 WAV 解码并生成
+原始数据同步到配置的板端数据集目录.板端从 WAV 解码并生成
 全部音频窗口,20 次预热后逐窗执行真实 NPU 推理,最后计算精度和示例结果.
-运行目录 `/root/hailong.he/open_models/yamnet/results/运行编号/` 保留原始证据,
+部署目录下的 `results/<运行编号>/` 保留原始证据,
 已有目录拒绝覆盖.仓库 `results/` 只保留最终 `summary.json`.
 
 ## 评测协议
@@ -195,7 +194,7 @@ INT8 逐输出通道权重 PTQ 首轮运行 `20261009_yamnet_esc50_v1`,AP 下降
 前处理最大特征差异 `1.35e-4`,主机与板端 10 段音频最大差异 `9.73e-5`.
 100 ms 分块的流式缓存与离线窗口一致,尚未接入实际麦克风采集.
 
-编译环境: 89 的 `hhl_g720_8011`,NeuroPilot SDK `8.0.11-build20260211`,
+编译环境: Docker 容器,NeuroPilot SDK `8.0.11-build20260211`,
 Converter `8.16.0`,NCC `8.2.31`,独立 TensorFlow CPU `2.15.1`,tf-keras `2.15.0`,
 tf2onnx `1.16.1`,ONNX Runtime `1.18.0`.板端 Runtime 库 `8.2.16`,
 Linux `6.6.137-mtk+ga246e0c68c39-g429091ed5965`,CPU governor `schedutil`,
@@ -210,10 +209,8 @@ ffmpeg `6.1.4`,NumPy `1.26.4`;未修改板端固件或全局依赖.
 | FP16 TFLite | 7498828 | `8fb178803a3fc6d79646f8174b2ea64ea4d182979c92aebf5db818d5915f701f` |
 | FP16 DLA | 7638678 | `5c5894c1ca938730961da0ce6f0ecc21221c67aef4840a3d33e0600333d0c69d` |
 
-板端详细证据留在 `/root/hailong.he/open_models/yamnet/results/20261009_yamnet_esc50_fp16_v2/`,包含实际分数、逐窗耗时、
-音频哈希与日志;Git 中 `results/` 仅保留 `summary.json`.主机浮点结果与隔离依赖
-来源记录留在 `/tmp/hailongcodex/2026-10-09/yamnet/`,浮点结果位于 Docker 同名临时
-目录,依赖锁定与下载来源记录位于 89 主机临时目录.
+板端详细证据留在 部署目录下的 `results/20261009_yamnet_esc50_fp16_v2/`,包含实际分数、逐窗耗时、
+音频哈希与日志;Git 中 `results/` 仅保留 `summary.json`.浮点结果、依赖锁定和下载来源记录保留在对应的构建工作目录.
 
 </details>
 
@@ -242,7 +239,7 @@ W8A16 TFLite SHA256: `03751967e37fb901b27f302465dff279dc85f96fde970822989dcc0fb1
 W8A16 DLA SHA256: `04692e6ec7cec50b8680aa36231699706f41ebd3948497ddc2d75b2f31238caf`.
 
 原始分数、逐窗计时、三条声音示例和哈希证据位于板端
-`/root/hailong.he/open_models/yamnet/results/20261009_yamnet_esc50_w8a16_v1/`.
+部署目录下的 `results/20261009_yamnet_esc50_w8a16_v1/`.
 W8A16 示例 Top-5 已内嵌唯一结果文件的 `examples`,原有示例文件保留 FP16 输出.
 新 Runtime 对原 FP16 和 W8A8 分别全量回归,每种均为 2000 条 / 20000 窗,
 全部分数与原结果逐值一致.当前默认入口为全 W8A16,局部 INT16 作为可选方案保留.
@@ -250,7 +247,7 @@ W8A16 示例 Top-5 已内嵌唯一结果文件的 `examples`,原有示例文件�
 
 ```bash
 YAMNET_PRECISION=w8a16 EVAL_RUN_ID=新的运行编号 \
-  bash /root/hailong.he/open_models/yamnet/run.sh
+  bash run.sh
 ```
 
 ### 与高通量化参考的关系
@@ -344,9 +341,7 @@ ReLU 来修复量化误差,这样会改变原模型函数.当前已验证结果�
 尚未执行;此节的精度与计时来自已经完成的板端诊断运行.
 诊断汇总内嵌 [results/summary.json](results/summary.json) 的 `int8_operator_diagnosis`,
 `results/` 仍只含这一个文件.临时脚本、候选 ONNX/TFLite/DLA、校准配置、原始
-分数与日志位于 89 主机及 Docker 的
-`/tmp/hailongcodex/2026-10-09/yamnet/operator_diagnosis/`;
-板端同名目录保存三个候选的 `*_full_work` 和短时性能对照.
+分数与日志保存在对应诊断工作目录,板端记录包含三个候选的 `*_full_work` 和短时性能对照.
 全量工作目录的特征缓存为原 FP16 已验证缓存的只读符号链接,没有修改原始音频.
 
 </details>
@@ -368,4 +363,4 @@ ReLU 来修复量化误差,这样会改变原模型函数.当前已验证结果�
 
 ## 模型资源路径
 
-原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先在 89 编译主机配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/audio/ambient_sound/yamnet`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.
+原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/audio/ambient_sound/yamnet`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.

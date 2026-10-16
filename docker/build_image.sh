@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
-readonly PROJECT_ROOT="/data/users/hailong.he/github/mtk_models"
-readonly SDK_DIR="/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211"
+readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${PROJECT_ROOT}/tools/storage.sh"
+readonly SDK_DIR="${MTK_HOST_SDK_ROOT}"
 test -d "${SDK_DIR}/offline_tool"
 cd "${PROJECT_ROOT}"
 echo "[BUILD] 构建 Ubuntu 预装镜像, MTK SDK 使用服务器本地文件."

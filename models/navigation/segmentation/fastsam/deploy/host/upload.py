@@ -38,7 +38,7 @@ def upload(config: dict, paths: dict, config_path: Path) -> None:
     board = config["board"]
     platform_path = paths["repo"] / "configs/platforms/genio_720.yaml"
     platform = yaml.safe_load(platform_path.read_text(encoding="utf-8"))
-    board_host = platform["board_host"]
+    board_host = os.environ.get("MTK_BOARD_HOST", platform["board_host"])
     destination = board["deploy_dir"]
     if not re.fullmatch(r"/[A-Za-z0-9_./-]+", destination) or any(
             part in ("", ".", "..") for part in destination.split("/")[1:]):

@@ -12,3 +12,20 @@ npu: MDLA 5.3
 neuron_runtime: 8.2.16
 onnx_runtime: 1.20.2
 llm_cmdline_tool: /usr/sbin/llm_cmdline_tool
+
+# G720 对应的一套编译工具链,环境配置统一从此处读取.
+toolchain:
+  container_name: hhl_g720_8011
+  id: neuropilot_8_0_11
+  python: "3.11"
+  neuropilot_sdk: 8.0.11
+  mtk_converter: 8.16.0
+  mtk_quantization: 8.2.1
+  neuron_compiler: 8.2.31
+  host_sdk_root: /data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211
+  # 编译容器内使用的 SDK,与 host_sdk_root 保持同一版本.
+  sdk_root: /opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211
+  # 主机已有的 C++ 资源,在容器中按相同绝对路径挂载或准备.
+  cpp_toolchain_root: /data/users/hailong.he/data/MTKG720/cpp_toolchain
+  # 交叉编译器在容器 PATH 中查找.
+  cross_cxx: aarch64-linux-gnu-g++

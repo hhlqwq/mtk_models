@@ -3,7 +3,6 @@
 目标编译环境为 Ubuntu 22.04 预装镜像, MTK SDK、Python 3.11 和 CUDA Torch 在构建阶段安装.
 Ubuntu 系统依赖使用基础镜像官方软件源, pip 镜像地址在容器内永久配置.
 Python 3.11.11 源码地址由 Docker 构建参数管理, 默认使用服务器已验证可达的镜像地址.
-2026-09-07 已将同名容器迁移到 Ubuntu 22.04 镜像,并删除旧 Debian 12 容器和旧镜像.
 创建容器时检查配置和挂载, 操作方法见 [Docker 说明](docker/README.md).
 
 执行模型编译流程前,先从仓库根目录运行 `bash docker/enter_container.sh`,再在容器内执行各模型原有入口或独立 Python 步骤.模型入口只编排步骤,不再负责进入 Docker.编译、交叉编译和上传都在当前容器执行,板端评测仍在开发板执行.
@@ -80,14 +79,14 @@ W4A16 原生包已归档至 NAS,英文语法存在问题,正式量化质量待�
 | --- | --- |
 | 编译主机 | Ubuntu 24.04；连接地址由用户配置 |
 | 仓库目录 | 用户在编译主机上放置本仓库的位置 |
-| Docker 镜像 | `openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11`；镜像 ID `9ac9238a70ec` |
-| 当前 Docker 容器 | `hhl_g720_8011`；已完成 ViT 与 RTMPose 转换和板端验证 |
+| Docker 镜像 | Ubuntu 22.04 编译环境,镜像由本地配置指定 |
+| Docker 容器 | 名称由平台配置指定 |
 | Python | 当前容器 3.11.11 |
 | NeuroPilot SDK | 8.0.11 |
 | MTK Converter | 8.16.0 |
 | Neuron Compiler | 8.2.31 |
-| Genio 720 EVK | 连接地址由用户在模型脚本中配置 |
-| 板端目录 | 模型、数据集和结果位置由用户在模型脚本中配置 |
+| Genio 720 EVK | 连接地址由平台配置指定 |
+| 板端目录 | 模型、数据集和结果位置由配置指定 |
 | 板端系统 | Rity Demo 26.0-release / Scarthgap / Linux 6.6.137 |
 | 板端 Neuron Runtime | 8.2.16 |
 | 板端 ONNX Runtime | 1.20.2；包含 Neuron、XNNPACK 和 CPU Execution Provider |
@@ -111,7 +110,6 @@ Genio 720 EVK.当前平台基线和刷写证据见
 首次使用前配置 `configs/storage.local.json`,填写模型和数据集根目录.已有本地配置时直接使用,不要用模板覆盖.
 
 ```bash
-source env.sh
 bash ./docker/create_container.sh
 bash ./docker/enter_container.sh
 ```
@@ -168,13 +166,11 @@ models/scenario_name/category_name/model_name/
     └── summary.json
 ```
 
-每个模型使用一个脚本完成两步流程：在编译主机运行 `deploy/run.sh` 编译并上传，再在开发板运行上传的同一脚本；路径在脚本中配置。具体命令见各模型 README。
+每个模型使用一个脚本完成两步流程：进入编译容器后运行 `deploy/run.sh` 编译并上传，再在开发板运行上传的同一脚本；路径在脚本中配置。具体命令见各模型 README。
 
 模型产物与板端结果分别写入用户配置的 MODEL_OUTPUT_DIR 和 BOARD_RESULTS_DIR。
 
 完整板端测试成功后保留 `summary.json` 和少量效果示例,包含平均 NPU 耗时、核心精度、匹配参考基准及精度差值。测试完成后将汇总上传到本地模型的 `results/summary.json`,效果文件取回 `examples/output/`,据此更新 README; 未上传结果不预填数字.
-
-
 
 仓库通过 `registry/models.yaml` 维护模型索引,避免扫描上百个目录才能了解交付状态.
 
@@ -240,12 +236,11 @@ LLM 只交付 Prefill 与 Decode 两个 DLA,单位统一 token/s.本次 MiniCPM5
 
 仓库只保存代码、脚本、文档、公开来源记录和交付结果说明.原始权重、ONNX、量化模型、DLA 及配套运行参数统一保存在外部模型存储目录,数据集使用已有外部数据目录.
 
-在 89 编译主机复制 `configs/storage.example.json` 为 `configs/storage.local.json`,填写 `models_root` 和 `dataset_root` 的实际绝对路径.本地配置被 Git 忽略,完整内部路径不能写入提交的脚本、文档或报告.也可设置 `MTK_MODEL_STORAGE_ROOT` 和 `MTK_DATASET_ROOT`;环境变量优先于本地配置.
+在项目根目录复制 `configs/storage.example.json` 为 `configs/storage.local.json`,填写 `models_root` 和 `dataset_root` 的实际绝对路径.本地配置被 Git 忽略,完整内部路径不能写入提交的脚本、文档或报告.也可设置 `MTK_MODEL_STORAGE_ROOT` 和 `MTK_DATASET_ROOT`;环境变量优先于本地配置.
 
-映射规则: 代码目录 `models/场景/类别/模型名/` 对应外部 `models_root/场景/类别/模型名/`.原 `模型名/models/` 的资源直接放入该外部目录,不额外增加一层 `models/`.模型源码和公开来源记录仍保留在仓库.转换和编译产物写入外部资源目录,临时缓存继续使用 `/tmp/hailongcodex/当天日期/`.
+映射规则: 代码目录 `models/场景/类别/模型名/` 对应外部 `models_root/场景/类别/模型名/`.原 `模型名/models/` 的资源直接放入该外部目录,不额外增加一层 `models/`.模型源码和公开来源记录仍保留在仓库.转换和编译产物写入外部资源目录,临时缓存保存在各模型配置的构建目录.
 
 ```bash
-source env.sh
 bash docker/create_container.sh
 bash docker/enter_container.sh
 ```
@@ -260,11 +255,10 @@ FastSAM 编译步骤按仓库真实目录导入 `tools.storage` 和 `models.navi
 python3 -m pip install --no-index --no-deps --no-build-isolation --config-settings editable_mode=compat -e .
 ```
 
-此操作使用环境已有的 setuptools>=64,不下载或安装模型依赖.兼容可编辑模式通过 Python 环境中的 `.pth` 文本文件注册仓库根目录,不生成源码链接目录或副本,不改写各步骤的 `sys.path`.直接编辑原始源码即可,新增源码模块无需更新链接; 移动仓库后需重新安装.生成的 `*.egg-info/` 为安装元数据,已加入 Git 忽略规则.若系统 Python 提示由系统包管理器管理,应使用已有虚拟环境; 本次 89 主机采用用户级安装,不覆盖系统包.VS Code 应选择完成安装的同一个 Python 解释器,无需指向 build 的额外搜索路径.其他模型既有入口和板端独立部署方式保持不变.
+使用环境已有的 setuptools>=64,不下载模型依赖.可编辑安装直接使用当前源码,移动仓库后需要重新安装.VS Code 选择完成安装的同一个 Python 解释器.
 
 LLM 资源目录中,`original/` 保存官方权重和 tokenizer,`native/` 保存当前原生转换及量化资源,`compiled/版本名/` 保存编译包的归档副本.已完成交付的模型包路径沿用该模型 README 的记录.历史精度和交付状态保持原记录,文件迁移不代表重新验证模型.
 
-一次性迁移工具为 `tools/migrate_model_storage.py`.先记录迁移清单,确认后使用 `--apply`;每个文件在移除来源前核对大小与 SHA256,同名不同内容的旧目标保存在 `_previous/哈希/` 下.本次 Windows 与服务器不同内容的模型保存在 `_variants/windows/哈希/` 下,服务器现用资源保持主路径.迁移记录应保存在仓库外,不能提交包含内部路径的清单.
+一次性迁移工具为 `tools/migrate_model_storage.py`.先记录迁移清单,确认后使用 `--apply`;每个文件在移除来源前核对大小与 SHA256,同名不同内容的旧目标保存在 `_previous/哈希/` 下.来源不同且内容不一致的模型应分别保留并记录来源.迁移记录应保存在仓库外,不能提交包含内部路径的清单.
 
-默认迁移只处理 `models/任务/类别/模型/models/` 中的资源,不再扫描和迁移 `.eval`、`.vendor`、`tmp` 等目录中的临时模型.历史 `_archive` 和 `_workspace_artifacts` 已移出 NAS,保存在 89 主机本地磁盘的 `/tmp/hailongcodex/2026-10-15/nas_cleanup/`; 该目录用于临时保留,不作为长期交付存储.
-
+G720 的板端连接与工具链配置统一位于 `configs/platforms/genio_720.yaml`,SDK 版本、路径、交叉编译器和容器名称在其 `toolchain` 分组维护.执行 `docker/enter_container.sh` 后,容器终端自动加载平台和资源环境,无需手动执行初始化脚本; 修改环境配置后重新进入终端即可,无需重启容器.FastSAM 的 C++ 构建改由 Makefile 使用这些环境变量完成,不再使用 Python 包装编译命令.

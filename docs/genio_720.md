@@ -2,13 +2,13 @@
 
 ## 设备基线
 
+连接信息与目录由 [G720 平台配置](../configs/platforms/genio_720.yaml) 指定.
+
 ```text
 设备: MediaTek Genio 720 EVK
 SoC: MT8189 / MT8391
 系统: Rity Demo 26.0-release (scarthgap)
 内核: Linux 6.6.137-mtk+ga246e0c68c39-g429091ed5965
-地址: root@192.168.0.92
-测试目录: /root/hailong.he
 Neuron Runtime: 8.2.16
 ONNX Runtime: 1.20.2
 GAI 工具: /usr/sbin/llm_cmdline_tool
@@ -22,15 +22,6 @@ GAI 工具: /usr/sbin/llm_cmdline_tool
 2026-07-29 发布的正式 v26.0 eMMC 镜像写入开发板.`genio-flash` 已完成 `mmc0`、
 `mmc0boot0` 和 `mmc0boot1` 的擦除、写入与重启.刷写后通过串口和 SSH 重新采集了
 系统、内核、Runtime、ORT、APUSYS 和网络状态.
-
-Windows 刷写主机上的镜像和工具位于：
-
-```text
-D:\data\MTK\tools\scarthgap_k6.6_v26.0_genio-720-evk_private_260729015554.tar.gz
-D:\data\MTK\tools\scarthgap_k6.6_v26.0_genio-720-evk_private_260729015554\genio-720-evk
-D:\data\MTK\tools\genio-venv
-D:\data\MTK\tools\android\platform-tools
-```
 
 `neuronrt -v` 当前输出 `Version: 8.2.16`.`onnxruntime` 1.20.2 可以枚举
 `NeuronExecutionProvider`、`XnnpackExecutionProvider` 和 `CPUExecutionProvider`.
@@ -46,20 +37,9 @@ APUSYS 当前可见 `/dev/apusys`、`/dev/apuext` 和 `/dev/apusys_apummu`,并�
 本次实际刷写和升级后证据见
 [2026-09-21 v26.0 升级记录](genio_720_v26_upgrade_20260921.md).
 
-## 网络与访问基线
+## 网络与访问
 
-板端以 NetworkManager 管理有线网卡 `end0`：
-
-```text
-IPv4: 192.168.0.92/24
-网关: 192.168.0.2
-DNS: 192.168.0.68, 183.221.253.100
-SSH: root 空密码,Dropbear socket enabled/active
-```
-
-正式镜像默认同时启动的 `dhcpcd.service` 会给 `end0` 追加 DHCP 地址并覆盖默认路由.
-当前设备已将该服务设置为 `disabled/inactive`,由 NetworkManager 单独维护静态地址.
-Windows 侧已实际执行 `ssh root@192.168.0.92` 并验证 `uid=0(root)`.
+开发板地址、账户和工作目录由平台配置指定.网络地址、网关和 DNS 按实际部署环境配置,避免多个网络管理服务重复修改同一网卡的地址和路由.历史刷写和网络调整记录见[升级报告](genio_720_v26_upgrade_20260921.md).
 
 ## 编译器与运行时兼容边界
 
@@ -71,7 +51,7 @@ Windows 侧已实际执行 `ssh root@192.168.0.92` 并验证 `uid=0(root)`.
 
 1. NCC 目标架构是 `mdla5.3`.
 2. 编译计划没有使用 Runtime 8.2.16 或 MT8189 不支持的桥接目标.
-3. DLA 在 92 上能够加载并使用 `-m hw` 完成真实输入推理.
+3. DLA 在目标开发板上能够加载并使用 `-m hw` 完成真实输入推理.
 4. 日志中没有被忽略的版本、目标或动态库错误.
 
 正式 v26.0 刷入前产生的模型结果仍是有效历史证据,但不能描述为正式 v26.0 的运行结果.
@@ -93,7 +73,7 @@ Windows 侧已实际执行 `ssh root@192.168.0.92` 并验证 `uid=0(root)`.
 板端根目录按来源划分模型,测试数据统一进入共享目录：
 
 ```text
-/root/hailong.he/
+<板端根目录>/
 ├── datasets/                  # 共享评测数据集.
 ├── wheels/                    # 共享离线 wheel.
 ├── archive/<date>/            # 历史探针与旧目录,不参与当前运行.
@@ -105,7 +85,7 @@ Windows 侧已实际执行 `ssh root@192.168.0.92` 并验证 `uid=0(root)`.
     └── runs/<run_id>/         # 需要独立工作目录的模型运行.
 ```
 
-禁止在 `/root/hailong.he` 根目录直接放置 DLA、输入 bin、探针输出或模型专属运行目录.
+禁止在 配置的板端根目录 根目录直接放置 DLA、输入 bin、探针输出或模型专属运行目录.
 正式数据集保存在 `datasets/`,包括 Whisper-Tiny 板端 Mel 输入。脚本以 `demo/`、
 `eval/<run_id>` 或 `runs/<run_id>` 作为模型输出位置；
 每个新的正式运行必须使用新的 `run_id`,不得覆盖既有证据.

@@ -18,11 +18,16 @@ sys.dont_write_bytecode = True
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
 
-def run_command(command: list) -> None:
-    """显示实际调用的命令,失败时停止当前步骤."""
+def run_command(command: list, *, quiet: bool = False) -> None:
+    """按需显示命令,保留子进程错误输出,失败时补充命令并停止."""
     arguments = [str(item) for item in command]
-    print(f"[执行] {shlex.join(arguments)}", flush=True)
-    subprocess.run(arguments, check=True)
+    if not quiet:
+        print(f"[执行] {shlex.join(arguments)}", flush=True)
+    try:
+        subprocess.run(arguments, check=True)
+    except (subprocess.CalledProcessError, OSError):
+        print(f"[失败命令] {shlex.join(arguments)}", file=sys.stderr, flush=True)
+        raise
 
 
 def require_file(path: Path) -> None:
@@ -31,13 +36,19 @@ def require_file(path: Path) -> None:
         raise FileNotFoundError(f"缺少文件或文件为空: {path}.")
 
 
-def infer_image(root: Path, image: Path, output: Path, protocol: dict) -> None:
+def infer_image(root: Path, image: Path, output: Path, protocol: dict,
+                *, quiet: bool = False) -> None:
     """调用 C++ 程序完成单图预处理、NPU 推理与分割后处理."""
     require_file(image)
-    run_command([root / "board/fastsam_board", "--model", root / "models/model_int8.dla",
-                 "--config", root / "models/runtime_config.csv", "--image", image,
-                 "--output-dir", output, "--confidence", protocol["confidence"],
-                 "--iou", protocol["nms_iou"], "--max-det", protocol["max_detections"]])
+    command = [
+        root / "board/fastsam_board", "--model", root / "models/model_int8.dla",
+        "--config", root / "models/runtime_config.csv", "--image", image,
+        "--output-dir", output, "--confidence", protocol["confidence"],
+        "--iou", protocol["nms_iou"], "--max-det", protocol["max_detections"],
+    ]
+    if quiet:
+        command.append("--quiet")
+    run_command(command, quiet=quiet)
 
 
 def single(args: argparse.Namespace, paths: dict, protocol: dict) -> None:
@@ -61,18 +72,23 @@ def infer(args: argparse.Namespace, paths: dict, protocol: dict) -> None:
         raise FileExistsError("本次 work 已存在,请换运行编号或显式使用 --resume.")
     for name in ("raw", "predictions_by_image", "report"):
         (work / name).mkdir(parents=True, exist_ok=True)
+    print(f"[推理] FastSAM 共 {len(images)} 张图片.", flush=True)
     for count, image in enumerate(images, 1):
         checkpoint = work / "predictions_by_image" / f"{image.stem}.json"
         if not checkpoint.exists():
             raw = work / "raw" / image.stem
             if raw.exists():
                 raise FileExistsError(f"残留单图中间目录: {raw}.请保留现场并换运行编号.")
-            infer_image(paths["root"], image, raw, protocol)
-            run_command([sys.executable, paths["root"] / "board/full_accuracy_board.py",
-                         "--mode", "encode-one", "--image", image,
-                         "--images", paths["dataset"] / "images",
-                         "--annotations", paths["annotations"], "--work-dir", work,
-                         "--run-id", args.run_id])
+            try:
+                infer_image(paths["root"], image, raw, protocol, quiet=True)
+                run_command([sys.executable, paths["root"] / "board/full_accuracy_board.py",
+                             "--mode", "encode-one", "--image", image,
+                             "--images", paths["dataset"] / "images",
+                             "--annotations", paths["annotations"], "--work-dir", work,
+                             "--run-id", args.run_id], quiet=True)
+            except (subprocess.CalledProcessError, OSError):
+                print(f"[失败图片] {image}", file=sys.stderr, flush=True)
+                raise
             # 成功保存 RLE 后仅清理本次单图中间文件,保留检查点.
             if raw.is_symlink() or raw.resolve().parent != (work / "raw").resolve():
                 raise ValueError(f"中间目录超出本次运行范围: {raw}.")
@@ -81,6 +97,7 @@ def infer(args: argparse.Namespace, paths: dict, protocol: dict) -> None:
             raise FileExistsError(f"非续跑模式发现检查点: {checkpoint}.")
         if count % 50 == 0 or count == len(images):
             print(f"[进度] FastSAM {count}/{len(images)} 张.", flush=True)
+    print(f"[完成] FastSAM {len(images)}/{len(images)} 张.", flush=True)
 
 
 def main() -> None:

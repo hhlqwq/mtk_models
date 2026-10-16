@@ -6,8 +6,6 @@ from pathlib import Path
 import shlex
 import subprocess
 
-import yaml
-
 from tools.storage import REPO_ROOT, load_model_config
 
 
@@ -20,10 +18,9 @@ def run_command(command: list, **kwargs) -> None:
 
 def compile_model(config: dict, paths: dict, config_path: Path) -> None:
     """调用 Neuron 编译器生成 Genio 720 使用的 DLA."""
-    toolchain_path = paths["repo"] / "configs/toolchains/neuropilot_8_0_11.yaml"
-    toolchain = yaml.safe_load(toolchain_path.read_text(encoding="utf-8"))
-    default_ncc = Path(toolchain["container_sdk_root"]) / "neuron_sdk/host"
-    ncc = Path(os.environ.get("NCC_ROOT", str(default_ncc)))
+    if not os.environ.get("NCC_ROOT"):
+        raise RuntimeError("请先通过 docker/enter_container.sh 进入容器.")
+    ncc = Path(os.environ["NCC_ROOT"])
     environment = dict(os.environ)
     environment["LD_LIBRARY_PATH"] = f"{ncc / 'lib'}:{environment.get('LD_LIBRARY_PATH', '')}"
     run_command([ncc / "bin/ncc-tflite", "--arch=mdla5.3", "--suppress-output",

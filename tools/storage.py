@@ -94,14 +94,48 @@ def load_model_config(config_path):
     return config
 
 
+def platform_environment():
+    """读取 G720 平台配置,生成进入容器时使用的公共环境变量."""
+    config = yaml.safe_load(
+        (REPO_ROOT / "configs/platforms/genio_720.yaml").read_text(encoding="utf-8"))
+    toolchain = config["toolchain"]
+    sdk = Path(os.environ.get("MTK_NP_ROOT") or toolchain["sdk_root"])
+    ncc = Path(os.environ.get("NCC_ROOT") or sdk / "neuron_sdk/host")
+    defaults = {
+        "MTK_CONTAINER_NAME": toolchain["container_name"],
+        "MTK_HOST_SDK_ROOT": toolchain["host_sdk_root"],
+        "MTK_NP_ROOT": sdk,
+        "NCC_ROOT": ncc,
+        "MTK_NCC_BIN": ncc / "bin",
+        "MTK_NCC_LIB": ncc / "lib",
+        "MTK_NEURON_INCLUDE": ncc / "include",
+        "MTK_G720_CPP_TOOLCHAIN_ROOT": toolchain["cpp_toolchain_root"],
+        "CROSS_CXX": toolchain["cross_cxx"],
+        "MTK_BOARD_HOST": config["board_host"],
+        "MTK_BOARD_ROOT": config["board_root"],
+        "MTK_BOARD_OPEN_MODELS_ROOT": config["board_open_models_root"],
+        "MTK_BOARD_DATASETS_ROOT": config["board_datasets_root"],
+        "MTK_BOARD_MODELZOO_ROOT": config["board_modelzoo_root"],
+    }
+    return {name: os.environ.get(name) or value for name, value in defaults.items()}
+
+
 def main():
     """输出经过 Shell 转义的变量,供 Bash 入口加载."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path)
+    parser.add_argument("--model-config", type=Path)
+    parser.add_argument("--print-build-dir", type=Path, metavar="MODEL_CONFIG",
+                        help="只输出模型配置对应的构建目录.")
     args = parser.parse_args()
+    if args.print_build_dir:
+        config = load_model_config(args.print_build_dir)
+        print(Path(config["model"]["output_dir"]) / "build")
+        return
     roots = storage_roots()
     values = {"MTK_MODEL_STORAGE_ROOT": roots["models_root"],
               "MTK_DATASET_ROOT": roots["dataset_root"]}
+    values.update(platform_environment())
     config_path = Path(os.environ.get(
         "MTK_STORAGE_CONFIG", REPO_ROOT / "configs/storage.local.json"))
     if config_path.is_file():
@@ -110,6 +144,9 @@ def main():
             values["MTK_G720_IMAGE"] = config["container_image"]
     if args.model:
         values["MODEL_ASSETS_DIR"] = model_storage(args.model)
+    if args.model_config:
+        model_config = load_model_config(args.model_config)
+        values["MODEL_BUILD_DIR"] = Path(model_config["model"]["output_dir"]) / "build"
     for name, value in values.items():
         print(f"export {name}={shlex.quote(str(value))}")
 

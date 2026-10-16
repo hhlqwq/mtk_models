@@ -76,7 +76,7 @@ WikiText2 使用 test 前 128 行原始文本,不加特殊 Token,每块 128 Toke
 
 ## 执行与产物
 
-公共脚本统一位于仓库 `tools/llm/`.在 Ubuntu89 仓库调用 `bash models/gen_ai/llm/minicpm5_2b/deploy/run_native.sh STAGE`,阶段为 `prepare`、`calibrate`、`quantize`、`shape`、`compile`.
+公共脚本统一位于仓库 `tools/llm/`.在编译容器的项目根目录调用 `bash models/gen_ai/llm/minicpm5_2b/deploy/run_native.sh STAGE`,阶段为 `prepare`、`calibrate`、`quantize`、`shape`、`compile`.
 
 常规入口默认 `WEIGHT_OPTIMIZATION=none`,不默认开启长耗时优化.当前交付模型使用归档的 16 样本、分阶段 Hessian 配方;直接运行默认入口不会生成相同模型.量化记录须保存实际优化分片、样本数、累计层误差开关和旋转配置.测试集不参与校准.
 
@@ -84,10 +84,10 @@ WikiText2 使用 test 前 128 行原始文本,不加特殊 Token,每块 128 Toke
 
 独立 tokenizer 副本仅转换 BPE merges 序列化格式.校准配置使用单 EOS=130073,运行保留官方停止 Token 1/130073,默认 enable_thinking=false.
 
-工具归档目录: `/data/users/hailong.he/data/MTKG720/GAI_Toolkit/MiniCPM5-2B/`,明确标为项目适配脚本,不是 MTK 官方 MiniCPM5 专用 Toolkit.
+项目适配工具的归档位置由本地记录维护,这些脚本不是 MTK 官方 MiniCPM5 专用 Toolkit.
 
 最终 NAS 根目录采用用户指定的 G720 外部 `models/` 目录,模型包相对路径为 `gen_ai/llm/minicpm5_2b/minicpm5-2b/`.保留该模型目录已有的来源记录,复制后逐文件核对 SHA256,记录在模型包的 `delivery_verification.json` 中.服务器模型可运行,精度尚未通过质量验收.
 
 ## 模型资源路径
 
-89 编译主机通过不提交 Git 的 `configs/storage.local.json` 读取 `models_root` 和 `dataset_root`.本模型资源根目录为 `models_root/gen_ai/llm/minicpm5_2b/`: `original/` 保存官方模型,`native/` 保存当前转换、量化和校准资源,`compiled/` 保存编译包归档.原生入口自动读取这些配置,实际完整路径仅保存本地.现有交付包路径按上文记录使用.仓库中的 `models/` 只保留源码、文档和公开来源记录.
+通过不提交 Git 的 `configs/storage.local.json` 读取 `models_root` 和 `dataset_root`.本模型资源根目录为 `models_root/gen_ai/llm/minicpm5_2b/`: `original/` 保存官方模型,`native/` 保存当前转换、量化和校准资源,`compiled/` 保存编译包归档.原生入口自动读取这些配置,实际完整路径仅保存本地.现有交付包路径按上文记录使用.仓库中的 `models/` 只保留源码、文档和公开来源记录.

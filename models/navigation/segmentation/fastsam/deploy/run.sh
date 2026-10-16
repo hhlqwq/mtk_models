@@ -28,6 +28,7 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
 else
     # 编译容器: 各 Python 文件读取 YAML 并直接执行当前步骤.
     CONFIG="${SCRIPT_DIR}/../config.yaml"
+    MODEL_BUILD_DIR="$(python3 "${MTK_MODELS_ROOT:?请先通过 docker/enter_container.sh 进入容器}/tools/storage.py" --print-build-dir "${CONFIG}")"
     echo "[容器 1/6] 导出 FP32 ONNX."
     python3 "${SCRIPT_DIR}/host/export_model.py" --config "${CONFIG}"
     echo "[容器 2/6] INT8 校准与量化."
@@ -37,7 +38,7 @@ else
     echo "[容器 4/6] 全量 ONNX 精度评测."
     python3 "${SCRIPT_DIR}/host/evaluate_onnx.py" --config "${CONFIG}"
     echo "[容器 5/6] 交叉编译板端 C++ 程序."
-    python3 "${SCRIPT_DIR}/host/build_cpp.py" --config "${CONFIG}"
+    make -C "${SCRIPT_DIR}/board" BUILD_DIR="${MODEL_BUILD_DIR}"
     echo "[容器 6/6] 上传到开发板."
     python3 "${SCRIPT_DIR}/host/upload.py" --config "${CONFIG}"
 fi
