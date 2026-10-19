@@ -13,6 +13,8 @@ from tools.evaluation import (
     add_test_argument, is_test, matching_reference, result_status, scope_metadata,
 )
 
+from tools.board import configure_parser
+
 
 def require_count(report: dict, key: str, count: int) -> None:
     """验证全量样本计数,避免不完整结果被标为成功."""
@@ -113,8 +115,13 @@ def summarize(args: argparse.Namespace) -> None:
             if not math.isfinite(value) or value <= 0:
                 raise ValueError(f"{key} 无效.")
     reference = float(args.reference) if args.reference else None
+    if args.reference_report and args.reference_report.is_file():
+        report = read_json(args.reference_report)
+        if matching_reference(report):
+            reference = report["accuracy"]
+            args.reference_source = report["source"]
     if is_test():
-        reference_report = read_json(args.reference_report) if args.reference_report else {}
+        reference_report = read_json(args.reference_report) if args.reference_report and args.reference_report.is_file() else {}
         if not matching_reference(reference_report):
             reference = None
     if reference is not None and (not math.isfinite(reference) or reference < 0 or (
@@ -161,6 +168,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reference-source", default="用户提供的同协议参考基准")
     parser.add_argument("--reference-report", type=Path, help="参考报告,快速模式须匹配子集指纹.")
     add_test_argument(parser)
+    configure_parser(parser, __file__, {
+        "model": lambda c: c.config["name"],
+        "work_dir": lambda c: c.work,
+        "output": lambda c: c.result / "summary.json",
+        "run_id": lambda c: c.run_id,
+        "reference_report": lambda c: c.root / "models" / ("onnx_reference_test.json" if is_test() else "onnx_reference.json"),
+    })
     return parser.parse_args()
 
 

@@ -1,0 +1,16 @@
+# whisper_tiny 模型参数.公共 SDK、编译器和板端地址由 Docker 环境加载.
+model:
+  # 相对于外部模型资源目录的官方原始权重.
+  weights: tiny.pt
+  # 最终模型保存在此处,中间文件集中到 build.
+  output_dir: .
+data:
+  # 相对于本地 dataset_root 的评测数据集.
+  dataset_dir: LibriSpeech/test-clean
+board:
+  # 相对于公共板端部署根目录和数据集根目录.
+  deploy_dir: whisper_tiny
+  dataset_dir: librispeech/test-clean
+  results_dir: results
+conversion:
+  max_tokens: 128

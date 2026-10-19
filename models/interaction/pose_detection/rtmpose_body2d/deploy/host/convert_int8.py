@@ -14,6 +14,9 @@ from tqdm import tqdm
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from rtmpose_utils import load_person_samples, preprocess_image
 
+from tools.deploy import configure_parser
+from tools.storage import storage_roots
+
 
 def calibration_data(
         image_dir: Path, annotations: Path, sample_count: int,
@@ -55,6 +58,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--samples", type=int, default=100)
     parser.add_argument("--offset", type=int, default=0)
+    configure_parser(parser, __file__, {
+        "onnx": lambda c: c.output / "model_mtk_compatible.onnx",
+        "image_dir": lambda c: c.calibration,
+        "annotations": lambda c: storage_roots()["dataset_root"] / c.config["data"]["calibration_annotations"],
+        "samples": lambda c: c.config["data"]["calibration_samples"],
+        "output": lambda c: c.work / "model_int8.tflite",
+    })
     return parser.parse_args()
 
 

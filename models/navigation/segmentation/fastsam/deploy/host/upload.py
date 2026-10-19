@@ -43,7 +43,7 @@ def upload(config: dict, paths: dict, config_path: Path) -> None:
     platform_path = paths["repo"] / "configs/platforms/genio_720.yaml"
     platform = yaml.safe_load(platform_path.read_text(encoding="utf-8"))
     board_host = os.environ.get("MTK_BOARD_HOST", platform["board_host"])
-    destination = board["deploy_dir"] + ("_test" if is_test() else "")
+    destination = board["deploy_dir"]
     if not re.fullmatch(r"/[A-Za-z0-9_./-]+", destination) or any(
             part in ("", ".", "..") for part in destination.split("/")[1:]):
         raise ValueError("board.deploy_dir 必须是无空格、空段或上级引用的绝对目录.")
@@ -66,7 +66,7 @@ def upload(config: dict, paths: dict, config_path: Path) -> None:
                   *[paths["repo"] / "tools" / name for name in
                     ("render_examples.py", "summarize_board_result.py", "model_size.py")]],
         "board/tools": [paths["repo"] / "tools" / name for name in
-                        ("__init__.py", "files.py", "process.py", "evaluation.py")],
+                        ("__init__.py", "board.py", "files.py", "process.py", "evaluation.py")],
         "examples/input": [samples,
                            *sorted((paths["model"] / "examples/input").glob("sample_*.jpg"))],
     }

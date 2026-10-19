@@ -12,6 +12,7 @@ from transformers import AutoTokenizer
 import yaml
 
 from tools.files import copy_public_tools, sha256, single_file
+from tools.storage import REPO_ROOT
 from tools.llm.package import graph_contract, write_run_script
 
 
@@ -72,7 +73,7 @@ def package(work, output, prefill, quantized_prefix=None):
                      (embedding, "tokenizer/embedding_int16.bin")):
         print(f"[打包] {dst}", flush=True)
         shutil.copyfile(src, output / dst)
-    shutil.copyfile(Path(__file__).resolve().parents[6] / "tools/llm/evaluate_native.py",
+    shutil.copyfile(REPO_ROOT / "tools/llm/evaluate_native.py",
                     output / "scripts/evaluate_native.py")
     tokenizer = json.loads((model / "tokenizer.json").read_text())
     with (output / "tokenizer/vocab.txt").open("wb") as stream:
@@ -111,7 +112,7 @@ def package(work, output, prefill, quantized_prefix=None):
         yaml.safe_dump({"modelOptions": options, "runtimeOptions": runtime},
                        sort_keys=False, allow_unicode=True))
     write_run_script(output)
-    copy_public_tools(output / "scripts/tools", ("files", "evaluation"))
+    copy_public_tools(output / "scripts/tools", ("files", "evaluation", "board", "process"))
     shutil.copyfile(model / "LICENSE", output / "LICENSE")
     (output / "README.md").write_text(
         f"# DeepSeek-R1-Distill-Qwen-1.5B\n\n"
@@ -229,7 +230,7 @@ def record_board_results(work, output, results):
         }
     # 只统计交付目录中的文件,不执行模型或重复质量评测.
     metrics["model_size"] = json.loads(subprocess.check_output(
-        [sys.executable, str(Path(__file__).resolve().parents[6] /
+        [sys.executable, str(REPO_ROOT /
                               "tools/model_size.py"),
          "--models-dir", str(output), "--include", "1024c/*.dla",
          "--include", "tokenizer/embedding*.bin",
@@ -237,7 +238,7 @@ def record_board_results(work, output, results):
     (output / "results/summary.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
     write_run_script(output)
-    copy_public_tools(output / "scripts/tools", ("files", "evaluation"))
+    copy_public_tools(output / "scripts/tools", ("files", "evaluation", "board", "process"))
     readme = (output / "README.md").read_text().replace(
         "当前打包状态为 compiled_pending_board,板端结果需另行记录.",
         "当前状态为 board_verified,仅表示板端推理与双语样例完成,正式质量待评测.")

@@ -89,3 +89,6 @@ MMLU 官方数据来源为 https://huggingface.co/datasets/cais/mmlu ,固定 rev
 ## 模型资源路径
 
 原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/gen_ai/llm/deepseek_r1_distill_qwen_1_5b`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.
+
+
+模型参数读取根目录的 `config.yaml`,公共工具链环境在进入 Docker 时自动加载.部署入口只编排独立步骤,C++ 使用 `deploy/board/Makefile` 构建.板端沿用原部署目录,快速结果位于 `results/运行编号_test/`.

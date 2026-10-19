@@ -7,13 +7,15 @@ from pathlib import Path
 import torch
 
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[6] / "tools"))
-from storage import model_storage
+from tools.storage import model_storage
 
 SOURCE_ROOT = model_storage(Path(__file__).resolve().parents[2]) / "upstream"
 sys.path.insert(0, str(SOURCE_ROOT))
 
 from mobilefacenet import MobileFaceNet  # noqa: E402
+
+from tools.deploy import configure_parser
+from tools.storage import storage_roots
 
 
 def export_model(weights: Path, output: Path) -> None:
@@ -39,6 +41,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--weights", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    configure_parser(parser, __file__, {
+        "weights": lambda c: Path(c.config["model"]["weights"]),
+        "output": lambda c: c.output / "model_fp32.onnx",
+    })
     args = parser.parse_args()
     export_model(args.weights, args.output)
 

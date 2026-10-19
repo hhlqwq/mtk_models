@@ -9,10 +9,12 @@ import shutil
 from transformers import AutoTokenizer
 
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[6] / "tools"))
-from storage import reuse_weight
+from tools.storage import reuse_weight
 
 from tools.files import sha256
+
+from tools.deploy import configure_parser
+from tools.llm.native import settings
 
 
 def prepare(source, output, context, mask_value=-100.0, rotate=False):
@@ -126,7 +128,16 @@ def main():
     parser.add_argument("--context", type=int, default=1024)
     parser.add_argument("--mask-value", type=float, default=-100.0)
     parser.add_argument("--rotate", action="store_true")
+    configure_parser(parser, __file__, {
+        "source": lambda c: settings(c).source,
+        "output": lambda c: settings(c).work,
+        "context": lambda c: settings(c).context,
+        "mask_value": lambda c: settings(c).mask,
+        "rotate": lambda c: bool(settings(c).rotate),
+        "calibration_train": lambda c: Path(settings(c).train) if settings(c).train else None,
+    })
     args = parser.parse_args()
+    (args.output / "calibration_complete.txt").unlink(missing_ok=True)
     prepare(args.source, args.output, args.context, args.mask_value, args.rotate)
 
 

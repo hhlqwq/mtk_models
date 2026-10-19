@@ -5,6 +5,8 @@ from datetime import date
 import json
 from pathlib import Path
 
+from tools.board import configure_parser
+
 
 def collect_model_size(models_dir: Path, includes: list[str] | None = None,
                        source: str = "board_file_stat") -> dict:
@@ -77,6 +79,13 @@ def main() -> None:
     parser.add_argument("--include", action="append")
     parser.add_argument("--source", default="board_file_stat")
     parser.add_argument("--summary", type=Path)
+    parser.add_argument("--run-id")
+    configure_parser(parser, __file__, {
+        "include": lambda c: ["model_" + c.config["conversion"]["precision"] + ".dla"]
+                   if c.config["name"] == "yamnet" else None,
+        "models_dir": lambda c: c.root / "models",
+        "summary": lambda c: c.result / ("board_summary.json" if c.config["name"] == "deepseek_r1_distill_qwen_1_5b" else "summary.json"),
+    })
     args = parser.parse_args()
     size = collect_model_size(args.models_dir, args.include, args.source)
     if args.summary is None:

@@ -7,7 +7,7 @@ model:
   output_dir: .
 
 data:
-  # 相对于本地配置的 dataset_root,89 主机与 Docker 使用相同挂载路径.
+  # 相对于本地配置的 dataset_root,编译容器使用此路径.
   dataset_dir: coco/coco_val2017
   # INT8 校准图片目录,相对于 dataset_dir.
   calibration_dir: images
@@ -18,8 +18,8 @@ data:
 
 board:
   # 模型、程序和配置的部署目录.
-  deploy_dir: /root/hailong.he/open_models/fastsam
+  deploy_dir: fastsam
   # 板端同协议 COCO val2017 数据集,包含 images/ 与 annotations/.
-  dataset_dir: /root/hailong.he/datasets/coco/val2017
+  dataset_dir: coco/val2017
   # 结果相对于 deploy_dir 保存,每次运行使用独立的运行编号.
   results_dir: results

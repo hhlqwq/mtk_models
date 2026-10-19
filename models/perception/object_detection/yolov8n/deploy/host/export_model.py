@@ -18,6 +18,9 @@ import ultralytics
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from yolov8_utils import OUTPUT_NAMES, OUTPUT_SHAPES, decode_heads, preprocess
 
+from tools.deploy import configure_parser
+from tools.storage import storage_roots
+
 
 def raw_forward(self, features):
     """导出六个原始检测头,DFL 和 NMS 留在 CPU."""
@@ -62,6 +65,11 @@ def main():
     parser.add_argument("--weights", type=Path, required=True)
     parser.add_argument("--image", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    configure_parser(parser, __file__, {
+        "weights": lambda c: Path(c.config["model"]["weights"]),
+        "image": lambda c: c.calibration / "000000000139.jpg",
+        "output_dir": lambda c: c.output,
+    })
     args = parser.parse_args()
     torch.set_num_threads(2)
     args.output_dir.mkdir(parents=True, exist_ok=True)

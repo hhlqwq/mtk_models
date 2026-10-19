@@ -12,6 +12,8 @@ from transformers import AutoModelForCausalLM
 
 from tools.files import sha256
 
+from tools.deploy import configure_parser
+
 
 def stable_rms_norm(hidden, norm):
     """先按幅度缩放再计算 RMSNorm,保持公式且避免 FP16 平方溢出."""
@@ -163,6 +165,11 @@ def parse_args():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--context", type=int, default=1024)
     parser.add_argument("--probe", action="store_true")
+    configure_parser(parser, __file__, {
+        "source": lambda c: Path(c.config["model"]["source"]),
+        "output": lambda c: c.output,
+        "context": lambda c: c.config["conversion"]["context"],
+    })
     return parser.parse_args()
 
 

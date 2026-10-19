@@ -9,6 +9,8 @@ import numpy as np
 
 from tools.files import read_json
 
+from tools.board import configure_parser
+
 
 BODY_LINKS = ((0, 1), (0, 2), (1, 3), (2, 4), (5, 6), (5, 7),
               (7, 9), (6, 8), (8, 10), (5, 11), (6, 12), (11, 12),
@@ -231,6 +233,15 @@ def main() -> None:
     parser.add_argument("--model", choices=adapters, required=True)
     for name in ("input-dir", "output-dir", "work-dir", "dataset-root", "models-dir"):
         parser.add_argument(f"--{name}", type=Path, required=True)
+    parser.add_argument("--run-id")
+    configure_parser(parser, __file__, {
+        "model": lambda c: c.config["name"],
+        "input_dir": lambda c: c.root / "examples/input",
+        "output_dir": lambda c: c.result / "examples/output",
+        "work_dir": lambda c: c.work,
+        "dataset_root": lambda c: c.dataset,
+        "models_dir": lambda c: c.root / "models",
+    })
     args = parser.parse_args()
     manifest = read_json(args.input_dir / "samples.json")
     args.output_dir.mkdir(parents=True, exist_ok=False)

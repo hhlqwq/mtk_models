@@ -11,6 +11,7 @@ from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
 from tools.evaluation import (
+    matching_reference,
     add_test_argument, coco_ids, is_test, result_status, scope_metadata,
 )
 
@@ -76,6 +77,11 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
         raise ValueError("峰值 RSS 无效.")
     peak_rss_mib = None if peak_rss is None else float(peak_rss) / 1024.0
     fp32_map = None if is_test() else args.fp32_map
+    reference_path = getattr(args, "fp32_report", None)
+    if reference_path and reference_path.is_file():
+        report = json.loads(reference_path.read_text())
+        if matching_reference(report):
+            fp32_map = report["map_50_95"]
     if fp32_map is not None and (
             not math.isfinite(fp32_map) or not 0.0 <= fp32_map <= 1.0):
         raise ValueError("FP32 mAP 必须是 0 到 1 之间的数值.")
@@ -129,5 +135,6 @@ def parse_args(description=__doc__) -> argparse.Namespace:
     parser.add_argument("--fp32-source", default="用户提供的同协议 FP32 基准")
     parser.add_argument("--metrics", type=Path, required=True)
     parser.add_argument("--run-id")
+    parser.add_argument("--fp32-report", type=Path)
     add_test_argument(parser)
     return parser.parse_args()

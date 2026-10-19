@@ -91,3 +91,6 @@ WikiText2 使用 test 前 128 行原始文本,不加特殊 Token,每块 128 Toke
 ## 模型资源路径
 
 通过不提交 Git 的 `configs/storage.local.json` 读取 `models_root` 和 `dataset_root`.本模型资源根目录为 `models_root/gen_ai/llm/minicpm5_2b/`: `original/` 保存官方模型,`native/` 保存当前转换、量化和校准资源,`compiled/` 保存编译包归档.原生入口自动读取这些配置,实际完整路径仅保存本地.现有交付包路径按上文记录使用.仓库中的 `models/` 只保留源码、文档和公开来源记录.
+
+
+模型与原生转换参数读取根目录的 `config.yaml`,公共工具链环境在进入 Docker 时自动加载.`deploy/run_native.sh` 保留原阶段名称,各阶段对应独立 Python 文件.

@@ -6,6 +6,8 @@ from pathlib import Path
 
 import cv2
 
+from tools.board import configure_parser
+
 
 def draw_detection(image, row, label, occupied):
     """绘制真实检测框,避开已有标签,使密集场景的类别与分数可读."""
@@ -44,6 +46,12 @@ def main():
     parser.add_argument("--input-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--work-dir", type=Path, required=True)
+    parser.add_argument("--run-id")
+    configure_parser(parser, __file__, {
+        "input_dir": lambda c: c.root / "examples/input",
+        "output_dir": lambda c: c.result / "examples/output",
+        "work_dir": lambda c: c.work,
+    })
     args = parser.parse_args()
     manifest = json.loads((args.input_dir / "samples.json").read_text(encoding="utf-8"))
     selected = {sample["image_id"]: [] for sample in manifest["samples"]}

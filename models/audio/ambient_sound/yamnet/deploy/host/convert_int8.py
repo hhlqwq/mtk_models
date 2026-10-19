@@ -15,6 +15,8 @@ from audio_utils import load_records, load_waveform, preprocess
 
 from tools.quantization import tensor_metadata
 
+from tools.deploy import configure_parser
+
 
 def audit_w8a16(reader, tail_only=False):
     """检查全 W8A16 或第12层点卷积输出起的混合精度,同时记录偏置精度."""
@@ -83,19 +85,27 @@ def main():
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--precision", choices=["fp16", "int8", "w8a16", "int8_tail16"],
                         default="w8a16")
-    parser.add_argument("--work-dir", type=Path, default=Path(
-        f"/tmp/hailongcodex/{date.today().isoformat()}/yamnet/formal_int8_tail16"))
+    parser.add_argument("--work-dir", type=Path)
+    parser.add_argument("--output-dir", type=Path)
+    configure_parser(parser, __file__, {
+        "models_dir": lambda ctx: ctx.output,
+        "dataset": lambda ctx: ctx.dataset,
+        "output_dir": lambda ctx: ctx.work,
+        "precision": lambda ctx: ctx.config["conversion"]["precision"],
+    })
     args = parser.parse_args()
+    args.output_dir = args.output_dir or args.models_dir
+    args.output_dir.mkdir(parents=True, exist_ok=True)
     if args.precision == "fp16":
         converter = mtk_converter.OnnxConverter.from_model_proto_file(
             str(args.models_dir / "model_fp32.onnx"))
         converter.convert_float32_weights_to_float16 = True
-        converter.convert_to_tflite(str(args.models_dir / "model_fp16.tflite"))
-        with (args.models_dir / "runtime_config_fp16.csv").open("w", newline="") as stream:
+        converter.convert_to_tflite(str(args.output_dir / "model_fp16.tflite"))
+        with (args.output_dir / "runtime_config_fp16.csv").open("w", newline="") as stream:
             writer = csv.writer(stream)
             writer.writerow([1, 0, "fp16"])
             writer.writerow([1, 0, "fp16"])
-        (args.models_dir / "quantization_fp16.json").write_text(json.dumps({
+        (args.output_dir / "quantization_fp16.json").write_text(json.dumps({
             "precision": "fp16", "converter": mtk_converter.__version__,
             "weights": "FP16", "ncc_flags": ["--relax-fp32", "--suppress-input",
                                                "--suppress-output", "--disallow-bridge"],
@@ -132,7 +142,7 @@ def main():
     if args.precision == "int8_tail16":
         converter.allow_asym16_quantization = True
         configure_tail16(converter, args.models_dir, args.work_dir)
-    output = args.models_dir / f"model_{args.precision}.tflite"
+    output = args.output_dir / f"model_{args.precision}.tflite"
     converter.convert_to_tflite(str(output))
     reader = mtk_converter.TFLiteParser(str(output))
     inputs, outputs = reader.get_input_tensor_details(), reader.get_output_tensor_details()
@@ -145,14 +155,14 @@ def main():
              if args.precision in ("w8a16", "int8_tail16") else None)
     if contract[0]["shape"] != [1, 1, 96, 64] or contract[1]["shape"] != [1, 521]:
         raise ValueError(f"输入输出形状不匹配: {contract}.")
-    with (args.models_dir / f"runtime_config_{args.precision}.csv").open("w", newline="") as stream:
+    with (args.output_dir / f"runtime_config_{args.precision}.csv").open("w", newline="") as stream:
         writer = csv.writer(stream)
         for item in contract:
             row = [item["scale"], item["zero_point"]]
             if item["dtype"] == "int16":
                 row.append("w8a16")
             writer.writerow(row)
-    (args.models_dir / f"quantization_{args.precision}.json").write_text(json.dumps({
+    (args.output_dir / f"quantization_{args.precision}.json").write_text(json.dumps({
         "precision": args.precision, "precision_audit": audit,
         "input": contract[0], "output": contract[1], "calibration_fold": 1,
         "calibration_clips": [path.name for path in paths], "patches": 200,

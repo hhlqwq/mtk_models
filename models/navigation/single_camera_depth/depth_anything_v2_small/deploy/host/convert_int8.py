@@ -14,6 +14,9 @@ from depth_utils import INPUT_SIZE, preprocess
 
 from tools.quantization import tensor_metadata
 
+from tools.deploy import configure_parser
+from tools.storage import storage_roots
+
 
 def convert_model(onnx: Path, image_dir: Path, output: Path,
                   samples: int) -> None:
@@ -67,6 +70,12 @@ def main() -> None:
     parser.add_argument("--image-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--samples", type=int, default=16)
+    configure_parser(parser, __file__, {
+        "onnx": lambda c: c.output / "model_fp32.onnx",
+        "image_dir": lambda c: c.calibration,
+        "samples": lambda c: c.config["data"]["calibration_samples"],
+        "output": lambda c: c.work / "model_int8.tflite",
+    })
     args = parser.parse_args()
     convert_model(args.onnx, args.image_dir, args.output, args.samples)
 

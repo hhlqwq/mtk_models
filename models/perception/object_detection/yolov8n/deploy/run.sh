@@ -1,178 +1,30 @@
 #!/usr/bin/env bash
-# 编译步骤在容器内执行,请先从仓库根目录运行 bash docker/enter_container.sh.
-# 两步交付: 编译主机转换并上传,开发板执行全量测试.
+# 先通过 docker/enter_container.sh 进入编译容器; 板端直接运行上传的同一入口.
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# 默认全量,-test 只缩小评测数据,不改变校准或模型转换配置.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export MTK_EVAL_TEST=0
-EVAL_PATH_SUFFIX=""
 if (( $# == 1 )) && [[ "$1" == "-test" ]]; then
     export MTK_EVAL_TEST=1
-    EVAL_PATH_SUFFIX="_test"
-    shift
-    EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-    [[ "${EVAL_RUN_ID}" == test_* ]] || EVAL_RUN_ID="test_${EVAL_RUN_ID}"
-    export EVAL_RUN_ID
-    echo "[模式] 固定小子集流程验证,不代表全量精度."
-fi
-if (( $# != 0 )); then
+elif (( $# != 0 )); then
     echo "[错误] 用法: bash run.sh [-test]" >&2
     exit 2
 fi
-
-if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
-    source "${SCRIPT_DIR}/board_paths.conf"
-    RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-    [[ "${RUN_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
-    RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
-    RUN_DIR="${RESULT_DIR}/work"
-    test ! -e "${RESULT_DIR}"
-    test -s "${BOARD_DATASET_DIR}/annotations/instances_val2017.json"
-    test "$(find "${BOARD_DATASET_DIR}/images" -maxdepth 1 -name '*.jpg' | wc -l)" -eq 5000
-    python3 -c 'import cv2, numpy, pycocotools'
-    mkdir -p "${RESULT_DIR}"
-    echo "[开发板 1/3] 预热并执行 COCO val2017 全量 C++ NPU 推理."
-    "${SCRIPT_DIR}/board/yolov8n_board_eval" \
-        --model "${SCRIPT_DIR}/models/model_int8.dla" \
-        --config "${SCRIPT_DIR}/models/runtime_config.csv" \
-        --images "${BOARD_DATASET_DIR}/images" --output-dir "${RUN_DIR}" \
-        --warmup 20 --confidence 0.001 --iou 0.6 --max-det 300 \
-        2>&1 | tee "${RESULT_DIR}/board_eval.log"
-    echo "[开发板 2/3] 校验本次样本覆盖并计算精度."
-    python3 "${SCRIPT_DIR}/board/evaluate_coco.py" \
-        --annotations "${BOARD_DATASET_DIR}/annotations/instances_val2017.json" \
-        --predictions "${RUN_DIR}/predictions.json" \
-        --processed-ids "${RUN_DIR}/processed_ids.txt" \
-        --timings "${RUN_DIR}/timing_summary_current_run.json" \
-        --fp32-map "${FP32_MAP}" --fp32-source "${FP32_SOURCE}" \
-        --metrics "${RESULT_DIR}/summary.json" --run-id "${RUN_ID}" \
-        2>&1 | tee "${RESULT_DIR}/cocoeval.log"
-    echo "[开发板 3/3] 绘制实际检测结果,保留本次运行证据."
-    python3 "${SCRIPT_DIR}/board/render_examples.py" \
-        --input-dir "${SCRIPT_DIR}/examples/input" \
-        --output-dir "${RESULT_DIR}/examples/output" --work-dir "${RUN_DIR}"
-    sha256sum "${SCRIPT_DIR}/models/"* "${SCRIPT_DIR}/board/yolov8n_board_eval" \
-        > "${RESULT_DIR}/SHA256SUMS"
-    uname -a > "${RESULT_DIR}/system.txt"
-    echo "[OK] 板端汇总: ${RESULT_DIR}/summary.json"
-    # 只读取实际部署文件大小,以 MB 补充汇总.
-    python3 "${SCRIPT_DIR}/board/model_size.py" \
-        --models-dir "${SCRIPT_DIR}/models" --include "model_int8.dla" \
-        --summary "${RESULT_DIR}/summary.json"
-    exit 0
+export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
+if [[ "${MTK_EVAL_TEST}" == 1 && "${EVAL_RUN_ID}" != *_test ]]; then
+    export EVAL_RUN_ID="${EVAL_RUN_ID}_test"
 fi
 
-# 编译主机配置区: 默认复用现有 Genio 720 工具链和 COCO 数据.
-MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
-MODEL_WEIGHTS="${YOLOV8_WEIGHTS:-${MODEL_ASSETS_DIR}/yolov8n.pt}"
-MODEL_OUTPUT_DIR="${MODEL_ASSETS_DIR}"
-CALIBRATION_DIR="${YOLOV8_CALIBRATION_DIR:-${MTK_DATASET_ROOT}/coco/coco_val2017/images}"
-DATASET_DIR="${CALIBRATION_DIR%/images}"
-BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yolov8n${EVAL_PATH_SUFFIX}"
-
-NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
-TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
-NEURON_INCLUDE="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
-BOARD_HOST="root@192.168.0.92"
-BOARD_DEPLOY_DIR="/root/hailong.he/open_models/yolov8n${EVAL_PATH_SUFFIX}"
-BOARD_DATASET_DIR="/root/hailong.he/datasets/coco/val2017"
-SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
-test -s "${MODEL_WEIGHTS}"
-test -s "${DATASET_DIR}/annotations/instances_val2017.json"
-echo '31e20dde3def09e2cf938c7be6fe23d9150bbbe503982af13345706515f2ef95 '"${MODEL_WEIGHTS}" | sha256sum -c -
-mkdir -p "${BUILD_WORK_DIR}"
-
-# 从配置的数据集生成示例清单,仅写入仓库外的构建目录.
-mkdir -p "${BUILD_WORK_DIR}/examples"
-env PYTHONDONTWRITEBYTECODE=1 \
-    python "${MODEL_ROOT}/../../../../tools/prepare_examples.py" \
-    --model "yolov8n" --dataset-root "${DATASET_DIR}" \
-    --output "${BUILD_WORK_DIR}/examples/samples.json"
-
-echo "[容器 1/4] 离线导出、量化并编译 MDLA 5.3 模型."
-env MODEL_ROOT="${MODEL_ROOT}"  MODEL_WEIGHTS="${MODEL_WEIGHTS}" \
-     MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}"  CALIBRATION_DIR="${CALIBRATION_DIR}" \
-     BUILD_WORK_DIR="${BUILD_WORK_DIR}"  NCC_ROOT="${NCC_ROOT}" \
-     PYTHONDONTWRITEBYTECODE=1 bash -s <<'BUILD'
-set -euo pipefail
-mkdir -p "${BUILD_WORK_DIR}/tmp" "${BUILD_WORK_DIR}/cache"
-export TMPDIR="${BUILD_WORK_DIR}/tmp" XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
-cd "${BUILD_WORK_DIR}"
-python "${MODEL_ROOT}/deploy/host/export_model.py" --weights "${MODEL_WEIGHTS}" \
-    --image "${CALIBRATION_DIR}/000000000139.jpg" --output-dir "${MODEL_OUTPUT_DIR}"
-python "${MODEL_ROOT}/deploy/host/convert_int8.py" \
-    --onnx "${MODEL_OUTPUT_DIR}/model_fp32.onnx" --calibration-dir "${CALIBRATION_DIR}" \
-    --samples 100 --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
-export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
-"${NCC_ROOT}/bin/ncc-tflite" --arch=mdla5.3 --suppress-output --disallow-bridge \
-    "${MODEL_OUTPUT_DIR}/model_int8.tflite" -o "${MODEL_OUTPUT_DIR}/model_int8.dla"
-sha256sum "${MODEL_OUTPUT_DIR}/yolov8n.pt" "${MODEL_OUTPUT_DIR}/model_fp32.onnx" \
-    "${MODEL_OUTPUT_DIR}/model_int8.tflite" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
-    "${MODEL_OUTPUT_DIR}/runtime_config.csv" > "${MODEL_OUTPUT_DIR}/SHA256SUMS"
-BUILD
-
-echo "[容器 2/4] 交叉编译 C++ 板端评测程序."
-OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
-OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
-TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
-aarch64-linux-gnu-g++ -I"${MTK_MODELS_ROOT}" -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
-    -I"${OPENCV_BUILD}" -I"${OPENCV_SOURCE}/modules/core/include" \
-    -I"${OPENCV_SOURCE}/modules/imgproc/include" \
-    -I"${OPENCV_SOURCE}/modules/imgcodecs/include" -I"${NEURON_INCLUDE}" \
-    "${SCRIPT_DIR}/board/yolov8n_board_eval.cpp" \
-    "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
-    "${TARGET_LIBS}/libopencv_imgcodecs.so.409" \
-    "${TARGET_LIBS}/libopencv_imgproc.so.409" "${TARGET_LIBS}/libopencv_core.so.409" \
-    -Wl,--allow-shlib-undefined -pthread -ldl -o "${BUILD_WORK_DIR}/yolov8n_board_eval"
-
-echo "[容器 3/4] 评测同协议 PyTorch 和 ONNX 浮点基准."
-for backend in pytorch onnx; do
-    if [[ "${backend}" == pytorch ]]; then
-        INPUT_ARGS=(--weights "${MODEL_WEIGHTS}")
-    else
-        INPUT_ARGS=(--onnx "${MODEL_OUTPUT_DIR}/model_fp32.onnx")
-    fi
-    env PYTHONDONTWRITEBYTECODE=1 \
-        python "${SCRIPT_DIR}/host/evaluate_fp32.py" "${INPUT_ARGS[@]}" \
-        --dataset-root "${DATASET_DIR}" \
-        --output "${BUILD_WORK_DIR}/fp32_accuracy/${backend}/summary.json"
-done
-FP32_MAP="$(python -c \
-    'import json,sys; print(json.load(open(sys.argv[1]))["map_50_95"])' \
-    "${BUILD_WORK_DIR}/fp32_accuracy/onnx/summary.json")"
-FP32_SOURCE="本次 ONNX FP32 全量实测,COCO val2017,conf=0.001,IoU=0.6,max_det=300,单最佳类别"
-
-echo "[容器 4/4] 上传模型、程序、示例和板端配置."
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board' '${BOARD_DEPLOY_DIR}/examples/input'"
-scp "${SSH_OPTIONS[@]}" "${MODEL_OUTPUT_DIR}/model_int8.dla" \
-    "${MODEL_OUTPUT_DIR}/runtime_config.csv" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/"
-scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/yolov8n_board_eval" \
-    "${SCRIPT_DIR}/board/evaluate_coco.py" "${SCRIPT_DIR}/board/render_examples.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
-scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
-scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/examples/samples.json" \
-    "${MODEL_ROOT}/examples/input"/sample_*.jpg \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
-printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nFP32_MAP=%q\nFP32_SOURCE=%q\n' \
-    "${BOARD_DATASET_DIR}" "${BOARD_DEPLOY_DIR}/results" "${FP32_MAP}" "${FP32_SOURCE}" |
-    ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/yolov8n_board_eval'"
-# 上传统一大小记录工具,后续汇总自动保留模型大小.
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/model_size.py"
-
-
-# 公共模块随部署包放在入口旁,板端不需要安装或访问代码仓库.
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "mkdir -p '${BOARD_DEPLOY_DIR}/board/tools'"
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/__init__.py" \
-    "${MODEL_ROOT}/../../../../tools/evaluation.py" \
-    "${MODEL_ROOT}/../../../../tools/files.py" \
-    "${MODEL_ROOT}/../../../../tools/coco.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/tools/"
-
-echo "[NEXT] 开发板执行: bash '${BOARD_DEPLOY_DIR}/run.sh' $([[ "${MTK_EVAL_TEST}" == 1 ]] && echo -test)"
+if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
+    python3 "${SCRIPT_DIR}/board/infer.py"
+    python3 "${SCRIPT_DIR}/board/render_examples.py" --config "${SCRIPT_DIR}/config.json" --run-id "${EVAL_RUN_ID}"
+    python3 "${SCRIPT_DIR}/board/model_size.py" --config "${SCRIPT_DIR}/config.json" --run-id "${EVAL_RUN_ID}" --include "*.dla"
+else
+    : "${MTK_MODELS_ROOT:?请先通过 docker/enter_container.sh 进入容器}"
+    python3 "${SCRIPT_DIR}/host/export_model.py"
+    python3 "${SCRIPT_DIR}/host/convert_int8.py"
+    python3 "${SCRIPT_DIR}/host/compile_model.py"
+    python3 "${SCRIPT_DIR}/host/evaluate_onnx.py"
+    make -C "${SCRIPT_DIR}/board"
+    python3 "${SCRIPT_DIR}/host/upload.py"
+fi

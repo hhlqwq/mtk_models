@@ -9,6 +9,9 @@ import torch
 import whisper
 from whisper.model import MultiHeadAttention
 
+from tools.deploy import configure_parser
+from tools.storage import storage_roots
+
 
 MAX_DECODE_TOKENS = 200
 MASK_NEGATIVE = -100.0
@@ -269,6 +272,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weights", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--max-tokens", type=int, default=MAX_DECODE_TOKENS)
+    configure_parser(parser, __file__, {
+        "weights": lambda c: Path(c.config["model"]["weights"]),
+        "output_dir": lambda c: c.output,
+        "max_tokens": lambda c: c.config["conversion"]["max_tokens"],
+    })
     return parser.parse_args()
 
 

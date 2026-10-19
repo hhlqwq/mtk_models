@@ -76,21 +76,31 @@ def model_storage(model_directory):
 
 
 def load_model_config(config_path):
-    """读取 FastSAM YAML,将资源相对路径映射到本地存储配置."""
-
-    config_path = Path(config_path)
+    """解析各模型 YAML,公共环境与板端根路径统一来自平台配置."""
+    config_path = Path(config_path).resolve()
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     roots = storage_roots()
-    os.environ["MTK_MODEL_STORAGE_ROOT"] = str(roots["models_root"])
-    os.environ["MTK_DATASET_ROOT"] = str(roots["dataset_root"])
     model_root = model_storage(config_path.parent)
-    for key in ("weights", "output_dir"):
-        value = Path(config["model"][key])
-        if not value.is_absolute():
-            config["model"][key] = str(model_root / value)
-    dataset = Path(config["data"]["dataset_dir"])
-    if not dataset.is_absolute():
-        config["data"]["dataset_dir"] = str(roots["dataset_root"] / dataset)
+    config["name"] = config_path.parent.name
+    config["model"].setdefault("output_dir", ".")
+    for key in ("weights", "output_dir", "source", "source_archive", "patch_archive", "onnx"):
+        value = config["model"].get(key)
+        if value:
+            path = Path(value)
+            config["model"][key] = str(path if path.is_absolute() else model_root / path)
+    dataset = config.get("data", {}).get("dataset_dir")
+    if dataset:
+        path = Path(dataset)
+        config["data"]["dataset_dir"] = str(
+            path if path.is_absolute() else roots["dataset_root"] / path)
+    platform = platform_environment()
+    board = config.setdefault("board", {})
+    for key, base, default in (
+            ("deploy_dir", "MTK_BOARD_OPEN_MODELS_ROOT", config["name"]),
+            ("dataset_dir", "MTK_BOARD_DATASETS_ROOT", ""),
+            ("results_dir", None, "results")):
+        path = Path(board.get(key, default))
+        board[key] = str(Path(platform[base]) / path if base and not path.is_absolute() else path)
     return config
 
 
@@ -102,8 +112,12 @@ def platform_environment():
     sdk = Path(os.environ.get("MTK_NP_ROOT") or toolchain["sdk_root"])
     ncc = Path(os.environ.get("NCC_ROOT") or sdk / "neuron_sdk/host")
     defaults = {
+        "MTK_TOOLCHAIN_ROOT": toolchain["root"],
         "MTK_CONTAINER_NAME": toolchain["container_name"],
-        "MTK_HOST_SDK_ROOT": toolchain["host_sdk_root"],
+        "MTK_GAI_PYTHON": toolchain["gai_python"],
+        "MTK_LLM_PYTHON": toolchain["llm_python"],
+        "MTK_YAMNET_PYTHON": toolchain["yamnet_python"],
+        "MTK_HOST_SDK_ROOT": sdk,
         "MTK_NP_ROOT": sdk,
         "NCC_ROOT": ncc,
         "MTK_NCC_BIN": ncc / "bin",

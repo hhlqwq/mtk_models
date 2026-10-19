@@ -1,273 +1,31 @@
 #!/usr/bin/env bash
-# 编译步骤在容器内执行,请先从仓库根目录运行 bash docker/enter_container.sh.
-# 单脚本两步流程: 在编译主机编译并上传,在开发板执行测试.
-
+# 先通过 docker/enter_container.sh 进入编译容器; 板端直接运行上传的同一入口.
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
-
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# 默认全量,-test 只缩小评测数据,不改变校准或模型转换配置.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export MTK_EVAL_TEST=0
-EVAL_PATH_SUFFIX=""
 if (( $# == 1 )) && [[ "$1" == "-test" ]]; then
     export MTK_EVAL_TEST=1
-    EVAL_PATH_SUFFIX="_test"
-    shift
-    EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-    [[ "${EVAL_RUN_ID}" == test_* ]] || EVAL_RUN_ID="test_${EVAL_RUN_ID}"
-    export EVAL_RUN_ID
-    echo "[模式] 固定小子集流程验证,不代表全量精度."
-fi
-if (( $# != 0 )); then
+elif (( $# != 0 )); then
     echo "[错误] 用法: bash run.sh [-test]" >&2
     exit 2
 fi
-
-# 编译主机配置区: 只修改等号右侧的路径或名称.板端使用上传的 board_paths.conf.
-if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
-    # 模型目录: 根据本脚本的位置自动确定.
-    MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-    source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
-
-    # 1. 模型与校准数据.
-    # 原始 PyTorch 权重.
-    WEIGHTS="${MODEL_ASSETS_DIR}/mobilefacenet.pt"
-    # 已对齐人脸的 INT8 校准图片目录.
-    CALIBRATION_DIR="${MTK_DATASET_ROOT}/LFW/aligned/images"
-    # 校准图片数量: 按文件名排序选取,默认使用 100 张.
-    CALIBRATION_SAMPLES="100"
-
-    # 2. 产物与临时目录.
-    # 模型输出目录: 转换与编译产物保存在这里.
-    MODEL_OUTPUT_DIR="${MODEL_ASSETS_DIR}"
-    # 临时构建目录: 缓存和中间文件保存在仓库外.
-    BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/mobilefacenet${EVAL_PATH_SUFFIX}"
-    # C++ 输出: 编译主机交叉编译生成的临时程序完整路径.
-    BOARD_BINARY_OUTPUT="${BUILD_WORK_DIR}/benchmark_board"
-
-    # 3. 板端地址与数据.
-    # 板端地址: SSH 用户和地址.
-    BOARD_HOST="root@192.168.0.92"
-    # 板端部署目录: 上传模型、程序和本脚本的目录,必须填写.
-    BOARD_DEPLOY_DIR="/root/hailong.he/open_models/mobilefacenet${EVAL_PATH_SUFFIX}"
-    # 板端结果目录: 保存本次测试汇总.
-    BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
-    # 板端已对齐 LFW 数据集目录.
-    BOARD_DATASET_DIR="/root/hailong.he/datasets/lfw/aligned"
-
-    # 4. ONNX 精度数据.
-    # 浮点精度数据: 编译容器 可访问的数据集根目录,必须填写.
-    ONNX_DATASET_DIR="${MTK_DATASET_ROOT}/LFW/aligned"
-
-    # 5. 编译环境: 通常无需修改.
-
-    # C++ 工具链: 编译主机上的 AArch64 编译工具和 OpenCV 库目录.
-    MTK_G720_CPP_TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
-    # 环境脚本: Docker 内 MTK SDK 初始化脚本.
-    MTK_SETUP_SCRIPT="/opt/mtk-build/setup_container.sh"
-    # 模型编译器: Docker 内 Neuron SDK host 目录,包含 bin/ 和 lib/.
-    NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
-    # Runtime 头文件: 编译主机上的 Neuron Runtime include 目录.
-    MTK_NEURON_INCLUDE="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
-    # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
-    CROSS_CXX="aarch64-linux-gnu-g++"
-    # SSH 选项: 首次连接接受主机密钥,之后验证保存的密钥.
-    SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
+export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
+if [[ "${MTK_EVAL_TEST}" == 1 && "${EVAL_RUN_ID}" != *_test ]]; then
+    export EVAL_RUN_ID="${EVAL_RUN_ID}_test"
 fi
 
-# 上传的配置文件标识板端阶段,在板端直接执行 LFW 十折评测.
-if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
-    source "${SCRIPT_DIR}/board_paths.conf"
-    readonly RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-    readonly RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
-    readonly RUN_DIR="${RESULT_DIR}/work"
-    # 在全量推理前检查少量示例的工具、清单和图片依赖.
-    test -s "${SCRIPT_DIR}/examples/input/samples.json"
-    test -s "${SCRIPT_DIR}/board/render_examples.py"
-    python3 -c 'import cv2, numpy'
-    test -s "${SCRIPT_DIR}/models/model_int8.dla"
-    test -s "${SCRIPT_DIR}/models/metadata.json"
-    test -s "${BOARD_DATASET_DIR}/pairs.csv"
-    test -d "${BOARD_DATASET_DIR}/images"
-    test ! -e "${RESULT_DIR}"
-    echo "[开发板 1/2] 在板端执行 LFW 十折全量人脸验证."
-    python3 "${SCRIPT_DIR}/board/full_accuracy_board.py" \
-        --dataset-root "${BOARD_DATASET_DIR}" \
-        --model "${SCRIPT_DIR}/models/model_int8.dla" \
-        --metadata "${SCRIPT_DIR}/models/metadata.json" \
-        --run-dir "${RUN_DIR}" --run-id "${RUN_ID}"
-    echo "[开发板 2/2] 使用交叉编译的 C++ 程序测量常驻模型推理耗时."
-    inputs=("${RUN_DIR}/inputs/"*.bin)
-    test -f "${inputs[0]}"
-    "${SCRIPT_DIR}/board/benchmark_board" --model "${SCRIPT_DIR}/models/model_int8.dla" \
-        --input "${inputs[0]}" --report "${RUN_DIR}/report/benchmark.json" \
-        --warmup "$([[ "${MTK_EVAL_TEST}" == 1 ]] && echo 1 || echo 10)" --repeats "$([[ "${MTK_EVAL_TEST}" == 1 ]] && echo 5 || echo 100)"
-    echo "[示例] 保存少量板端效果示例."
-    python3 "${SCRIPT_DIR}/board/render_examples.py" \
-        --model "mobilefacenet" --input-dir "${SCRIPT_DIR}/examples/input" \
-        --output-dir "${RESULT_DIR}/examples/output" --work-dir "${RUN_DIR}" \
-        --dataset-root "${BOARD_DATASET_DIR}" --models-dir "${SCRIPT_DIR}/models"
-
-    # 所有原始数据仅在本次 work 下生成; 汇总成功后由工具清理.
-    python3 "${SCRIPT_DIR}/board/summarize_board_result.py" \
-        --model "mobilefacenet" --work-dir "${RUN_DIR}" \
-        --output "${RESULT_DIR}/summary.json" --run-id "${RUN_ID}" \
-        --reference "${REFERENCE_ACCURACY:-}" \
-        --reference-source "${REFERENCE_SOURCE:-用户提供的同协议参考基准}"
-    # 只读取实际部署文件大小,以 MB 补充汇总.
-    python3 "${SCRIPT_DIR}/board/model_size.py" \
-        --models-dir "${SCRIPT_DIR}/models" --include "model_int8.dla" \
-        --summary "${RESULT_DIR}/summary.json"
-    exit 0
+if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
+    python3 "${SCRIPT_DIR}/board/infer.py"
+    python3 "${SCRIPT_DIR}/board/render_examples.py" --config "${SCRIPT_DIR}/config.json" --run-id "${EVAL_RUN_ID}"
+    python3 "${SCRIPT_DIR}/board/summarize_board_result.py" --config "${SCRIPT_DIR}/config.json" --run-id "${EVAL_RUN_ID}"
+    python3 "${SCRIPT_DIR}/board/model_size.py" --config "${SCRIPT_DIR}/config.json" --run-id "${EVAL_RUN_ID}" --include "*.dla"
+else
+    : "${MTK_MODELS_ROOT:?请先通过 docker/enter_container.sh 进入容器}"
+    python3 "${SCRIPT_DIR}/host/export_onnx.py"
+    python3 "${SCRIPT_DIR}/host/convert_int8.py"
+    python3 "${SCRIPT_DIR}/host/compile_model.py"
+    python3 "${SCRIPT_DIR}/host/evaluate_onnx.py"
+    make -C "${SCRIPT_DIR}/board"
+    python3 "${SCRIPT_DIR}/host/upload.py"
 fi
-
-if (( $# != 0 )); then
-    echo "[ERROR] 先用 docker/enter_container.sh 进入容器,再运行 bash deploy/run.sh,无需参数." >&2
-    exit 2
-fi
-
-# 编译主机阶段: 检查配置,转换模型,交叉编译并上传.
-: "${ONNX_DATASET_DIR:?请在脚本顶部指定编译主机的全量精度数据集}"
-test -d "${ONNX_DATASET_DIR}"
-if [[ "${ONNX_DATASET_DIR}" != /* ]]; then
-    echo "[ERROR] ONNX_DATASET_DIR 必须是编译容器 共用的绝对路径." >&2
-    exit 2
-fi
-: "${CALIBRATION_DIR:?请指定对齐人脸校准目录}"
-: "${BOARD_DATASET_DIR:?请指定板端 LFW 数据集目录}"
-: "${BOARD_DEPLOY_DIR:?请指定 BOARD_DEPLOY_DIR}"
-
-readonly TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}"
-readonly NEURON_INCLUDE="${MTK_NEURON_INCLUDE}"
-readonly CXX="${CROSS_CXX}"
-readonly BINARY_OUTPUT="${BOARD_BINARY_OUTPUT}"
-
-mkdir -p "${BUILD_WORK_DIR}/tmp"
-export TMPDIR="${BUILD_WORK_DIR}/tmp"
-
-test -s "${WEIGHTS}"
-test -d "${CALIBRATION_DIR}"
-if [[ ! "${BOARD_DEPLOY_DIR}" =~ ^/[A-Za-z0-9_./-]+$ ]]; then
-    echo "[ERROR] BOARD_DEPLOY_DIR 必须是无空格的板端绝对路径." >&2
-    exit 2
-fi
-
-# 从配置的数据集生成示例清单,仅写入仓库外的构建目录.
-mkdir -p "${BUILD_WORK_DIR}/examples"
-env PYTHONDONTWRITEBYTECODE=1 \
-    python "${MODEL_ROOT}/../../../../tools/prepare_examples.py" \
-    --model "mobilefacenet" --dataset-root "${ONNX_DATASET_DIR}" \
-    --output "${BUILD_WORK_DIR}/examples/samples.json"
-
-echo "[容器 1] 在 Docker 中导出、量化、编译并生成输入元数据."
-env BUILD_WORK_DIR="${BUILD_WORK_DIR}"  PYTHONDONTWRITEBYTECODE=1 \
-     MODEL_ROOT="${MODEL_ROOT}"  WEIGHTS="${WEIGHTS}" \
-     CALIBRATION_DIR="${CALIBRATION_DIR}" \
-     CALIBRATION_SAMPLES="${CALIBRATION_SAMPLES}" \
-     MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR}" \
-     MTK_SETUP_SCRIPT="${MTK_SETUP_SCRIPT}"  NCC_ROOT="${NCC_ROOT}"  bash -s <<'DOCKER_BUILD'
-set -euo pipefail
-mkdir -p "${MODEL_OUTPUT_DIR}" "${BUILD_WORK_DIR}/tmp" "${BUILD_WORK_DIR}/cache"
-export TMPDIR="${BUILD_WORK_DIR}/tmp"
-export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
-export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
-cd "${BUILD_WORK_DIR}"
-bash "${MTK_SETUP_SCRIPT}"
-python "${MODEL_ROOT}/deploy/host/export_onnx.py" \
-    --weights "${WEIGHTS}" \
-    --output "${MODEL_OUTPUT_DIR}/model_fp32.onnx"
-python "${MODEL_ROOT}/deploy/host/convert_int8.py" \
-    --onnx "${MODEL_OUTPUT_DIR}/model_fp32.onnx" \
-    --image-dir "${CALIBRATION_DIR}" \
-    --samples "${CALIBRATION_SAMPLES}" \
-    --output "${MODEL_OUTPUT_DIR}/model_int8.tflite"
-export LD_LIBRARY_PATH="${NCC_ROOT}/lib:${LD_LIBRARY_PATH:-}"
-"${NCC_ROOT}/bin/ncc-tflite" --arch=mdla5.3 \
-    --suppress-output --disallow-bridge \
-    "${MODEL_OUTPUT_DIR}/model_int8.tflite" -o "${MODEL_OUTPUT_DIR}/model_int8.dla"
-python "${MODEL_ROOT}/deploy/host/prepare_input.py" \
-    --tflite "${MODEL_OUTPUT_DIR}/model_int8.tflite" \
-    --image-dir "${CALIBRATION_DIR}" \
-    --output-dir "${BUILD_WORK_DIR}/board_input"
-DOCKER_BUILD
-
-echo "[ONNX] 在编译主机 Docker 中评测全量浮点精度."
-env PYTHONDONTWRITEBYTECODE=1 \
-     MODEL_ROOT="${MODEL_ROOT}"  ONNX_DATASET_DIR="${ONNX_DATASET_DIR}" \
-     ONNX_REFERENCE="${MODEL_OUTPUT_DIR}/model_fp32.onnx"  BUILD_WORK_DIR="${BUILD_WORK_DIR}"  bash -s <<'ONNX_ACCURACY'
-set -euo pipefail
-test -d "${ONNX_DATASET_DIR}"
-export TMPDIR="${BUILD_WORK_DIR}/tmp"
-export XDG_CACHE_HOME="${BUILD_WORK_DIR}/cache"
-export TORCH_HOME="${BUILD_WORK_DIR}/cache/torch"
-REPO_ROOT="$(cd "${MODEL_ROOT}/../../../.." && pwd)"
-python "${REPO_ROOT}/tools/accuracy/evaluate_onnx.py" \
-    --model "mobilefacenet" --onnx "${ONNX_REFERENCE}" \
-    --dataset-root "${ONNX_DATASET_DIR}" \
-    --output "${BUILD_WORK_DIR}/onnx_accuracy/summary.json"
-ONNX_ACCURACY
-# 将本次实测精度写入板端配置,不传递主机预测、耗时或内存.
-REFERENCE_ACCURACY="$(python -c \
-    'import json,sys; print(json.load(open(sys.argv[1]))["accuracy"])' \
-    "${BUILD_WORK_DIR}/onnx_accuracy/summary.json")"
-REFERENCE_SOURCE="本次 ONNX 浮点全量实测,使用与板端相同的评测协议"
-test -s "${MODEL_OUTPUT_DIR}/model_int8.dla"
-# 从当前容器构建目录准备上传所需的元数据.
-cp -- "${BUILD_WORK_DIR}/board_input/metadata.json" "${BUILD_WORK_DIR}/metadata.json"
-test -s "${BUILD_WORK_DIR}/metadata.json"
-
-echo "[容器 2] 在当前容器交叉编译 C++ 板端性能程序."
-readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
-command -v "${CXX}" >/dev/null 2>&1
-test -f "${NEURON_INCLUDE}/neuron/api/RuntimeAPI.h"
-test -f "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8"
-mkdir -p "$(dirname "${BINARY_OUTPUT}")"
-"${CXX}" -I"${MTK_MODELS_ROOT}" -std=c++17 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
-    -I"${NEURON_INCLUDE}" "${MTK_MODELS_ROOT}/tools/board/benchmark.cpp" \
-    "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
-    -Wl,--allow-shlib-undefined -pthread -ldl -o "${BINARY_OUTPUT}"
-file "${BINARY_OUTPUT}"
-
-echo "[容器 上传] 上传模型、程序、评测代码和路径配置到板端."
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board'"
-scp "${SSH_OPTIONS[@]}" \
-    "${MODEL_OUTPUT_DIR}/model_int8.dla" \
-    "${BUILD_WORK_DIR}/metadata.json" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/"
-scp "${SSH_OPTIONS[@]}" \
-    "${SCRIPT_DIR}/board/full_accuracy_board.py" \
-    "${SCRIPT_DIR}/board/face_utils.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/summarize_board_result.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
-scp "${SSH_OPTIONS[@]}" "${BINARY_OUTPUT}" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/benchmark_board"
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/benchmark_board'"
-scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
-# 上传统一可视化工具和少量示例输入,不增加 Shell 入口.
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "mkdir -p '${BOARD_DEPLOY_DIR}/examples/input'"
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/render_examples.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/render_examples.py"
-scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/examples/samples.json" \
-    "${MODEL_ROOT}/examples/input"/sample_* \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
-printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFERENCE_SOURCE=%q\n' \
-    "${BOARD_DATASET_DIR}" "${BOARD_RESULTS_DIR}" "${REFERENCE_ACCURACY}" "${REFERENCE_SOURCE}" |
-    ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-        "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
-# 上传统一大小记录工具,后续汇总自动保留模型大小.
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/model_size.py"
-
-
-# 公共模块随部署包放在入口旁,板端不需要安装或访问代码仓库.
-ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "mkdir -p '${BOARD_DEPLOY_DIR}/board/tools'"
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/__init__.py" \
-    "${MODEL_ROOT}/../../../../tools/evaluation.py" \
-    "${MODEL_ROOT}/../../../../tools/files.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/tools/"
-
-echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh' $([[ "${MTK_EVAL_TEST}" == 1 ]] && echo -test)"

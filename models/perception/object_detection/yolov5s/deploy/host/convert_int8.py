@@ -9,6 +9,9 @@ import mtk_converter
 import numpy as np
 from tqdm import tqdm
 
+from tools.deploy import configure_parser
+from tools.storage import storage_roots
+
 
 def preprocess_image(image_path: Path, image_size: int = 640) -> np.ndarray:
     """读取图片并生成 YOLOv5 NCHW FP32 输入."""
@@ -67,6 +70,12 @@ def parse_args() -> argparse.Namespace:
                         dest="append_output_dequantize",
                         action="store_true")
     parser.set_defaults(append_output_dequantize=False)
+    configure_parser(parser, __file__, {
+        "torchscript": lambda c: c.work / "yolov5s.torchscript",
+        "calibration_dir": lambda c: c.calibration,
+        "samples": lambda c: c.config["data"]["calibration_samples"],
+        "output": lambda c: c.work / "model_int8.tflite",
+    })
     return parser.parse_args()
 
 

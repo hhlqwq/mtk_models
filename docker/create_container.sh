@@ -6,7 +6,7 @@ readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${PROJECT_ROOT}/tools/storage.sh"
 readonly DATASET_ROOT="${MTK_DATASET_ROOT}"
 readonly MODEL_STORAGE_ROOT="${MTK_MODEL_STORAGE_ROOT}"
-readonly CPP_TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}"
+readonly TOOLCHAIN_ROOT="${MTK_TOOLCHAIN_ROOT}"
 readonly IMAGE_NAME="${MTK_G720_IMAGE:-openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11}"
 readonly CONTAINER_NAME="${MTK_CONTAINER_NAME}"
 
@@ -14,7 +14,7 @@ echo "[1/4] 检查目录和同名容器."
 test -d "${PROJECT_ROOT}"
 test -d "${DATASET_ROOT}"
 test -d "${MODEL_STORAGE_ROOT}"
-test -d "${CPP_TOOLCHAIN_ROOT}"
+test -d "${TOOLCHAIN_ROOT}"
 # 先确认 NAS 实际挂载,防止失去挂载时将资源写入同名本地目录.
 for STORAGE_ROOT in "${MODEL_STORAGE_ROOT}" "${DATASET_ROOT}"; do
     STORAGE_TYPE="$(findmnt -T "${STORAGE_ROOT}" -n -o FSTYPE)"
@@ -49,6 +49,11 @@ if docker container inspect "${CONTAINER_NAME}" >/dev/null 2>&1; then
         echo "[ERROR] 现有容器缺少数据集只读挂载,请安排重建." >&2
         exit 1
     fi
+    if ! docker inspect --format '{{range .Mounts}}{{println .Source "=>" .Destination}}{{end}}' \
+        "${CONTAINER_NAME}" | grep -Fxq "${TOOLCHAIN_ROOT} => ${TOOLCHAIN_ROOT}"; then
+        echo "[ERROR] 现有容器缺少公共工具链挂载,请先保存环境并安排重建." >&2
+        exit 1
+    fi
     echo "[INFO] 容器 ${CONTAINER_NAME} 已存在,不重复创建."
     docker start "${CONTAINER_NAME}" >/dev/null
 else
@@ -63,16 +68,23 @@ else
         --shm-size 8g \
         --env NVIDIA_VISIBLE_DEVICES=all \
         --env NVIDIA_DRIVER_CAPABILITIES=compute,utility \
-        --env MTK_G720_CPP_TOOLCHAIN_ROOT="${CPP_TOOLCHAIN_ROOT}" \
+        --env MTK_G720_CPP_TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}" \
         --volume "${PROJECT_ROOT}:${PROJECT_ROOT}" \
         --volume "${DATASET_ROOT}:${DATASET_ROOT}:ro" \
         --volume "${MODEL_STORAGE_ROOT}:${MODEL_STORAGE_ROOT}" \
-        --volume "${CPP_TOOLCHAIN_ROOT}:${CPP_TOOLCHAIN_ROOT}:ro" \
+        --volume "${TOOLCHAIN_ROOT}:${TOOLCHAIN_ROOT}" \
         --workdir "${PROJECT_ROOT}" \
         "${IMAGE_NAME}" >/dev/null
 fi
 
 echo "[4/4] 设置项目访问权限,不运行模型编译或测试."
+# GPU 透传可能附加宿主机组编号,补齐组名以消除交互终端的 groups 警告.
+docker exec "${CONTAINER_NAME}" sh -c '
+    for GROUP_ID in $(id -G); do
+        if ! getent group "$GROUP_ID" >/dev/null; then
+            groupadd --gid "$GROUP_ID" "host_$GROUP_ID"
+        fi
+    done'
 docker exec "${CONTAINER_NAME}" git config --global --add safe.directory \
     "${PROJECT_ROOT}"
 echo "[OK] 容器 ${CONTAINER_NAME} 已就绪."

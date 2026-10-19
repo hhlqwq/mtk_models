@@ -1,0 +1,17 @@
+# depth_anything_v2_small 模型参数.公共 SDK、编译器和板端地址由 Docker 环境加载.
+model:
+  # 相对于外部模型资源目录的官方原始权重.
+  weights: depth_anything_v2_vits.pth
+  # 最终模型保存在此处,中间文件集中到 build.
+  output_dir: .
+data:
+  # 相对于本地 dataset_root 的评测数据集.
+  dataset_dir: DA-2K
+  # 校准路径相对于 dataset_root,快速评测不改变此配置.
+  calibration_dir: coco/coco_val2017/images
+  calibration_samples: 16
+board:
+  # 相对于公共板端部署根目录和数据集根目录.
+  deploy_dir: depth_anything_v2_small
+  dataset_dir: da2k
+  results_dir: results

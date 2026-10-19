@@ -10,6 +10,9 @@ import mtk_converter
 import numpy as np
 import tqdm
 
+from tools.deploy import configure_parser
+from tools.storage import storage_roots
+
 
 def preprocess_image(image_path: Path, crop_size: int = 224,
                      resize_size: int = 256) -> np.ndarray:
@@ -99,6 +102,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--samples", type=int, default=100)
     parser.add_argument("--offset", type=int, default=0,
                         help="跳过排序后前 offset 张, 与评测子集错开.")
+    configure_parser(parser, __file__, {
+        "onnx": lambda c: c.output / "model_mtk_compatible.onnx",
+        "calibration_dir": lambda c: c.calibration,
+        "samples": lambda c: c.config["data"]["calibration_samples"],
+        "offset": lambda c: c.config["data"]["calibration_offset"],
+        "output": lambda c: c.work / "model_int8.tflite",
+    })
     return parser.parse_args()
 
 

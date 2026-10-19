@@ -15,6 +15,8 @@ from tools.evaluation import (
     add_test_argument, is_test, record_selection, scope_metadata,
 )
 
+from tools.deploy import configure_parser
+
 
 def prepare_samples(tokenizer, corpus, max_new_tokens):
     """生成固定 Token 输入,将演示语料与正式评测范围分开标注."""
@@ -203,6 +205,11 @@ def parse_args():
     parser.add_argument("--corpus", type=Path)
     parser.add_argument("--max-new-tokens", type=int, default=512)
     add_test_argument(parser)
+    configure_parser(parser, __file__, {
+        "source": lambda c: Path(c.config["model"]["source"]),
+        "models": lambda c: c.output,
+        "max_new_tokens": lambda c: c.config["conversion"]["max_new_tokens"],
+    })
     return parser.parse_args()
 
 

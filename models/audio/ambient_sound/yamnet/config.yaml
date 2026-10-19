@@ -1,0 +1,17 @@
+# yamnet 模型参数.公共 SDK、编译器和板端地址由 Docker 环境加载.
+model:
+  # 相对于外部模型资源目录的官方原始权重.
+  weights: yamnet.h5
+  # 最终模型保存在此处,中间文件集中到 build.
+  output_dir: .
+data:
+  # 相对于本地 dataset_root 的评测数据集.
+  dataset_dir: ESC-50
+board:
+  # 相对于公共板端部署根目录和数据集根目录.
+  deploy_dir: yamnet
+  dataset_dir: ESC-50
+  results_dir: results
+conversion:
+  # 支持 fp16/int8/w8a16/int8_tail16; 整数量化固定使用第 1 折的 200 个窗口.
+  precision: w8a16

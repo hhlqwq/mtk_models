@@ -1,0 +1,28 @@
+# deepseek_r1_distill_qwen_1_5b 模型参数,SDK 和 Python 环境由公共平台配置提供.
+model:
+  # 离线官方资源目录,相对于外部模型资源目录.
+  source: original
+  output_dir: .
+data:
+  dataset_dir: .
+board:
+  deploy_dir: deepseek_r1_distill_qwen_1_5b
+  dataset_dir: .
+  results_dir: results
+conversion:
+  context: 1024
+  max_new_tokens: 512
+native:
+  # 原生转换中间文件集中到 build,保留 prepare/calibrate/quantize/shape/compile 阶段.
+  work_dir: build/native
+  prefill: 128
+  calibration_batches: 32
+  mask_value: -100
+  rotate: false
+  # 只支持全 W4A16,不通过提高权重位宽替代误差排查.
+  attention_precision: asym4W_sym16A
+  mlp_precision: asym4W_sym16A
+  tail_precision: asym4W_sym16A
+  weight_optimization: none
+  weight_opt_config: ''
+  calibration_train: ''

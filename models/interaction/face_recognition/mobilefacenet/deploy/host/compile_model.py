@@ -1,0 +1,15 @@
+"""读取模型配置并使用 NCC 生成最终 DLA."""
+
+from tools.deploy import arguments, compile_dla, python
+
+
+def main():
+    """执行本模型的编译步骤并打印最终 DLA 路径."""
+    ctx = arguments(__file__)
+    compile_dla(ctx, ctx.work / "model_int8.tflite", ctx.output / "model_int8.dla", ())
+    python(ctx, "prepare_input.py", "--tflite", ctx.work / "model_int8.tflite",
+           "--image-dir", ctx.calibration, "--output-dir", ctx.work / "board_input")
+
+
+if __name__ == "__main__":
+    main()

@@ -166,7 +166,7 @@ models/scenario_name/category_name/model_name/
     └── summary.json
 ```
 
-每个模型使用一个脚本完成两步流程：进入编译容器后运行 `deploy/run.sh` 编译并上传，再在开发板运行上传的同一脚本；路径在脚本中配置。具体命令见各模型 README。
+每个模型使用一个脚本完成两步流程：进入编译容器后运行 `deploy/run.sh` 编译并上传，再在开发板运行上传的同一脚本；模型参数在各模型根目录的 `config.yaml` 中配置。具体命令见各模型 README。
 
 模型产物与板端结果分别写入用户配置的 MODEL_OUTPUT_DIR 和 BOARD_RESULTS_DIR。
 
@@ -261,7 +261,7 @@ LLM 资源目录中,`original/` 保存官方权重和 tokenizer,`native/` 保存
 
 一次性迁移工具为 `tools/migrate_model_storage.py`.先记录迁移清单,确认后使用 `--apply`;每个文件在移除来源前核对大小与 SHA256,同名不同内容的旧目标保存在 `_previous/哈希/` 下.来源不同且内容不一致的模型应分别保留并记录来源.迁移记录应保存在仓库外,不能提交包含内部路径的清单.
 
-G720 的板端连接与工具链配置统一位于 `configs/platforms/genio_720.yaml`,SDK 版本、路径、交叉编译器和容器名称在其 `toolchain` 分组维护.执行 `docker/enter_container.sh` 后,容器终端自动加载平台和资源环境,无需手动执行初始化脚本; 修改环境配置后重新进入终端即可,无需重启容器.FastSAM 的 C++ 构建改由 Makefile 使用这些环境变量完成,不再使用 Python 包装编译命令.
+G720 的板端连接与工具链配置统一位于 `configs/platforms/genio_720.yaml`,SDK 版本、路径、交叉编译器和容器名称在其 `toolchain` 分组维护.执行 `docker/enter_container.sh` 后,容器终端自动加载平台和资源环境,无需手动执行初始化脚本; 修改环境配置后重新进入终端即可,无需重启容器.各模型的 C++ 构建由 Makefile 使用这些环境变量完成.
 
 
 ## 公共代码
@@ -293,6 +293,21 @@ DA-2K 取 100 张,ESC-50 每类每折各取一条共 250 条,LibriSpeech 取 5 �
 LLM 评测入口支持 `-test`,MMLU 使用 16 题,WikiText 使用前 4 个诊断块;
 原生模型转换入口 `run_native.sh` 保留原有阶段参数.
 
-快速评测报告与全量报告分开保存; 板端快速部署目录以 `_test` 区分,运行编号以 `test_` 开头.
+快速与全量共用原板端部署目录,快速结果只保存到 `results/运行编号_test/`.
 快速报告标记 `evaluation_scope: subset` 和 `status: smoke_test`,只用于流程验证,
 不代表全量精度; 快速参考报告独立保存,只有样本范围和指纹一致时才计算精度变化.
+
+
+### 统一部署结构
+
+各模型根目录的 `config.yaml` 保存权重、数据集和转换参数.公共环境放在 `configs/platforms/genio_720.yaml`,
+进入容器时自动加载; SDK、交叉编译器、专用 Python 环境统一位于
+`/data/users/hailong.he/data/MTKG720`.模型脚本不重复设置这些环境.
+
+`deploy/run.sh` 只列出独立步骤.导出、转换、DLA 编译、浮点评测、上传位于 `deploy/host`,
+板端代码位于 `deploy/board`,C++ 程序通过 `deploy/board/Makefile` 构建.
+模型中间产物集中到外部资源目录的 `build`.板端配置使用上传的 JSON 快照,
+快速与全量始终使用相同部署目录,快速结果保存为 `results/运行编号_test/`.
+
+LLM 原生入口保留 prepare/calibrate/quantize/shape/compile/all 阶段名称,
+各阶段对应独立 Python 文件;原有精度和编译协议保持不变.

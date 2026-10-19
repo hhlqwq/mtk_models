@@ -1,140 +1,29 @@
 #!/usr/bin/env bash
-# 编译步骤在容器内执行,请先从仓库根目录运行 bash docker/enter_container.sh.
-# 两步交付: 89 编译量化并上传,92 开发板执行真实音频全量测试.
+# 先通过 docker/enter_container.sh 进入编译容器; 板端直接运行上传的同一入口.
 set -euo pipefail
-export PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=2 OMP_NUM_THREADS=2
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# 默认全量,-test 只缩小评测数据,不改变校准或模型转换配置.
+export PYTHONDONTWRITEBYTECODE=1
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export MTK_EVAL_TEST=0
-EVAL_PATH_SUFFIX=""
 if (( $# == 1 )) && [[ "$1" == "-test" ]]; then
     export MTK_EVAL_TEST=1
-    EVAL_PATH_SUFFIX="_test"
-    shift
-    EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-    [[ "${EVAL_RUN_ID}" == test_* ]] || EVAL_RUN_ID="test_${EVAL_RUN_ID}"
-    export EVAL_RUN_ID
-    echo "[模式] 固定小子集流程验证,不代表全量精度."
-fi
-if (( $# != 0 )); then
+elif (( $# != 0 )); then
     echo "[错误] 用法: bash run.sh [-test]" >&2
     exit 2
 fi
-
-if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
-    source "${SCRIPT_DIR}/board_paths.conf"
-    BOARD_PRECISION="${YAMNET_PRECISION:-${BOARD_PRECISION:-w8a16}}"
-    case "${BOARD_PRECISION}" in fp16|int8|w8a16|int8_tail16) ;; *) exit 1 ;; esac
-    CONFIG="${SCRIPT_DIR}/models/runtime_config_${BOARD_PRECISION}.csv"
-    if [[ ! -f "${CONFIG}" && ( "${BOARD_PRECISION}" == fp16 || "${BOARD_PRECISION}" == int8 ) ]]; then
-        CONFIG="${SCRIPT_DIR}/models/runtime_config.csv"
-    fi
-    test -s "${CONFIG}"
-    RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-    [[ "${RUN_ID}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
-    RESULT_DIR="${BOARD_RESULTS_DIR}/${RUN_ID}"
-    test ! -e "${RESULT_DIR}"
-    command -v ffmpeg >/dev/null
-    python3 -c 'import numpy'
-    mkdir -p "${RESULT_DIR}"
-    echo '[开发板 1/3] 解码原始 WAV 并生成固定音频窗口.'
-    python3 "${SCRIPT_DIR}/board/evaluate.py" --mode prepare \
-        --dataset "${BOARD_DATASET_DIR}" --work "${RESULT_DIR}/work" \
-        2>&1 | tee "${RESULT_DIR}/prepare.log"
-    echo '[开发板 2/3] 常驻模型预热并执行真实 NPU 推理.'
-    "${SCRIPT_DIR}/board/yamnet_eval" "${SCRIPT_DIR}/models/model_${BOARD_PRECISION}.dla" \
-        "${CONFIG}" "${RESULT_DIR}/work" \
-        2>&1 | tee "${RESULT_DIR}/npu.log"
-    echo '[开发板 3/3] 同协议精度对比、性能汇总和真实声音示例.'
-    python3 "${SCRIPT_DIR}/board/evaluate.py" --mode summarize \
-        --dataset "${BOARD_DATASET_DIR}" --work "${RESULT_DIR}/work" \
-        --models-dir "${SCRIPT_DIR}/models" --output "${RESULT_DIR}" --run-id "${RUN_ID}" \
-        --precision "${BOARD_PRECISION}"
-    sha256sum "${SCRIPT_DIR}/models/"* "${SCRIPT_DIR}/board/yamnet_eval" > "${RESULT_DIR}/SHA256SUMS"
-    uname -a > "${RESULT_DIR}/system.txt"
-    echo "[OK] 板端汇总: ${RESULT_DIR}/summary.json"
-    # 只读取实际部署文件大小,以 MB 补充汇总.
-    python3 "${SCRIPT_DIR}/board/model_size.py" \
-        --models-dir "${SCRIPT_DIR}/models" --include "model_${BOARD_PRECISION}.dla" \
-        --summary "${RESULT_DIR}/summary.json"
-    exit 0
+export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
+if [[ "${MTK_EVAL_TEST}" == 1 && "${EVAL_RUN_ID}" != *_test ]]; then
+    export EVAL_RUN_ID="${EVAL_RUN_ID}_test"
 fi
 
-# 编译主机配置: 模型资源离线准备,原始数据固定保存在 NAS.
-MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
-MODELS_DIR="${MODEL_ASSETS_DIR}"
-DATASET_DIR="${MTK_DATASET_ROOT}/ESC-50"
-BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yamnet${EVAL_PATH_SUFFIX}"
-EXPORT_PYTHON="${YAMNET_EXPORT_PYTHON:-/tmp/hailongcodex/$(date +%F)/yamnet/venv/bin/python}"
-PRECISION="${YAMNET_PRECISION:-w8a16}"
-case "${PRECISION}" in fp16|int8|w8a16|int8_tail16) ;; *) exit 1 ;; esac
-
-NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
-NEURON_INCLUDE="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
-TARGET_LIBS="/data/users/hailong.he/data/MTKG720/cpp_toolchain/genio720-libs"
-BOARD_HOST="root@192.168.0.92"
-BOARD_DEPLOY_DIR="/root/hailong.he/open_models/yamnet${EVAL_PATH_SUFFIX}"
-BOARD_DATASET_DIR="/root/hailong.he/datasets/ESC-50"
-SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
-test -s "${MODELS_DIR}/yamnet.h5"
-echo '13c3308955bbfaef262f175ac9c40e47b134573a93984f009220dd7cc12a1744 '"${MODELS_DIR}/yamnet.h5" | sha256sum -c -
-test -s "${DATASET_DIR}/meta/esc50.csv"
-mkdir -p "${BUILD_WORK_DIR}"
- test -x "${EXPORT_PYTHON}"
-echo '[容器 1/4] 官方前向比较、固定 ONNX 导出和三后端参考准备.'
-env OPENBLAS_NUM_THREADS=2  OMP_NUM_THREADS=2 \
-    "${EXPORT_PYTHON}" "${SCRIPT_DIR}/host/export_evaluate.py" --mode export \
-    --models-dir "${MODELS_DIR}" --dataset "${DATASET_DIR}"
-env OPENBLAS_NUM_THREADS=2  OMP_NUM_THREADS=2 \
-    "${EXPORT_PYTHON}" "${SCRIPT_DIR}/host/export_evaluate.py" --mode tensorflow \
-    --models-dir "${MODELS_DIR}" --dataset "${DATASET_DIR}" --output "${BUILD_WORK_DIR}/tensorflow"
-env OPENBLAS_NUM_THREADS=2  OMP_NUM_THREADS=2 \
-    python "${SCRIPT_DIR}/host/export_evaluate.py" --mode onnx \
-    --models-dir "${MODELS_DIR}" --dataset "${DATASET_DIR}" \
-    --output "${BUILD_WORK_DIR}/onnx" --reference "${BUILD_WORK_DIR}/tensorflow"
-
-echo "[容器 2/4] ${PRECISION} 转换和 MDLA 5.3 DLA 编译."
-env OPENBLAS_NUM_THREADS=2  OMP_NUM_THREADS=2 \
-    python "${SCRIPT_DIR}/host/convert_int8.py" --models-dir "${MODELS_DIR}" --dataset "${DATASET_DIR}" \
-    --precision "${PRECISION}"
-NCC_FLAGS=(--arch=mdla5.3 --suppress-output --disallow-bridge)
-if [[ "${PRECISION}" == fp16 ]]; then
-    NCC_FLAGS+=(--relax-fp32 --suppress-input)
+if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
+    python3 "${SCRIPT_DIR}/board/infer.py"
+    python3 "${SCRIPT_DIR}/board/model_size.py" --config "${SCRIPT_DIR}/config.json" --run-id "${EVAL_RUN_ID}"
+else
+    : "${MTK_MODELS_ROOT:?请先通过 docker/enter_container.sh 进入容器}"
+    python3 "${SCRIPT_DIR}/host/export_model.py"
+    python3 "${SCRIPT_DIR}/host/convert_model.py"
+    python3 "${SCRIPT_DIR}/host/compile_model.py"
+    python3 "${SCRIPT_DIR}/host/evaluate_onnx.py"
+    make -C "${SCRIPT_DIR}/board"
+    python3 "${SCRIPT_DIR}/host/upload.py"
 fi
-env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
-    "${NCC_ROOT}/bin/ncc-tflite" "${NCC_FLAGS[@]}" \
-    "${MODELS_DIR}/model_${PRECISION}.tflite" -o "${MODELS_DIR}/model_${PRECISION}.dla"
-
-echo '[容器 3/4] 交叉编译 C++ Runtime 程序并准备参考与示例.'
-aarch64-linux-gnu-g++ -I"${MTK_MODELS_ROOT}" -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
-    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/board/yamnet_eval.cpp" \
-    "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" -Wl,--allow-shlib-undefined -pthread -ldl \
-    -o "${BUILD_WORK_DIR}/yamnet_eval"
-python "${SCRIPT_DIR}/host/prepare_reference.py" --model-root "${MODEL_ROOT}" \
-    --models-dir "${MODELS_DIR}" --dataset "${DATASET_DIR}" --work "${BUILD_WORK_DIR}"
-
-echo '[容器 4/4] 同步板端原始音频、模型、程序及运行入口.'
-ssh -n "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board' '${BOARD_DEPLOY_DIR}/board/tools' '${BOARD_DEPLOY_DIR}/examples/input' '${BOARD_DATASET_DIR}'"
-rsync -a --info=progress2 "${DATASET_DIR}/audio" "${DATASET_DIR}/meta" \
-    "${DATASET_DIR}/LICENSE" "${DATASET_DIR}/source_manifest.json" "${BOARD_HOST}:${BOARD_DATASET_DIR}/"
-scp "${SSH_OPTIONS[@]}" "${MODELS_DIR}/model_${PRECISION}.dla" "${MODELS_DIR}/runtime_config_${PRECISION}.csv" \
-    "${MODELS_DIR}/yamnet_class_map.csv" "${MODELS_DIR}/fp32_reference${EVAL_PATH_SUFFIX}.json" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/"
-scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/yamnet_eval" "${SCRIPT_DIR}/board/"*.py \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
-scp "${SSH_OPTIONS[@]}" "${MTK_MODELS_ROOT}/tools/__init__.py" \
-    "${MTK_MODELS_ROOT}/tools/evaluation.py" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/tools/"
-scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/examples/input/"* "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
-printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nBOARD_PRECISION=%q\n' \
-    "${BOARD_DATASET_DIR}" "${BOARD_DEPLOY_DIR}/results" "${PRECISION}" |
-    ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
-ssh -n "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/yamnet_eval'"
-# 上传统一大小记录工具,后续汇总自动保留模型大小.
-scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
-    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/model_size.py"
-
-echo "[NEXT] 开发板执行: bash '${BOARD_DEPLOY_DIR}/run.sh' $([[ "${MTK_EVAL_TEST}" == 1 ]] && echo -test)"

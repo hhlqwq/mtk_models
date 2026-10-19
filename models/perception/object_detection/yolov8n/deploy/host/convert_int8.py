@@ -16,6 +16,9 @@ from yolov8_utils import OUTPUT_NAMES, OUTPUT_SHAPES, preprocess
 
 from tools.quantization import tensor_metadata
 
+from tools.deploy import configure_parser
+from tools.storage import storage_roots
+
 
 def main():
     """选取固定校准集,执行转换,按唯一形状映射运行时输出."""
@@ -24,6 +27,12 @@ def main():
     parser.add_argument("--calibration-dir", type=Path, required=True)
     parser.add_argument("--samples", type=int, default=100)
     parser.add_argument("--output", type=Path, required=True)
+    configure_parser(parser, __file__, {
+        "onnx": lambda c: c.output / "model_fp32.onnx",
+        "calibration_dir": lambda c: c.calibration,
+        "samples": lambda c: c.config["data"]["calibration_samples"],
+        "output": lambda c: c.work / "model_int8.tflite",
+    })
     args = parser.parse_args()
     paths = sorted(path for path in args.calibration_dir.iterdir()
                    if path.suffix.lower() in {".jpg", ".jpeg", ".png"})[:args.samples]

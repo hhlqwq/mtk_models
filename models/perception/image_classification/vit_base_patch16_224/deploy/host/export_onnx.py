@@ -10,6 +10,9 @@ from torch.nn import functional as functional
 import torchvision
 from torchvision.models import vit_b_16
 
+from tools.deploy import configure_parser
+from tools.storage import storage_roots
+
 
 EXPECTED_TORCHVISION_VERSION = "0.15.1"
 IMAGE_SIZE = 224
@@ -202,6 +205,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weights", type=Path, required=True)
     parser.add_argument("--reference-output", type=Path, required=True)
     parser.add_argument("--compatible-output", type=Path, required=True)
+    configure_parser(parser, __file__, {
+        "weights": lambda c: Path(c.config["model"]["weights"]),
+        "reference_output": lambda c: c.output / "model_fp32.onnx",
+        "compatible_output": lambda c: c.output / "model_mtk_compatible.onnx",
+    })
     return parser.parse_args()
 
 

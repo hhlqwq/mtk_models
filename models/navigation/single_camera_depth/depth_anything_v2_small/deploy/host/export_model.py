@@ -7,6 +7,9 @@ import sys
 
 import torch
 
+from tools.deploy import configure_parser
+from tools.storage import storage_roots
+
 
 SOURCE_REVISION = "a561b849ebae10a6f5ef49e26c83cbbcd36c71bf"
 
@@ -91,6 +94,11 @@ def main() -> None:
     parser.add_argument("--weights", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--size", type=int, default=518)
+    configure_parser(parser, __file__, {
+        "upstream": lambda c: c.model / "models/upstream",
+        "weights": lambda c: Path(c.config["model"]["weights"]),
+        "output": lambda c: c.output / "model_fp32.onnx",
+    })
     args = parser.parse_args()
     export_model(args.upstream, args.weights, args.output, args.size)
 
