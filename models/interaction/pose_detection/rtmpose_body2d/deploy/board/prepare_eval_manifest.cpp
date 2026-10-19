@@ -1,3 +1,4 @@
+#include "tools/evaluation.h"
 // 在板端将官方人体检测 JSON 转为 RTMPose C++ 评测清单.
 
 #include <algorithm>
@@ -113,6 +114,14 @@ std::vector<Detection> LoadDetections(const fs::path& input) {
               return std::tie(left.image_id, left.detection_id) <
                      std::tie(right.image_id, right.detection_id);
             });
+  if (mtk::IsTestEvaluation()) {
+    std::vector<int64_t> ids;
+    for (const auto& record : records) ids.push_back(record.image_id);
+    const auto selected = mtk::TestCocoIds(ids);
+    records.erase(std::remove_if(records.begin(), records.end(), [&](const auto& record) {
+      return !selected.count(record.image_id);
+    }), records.end());
+  }
   return records;
 }
 

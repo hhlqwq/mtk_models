@@ -7,6 +7,23 @@ export PYTHONDONTWRITEBYTECODE=1
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# 默认全量,-test 只缩小评测数据,不改变校准或模型转换配置.
+export MTK_EVAL_TEST=0
+EVAL_PATH_SUFFIX=""
+if (( $# == 1 )) && [[ "$1" == "-test" ]]; then
+    export MTK_EVAL_TEST=1
+    EVAL_PATH_SUFFIX="_test"
+    shift
+    EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
+    [[ "${EVAL_RUN_ID}" == test_* ]] || EVAL_RUN_ID="test_${EVAL_RUN_ID}"
+    export EVAL_RUN_ID
+    echo "[模式] 固定小子集流程验证,不代表全量精度."
+fi
+if (( $# != 0 )); then
+    echo "[错误] 用法: bash run.sh [-test]" >&2
+    exit 2
+fi
+
 # 编译主机配置区: 只修改等号右侧的路径或名称.板端使用上传的 board_paths.conf.
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 模型目录: 根据本脚本的位置自动确定.
@@ -23,13 +40,13 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 模型输出目录: 转换与编译产物保存在这里.
     MODEL_OUTPUT_DIR="${MODEL_ASSETS_DIR}"
     # 临时构建目录: 缓存和中间文件保存在仓库外.
-    BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/whisper_tiny"
+    BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/whisper_tiny${EVAL_PATH_SUFFIX}"
 
     # 3. 板端地址与数据.
     # 板端地址: SSH 用户和地址.
     BOARD_HOST="root@192.168.0.92"
     # 板端部署目录: 上传模型、程序和本脚本的目录,必须填写.
-    BOARD_DEPLOY_DIR="/root/hailong.he/open_models/whisper_tiny"
+    BOARD_DEPLOY_DIR="/root/hailong.he/open_models/whisper_tiny${EVAL_PATH_SUFFIX}"
     # 板端结果目录: 保存本次测试汇总.
     BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # 板端 LibriSpeech test-clean 数据集目录.
@@ -81,12 +98,14 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     fi
     python3 -c 'from whisper.normalizers import EnglishTextNormalizer; from whisper.tokenizer import get_tokenizer'
 
-    echo "[开发板 1/4] 在板端整理 2620 条音频并生成 Mel 输入."
+    echo "[开发板 1/4] 在板端整理本次音频并生成 Mel 输入."
     "${SCRIPT_DIR}/board/prepare_board_audio" \
         --dataset-root "${LIBRISPEECH_ROOT}" \
         --filters "${SCRIPT_DIR}/models/mel_filters_f32.bin" \
         --output-dir "${CACHE_DIR}"
-    test "$(wc -l < "${CACHE_DIR}/source_manifest.jsonl")" -eq 2620
+    EXPECTED_SAMPLES=2620
+    [[ "${MTK_EVAL_TEST}" == 1 ]] && EXPECTED_SAMPLES=5
+    test "$(wc -l < "${CACHE_DIR}/source_manifest.jsonl")" -eq "${EXPECTED_SAMPLES}"
     mkdir -p "${RUN_DIR}/logs" "${REPORT_DIR}"
 
     echo "[开发板 2/4] 在板端运行双 DLA 常驻 C++ 推理."
@@ -299,7 +318,8 @@ scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/board/tools'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/__init__.py" \
+    "${MODEL_ROOT}/../../../../tools/evaluation.py" \
     "${MODEL_ROOT}/../../../../tools/files.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/tools/"
 
-echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"
+echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh' $([[ "${MTK_EVAL_TEST}" == 1 ]] && echo -test)"

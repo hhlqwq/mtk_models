@@ -15,17 +15,27 @@ from tools.storage import REPO_ROOT, load_model_config
 
 from tools.process import run_command
 
+from tools.evaluation import (
+    add_test_argument, coco_ids, is_test, matching_reference, result_status,
+)
+
 
 def upload(config: dict, paths: dict, config_path: Path) -> None:
     """准备少量示例并上传部署文件,不在板端启动推理."""
-    reference = paths["work"] / "onnx_reference.json"
+    reference = paths["work"] / ("onnx_reference_test.json" if is_test() else "onnx_reference.json")
     if not reference.is_file() or reference.stat().st_size == 0:
         raise FileNotFoundError(
             f"缺少 ONNX 精度报告: {reference}. 请先执行 deploy/host/evaluate_onnx.py.")
     report = json.loads(reference.read_text(encoding="utf-8"))
+    if is_test():
+        annotations = json.loads(
+            (paths["dataset"] / "annotations/instances_val2017.json").read_text())
+        coco_ids(image["id"] for image in annotations["images"])
+        if not matching_reference(report):
+            raise ValueError("FastSAM 快速参考的样本范围或指纹不一致.")
     accuracy = report.get("accuracy")
-    if (report.get("status") != "complete" or report.get("model") != "fastsam"
-            or report.get("metric") != "segm AR@100" or report.get("samples") != 5000
+    if (report.get("status") != result_status() or report.get("model") != "fastsam"
+            or report.get("metric") != "segm AR@100" or report.get("samples") != (100 if is_test() else 5000)
             or type(accuracy) not in (int, float) or not math.isfinite(accuracy)
             or not 0 <= accuracy <= 1):
         raise ValueError("缺少完整的 FastSAM 同协议 ONNX 参考精度,请先执行 evaluate_onnx.py.")
@@ -33,7 +43,7 @@ def upload(config: dict, paths: dict, config_path: Path) -> None:
     platform_path = paths["repo"] / "configs/platforms/genio_720.yaml"
     platform = yaml.safe_load(platform_path.read_text(encoding="utf-8"))
     board_host = os.environ.get("MTK_BOARD_HOST", platform["board_host"])
-    destination = board["deploy_dir"]
+    destination = board["deploy_dir"] + ("_test" if is_test() else "")
     if not re.fullmatch(r"/[A-Za-z0-9_./-]+", destination) or any(
             part in ("", ".", "..") for part in destination.split("/")[1:]):
         raise ValueError("board.deploy_dir 必须是无空格、空段或上级引用的绝对目录.")
@@ -56,7 +66,7 @@ def upload(config: dict, paths: dict, config_path: Path) -> None:
                   *[paths["repo"] / "tools" / name for name in
                     ("render_examples.py", "summarize_board_result.py", "model_size.py")]],
         "board/tools": [paths["repo"] / "tools" / name for name in
-                        ("__init__.py", "files.py", "process.py")],
+                        ("__init__.py", "files.py", "process.py", "evaluation.py")],
         "examples/input": [samples,
                            *sorted((paths["model"] / "examples/input").glob("sample_*.jpg"))],
     }
@@ -77,7 +87,7 @@ def upload(config: dict, paths: dict, config_path: Path) -> None:
         run_command(["scp", *ssh_options, *files, f"{board_host}:{remote}"])
     run_command(["ssh", *ssh_options, board_host,
                  "chmod 755 " + shlex.quote(f"{destination}/board/fastsam_board")])
-    print(f"[下一步] 登录 {board_host},执行: bash {destination}/run.sh", flush=True)
+    print(f"[下一步] 登录 {board_host},执行: bash {destination}/run.sh{' -test' if is_test() else ''}", flush=True)
 
 
 def main() -> None:
@@ -86,6 +96,7 @@ def main() -> None:
     parser.add_argument("--config", type=Path,
                         default=Path(__file__).resolve().parents[2] / "config.yaml")
     parser.add_argument("--work-dir", type=Path, help="覆盖默认的模型外部资源 build 目录.")
+    add_test_argument(parser)
     args = parser.parse_args()
     config_path = args.config.resolve()
     config = load_model_config(config_path)

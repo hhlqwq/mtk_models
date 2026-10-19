@@ -9,6 +9,11 @@ from typing import Callable
 from whisper.normalizers import BasicTextNormalizer, EnglishTextNormalizer
 from whisper.tokenizer import get_tokenizer
 
+from tools.evaluation import (
+    add_test_argument, record_selection, result_status, scope_metadata,
+)
+
+
 
 def parse_args() -> argparse.Namespace:
     """解析命令行参数."""
@@ -21,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--preprocess-metrics", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--allow-incomplete", action="store_true")
+    add_test_argument(parser)
     return parser.parse_args()
 
 
@@ -258,8 +264,9 @@ def main() -> None:
     truncated_sample_ids = sorted(
         item["sample_id"] for item in successful.values()
         if not item.get("reached_eot", False))
+    record_selection(sources)
     summary = {
-        "status": "complete" if complete else "incomplete",
+        "status": result_status("complete" if complete else "incomplete"), **scope_metadata(),
         "dataset": args.dataset,
         "expected_samples": len(sources),
         "successful_samples": len(successful),

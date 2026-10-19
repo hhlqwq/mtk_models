@@ -16,6 +16,8 @@
 #include <unordered_set>
 #include <vector>
 
+#include "../evaluation.h"
+
 namespace mtk {
 namespace fs = std::filesystem;
 
@@ -57,6 +59,14 @@ inline std::vector<fs::path> ListImages(const fs::path& directory, int limit) {
         }
     }
     std::sort(images.begin(), images.end());
+    if (IsTestEvaluation()) {
+        std::vector<int64_t> ids;
+        for (const auto& image : images) ids.push_back(std::stoll(image.stem().string()));
+        const auto selected = TestCocoIds(ids);
+        images.erase(std::remove_if(images.begin(), images.end(), [&](const auto& image) {
+            return !selected.count(std::stoll(image.stem().string()));
+        }), images.end());
+    }
     if (limit > 0 && images.size() > static_cast<size_t>(limit)) {
         images.resize(limit);
     }

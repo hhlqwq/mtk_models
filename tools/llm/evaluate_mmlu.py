@@ -11,6 +11,10 @@ import numpy as np
 
 from tools.files import sha256
 
+from tools.evaluation import (
+    add_test_argument, is_test, record_selection, result_status, scope_metadata,
+)
+
 
 DATA_SHA256 = "74a41822ce7d3def56e1682f958469c04642a5336a5ce912fa375fdb90fb25d7"
 
@@ -52,7 +56,8 @@ def prepare(args):
     rows = parquet.read_table(args.dataset).to_pylist()
     if len(rows) != 14042 or len({row["subject"] for row in rows}) != 57:
         raise ValueError("完整 MMLU 题数或学科数不符.")
-    selected = select_questions(rows, args.limit, args.seed)
+    selected = (sorted(random.Random(args.seed).sample(range(len(rows)), 16))
+                if is_test() else select_questions(rows, args.limit, args.seed))
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
     choices = [tokenizer.encode(" " + letter, add_special_tokens=False)
                for letter in "ABCD"]
@@ -70,22 +75,26 @@ def prepare(args):
         cases.append({"id": index, "subject": row["subject"],
                       "source_question_id": source_index,
                       "input_ids": tokens, "answer": int(row["answer"])})
+    subject_count = len({case["subject"] for case in cases})
     maximum = max(len(case["input_ids"]) for case in cases)
-    print(f"[MMLU 输入] {len(cases)} 题,57 学科,0-shot,最长 {maximum} Token.",
+    print(f"[MMLU 输入] {len(cases)} 题,{subject_count} 学科,0-shot,最长 {maximum} Token.",
           flush=True)
     args.output.mkdir(parents=True, exist_ok=True)
     protocol = {"dataset": "cais/mmlu", "dataset_sha256": DATA_SHA256,
                 "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
-                "split": "test", "shots": 0, "subjects": 57,
+                "split": "test", "shots": 0, "subjects": subject_count,
                 "scope": "first_round_stratified_subset" if args.limit else "full_test",
                 "dataset_questions": len(rows), "sampling_seed": args.seed,
-                "sampling": "proportional_subject_largest_remainder",
+                "sampling": "fixed_seed_smoke_subset" if is_test() else "proportional_subject_largest_remainder",
                 "selected_source_question_ids": selected,
                 "questions": len(cases), "maximum_prompt_tokens": maximum,
                 "context": args.context, "choice_token_ids": [x[0] for x in choices],
                 "chat_template": False, "add_special_tokens": False,
                 "scoring": "argmax_single_token_continuation_space_ABCD",
                 "model_config_sha256": sha256(args.model / "config.json")}
+    if is_test():
+        record_selection(row["source_question_id"] for row in cases)
+        protocol.update(status=result_status(), **scope_metadata())
     # 长度检查结果仍落盘,便于确定实际所需上下文;不输出截断题目.
     (args.output / "length_report.json").write_text(
         json.dumps(protocol, indent=2) + "\n")
@@ -182,6 +191,8 @@ def evaluate(args):
     protocol = json.loads((args.data / "protocol.json").read_text())
     if sha256(args.data / "cases.json") != protocol["cases_sha256"]:
         raise ValueError("MMLU 题目 Token 文件哈希不符.")
+    if protocol.get("evaluation_scope") == "subset" and not is_test():
+        raise ValueError("快速题集必须使用 -test,不能作为正式评测输入.")
     cases = json.loads((args.data / "cases.json").read_text())
     if args.diagnostic_questions:
         if args.diagnostic_questions > len(cases):
@@ -190,6 +201,8 @@ def evaluate(args):
         indices = np.linspace(0, len(order) - 1,
                               args.diagnostic_questions, dtype=int)
         cases = sorted((order[index] for index in indices), key=lambda row: row["id"])
+    if is_test():
+        record_selection(row["source_question_id"] for row in cases)
     args.output.mkdir(parents=True, exist_ok=True)
     meta = {"backend": args.backend, "cases_sha256": protocol["cases_sha256"]}
     if args.diagnostic_questions:
@@ -280,7 +293,7 @@ def evaluate(args):
                 stream.write(json.dumps(row) + "\n")
                 stream.flush()
                 done.append(row)
-                if len(done) % 100 == 0:
+                if len(done) % 100 == 0 or len(done) == len(cases):
                     print(f"[MMLU {args.backend}] {len(done)}/{len(cases)}.",
                           flush=True)
     finally:
@@ -299,6 +312,7 @@ def evaluate(args):
     if args.diagnostic_questions:
         report["scope"] = "multiblock_diagnostic_not_first_round_accuracy"
         report["diagnostic_case_ids"] = [row["id"] for row in cases]
+    report.update(status=result_status(), **scope_metadata())
     (args.output / "mmlu_accuracy.json").write_text(
         json.dumps(report, indent=2) + "\n")
     print(f"[MMLU完成] {correct}/{len(done)},Accuracy={report['accuracy']:.6f}.",
@@ -322,7 +336,14 @@ def main():
     parser.add_argument("--package", type=Path)
     parser.add_argument("--library", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    add_test_argument(parser)
     args = parser.parse_args()
+    if is_test():
+        args.output = args.output / "test"
+        if args.backend == "prepare":
+            args.limit = 16
+        else:
+            args.diagnostic_questions = 16
     if not 0 <= args.diagnostic_questions <= 1000:
         parser.error("诊断题数须位于 [0,1000].")
     if args.backend == "prepare":

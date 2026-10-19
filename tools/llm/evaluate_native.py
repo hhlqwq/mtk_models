@@ -8,6 +8,10 @@ import re
 import subprocess
 import time
 
+from tools.evaluation import (
+    add_test_argument, is_test, record_selection, result_status, scope_metadata,
+)
+
 
 def available_memory():
     """读取系统可用内存,不能单独代表模型驱动内存."""
@@ -94,7 +98,12 @@ def main():
     parser.add_argument("--max-new-tokens", type=int, default=768)
     parser.add_argument("--performance-input", type=Path,
                         help="可选固定 128 Token 输入,单独记录统一性能指标.")
+    add_test_argument(parser)
     args = parser.parse_args()
+    if is_test():
+        args.max_new_tokens = 32
+        if not args.run_id.startswith("test_"):
+            args.run_id = "test_" + args.run_id
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.run_id) or args.max_new_tokens < 2:
         parser.error("运行编号或生成上限无效.")
     folder = args.root / "results" / args.run_id
@@ -104,10 +113,10 @@ def main():
               "samples": [], "text_input_checks": []}
     for language in ("zh", "en"):
         row, token_text = run_sample(args.root, folder, language, True,
-                                     args.max_new_tokens)
+                                     args.max_new_tokens, require_eos=not is_test())
         report["samples"].append(row)
         check, text = run_sample(args.root, folder, language, False,
-                                  args.max_new_tokens)
+                                  args.max_new_tokens, require_eos=not is_test())
         check["text_equals_token_input_response"] = text == token_text
         report["text_input_checks"].append(check)
         if text != token_text:
@@ -120,6 +129,9 @@ def main():
         row.update(unit="token/s", scope="fixed_128_input_max_128_generated_performance",
                    generated_token_count=len(row["generated_tokens"]))
         report["performance"] = row
+    if is_test():
+        record_selection(("zh", "en"))
+    report.update(status=result_status(), **scope_metadata())
     (folder / "board_metrics.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     print(f"[板端证据完成] {folder}", flush=True)

@@ -5,6 +5,23 @@ set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# 默认全量,-test 只缩小评测数据,不改变校准或模型转换配置.
+export MTK_EVAL_TEST=0
+EVAL_PATH_SUFFIX=""
+if (( $# == 1 )) && [[ "$1" == "-test" ]]; then
+    export MTK_EVAL_TEST=1
+    EVAL_PATH_SUFFIX="_test"
+    shift
+    EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
+    [[ "${EVAL_RUN_ID}" == test_* ]] || EVAL_RUN_ID="test_${EVAL_RUN_ID}"
+    export EVAL_RUN_ID
+    echo "[模式] 固定小子集流程验证,不代表全量精度."
+fi
+if (( $# != 0 )); then
+    echo "[错误] 用法: bash run.sh [-test]" >&2
+    exit 2
+fi
+
 if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     source "${SCRIPT_DIR}/board_paths.conf"
     RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
@@ -23,7 +40,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
         --images "${BOARD_DATASET_DIR}/images" --output-dir "${RUN_DIR}" \
         --warmup 20 --confidence 0.001 --iou 0.6 --max-det 300 \
         2>&1 | tee "${RESULT_DIR}/board_eval.log"
-    echo "[开发板 2/3] 校验 5000 张覆盖并计算精度."
+    echo "[开发板 2/3] 校验本次样本覆盖并计算精度."
     python3 "${SCRIPT_DIR}/board/evaluate_coco.py" \
         --annotations "${BOARD_DATASET_DIR}/annotations/instances_val2017.json" \
         --predictions "${RUN_DIR}/predictions.json" \
@@ -54,13 +71,13 @@ MODEL_WEIGHTS="${YOLOV8_WEIGHTS:-${MODEL_ASSETS_DIR}/yolov8n.pt}"
 MODEL_OUTPUT_DIR="${MODEL_ASSETS_DIR}"
 CALIBRATION_DIR="${YOLOV8_CALIBRATION_DIR:-${MTK_DATASET_ROOT}/coco/coco_val2017/images}"
 DATASET_DIR="${CALIBRATION_DIR%/images}"
-BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yolov8n"
+BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yolov8n${EVAL_PATH_SUFFIX}"
 
 NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host"
 TOOLCHAIN_ROOT="/data/users/hailong.he/data/MTKG720/cpp_toolchain"
 NEURON_INCLUDE="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
 BOARD_HOST="root@192.168.0.92"
-BOARD_DEPLOY_DIR="/root/hailong.he/open_models/yolov8n"
+BOARD_DEPLOY_DIR="/root/hailong.he/open_models/yolov8n${EVAL_PATH_SUFFIX}"
 BOARD_DATASET_DIR="/root/hailong.he/datasets/coco/val2017"
 SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 test -s "${MODEL_WEIGHTS}"
@@ -153,8 +170,9 @@ scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/board/tools'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/__init__.py" \
+    "${MODEL_ROOT}/../../../../tools/evaluation.py" \
     "${MODEL_ROOT}/../../../../tools/files.py" \
     "${MODEL_ROOT}/../../../../tools/coco.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/tools/"
 
-echo "[NEXT] 开发板执行: bash '${BOARD_DEPLOY_DIR}/run.sh'"
+echo "[NEXT] 开发板执行: bash '${BOARD_DEPLOY_DIR}/run.sh' $([[ "${MTK_EVAL_TEST}" == 1 ]] && echo -test)"

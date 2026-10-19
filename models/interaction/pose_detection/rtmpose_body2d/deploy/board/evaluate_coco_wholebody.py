@@ -10,6 +10,10 @@ import numpy as np
 from xtcocotools.coco import COCO
 from xtcocotools.cocoeval import COCOeval
 
+from tools.evaluation import (
+    add_test_argument, coco_ids, is_test, result_status, scope_metadata,
+)
+
 SIGMAS = np.asarray([
     0.026, 0.025, 0.025, 0.035, 0.035, 0.079, 0.079, 0.072, 0.072,
     0.062, 0.062, 0.107, 0.107, 0.087, 0.087, 0.089, 0.089, 0.068,
@@ -124,6 +128,7 @@ def evaluate_component(coco_gt: COCO, coco_dt: COCO, name: str,
     print(f"[EVAL] {name}: {iou_type}")
     evaluator = COCOeval(coco_gt, coco_dt, iou_type, sigmas, use_area=True)
     evaluator.params.useSegm = None
+    evaluator.params.imgIds = coco_ids(coco_gt.getImgIds())
     evaluator.evaluate()
     evaluator.accumulate()
     evaluator.summarize()
@@ -135,6 +140,8 @@ def evaluate(args: argparse.Namespace) -> None:
     if SIGMAS.shape != (133,):
         raise RuntimeError(f"WholeBody sigma 数量错误: {SIGMAS.shape}")
     grouped = load_predictions(args.predictions)
+    if is_test() and len(grouped) != 100:
+        raise ValueError("姿态快速评测需要 100 张图片的全部检测框.")
     results = format_results(grouped)
     args.formatted.parent.mkdir(parents=True, exist_ok=True)
     args.formatted.write_text(
@@ -152,6 +159,7 @@ def evaluate(args: argparse.Namespace) -> None:
                     coco_gt, coco_dt, name, iou_type, sigmas)
     args.metrics.write_text(
         json.dumps({
+            "status": result_status(), **scope_metadata(),
             "protocol": {
                 "score_mode": "bbox_keypoint",
                 "keypoint_score_threshold": 0.2,
@@ -175,6 +183,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--formatted", type=Path, required=True)
     parser.add_argument("--metrics", type=Path, required=True)
     parser.add_argument("--summary-log", type=Path, required=True)
+    add_test_argument(parser)
     return parser.parse_args()
 
 

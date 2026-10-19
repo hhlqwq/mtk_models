@@ -280,3 +280,19 @@ G720 的板端连接与工具链配置统一位于 `configs/platforms/genio_720.
 部署入口会将板端需要的公共 Python 模块一起复制到部署目录,无需板端访问代码仓库.模型相关的解码、预处理约定和平台适配仍由模型自身维护.
 
 公共 Python 回归测试可在编译容器内执行 `python3 -m unittest discover -s tests -p 'test_*.py'`.C++ 回归测试源码为 `tests/common_cpp_test.cpp`,交叉编译后在目标开发板执行;两者均不需要模型权重或全量数据集.LLM 契约测试使用编译容器已有的 Converter 依赖.
+
+
+### 快速流程验证
+
+各模型 `deploy/run.sh` 默认执行原有全量流程. 加 `-test` 使用固定小子集验证流程:
+`bash deploy/run.sh -test`. 主机准备完成后,在开发板也使用 `bash run.sh -test`.
+
+快速模式只减少评测数据,不改变校准、量化和模型编译配置. COCO 检测、分割和姿态各取 100 张图片
+(姿态保留所选图片的全部人体框),ImageNet 取 200 张,LFW 取均衡的 100 对,
+DA-2K 取 100 张,ESC-50 每类每折各取一条共 250 条,LibriSpeech 取 5 条.
+LLM 评测入口支持 `-test`,MMLU 使用 16 题,WikiText 使用前 4 个诊断块;
+原生模型转换入口 `run_native.sh` 保留原有阶段参数.
+
+快速评测报告与全量报告分开保存; 板端快速部署目录以 `_test` 区分,运行编号以 `test_` 开头.
+快速报告标记 `evaluation_scope: subset` 和 `status: smoke_test`,只用于流程验证,
+不代表全量精度; 快速参考报告独立保存,只有样本范围和指纹一致时才计算精度变化.

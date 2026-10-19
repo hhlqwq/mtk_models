@@ -121,7 +121,7 @@ def package(work, output, prefill, quantized_prefix=None, quality_results=None,
         yaml.safe_dump({"modelOptions": options, "runtimeOptions": runtime},
                        sort_keys=False, allow_unicode=True))
     write_run_script(output)
-    copy_public_tools(output / "scripts/tools", ("files",))
+    copy_public_tools(output / "scripts/tools", ("files", "evaluation"))
     quality = None
     if quality_results is not None:
         # 同一模型的两个后端必须使用完全相同的输入,并关联实际转换资源.
@@ -312,7 +312,7 @@ def record_board_results(work, output, results):
     (output / "results/summary.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
     write_run_script(output)
-    copy_public_tools(output / "scripts/tools", ("files",))
+    copy_public_tools(output / "scripts/tools", ("files", "evaluation"))
     readme = (output / "README.md").read_text().replace(
         "当前打包状态为 compiled_pending_board,板端结果需另行记录.",
         "当前状态为 board_verified,仅表示板端推理与双语样例完成,正式质量待评测.")

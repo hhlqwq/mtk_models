@@ -16,6 +16,8 @@ import torch
 from torchvision.ops import batched_nms
 import tqdm
 
+from tools.evaluation import add_test_argument, coco_ids, result_status, scope_metadata
+
 COCO_91_CLASSES = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21,
     22, 23, 24, 25, 27, 28, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,
@@ -135,6 +137,8 @@ def evaluate_onnx_accuracy(args: argparse.Namespace) -> None:
     if len(image_ids) != 5000 or len(paths) != 5000 or {
             int(path.stem) for path in paths} != set(image_ids):
         raise ValueError("图片与标注必须覆盖同一份 COCO val2017 全量 5000 张图片.")
+    image_ids = coco_ids(image_ids)
+    paths = [path for path in paths if int(path.stem) in set(image_ids)]
     infer = build_fp32_infer(args)
     records = []
     for path in tqdm.tqdm(paths, desc="ONNX FP32 全量精度", unit="img"):
@@ -178,7 +182,7 @@ def evaluate_onnx_accuracy(args: argparse.Namespace) -> None:
         raise ValueError("ONNX mAP 无效.")
     args.summary.parent.mkdir(parents=True, exist_ok=True)
     args.summary.write_text(json.dumps({
-        "status": "complete", "backend": "ONNX FP32", "images": len(image_ids),
+        "status": result_status(), **scope_metadata(), "backend": "ONNX FP32", "images": len(image_ids),
         "map_50_95": value,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[ONNX] mAP@0.5:0.95: {value:.6f}", flush=True)
@@ -195,6 +199,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--confidence", type=float, default=0.001)
     parser.add_argument("--iou", type=float, default=0.6)
     parser.add_argument("--max-det", type=int, default=300)
+    add_test_argument(parser)
     return parser.parse_args()
 
 

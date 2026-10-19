@@ -6,6 +6,23 @@ set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# 默认全量,-test 只缩小评测数据,不改变校准或模型转换配置.
+export MTK_EVAL_TEST=0
+EVAL_PATH_SUFFIX=""
+if (( $# == 1 )) && [[ "$1" == "-test" ]]; then
+    export MTK_EVAL_TEST=1
+    EVAL_PATH_SUFFIX="_test"
+    shift
+    EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
+    [[ "${EVAL_RUN_ID}" == test_* ]] || EVAL_RUN_ID="test_${EVAL_RUN_ID}"
+    export EVAL_RUN_ID
+    echo "[模式] 固定小子集流程验证,不代表全量精度."
+fi
+if (( $# != 0 )); then
+    echo "[错误] 用法: bash run.sh [-test]" >&2
+    exit 2
+fi
+
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
     source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
@@ -15,10 +32,10 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     EVAL_CORPUS="${EVAL_CORPUS:-}"
     # 2. 模型产物与临时目录.
     MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR:-${MODEL_ASSETS_DIR}/generated}"
-    BUILD_WORK_DIR="${BUILD_WORK_DIR:-/tmp/hailongcodex/$(date +%F)/deepseek_r1_distill_qwen_1_5b}"
+    BUILD_WORK_DIR="${BUILD_WORK_DIR:-/tmp/hailongcodex/$(date +%F)/deepseek_r1_distill_qwen_1_5b}${EVAL_PATH_SUFFIX}"
     # 3. 板端地址与结果目录.
     BOARD_HOST="${BOARD_HOST:-root@192.168.0.92}"
-    BOARD_DEPLOY_DIR="${BOARD_DEPLOY_DIR:-/root/hailong.he/open_models/deepseek_r1_distill_qwen_1_5b}"
+    BOARD_DEPLOY_DIR="${BOARD_DEPLOY_DIR:-/root/hailong.he/open_models/deepseek_r1_distill_qwen_1_5b}${EVAL_PATH_SUFFIX}"
     BOARD_RESULTS_DIR="${BOARD_RESULTS_DIR:-${BOARD_DEPLOY_DIR}/results}"
     # 4. 固定输入范围与解码上限.当前仅实现单 Token Prefill/Decode.
     CONTEXT_SIZE="${CONTEXT_SIZE:-1024}"
@@ -96,14 +113,17 @@ echo '[容器 4/5] 交叉编译 Neuron Runtime 桥接库.'
 
 echo '[容器 5/5] 取回 Docker 产物并上传板端.'
 mkdir -p "${BUILD_WORK_DIR}/models"
-for name in export_manifest.json source_manifest.json artifact_manifest.json samples.json reference.json embedding_fp16.bin; do
+for name in export_manifest.json source_manifest.json artifact_manifest.json samples${EVAL_PATH_SUFFIX}.json reference${EVAL_PATH_SUFFIX}.json embedding_fp16.bin; do
     cp -- "${MODEL_OUTPUT_DIR}/${name}" "${BUILD_WORK_DIR}/models/${name}"
 done
+if [[ "${MTK_EVAL_TEST}" == 1 ]]; then
+    cp -- "${BUILD_WORK_DIR}/models/samples_test.json" "${BUILD_WORK_DIR}/models/samples.json"
+fi
  sh -c \
     "cd '${MODEL_OUTPUT_DIR}' && tar -cf - ./*.dla" > "${BUILD_WORK_DIR}/dla.tar"
 tar -xf "${BUILD_WORK_DIR}/dla.tar" -C "${BUILD_WORK_DIR}/models"
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board'"
+    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board' '${BOARD_DEPLOY_DIR}/board/tools'"
 scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/models/"*.dla \
     "${BUILD_WORK_DIR}/models/embedding_fp16.bin" \
     "${BUILD_WORK_DIR}/models/export_manifest.json" \
@@ -112,10 +132,12 @@ scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/models/"*.dla \
     "${BUILD_WORK_DIR}/models/samples.json" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/"
 scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/board/evaluate.py" \
     "${BUILD_WORK_DIR}/libneuron_bridge.so" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
+scp "${SSH_OPTIONS[@]}" "${MTK_MODELS_ROOT}/tools/__init__.py" "${MTK_MODELS_ROOT}/tools/evaluation.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/tools/"
 scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/run.sh"
 printf 'BOARD_RESULTS_DIR=%q\n' "${BOARD_RESULTS_DIR}" | \
     ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "cat > '${BOARD_DEPLOY_DIR}/board_paths.conf'"
-echo "[下一步] 在板端执行: bash '${BOARD_DEPLOY_DIR}/run.sh'"
+echo "[下一步] 在板端执行: bash '${BOARD_DEPLOY_DIR}/run.sh' $([[ "${MTK_EVAL_TEST}" == 1 ]] && echo -test)"
 # 上传统一大小记录工具,后续汇总自动保留模型大小.
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/model_size.py"

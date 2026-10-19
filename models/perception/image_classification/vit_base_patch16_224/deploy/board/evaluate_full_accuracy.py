@@ -6,6 +6,12 @@ import math
 import statistics
 from pathlib import Path
 
+from tools.evaluation import (
+    add_test_argument, is_test, record_selection, result_status, scope_metadata,
+    select_samples,
+)
+
+
 
 def parse_args() -> argparse.Namespace:
     """解析指标阶段输入参数."""
@@ -14,6 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--labels", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
+    add_test_argument(parser)
     return parser.parse_args()
 
 
@@ -39,11 +46,17 @@ def read_labels(path: Path) -> list[int]:
 def evaluate(args: argparse.Namespace) -> None:
     """校验全部 C++ 输出并汇总精度与纯 NPU 耗时."""
     labels = read_labels(args.labels)
+    labels = select_samples(list(enumerate(labels)), "vit_base_patch16_224", key=lambda row: row[0])
+    labels = [row[1] for row in labels]
+    expected = len(labels)
+    if is_test():
+        record_selection(f"ILSVRC2012_val_{index + 1:08d}.JPEG" for index in range(expected))
+    holdout_count = sum(not 1000 <= index < 1100 for index in range(expected))
     top1 = top5 = holdout_top1 = holdout_top5 = 0
     timings = []
     with args.predictions.open(encoding="utf-8") as stream:
         for index, line in enumerate(stream):
-            if index >= 50000:
+            if index >= expected:
                 raise ValueError("预测数量超过 50000.")
             record = json.loads(line)
             expected_image = f"ILSVRC2012_val_{index + 1:08d}.JPEG"
@@ -67,23 +80,23 @@ def evaluate(args: argparse.Namespace) -> None:
                 holdout_top5 += labels[index] in predictions
             if (index + 1) % 5000 == 0:
                 print(f"[METRIC] ViT {index + 1}/50000 条.", flush=True)
-    if len(timings) != 50000:
+    if len(timings) != expected:
         raise ValueError(f"预测数量不完整: {len(timings)}/50000.")
     sorted_times = sorted(timings)
     memory_path = args.predictions.parent / "memory.json"
     memory = json.loads(memory_path.read_text(encoding="utf-8")) if memory_path.is_file() else {}
     summary = {
         "peak_rss_kib": memory.get("peak_rss_kib"),
-        "status": "complete",
+        "status": result_status(), **scope_metadata(),
         "model": "vit_base_patch16_224",
         "run_id": args.run_id,
         "dataset": "imagenet_val2012",
-        "samples": 50000,
-        "holdout_samples": 49900,
-        "npu_top1": top1 / 50000,
-        "npu_top5": top5 / 50000,
-        "holdout_top1": holdout_top1 / 49900,
-        "holdout_top5": holdout_top5 / 49900,
+        "samples": expected,
+        "holdout_samples": holdout_count,
+        "npu_top1": top1 / expected,
+        "npu_top5": top5 / expected,
+        "holdout_top1": holdout_top1 / holdout_count,
+        "holdout_top5": holdout_top5 / holdout_count,
         "timing_scope": "persistent C++ Neuron Runtime inference call only",
         "npu_mean_ms": statistics.fmean(timings),
         "npu_p95_ms": sorted_times[math.ceil(0.95 * len(sorted_times)) - 1],
@@ -92,7 +105,7 @@ def evaluate(args: argparse.Namespace) -> None:
     (args.report / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8")
-    print(f"[OK] ViT 全量指标: {args.report}.")
+    print(f"[OK] ViT 指标: {args.report}.")
 
 
 if __name__ == "__main__":

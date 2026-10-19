@@ -5,6 +5,23 @@ set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=2 OMP_NUM_THREADS=2
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# 默认全量,-test 只缩小评测数据,不改变校准或模型转换配置.
+export MTK_EVAL_TEST=0
+EVAL_PATH_SUFFIX=""
+if (( $# == 1 )) && [[ "$1" == "-test" ]]; then
+    export MTK_EVAL_TEST=1
+    EVAL_PATH_SUFFIX="_test"
+    shift
+    EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
+    [[ "${EVAL_RUN_ID}" == test_* ]] || EVAL_RUN_ID="test_${EVAL_RUN_ID}"
+    export EVAL_RUN_ID
+    echo "[模式] 固定小子集流程验证,不代表全量精度."
+fi
+if (( $# != 0 )); then
+    echo "[错误] 用法: bash run.sh [-test]" >&2
+    exit 2
+fi
+
 if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     source "${SCRIPT_DIR}/board_paths.conf"
     BOARD_PRECISION="${YAMNET_PRECISION:-${BOARD_PRECISION:-w8a16}}"
@@ -25,7 +42,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     python3 "${SCRIPT_DIR}/board/evaluate.py" --mode prepare \
         --dataset "${BOARD_DATASET_DIR}" --work "${RESULT_DIR}/work" \
         2>&1 | tee "${RESULT_DIR}/prepare.log"
-    echo '[开发板 2/3] 常驻模型预热并执行真实 NPU 全量推理.'
+    echo '[开发板 2/3] 常驻模型预热并执行真实 NPU 推理.'
     "${SCRIPT_DIR}/board/yamnet_eval" "${SCRIPT_DIR}/models/model_${BOARD_PRECISION}.dla" \
         "${CONFIG}" "${RESULT_DIR}/work" \
         2>&1 | tee "${RESULT_DIR}/npu.log"
@@ -49,8 +66,8 @@ MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
 MODELS_DIR="${MODEL_ASSETS_DIR}"
 DATASET_DIR="${MTK_DATASET_ROOT}/ESC-50"
-BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yamnet"
-EXPORT_PYTHON="${YAMNET_EXPORT_PYTHON:-${BUILD_WORK_DIR}/venv/bin/python}"
+BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/yamnet${EVAL_PATH_SUFFIX}"
+EXPORT_PYTHON="${YAMNET_EXPORT_PYTHON:-/tmp/hailongcodex/$(date +%F)/yamnet/venv/bin/python}"
 PRECISION="${YAMNET_PRECISION:-w8a16}"
 case "${PRECISION}" in fp16|int8|w8a16|int8_tail16) ;; *) exit 1 ;; esac
 
@@ -58,7 +75,7 @@ NCC_ROOT="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuro
 NEURON_INCLUDE="/opt/mtk/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/include"
 TARGET_LIBS="/data/users/hailong.he/data/MTKG720/cpp_toolchain/genio720-libs"
 BOARD_HOST="root@192.168.0.92"
-BOARD_DEPLOY_DIR="/root/hailong.he/open_models/yamnet"
+BOARD_DEPLOY_DIR="/root/hailong.he/open_models/yamnet${EVAL_PATH_SUFFIX}"
 BOARD_DATASET_DIR="/root/hailong.he/datasets/ESC-50"
 SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 test -s "${MODELS_DIR}/yamnet.h5"
@@ -95,41 +112,21 @@ aarch64-linux-gnu-g++ -I"${MTK_MODELS_ROOT}" -std=c++20 -O3 -DNDEBUG -Wall -Wext
     -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/board/yamnet_eval.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" -Wl,--allow-shlib-undefined -pthread -ldl \
     -o "${BUILD_WORK_DIR}/yamnet_eval"
-env MODEL_ROOT="${MODEL_ROOT}"  MODELS_DIR="${MODELS_DIR}"  DATASET_DIR="${DATASET_DIR}" \
-     BUILD_WORK_DIR="${BUILD_WORK_DIR}" python - <<'REFERENCE'
-import hashlib,json,os,sys,shutil
-from pathlib import Path
-root=Path(os.environ['MODEL_ROOT']); dataset=Path(os.environ['DATASET_DIR']); work=Path(os.environ['BUILD_WORK_DIR'])
-sys.path.insert(0,str(root/'deploy/board'))
-from audio_utils import load_records,mapping
-assets=Path(os.environ['MODELS_DIR'])
-labels=assets/'upstream/yamnet_class_map.csv'
-reference={backend:json.loads((work/backend/'summary.json').read_text()) for backend in ['tensorflow','onnx']}
-reference['annotations_sha256']=hashlib.sha256((dataset/'meta/esc50.csv').read_bytes()).hexdigest()
-reference['mapping']=mapping(labels)
-(assets/'fp32_reference.json').write_text(json.dumps(reference,indent=2))
-shutil.copy2(labels,assets/'yamnet_class_map.csv')
-inputs=root/'examples/input'; inputs.mkdir(parents=True,exist_ok=True)
-records=load_records(dataset); samples=[]
-reference['audio_sha256']={row['filename']:hashlib.sha256((dataset/'audio'/row['filename']).read_bytes()).hexdigest() for row in records}
-(assets/'fp32_reference.json').write_text(json.dumps(reference,indent=2))
-for number,target in enumerate([0,39,42],1):
-    row=next(row for row in records if int(row['target'])==target)
-    shutil.copy2(dataset/'audio'/row['filename'],inputs/f'sample_{number}.wav')
-    samples.append(row)
-(inputs/'samples.json').write_text(json.dumps(samples,indent=2))
-REFERENCE
+python "${SCRIPT_DIR}/host/prepare_reference.py" --model-root "${MODEL_ROOT}" \
+    --models-dir "${MODELS_DIR}" --dataset "${DATASET_DIR}" --work "${BUILD_WORK_DIR}"
 
 echo '[容器 4/4] 同步板端原始音频、模型、程序及运行入口.'
 ssh -n "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
-    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board' '${BOARD_DEPLOY_DIR}/examples/input' '${BOARD_DATASET_DIR}'"
+    "mkdir -p '${BOARD_DEPLOY_DIR}/models' '${BOARD_DEPLOY_DIR}/board' '${BOARD_DEPLOY_DIR}/board/tools' '${BOARD_DEPLOY_DIR}/examples/input' '${BOARD_DATASET_DIR}'"
 rsync -a --info=progress2 "${DATASET_DIR}/audio" "${DATASET_DIR}/meta" \
     "${DATASET_DIR}/LICENSE" "${DATASET_DIR}/source_manifest.json" "${BOARD_HOST}:${BOARD_DATASET_DIR}/"
 scp "${SSH_OPTIONS[@]}" "${MODELS_DIR}/model_${PRECISION}.dla" "${MODELS_DIR}/runtime_config_${PRECISION}.csv" \
-    "${MODELS_DIR}/yamnet_class_map.csv" "${MODELS_DIR}/fp32_reference.json" \
+    "${MODELS_DIR}/yamnet_class_map.csv" "${MODELS_DIR}/fp32_reference${EVAL_PATH_SUFFIX}.json" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/models/"
 scp "${SSH_OPTIONS[@]}" "${BUILD_WORK_DIR}/yamnet_eval" "${SCRIPT_DIR}/board/"*.py \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/"
+scp "${SSH_OPTIONS[@]}" "${MTK_MODELS_ROOT}/tools/__init__.py" \
+    "${MTK_MODELS_ROOT}/tools/evaluation.py" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/tools/"
 scp "${SSH_OPTIONS[@]}" "${SCRIPT_DIR}/run.sh" "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/"
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/examples/input/"* "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/examples/input/"
 printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nBOARD_PRECISION=%q\n' \
@@ -140,4 +137,4 @@ ssh -n "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/model_size.py"
 
-echo "[NEXT] 开发板执行: bash '${BOARD_DEPLOY_DIR}/run.sh'"
+echo "[NEXT] 开发板执行: bash '${BOARD_DEPLOY_DIR}/run.sh' $([[ "${MTK_EVAL_TEST}" == 1 ]] && echo -test)"

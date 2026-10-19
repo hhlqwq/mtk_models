@@ -12,10 +12,15 @@ import numpy as np
 
 from audio_utils import load_records, load_waveform, mapping, metrics, preprocess
 
+from tools.evaluation import (
+    add_test_argument, audio_records, is_test, matching_reference, result_status,
+    scope_metadata,
+)
+
 
 def prepare(args):
     """在板端从真实 WAV 生成窗口缓存并记录逐音频前处理耗时."""
-    records = load_records(args.dataset)
+    records = audio_records(load_records(args.dataset))
     args.work.mkdir(parents=True, exist_ok=False)
     rows = []
     with (args.work / "features.bin").open("wb") as features, \
@@ -33,7 +38,7 @@ def prepare(args):
                          "sha256": hashlib.sha256(
                              (args.dataset / "audio" / row["filename"]).read_bytes()).hexdigest()})
             if (index + 1) % 50 == 0:
-                print(f"[AUDIO] {index + 1}/2000 音频.", flush=True)
+                print(f"[AUDIO] {index + 1}/{len(records)} 音频.", flush=True)
     (args.work / "audio_manifest.json").write_text(json.dumps(rows, indent=2))
     (args.work / "frontend_peak_rss_kib.txt").write_text(
         str(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
@@ -42,13 +47,13 @@ def prepare(args):
 
 def summarize(args):
     """验证覆盖和参考协议,计算主指标、窗口性能与可读示例."""
-    records = load_records(args.dataset)
+    records = audio_records(load_records(args.dataset))
     labels = args.models_dir / "yamnet_class_map.csv"
     indices = mapping(labels)
     scores = np.fromfile(args.work / "scores.bin", dtype="<f4")
-    if scores.size != 2000 * 521 or not np.isfinite(scores).all():
+    if scores.size != len(records) * 521 or not np.isfinite(scores).all():
         raise ValueError("板端分数覆盖不足或含非有限数.")
-    scores = scores.reshape(2000, 521)
+    scores = scores.reshape(len(records), 521)
     audio = json.loads((args.work / "audio_manifest.json").read_text())
     if [row["filename"] for row in audio] != [row["filename"] for row in records]:
         raise ValueError("音频顺序不一致.")
@@ -61,18 +66,25 @@ def summarize(args):
     npu = np.array([float(row["npu_ms"]) for row in timing_rows])
     if not np.isfinite(npu).all() or np.any(npu <= 0):
         raise ValueError("NPU 耗时含无效数.")
-    reference = json.loads((args.models_dir / "fp32_reference.json").read_text())
+    reference_path = args.models_dir / ("fp32_reference_test.json" if is_test() else "fp32_reference.json")
+    if is_test() and not reference_path.exists():
+        reference_path = args.models_dir / "fp32_reference.json"
+    reference = json.loads(reference_path.read_text())
     annotation_hash = hashlib.sha256((args.dataset / "meta/esc50.csv").read_bytes()).hexdigest()
     if reference["annotations_sha256"] != annotation_hash or reference["mapping"] != indices:
         raise ValueError("主机与板端标注或标签映射不一致.")
-    if {row["filename"]: row["sha256"] for row in audio} != reference["audio_sha256"]:
+    expected_hashes = reference["audio_sha256"]
+    if is_test():
+        expected_hashes = {row["filename"]: expected_hashes.get(row["filename"]) for row in audio}
+    if {row["filename"]: row["sha256"] for row in audio} != expected_hashes:
         raise ValueError("主机与板端原始音频哈希不一致.")
     actual = metrics(scores, records, indices)
-    baseline = reference["onnx"]["metrics"]["held_out"]["map"]
+    matched = matching_reference(reference)
+    baseline = reference["onnx"]["metrics"]["held_out"]["map"] if matched else None
     primary = actual["held_out"]["map"]
     with (args.work / "clip_times.csv").open() as stream:
         clip_rows = list(csv.DictReader(stream))
-    if [int(row["clip"]) for row in clip_rows] != list(range(2000)):
+    if [int(row["clip"]) for row in clip_rows] != list(range(len(records))):
         raise ValueError("音频推理阶段耗时覆盖不足.")
     preprocess_ms = np.array([row["preprocess_ms"] for row in audio])
     inference_ms = np.array([float(row["inference_stage_ms"]) for row in clip_rows])
@@ -82,9 +94,9 @@ def summarize(args):
             raise FileNotFoundError("含INT16 IO的部署必须使用独立的真实量化配置.")
         config_name = "runtime_config.csv"
     summary = {
-        "status": "complete", "model": "yamnet", "run_id": args.run_id,
+        "status": result_status(), **scope_metadata(), "model": "yamnet", "run_id": args.run_id,
         "precision": args.precision,
-        "dataset": "ESC-50", "samples": 2000, "patches": len(npu),
+        "dataset": "ESC-50", "samples": len(records), "patches": len(npu),
         "metric": "ESC-50 projected macro AP, folds 2-5",
         "evaluation_samples": actual["held_out"]["samples"],
         "calibration_fold": 1 if args.precision != "fp16" else None,
@@ -92,10 +104,10 @@ def summarize(args):
         "mapped_classes": 47,
         "unmapped_classes": ["drinking_sipping", "can_opening", "washing_machine"],
         "board_accuracy": primary, "reference_accuracy": baseline,
-        "accuracy_change_percentage_points": (primary - baseline) * 100,
-        "reference_source": "本次 ONNX FP32 同协议实测,固定标签投影,窗口分数均值",
-        "metrics": actual, "tensorflow_metrics": reference["tensorflow"]["metrics"],
-        "onnx_metrics": reference["onnx"]["metrics"],
+        "accuracy_change_percentage_points": None if baseline is None else (primary - baseline) * 100,
+        "reference_source": "本次 ONNX FP32 同协议实测,固定标签投影,窗口分数均值" if matched else None,
+        "metrics": actual, "tensorflow_metrics": reference["tensorflow"]["metrics"] if matched else None,
+        "onnx_metrics": reference["onnx"]["metrics"] if matched else None,
         "npu_mean_ms": float(npu.mean()), "npu_p95_ms": float(np.percentile(npu, 95)),
         "timing_scope": "常驻模型每个 0.48 秒步长窗口的 NeuronRuntime_inference,排除 20 次预热",
         "preprocess_mean_ms_per_clip": float(preprocess_ms.mean()),
@@ -142,6 +154,7 @@ def main():
     parser.add_argument("--run-id")
     parser.add_argument("--precision", choices=["fp16", "int8", "w8a16", "int8_tail16"],
                         default="w8a16")
+    add_test_argument(parser)
     args = parser.parse_args()
     if args.mode == "prepare":
         prepare(args)

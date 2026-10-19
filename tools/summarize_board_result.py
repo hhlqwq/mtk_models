@@ -8,6 +8,11 @@ from pathlib import Path
 
 from tools.files import read_json
 
+import os
+from tools.evaluation import (
+    add_test_argument, is_test, matching_reference, result_status, scope_metadata,
+)
+
 
 def require_count(report: dict, key: str, count: int) -> None:
     """验证全量样本计数,避免不完整结果被标为成功."""
@@ -19,48 +24,62 @@ def extract_result(model: str, work_dir: Path) -> dict:
     """从各模型的实际字段读取核心精度和独立的 NPU 耗时."""
     if model == "rtmpose_body2d":
         report = read_json(work_dir / "coco_wholebody_metrics.json")
-        require_count(report["protocol"], "detections_before_nms", 104125)
+        count = report["protocol"]["detections_before_nms"] if is_test() else 104125
+        if is_test():
+            require_count(report["protocol"], "evaluated_images", 100)
+        require_count(report["protocol"], "detections_before_nms", count)
+        if report.get("sample_ids_sha256"):
+            os.environ["MTK_EVAL_SAMPLE_SHA256"] = report["sample_ids_sha256"]
         timing = read_json(work_dir / "timing_summary.json")
-        require_count(timing, "processed_detections", 104125)
+        require_count(timing, "processed_detections", count)
         return {
-            "dataset": "coco_wholebody_val2017", "samples": 104125,
+            "dataset": "coco_wholebody_val2017", "samples": count,
+            "images": report["protocol"]["evaluated_images"],
             "metric": "WholeBody AP", "board_accuracy": report["metrics"]["wholebody"]["AP"],
             "npu_mean_ms": timing["npu_mean_ms"],
             "peak_rss_kib": timing.get("peak_rss_kb"),
             "timing_scope": "常驻模型,每个人体裁剪的 NeuronRuntime_inference 调用",
         }
     report = read_json(work_dir / "report" / "summary.json")
-    if report.get("status") != "complete":
+    if report.get("status") != result_status():
         raise ValueError("板端报告未完成.")
+    if is_test() and (report.get("evaluation_scope") != "subset" or not report.get("sample_ids_sha256")):
+        raise ValueError("快速报告缺少范围或样本指纹.")
+    if report.get("sample_ids_sha256"):
+        os.environ["MTK_EVAL_SAMPLE_SHA256"] = report["sample_ids_sha256"]
     result = {"dataset": report["dataset"], "peak_rss_kib": report.get("peak_rss_kib")}
     if model == "vit_base_patch16_224":
-        require_count(report, "samples", 50000)
-        result.update(samples=50000, metric="Top-1", board_accuracy=report["npu_top1"],
+        require_count(report, "samples", 200 if is_test() else 50000)
+        result.update(samples=200 if is_test() else 50000, metric="Top-1", board_accuracy=report["npu_top1"],
                       npu_mean_ms=report["npu_mean_ms"],
-                      timing_scope="常驻模型,50000 张图片的 NeuronRuntime_inference 调用")
+                      timing_scope="常驻模型,所选图片的 NeuronRuntime_inference 调用")
     elif model in ("mobilefacenet", "depth_anything_v2_small"):
         if model == "mobilefacenet":
-            require_count(report, "pairs", 6000)
-            metric, key, count = "LFW 验证准确率", "verification_accuracy", 6000
+            require_count(report, "pairs", 100 if is_test() else 6000)
+            metric, key, count = "LFW 验证准确率", "verification_accuracy", 100 if is_test() else 6000
         else:
-            require_count(report, "images", 1033)
-            require_count(report, "total_pairs", 2068)
-            metric, key, count = "DA-2K 点对准确率", "pairwise_accuracy", 2068
+            require_count(report, "images", 100 if is_test() else 1033)
+            if is_test():
+                if type(report.get("total_pairs")) is not int or report["total_pairs"] < 100:
+                    raise ValueError("DA-2K 快速报告的点对计数无效.")
+            else:
+                require_count(report, "total_pairs", 2068)
+            metric, key, count = "DA-2K 点对准确率", "pairwise_accuracy", report["total_pairs"] if is_test() else 2068
         timing = read_json(work_dir / "report" / "benchmark.json")
         result.update(samples=count, metric=metric, board_accuracy=report[key],
                       npu_mean_ms=timing["mean_ms"],
                       peak_rss_kib=timing.get("peak_rss_kib"),
-                      timing_scope="独立 C++ 常驻模型,预热 10 次后重复同一输入 100 次")
+                      timing_scope="独立 C++ 常驻模型,按本次模式预热并重复同一输入")
     elif model == "fastsam":
-        require_count(report, "images", 5000)
-        result.update(samples=5000, metric="segm AR@100", board_accuracy=report["AR_100"],
+        require_count(report, "images", 100 if is_test() else 5000)
+        result.update(samples=100 if is_test() else 5000, metric="segm AR@100", board_accuracy=report["AR_100"],
                       npu_mean_ms=report["npu_mean_ms"],
                       timing_scope="逐图加载模型,单独统计 NeuronRuntime_inference 调用")
     elif model == "whisper_tiny":
-        require_count(report, "expected_samples", 2620)
-        require_count(report, "successful_samples", 2620)
+        require_count(report, "expected_samples", 5 if is_test() else 2620)
+        require_count(report, "successful_samples", 5 if is_test() else 2620)
         result["peak_rss_kib"] = report["performance"]["overall"]["peak_rss_kb"].get("max")
-        result.update(samples=2620, metric="WER", board_accuracy=report["accuracy"]["value"],
+        result.update(samples=5 if is_test() else 2620, metric="WER", board_accuracy=report["accuracy"]["value"],
                       npu_mean_ms=report["performance"]["overall"]["npu_total_ms"]["mean"],
                       timing_scope="每条音频的 Encoder 与所有 Decoder NPU 调用之和")
     else:
@@ -94,6 +113,10 @@ def summarize(args: argparse.Namespace) -> None:
             if not math.isfinite(value) or value <= 0:
                 raise ValueError(f"{key} 无效.")
     reference = float(args.reference) if args.reference else None
+    if is_test():
+        reference_report = read_json(args.reference_report) if args.reference_report else {}
+        if not matching_reference(reference_report):
+            reference = None
     if reference is not None and (not math.isfinite(reference) or reference < 0 or (
             result["metric"] != "WER" and reference > 1)):
         raise ValueError("参考精度无效,准确率需填写 0 到 1 之间的数值.")
@@ -101,7 +124,7 @@ def summarize(args: argparse.Namespace) -> None:
     loss = None if reference is None else (
         accuracy - reference if result["metric"] == "WER" else reference - accuracy) * 100
     summary = {
-        "status": "complete", "model": args.model, "run_id": args.run_id,
+        "status": result_status(), **scope_metadata(), "model": args.model, "run_id": args.run_id,
         **result, "reference_accuracy": reference,
         "accuracy_loss_percentage_points": loss,
         "accuracy_change_percentage_points": None if loss is None else -loss,
@@ -136,6 +159,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--reference", default="")
     parser.add_argument("--reference-source", default="用户提供的同协议参考基准")
+    parser.add_argument("--reference-report", type=Path, help="参考报告,快速模式须匹配子集指纹.")
+    add_test_argument(parser)
     return parser.parse_args()
 
 

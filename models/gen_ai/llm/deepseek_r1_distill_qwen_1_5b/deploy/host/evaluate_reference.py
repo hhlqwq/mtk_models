@@ -11,6 +11,10 @@ import onnxruntime as ort
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from tools.evaluation import (
+    add_test_argument, is_test, record_selection, scope_metadata,
+)
+
 
 def prepare_samples(tokenizer, corpus, max_new_tokens):
     """生成固定 Token 输入,将演示语料与正式评测范围分开标注."""
@@ -20,6 +24,9 @@ def prepare_samples(tokenizer, corpus, max_new_tokens):
         {"id": "zh_quality", "text": "北京是中国的首都。人工智能可以帮助人们分析信息。"},
         {"id": "en_quality", "text": "Beijing is the capital of China. Artificial intelligence helps people analyze information."},
     ]
+    if is_test():
+        max_new_tokens = 32
+        corpus = None
     scope = "authored_bilingual_smoke_not_formal_accuracy"
     if corpus:
         rows.extend(json.loads(line) for line in corpus.read_text(encoding="utf-8").splitlines()
@@ -42,8 +49,12 @@ def prepare_samples(tokenizer, corpus, max_new_tokens):
                 raise ValueError(f"评测文本为空: {row['id']}")
             samples.append({**row, "input_ids": [tokenizer.bos_token_id],
                             "target_ids": tokens})
-    return {"samples": samples, "max_new_tokens": max_new_tokens,
-            "eos_ids": [tokenizer.eos_token_id], "evaluation_scope": scope}
+    if is_test():
+        for sample in samples:
+            sample["target_ids"] = sample["target_ids"][:32]
+        record_selection(row["id"] for row in samples)
+    return {**scope_metadata(), "samples": samples, "max_new_tokens": max_new_tokens,
+            "eos_ids": [tokenizer.eos_token_id], "evaluation_scope": "subset" if is_test() else scope}
 
 
 def evaluate_pytorch(source, samples):
@@ -168,8 +179,8 @@ def run(args):
         extra = len(sample["target_ids"]) or args.max_new_tokens
         if len(sample["input_ids"]) + extra > spec["context"]:
             raise ValueError(f"样本超过固定上下文: {sample['id']}")
-    (args.models / "samples.json").write_text(json.dumps(samples, ensure_ascii=False, indent=2))
-    reference = {"evaluation_scope": samples["evaluation_scope"],
+    (args.models / ("samples_test.json" if is_test() else "samples.json")).write_text(json.dumps(samples, ensure_ascii=False, indent=2))
+    reference = {**scope_metadata(), "evaluation_scope": samples["evaluation_scope"],
                  "pytorch": evaluate_pytorch(args.source, samples),
                  "onnx": evaluate_onnx(args.models, samples)}
     official = {row["id"]: row for row in reference["pytorch"]}
@@ -177,7 +188,7 @@ def run(args):
     for row in reference["onnx"]:
         differences.extend(np.abs(np.array(row["nll"]) - official[row["id"]]["nll"]).tolist())
     reference["export_max_token_nll_error"] = max(differences)
-    (args.models / "reference.json").write_text(
+    (args.models / ("reference_test.json" if is_test() else "reference.json")).write_text(
         json.dumps(reference, ensure_ascii=False, indent=2))
     if max(differences) > 0.01:
         raise RuntimeError(f"ONNX 与官方模型不一致,最大 Token NLL 差异={max(differences):.6f}")
@@ -191,6 +202,7 @@ def parse_args():
     parser.add_argument("--models", type=Path, required=True)
     parser.add_argument("--corpus", type=Path)
     parser.add_argument("--max-new-tokens", type=int, default=512)
+    add_test_argument(parser)
     return parser.parse_args()
 
 

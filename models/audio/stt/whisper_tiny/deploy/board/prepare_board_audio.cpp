@@ -1,3 +1,4 @@
+#include "tools/evaluation.h"
 // 在 Genio 720 板端以 C++ 完成 LibriSpeech 清单、FLAC 解码和 Whisper Mel.
 
 #include <algorithm>
@@ -74,6 +75,14 @@ std::vector<Sample> ListSamples(const fs::path& root) {
   }
   if (samples.size() != 2620) {
     throw std::runtime_error("LibriSpeech test-clean 必须恰好 2620 条.");
+  }
+  if (mtk::IsTestEvaluation()) {
+    std::vector<std::string> ids;
+    for (const auto& sample : samples) ids.push_back(sample.id);
+    const auto selected = mtk::TestSpeechIds(ids);
+    samples.erase(std::remove_if(samples.begin(), samples.end(), [&](const auto& sample) {
+      return !selected.count(sample.id);
+    }), samples.end());
   }
   return samples;
 }

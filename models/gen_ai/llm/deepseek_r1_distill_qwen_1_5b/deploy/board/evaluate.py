@@ -11,6 +11,10 @@ import time
 
 import numpy as np
 
+from tools.evaluation import (
+    add_test_argument, is_test, record_selection, scope_metadata,
+)
+
 
 def available_memory_mib():
     """读取系统可用内存,补充 RSS 未覆盖的驱动分配内存证据."""
@@ -211,6 +215,12 @@ def evaluate(args):
     """运行固定样例并保存真实输出、教师强制 NLL 和性能证据."""
     args.output.mkdir(parents=True, exist_ok=False)
     samples = json.loads(args.samples.read_text())
+    if is_test():
+        samples["samples"] = samples["samples"][:4]
+        samples["max_new_tokens"] = 32
+        for sample in samples["samples"]:
+            sample["target_ids"] = sample.get("target_ids", [])[:32]
+        record_selection(row["id"] for row in samples["samples"])
     start = time.perf_counter()
     decoder = None
     predictions = []
@@ -279,8 +289,10 @@ def evaluate(args):
                    "loaded_system_available_mib": loaded_available_mib,
                    "minimum_system_available_mib": decoder.minimum_available_mib,
                    "system_available_decrease_mib": baseline_available_mib - decoder.minimum_available_mib,
-                   "sample_count": len(predictions), "status": "board_inference_executed",
-                   "evaluation_scope": samples["evaluation_scope"]}
+                   "sample_count": len(predictions),
+                   "status": "smoke_test" if is_test() else "board_inference_executed",
+                   "evaluation_scope": samples["evaluation_scope"],
+                   **(scope_metadata() if is_test() else {})}
         (args.output / "board_summary.json").write_text(
             json.dumps(summary, ensure_ascii=False, indent=2))
     except Exception as error:
@@ -302,6 +314,7 @@ def parse_args():
     parser.add_argument("--samples", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
+    add_test_argument(parser)
     return parser.parse_args()
 
 

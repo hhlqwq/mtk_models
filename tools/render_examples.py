@@ -161,10 +161,10 @@ def segmentation(args, manifest) -> None:
 def depth(args, manifest) -> None:
     """复用深度输出展示原图与相对深度,颜色较暖表示更近."""
     # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
-    from full_accuracy_board import load_output
+    from full_accuracy_board import load_output, load_protocol
 
     metadata = read_json(args.models_dir / "model_int8.json")
-    paths = sorted(read_json(args.dataset_root / "annotations.json"))
+    paths = sorted(load_protocol(args.dataset_root))
     indices = {relative: index for index, relative in enumerate(paths, 1)}
     for position, item in enumerate(manifest["samples"], 1):
         values = load_output(args.work_dir / "outputs" /

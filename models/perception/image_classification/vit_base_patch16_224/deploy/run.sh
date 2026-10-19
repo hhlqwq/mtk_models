@@ -7,6 +7,23 @@ export PYTHONDONTWRITEBYTECODE=1
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# 默认全量,-test 只缩小评测数据,不改变校准或模型转换配置.
+export MTK_EVAL_TEST=0
+EVAL_PATH_SUFFIX=""
+if (( $# == 1 )) && [[ "$1" == "-test" ]]; then
+    export MTK_EVAL_TEST=1
+    EVAL_PATH_SUFFIX="_test"
+    shift
+    EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
+    [[ "${EVAL_RUN_ID}" == test_* ]] || EVAL_RUN_ID="test_${EVAL_RUN_ID}"
+    export EVAL_RUN_ID
+    echo "[模式] 固定小子集流程验证,不代表全量精度."
+fi
+if (( $# != 0 )); then
+    echo "[错误] 用法: bash run.sh [-test]" >&2
+    exit 2
+fi
+
 # 编译主机配置区: 只修改等号右侧的路径或名称.板端使用上传的 board_paths.conf.
 if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 模型目录: 根据本脚本的位置自动确定.
@@ -23,7 +40,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 模型输出目录: 转换与编译产物保存在这里.
     MODEL_OUTPUT_DIR="${MODEL_ASSETS_DIR}"
     # 临时构建目录: 缓存和中间文件保存在仓库外.
-    BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/vit_base_patch16_224"
+    BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/vit_base_patch16_224${EVAL_PATH_SUFFIX}"
     # C++ 输出: 编译主机交叉编译生成的临时程序完整路径.
     BOARD_BINARY_OUTPUT="${BUILD_WORK_DIR}/vit_board_eval"
 
@@ -31,7 +48,7 @@ if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     # 板端地址: SSH 用户和地址.
     BOARD_HOST="root@192.168.0.92"
     # 板端部署目录: 上传模型、程序和本脚本的目录,必须填写.
-    BOARD_DEPLOY_DIR="/root/hailong.he/open_models/vit_base_patch16_224"
+    BOARD_DEPLOY_DIR="/root/hailong.he/open_models/vit_base_patch16_224${EVAL_PATH_SUFFIX}"
     # 板端结果目录: 保存本次测试汇总.
     BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
     # 板端 ImageNet 根目录: 包含标签及 val/ 或 ILSVRC2012_img_val/ 图片目录.
@@ -96,7 +113,7 @@ if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
     fi
     test ! -e "${RESULT_DIR}"
     mkdir -p "${RUN_DIR}/report"
-    echo "[开发板 1/3] 在板端执行 50000 张 ImageNet 图片的 C++ NPU 推理."
+    echo "[开发板 1/3] 在板端执行所选 ImageNet 图片的 C++ NPU 推理."
     "${SCRIPT_DIR}/board/vit_board_eval" \
         --model "${SCRIPT_DIR}/models/model_int8.dla" \
         --images "${IMAGES_DIR}" \
@@ -276,7 +293,8 @@ scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
 ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
     "mkdir -p '${BOARD_DEPLOY_DIR}/board/tools'"
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/__init__.py" \
+    "${MODEL_ROOT}/../../../../tools/evaluation.py" \
     "${MODEL_ROOT}/../../../../tools/files.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/tools/"
 
-echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"
+echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh' $([[ "${MTK_EVAL_TEST}" == 1 ]] && echo -test)"

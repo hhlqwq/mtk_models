@@ -11,6 +11,10 @@ import numpy as np
 
 from depth_utils import INPUT_ROW_STRIDE, INPUT_SIZE, preprocess
 
+from tools.evaluation import (
+    add_test_argument, result_status, scope_metadata, select_samples,
+)
+
 
 EXPECTED_IMAGES = 1033
 EXPECTED_PAIRS = 2068
@@ -25,6 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--resume", action="store_true")
+    add_test_argument(parser)
     return parser.parse_args()
 
 
@@ -46,7 +51,11 @@ def load_protocol(dataset_root: Path) -> dict[str, list[dict]]:
             raise ValueError(f"缺少深度点对: {relative}。")
         if any(pair.get("closer_point") != "point1" for pair in pairs):
             raise ValueError(f"深度标注方向异常: {relative}。")
-    return annotations
+    chosen = select_samples(sorted(annotations), "depth_anything_v2_small", required=(
+        "images/indoor/1009402064_7c74b0b819_k.jpg",
+        "images/outdoor/17943623232_5f974cad30_k.jpg",
+        "images/transparent_reflective/49126232263_30c5bf5038_k.jpg"))
+    return {key: annotations[key] for key in chosen}
 
 
 def make_input(image: Path, metadata: dict, destination: Path) -> None:
@@ -158,12 +167,13 @@ def evaluate(args: argparse.Namespace) -> None:
                                  encoding="utf-8")
             temporary.replace(checkpoint)
         totals[relative] = record
-        if index % 25 == 0 or index == EXPECTED_IMAGES:
-            print(f"[PROGRESS] DA-2K {index}/{EXPECTED_IMAGES} 张。", flush=True)
+        if index % 25 == 0 or index == len(annotations):
+            print(f"[PROGRESS] DA-2K {index}/{len(annotations)} 张。", flush=True)
 
     correct_pairs = sum(item["correct_pairs"] for item in totals.values())
     total_pairs = sum(item["total_pairs"] for item in totals.values())
-    if total_pairs != EXPECTED_PAIRS:
+    expected_pairs = sum(len(pairs) for pairs in annotations.values())
+    if total_pairs != expected_pairs:
         raise ValueError(f"实际评测点对数不符: {total_pairs}。")
     scenes = {}
     for relative, record in totals.items():
@@ -178,7 +188,7 @@ def evaluate(args: argparse.Namespace) -> None:
                                       item["total_pairs"])
     wall_times = np.array([item["cli_wall_ms"] for item in totals.values()])
     report = {
-        "status": "complete",
+        "status": result_status(), **scope_metadata(),
         "model": "depth_anything_v2_small",
         "run_id": args.run_id,
         "dataset": "DA-2K",
@@ -195,7 +205,7 @@ def evaluate(args: argparse.Namespace) -> None:
     report_path = args.run_dir / "report" / "summary.json"
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
                            encoding="utf-8")
-    print(f"[OK] DA-2K 全量点对准确率: {report_path}。", flush=True)
+    print(f"[OK] DA-2K 点对准确率: {report_path}。", flush=True)
 
 
 if __name__ == "__main__":

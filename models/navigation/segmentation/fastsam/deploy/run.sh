@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
 # 编译步骤在容器内执行,请先从仓库根目录运行 bash docker/enter_container.sh.
-# 无参数入口.先用 docker/enter_container.sh 进入容器,完成后在开发板执行同一个脚本.
+# 默认全量,-test 为快速验证.先用 docker/enter_container.sh 进入容器,完成后在开发板执行同一个脚本.
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 默认全量,-test 只缩小评测数据,不改变校准或模型转换配置.
+export MTK_EVAL_TEST=0
+EVAL_PATH_SUFFIX=""
+if (( $# == 1 )) && [[ "$1" == "-test" ]]; then
+    export MTK_EVAL_TEST=1
+    EVAL_PATH_SUFFIX="_test"
+    shift
+    EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
+    [[ "${EVAL_RUN_ID}" == test_* ]] || EVAL_RUN_ID="test_${EVAL_RUN_ID}"
+    export EVAL_RUN_ID
+    echo "[模式] 固定小子集流程验证,不代表全量精度."
+fi
 if (( $# != 0 )); then
-    echo "[错误] run.sh 无需参数." >&2
+    echo "[错误] 用法: bash run.sh [-test]" >&2
     exit 2
 fi
 
@@ -35,7 +48,7 @@ else
     python3 "${SCRIPT_DIR}/host/convert_int8.py" --config "${CONFIG}"
     echo "[容器 3/6] 编译 DLA."
     python3 "${SCRIPT_DIR}/host/compile_model.py" --config "${CONFIG}"
-    echo "[容器 4/6] 全量 ONNX 精度评测."
+    echo "[容器 4/6] ONNX 精度评测."
     python3 "${SCRIPT_DIR}/host/evaluate_onnx.py" --config "${CONFIG}"
     echo "[容器 5/6] 交叉编译板端 C++ 程序."
     make -C "${SCRIPT_DIR}/board" BUILD_DIR="${MODEL_BUILD_DIR}"

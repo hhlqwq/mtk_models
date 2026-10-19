@@ -12,6 +12,10 @@ from tqdm import tqdm
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from audio_utils import load_records, load_waveform, mapping, metrics, preprocess, stream_patches
 
+from tools.evaluation import (
+    add_test_argument, audio_records, result_status, scope_metadata,
+)
+
 
 def original_models(models_dir):
     """加载锁定的 Google Keras 实现,构造原始音频和固定窗口模型."""
@@ -74,7 +78,7 @@ def export_model(args):
 
 def evaluate(args):
     """对全量 2000 条音频求窗口平均分数,保存结果和校准折外指标."""
-    records = load_records(args.dataset)
+    records = audio_records(load_records(args.dataset))
     indices = mapping(args.models_dir / "upstream/yamnet_class_map.csv")
     if args.mode == "tensorflow":
         frames, _ = original_models(args.models_dir)
@@ -96,11 +100,11 @@ def evaluate(args):
                 for patch in preprocess(waveform)])
         all_scores.append(patch_scores.mean(axis=0))
     scores = np.stack(all_scores)
-    if scores.shape != (2000, 521) or not np.isfinite(scores).all():
+    if scores.shape != (len(records), 521) or not np.isfinite(scores).all():
         raise ValueError("浮点分数覆盖不完整或含非有限数.")
     args.output.mkdir(parents=True, exist_ok=True)
     np.save(args.output / "scores.npy", scores)
-    summary = {"backend": args.mode, "metric": "ESC-50 projected macro AP",
+    summary = {"status": result_status(), **scope_metadata(), "samples": len(records), "backend": args.mode, "metric": "ESC-50 projected macro AP",
                "metrics": metrics(scores, records, indices)}
     if args.mode == "onnx" and args.reference:
         reference = np.load(args.reference / "scores.npy")
@@ -118,6 +122,7 @@ def main():
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--reference", type=Path)
+    add_test_argument(parser)
     args = parser.parse_args()
     if args.mode == "export":
         export_model(args)

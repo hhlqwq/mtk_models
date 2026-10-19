@@ -10,6 +10,10 @@ import numpy as np
 
 from tools.files import sha256
 
+from tools.evaluation import (
+    add_test_argument, is_test, record_selection, result_status, scope_metadata,
+)
+
 
 def check(code):
     """遇到硬件 Runtime 错误直接停止,不回退到 CPU."""
@@ -121,6 +125,8 @@ def evaluate(args):
     if not protocol_path.exists():
         protocol_path = args.quality_data / "tflite_quality.json"
     report = json.loads(protocol_path.read_text())
+    if report.get("evaluation_scope") == "subset" and not is_test():
+        raise ValueError("快速语料必须使用 -test,不能作为正式评测输入.")
     contract = json.loads((args.quality_data / "board_input_contract.json").read_text())
     manifest = json.loads((args.package / "manifest.json").read_text())
     if report["protocol"] != "fixed_text_rows_v1" or report["block_tokens"] != 128:
@@ -147,6 +153,8 @@ def evaluate(args):
     token_blocks = np.array(report["input_ids"], dtype=np.int64).reshape(-1, 128)
     if args.diagnostic_blocks:
         token_blocks = token_blocks[:args.diagnostic_blocks]
+    if is_test():
+        record_selection(f"{index}:{row.tolist()}" for index, row in enumerate(token_blocks))
     args.output.mkdir(parents=True, exist_ok=True)
     model = HardwareModel(args.library, model_path, contract)
     sdk_inputs = np.load(inputs_path)
@@ -237,6 +245,7 @@ def evaluate(args):
                       decode_tflite_sha256=decode_contract["tflite_sha256"],
                       decode_graph_mode="teacher_forcing_with_backend_own_prefill_cache")
     args.output.mkdir(parents=True, exist_ok=True)
+    result.update(status=result_status(), **scope_metadata())
     (args.output / "npu_quality.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     print(f"[MDLA 质量结果] PPL={result['perplexity']:.6f}", flush=True)
@@ -252,7 +261,11 @@ def main():
     parser.add_argument("--diagnostic-blocks", type=int, default=0,
                         help="仅执行前 N 个块并保存逐位置硬件 logits.")
     parser.add_argument("--decode-steps", type=int, default=0)
+    add_test_argument(parser)
     args = parser.parse_args()
+    if is_test():
+        args.output = args.output / "test"
+        args.diagnostic_blocks = 4
     if args.diagnostic_blocks < 0:
         parser.error("诊断块数不能为负数.")
     if not 0 <= args.decode_steps <= 32 or (args.decode_steps and not args.diagnostic_blocks):

@@ -17,6 +17,10 @@ from transformers import AutoTokenizer
 
 from tools.files import sha256
 
+from tools.evaluation import (
+    add_test_argument, is_test, record_selection, result_status, scope_metadata,
+)
+
 
 def export_board_inputs(model, graph_path, output, decode_steps=0):
     """导出 SDK 同协议的掩码、RoPE 和原始 INT16 I/O 契约."""
@@ -111,6 +115,8 @@ def evaluate(args):
         blocks = min(blocks, args.diagnostic_blocks)
         length = blocks * 128
     tokens = tokens[:, :length].contiguous()
+    if is_test():
+        record_selection(f"{index}:{row.tolist()}" for index, row in enumerate(tokens.reshape(-1, 128)))
     protocol = {
         "scope": "host_wikitext2_fixed_text_not_full_board_accuracy",
         "protocol": "legacy_token_prefix" if args.blocks else "fixed_text_rows_v1",
@@ -127,6 +133,7 @@ def evaluate(args):
         "native_prepare_sha256": sha256(args.model.parent / "native_prepare.json"),
     }
     args.output.mkdir(parents=True, exist_ok=True)
+    protocol.update(status=result_status(), **scope_metadata())
     if args.diagnostic_blocks:
         protocol["scope"] = "logits_diagnostic_prefix_not_full_accuracy"
         protocol["diagnostic_blocks"] = blocks
@@ -271,7 +278,15 @@ def main():
                         help="仅执行前 N 个固定文本块并保存逐位置 FP32 logits.")
     parser.add_argument("--decode-steps", type=int, default=0,
                         help="诊断模式下额外保存 N 个真实后续 Token 的 Decode 输出.")
+    add_test_argument(parser)
     args = parser.parse_args()
+    if is_test():
+        args.output = args.output / "test"
+        args.text_rows = 128
+        args.full_test = False
+        args.blocks = None
+        args.diagnostic_blocks = 4
+        args.skip_demo = True
     if args.diagnostic_blocks < 0:
         parser.error("诊断块数不能为负数.")
     if not 0 <= args.decode_steps <= 32 or (args.decode_steps and not args.diagnostic_blocks):

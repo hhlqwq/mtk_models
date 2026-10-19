@@ -12,6 +12,8 @@ import numpy as np
 
 from face_utils import load_aligned_face
 
+from tools.evaluation import add_test_argument, lfw_pairs, result_status, scope_metadata
+
 
 EXPECTED_PAIRS = 6000
 
@@ -25,6 +27,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--resume", action="store_true")
+    add_test_argument(parser)
     return parser.parse_args()
 
 
@@ -53,7 +56,7 @@ def load_pairs(dataset_root: Path) -> list[dict[str, str]]:
             name = row[field]
             if Path(name).name != name or not (images_dir / name).is_file():
                 raise ValueError(f"LFW 图片缺失或路径非法: {name}。")
-    return rows
+    return lfw_pairs(rows)
 
 
 def make_input(image: Path, metadata: dict, destination: Path) -> None:
@@ -130,7 +133,7 @@ def evaluate_pairs(rows: list[dict[str, str]],
         predictions = scores[test] >= threshold
         correct = int(np.count_nonzero(predictions == labels[test]))
         fold_reports.append({"fold": fold, "pairs": int(test.sum()),
-                             "correct": correct, "accuracy": correct / 600,
+                             "correct": correct, "accuracy": correct / int(test.sum()),
                              "threshold": threshold})
         for detail, prediction in zip(
                 (item for item in details if int(item["fold_id"]) == fold),
@@ -139,11 +142,11 @@ def evaluate_pairs(rows: list[dict[str, str]],
     correct_total = sum(item["correct"] for item in fold_reports)
     summary = {
         "metric_protocol": "lfw_10_fold_train_9_test_1_cosine_threshold",
-        "pairs": EXPECTED_PAIRS,
+        "pairs": len(rows),
         "positive_pairs": int(labels.sum()),
         "negative_pairs": int(len(labels) - labels.sum()),
         "correct_pairs": correct_total,
-        "verification_accuracy": correct_total / EXPECTED_PAIRS,
+        "verification_accuracy": correct_total / len(rows),
         "fold_mean_accuracy": float(np.mean(
             [item["accuracy"] for item in fold_reports])),
         "fold_std_accuracy": float(np.std(
@@ -214,7 +217,7 @@ def evaluate(args: argparse.Namespace) -> None:
                   flush=True)
     verification, details = evaluate_pairs(rows, features)
     report = {
-        "status": "complete",
+        "status": result_status(), **scope_metadata(),
         "model": "mobilefacenet",
         "run_id": args.run_id,
         "dataset": "LFW_upstream_MTCNN_5_point_aligned",
@@ -232,7 +235,7 @@ def evaluate(args: argparse.Namespace) -> None:
     with (report_dir / "pair_results.jsonl").open("w", encoding="utf-8") as out:
         for detail in details:
             out.write(json.dumps(detail, ensure_ascii=False) + "\n")
-    print(f"[OK] LFW 十折全量板端验证: {report_dir}。", flush=True)
+    print(f"[OK] LFW 十折板端验证: {report_dir}。", flush=True)
 
 
 if __name__ == "__main__":

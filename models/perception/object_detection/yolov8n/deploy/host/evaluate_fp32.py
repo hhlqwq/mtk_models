@@ -19,6 +19,8 @@ from export_model import load_model, raw_forward
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from yolov8_utils import COCO_IDS, OUTPUT_NAMES, postprocess, preprocess
 
+from tools.evaluation import add_test_argument, coco_ids, result_status, scope_metadata
+
 
 def main():
     """逐图推理并校验全部标注覆盖,保存同协议精度及预测."""
@@ -27,6 +29,7 @@ def main():
     parser.add_argument("--weights", type=Path)
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    add_test_argument(parser)
     args = parser.parse_args()
     if bool(args.onnx) == bool(args.weights):
         raise ValueError("必须且只能选择 ONNX 或 PyTorch 权重.")
@@ -35,6 +38,7 @@ def main():
     ids = sorted(annotation.getImgIds())
     if len(ids) != 5000:
         raise ValueError("正式评测需要完整 COCO val2017 5000 张标注.")
+    ids = coco_ids(ids)
     if args.onnx:
         options = ort.SessionOptions()
         options.intra_op_num_threads = 2
@@ -71,7 +75,7 @@ def main():
     evaluator.evaluate()
     evaluator.accumulate()
     evaluator.summarize()
-    summary = {"model": "yolov8n", "backend": "onnx" if args.onnx else "pytorch",
+    summary = {"status": result_status(), **scope_metadata(), "model": "yolov8n", "backend": "onnx" if args.onnx else "pytorch",
                "samples": len(ids), "map_50_95": float(evaluator.stats[0]),
                "map_50": float(evaluator.stats[1]),
                "protocol": {"confidence": 0.001, "nms_iou": 0.6,

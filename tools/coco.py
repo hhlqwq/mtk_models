@@ -10,6 +10,10 @@ from pathlib import Path
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
+from tools.evaluation import (
+    add_test_argument, coco_ids, is_test, result_status, scope_metadata,
+)
+
 
 def load_processed_ids(path: Path) -> set[int]:
     """读取 C++ 评测程序写出的已完成图片集合."""
@@ -29,6 +33,7 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
     expected_ids = set(annotation.getImgIds())
     if len(expected_ids) != 5000:
         raise ValueError("COCO val2017 全量标注必须包含 5000 张图片.")
+    expected_ids = set(coco_ids(expected_ids))
     processed_ids = load_processed_ids(args.processed_ids)
     if processed_ids != expected_ids:
         missing = sorted(expected_ids - processed_ids)
@@ -70,7 +75,7 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
     if peak_rss is not None and (not math.isfinite(float(peak_rss)) or float(peak_rss) <= 0):
         raise ValueError("峰值 RSS 无效.")
     peak_rss_mib = None if peak_rss is None else float(peak_rss) / 1024.0
-    fp32_map = args.fp32_map
+    fp32_map = None if is_test() else args.fp32_map
     if fp32_map is not None and (
             not math.isfinite(fp32_map) or not 0.0 <= fp32_map <= 1.0):
         raise ValueError("FP32 mAP 必须是 0 到 1 之间的数值.")
@@ -91,7 +96,8 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
         ])
     summary_text = "\n".join(summary_lines) + "\n"
     metrics = {
-        "status": "complete" if fp32_map is not None else status_without_reference,
+        "status": result_status("complete" if fp32_map is not None else status_without_reference),
+        **scope_metadata(),
         "model": model,
         "run_id": args.run_id or args.metrics.parent.name,
         "dataset": "coco_val2017",
@@ -99,10 +105,10 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
         "metric": "mAP@0.5:0.95",
         "npu_mean_ms": npu_mean,
         "peak_rss_mib": peak_rss_mib,
-        "memory_scope": "板端 C++ 全量推理进程峰值 RSS",
+        "memory_scope": "板端 C++ 推理进程峰值 RSS",
         "board_accuracy": board_map,
         "reference_accuracy": fp32_map,
-        "timing_scope": "常驻模型,5000 张图片的 NeuronRuntime_inference 调用",
+        "timing_scope": "常驻模型,所选图片的 NeuronRuntime_inference 调用",
         "accuracy_loss_percentage_points": loss_pp,
         "accuracy_change_percentage_points": None if loss_pp is None else -loss_pp,
         "reference_source": args.fp32_source if fp32_map is not None else None,
@@ -123,4 +129,5 @@ def parse_args(description=__doc__) -> argparse.Namespace:
     parser.add_argument("--fp32-source", default="用户提供的同协议 FP32 基准")
     parser.add_argument("--metrics", type=Path, required=True)
     parser.add_argument("--run-id")
+    add_test_argument(parser)
     return parser.parse_args()

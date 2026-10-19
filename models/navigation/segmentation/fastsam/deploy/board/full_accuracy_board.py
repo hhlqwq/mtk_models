@@ -14,6 +14,8 @@ from pycocotools import mask as mask_utils
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
+from tools.evaluation import add_test_argument, coco_ids, result_status, scope_metadata
+
 
 def parse_args() -> argparse.Namespace:
     """解析板端全量分割精度参数."""
@@ -42,6 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--work-dir", type=Path, required=not defaults, default=defaults.get("work"))
     parser.add_argument("--protocol", type=Path,
                         default=Path(__file__).with_name("accuracy_protocol.json"))
+    add_test_argument(parser)
     return parser.parse_args()
 
 
@@ -127,6 +130,8 @@ def evaluate(args: argparse.Namespace) -> None:
     expected = set(ground_truth.getImgIds())
     if {int(item.stem) for item in images} != expected:
         raise ValueError("COCO 图片与实例分割标注 ID 不一致.")
+    expected = set(coco_ids(expected))
+    images = [image for image in images if int(image.stem) in expected]
     args.work_dir.mkdir(parents=True, exist_ok=True)
     report_dir = args.work_dir / "report"
     report_dir.mkdir(exist_ok=True)
@@ -173,13 +178,14 @@ def evaluate(args: argparse.Namespace) -> None:
         evaluator.summarize()
     (report_dir / "coco_summary.log").write_text(log.getvalue(), encoding="utf-8")
     summary = {
-        "status": "complete",
+        "status": result_status(),
+        **scope_metadata(),
         "model": "fastsam",
         "run_id": args.run_id,
         "dataset": "coco_val2017_instances",
         "metric_protocol": "class_agnostic_segm_ap_all_gt_categories_merged",
         "protocol": protocol,
-        "images": 5000,
+        "images": len(images),
         "prediction_instances": prediction_count,
         "AP_50_95": float(evaluator.stats[0]),
         "AP_50": float(evaluator.stats[1]),
@@ -195,7 +201,7 @@ def evaluate(args: argparse.Namespace) -> None:
     (report_dir / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8")
-    print(f"[OK] FastSAM 全量类别无关分割 AP: {report_dir}.")
+    print(f"[OK] FastSAM 类别无关分割 AP: {report_dir}.")
 
 
 if __name__ == "__main__":

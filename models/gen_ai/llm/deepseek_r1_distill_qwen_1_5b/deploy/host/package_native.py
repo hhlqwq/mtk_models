@@ -111,7 +111,7 @@ def package(work, output, prefill, quantized_prefix=None):
         yaml.safe_dump({"modelOptions": options, "runtimeOptions": runtime},
                        sort_keys=False, allow_unicode=True))
     write_run_script(output)
-    copy_public_tools(output / "scripts/tools", ("files",))
+    copy_public_tools(output / "scripts/tools", ("files", "evaluation"))
     shutil.copyfile(model / "LICENSE", output / "LICENSE")
     (output / "README.md").write_text(
         f"# DeepSeek-R1-Distill-Qwen-1.5B\n\n"
@@ -237,7 +237,7 @@ def record_board_results(work, output, results):
     (output / "results/summary.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
     write_run_script(output)
-    copy_public_tools(output / "scripts/tools", ("files",))
+    copy_public_tools(output / "scripts/tools", ("files", "evaluation"))
     readme = (output / "README.md").read_text().replace(
         "当前打包状态为 compiled_pending_board,板端结果需另行记录.",
         "当前状态为 board_verified,仅表示板端推理与双语样例完成,正式质量待评测.")

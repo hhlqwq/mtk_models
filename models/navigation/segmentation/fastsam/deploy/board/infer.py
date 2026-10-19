@@ -17,6 +17,8 @@ from tools.process import run_command
 
 from tools.files import require_file
 
+from tools.evaluation import add_test_argument, coco_ids
+
 sys.dont_write_bytecode = True
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
 
@@ -47,6 +49,8 @@ def infer(args: argparse.Namespace, paths: dict, protocol: dict) -> None:
     images = sorted((paths["dataset"] / "images").glob("*.jpg"))
     if len(images) != protocol["images"]:
         raise ValueError(f"数据集需要 {protocol['images']} 张图片,实际 {len(images)}.")
+    selected = set(coco_ids(int(image.stem) for image in images))
+    images = [image for image in images if int(image.stem) in selected]
     require_file(paths["annotations"])
     # 提前检查编码依赖,避免推理后才发现无法保存 RLE 检查点.
     work = paths["work"]
@@ -94,6 +98,7 @@ def main() -> None:
     parser.add_argument("--resume", action="store_true", default=os.environ.get("EVAL_RESUME", "0") == "1",
                         help="续跑已有全量推理检查点.")
     parser.add_argument("--image", help="只推理指定图片,相对路径以板端数据集为基准.")
+    add_test_argument(parser)
     args = parser.parse_args()
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.run_id):
         parser.error("运行编号只能包含字母、数字、下划线和连字符.")

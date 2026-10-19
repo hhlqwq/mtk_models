@@ -18,6 +18,11 @@ import numpy as np
 import onnxruntime as ort
 import tqdm
 
+from tools.evaluation import (
+    SPEECH_EXAMPLES, add_test_argument, coco_ids, is_test, result_status,
+    scope_metadata, select_samples,
+)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 MODELS = {
@@ -67,6 +72,7 @@ def evaluate_vit(args, deploy: Path) -> tuple:
     paths = sorted((args.dataset_root / "val").glob("*.JPEG"))
     if len(paths) != 50000:
         raise ValueError("ImageNet 验证集必须包含 50000 张图片.")
+    paths = select_samples(paths, args.model, key=lambda path: path.name)
     session = make_session(args.onnx)
     correct = 0
     for index, path in enumerate(tqdm.tqdm(paths, desc="ONNX Top-1", unit="img")):
@@ -143,7 +149,7 @@ def coco_score(annotation, records: list, kind: str, index: int) -> float:
                                   "annotations": []}
             prediction.createIndex()
         evaluator = COCOeval(annotation, prediction, kind)
-        evaluator.params.imgIds = sorted(annotation.getImgIds())
+        evaluator.params.imgIds = coco_ids(annotation.getImgIds())
         if kind == "segm":
             evaluator.params.maxDets = [1, 10, 100]
         evaluator.evaluate()
@@ -166,6 +172,8 @@ def evaluate_coco(args, deploy: Path) -> tuple:
     paths = sorted((args.dataset_root / "images").glob("*.jpg"))
     if len(paths) != 5000 or {int(path.stem) for path in paths} != set(annotation.getImgIds()):
         raise ValueError("COCO 图片与标注必须覆盖相同的 5000 张图片.")
+    selected_ids = set(coco_ids(annotation.getImgIds()))
+    paths = [path for path in paths if int(path.stem) in selected_ids]
     session = make_session(args.onnx)
     records = []
     for path in tqdm.tqdm(paths, desc=f"ONNX {args.model}", unit="img", mininterval=1.0):
@@ -194,7 +202,10 @@ def evaluate_pose(args, deploy: Path) -> tuple:
         "person_detection_results/COCO_val2017_detections_AP_H_56_person.json").read_text())
     if len(detections) != 104125:
         raise ValueError("人体检测框必须有 104125 个.")
-    ordered = sorted(enumerate(detections), key=lambda item: (item[1]["image_id"], item[0]))
+    selected_ids = set(coco_ids({item["image_id"] for item in detections}))
+    ordered = sorted(((index, item) for index, item in enumerate(detections)
+                      if item["image_id"] in selected_ids),
+                     key=lambda item: (item[1]["image_id"], item[0]))
     session = make_session(args.onnx)
     current_id = None
     path = args.work_dir / "pose_predictions.jsonl"
@@ -221,7 +232,7 @@ def evaluate_pose(args, deploy: Path) -> tuple:
         formatted=args.work_dir / "formatted.json", metrics=args.work_dir / "metrics.json",
         summary_log=args.work_dir / "cocoeval.log"))
     value = json.loads((args.work_dir / "metrics.json").read_text())["metrics"]["wholebody"]["AP"]
-    return "WholeBody AP", value, len(detections)
+    return "WholeBody AP", value, len(ordered)
 
 
 def load_sources(dataset_root: Path) -> dict[str, dict]:
@@ -253,6 +264,8 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
     helper = load_module("whisper_metrics", deploy / "evaluate_accuracy.py")
     assets = load_module("whisper_assets", deploy.parent / "host" / "export_board_assets.py")
     sources = load_sources(args.dataset_root)
+    chosen = select_samples(sorted(sources), args.model, required=SPEECH_EXAMPLES)
+    sources = {key: sources[key] for key in chosen}
     assets.export_assets(args.work_dir)
     config = dict(line.split("=", 1) for line in
                   (args.work_dir / "decode_config.txt").read_text().splitlines())
@@ -327,6 +340,7 @@ def main() -> None:
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--temp-dir", type=Path, help="评测临时文件的父目录.")
+    add_test_argument(parser)
     args = parser.parse_args()
     if args.model == "whisper_tiny" and args.decoder_onnx is None:
         parser.error("Whisper 精度评测需要 --decoder-onnx.")
@@ -345,9 +359,9 @@ def main() -> None:
     value = float(value)
     if not math.isfinite(value) or value < 0 or (metric != "WER" and value > 1):
         raise ValueError("ONNX 核心精度无效.")
-    args.output.write_text(json.dumps({"status": "complete", "model": args.model,
+    args.output.write_text(json.dumps({"status": result_status(), **scope_metadata(), "model": args.model,
         "backend": "ONNX Runtime", "metric": metric, "accuracy": value,
-        "samples": samples, "source": "本次 ONNX 浮点全量实测,使用与板端相同的评测协议"},
+        "samples": samples, "source": "本次 ONNX 浮点同范围实测,使用与板端相同的评测协议"},
         ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     shutil.rmtree(args.work_dir)
     print(f"[ONNX] {metric}: {value:.6f}; 汇总: {args.output}", flush=True)
