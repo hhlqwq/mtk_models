@@ -3,17 +3,10 @@
 import argparse
 import os
 from pathlib import Path
-import shlex
-import subprocess
 
 from tools.storage import REPO_ROOT, load_model_config
 
-
-def run_command(command: list, **kwargs) -> None:
-    """显示本步骤实际调用的命令,失败时立即停止."""
-    arguments = [str(item) for item in command]
-    print(f"[执行] {shlex.join(arguments)}", flush=True)
-    subprocess.run(arguments, check=True, **kwargs)
+from tools.process import run_command
 
 
 def compile_model(config: dict, paths: dict, config_path: Path) -> None:

@@ -20,6 +20,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include "fastsam_runtime.h"
+#include "tools/boxes.h"
 
 namespace fs = std::filesystem;
 
@@ -147,18 +148,13 @@ float ReadValue(const OutputTensors& outputs, int slot, int channel, int row, in
 }
 
 // 计算 Sigmoid,避免极端量化 logits 导致浮点溢出.
-float Sigmoid(float value) {
-    const float clipped = std::clamp(value, -30.0F, 30.0F);
-    return 1.0F / (1.0F + std::exp(-clipped));
-}
+using mtk::Sigmoid;
 
 // 计算 xyxy 框 IoU.
+// 将本模型的 OpenCV 矩形转换为公共 xyxy 框计算.
 float BoxIou(const cv::Rect2f& a, const cv::Rect2f& b) {
-    const float x1 = std::max(a.x, b.x), y1 = std::max(a.y, b.y);
-    const float x2 = std::min(a.x + a.width, b.x + b.width);
-    const float y2 = std::min(a.y + a.height, b.y + b.height);
-    const float intersection = std::max(0.0F, x2 - x1) * std::max(0.0F, y2 - y1);
-    return intersection / std::max(a.area() + b.area() - intersection, 1.0e-9F);
+    return mtk::BoxIou(a.x, a.y, a.x + a.width, a.y + a.height,
+                       b.x, b.y, b.x + b.width, b.y + b.height);
 }
 
 // 在 CPU 上执行 DFL、类别无关 NMS 与原图坐标反变换.

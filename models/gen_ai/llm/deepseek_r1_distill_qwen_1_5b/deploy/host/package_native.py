@@ -2,82 +2,17 @@
 
 import argparse
 import json
-import math
 from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 
-from mtk_converter.python.converters.tflite.schema.tflite.Model import Model
-from mtk_converter.python.converters.tflite.schema.tflite.TensorType import TensorType
 from transformers import AutoTokenizer
 import yaml
 
-from prepare_native import sha256
-
-
-def graph_contract(path):
-    """读取原生静态图 I/O,要求配置声明的所有接口实际为 INT16."""
-
-    graph = Model.GetRootAsModel(path.read_bytes(), 0).Subgraphs(0)
-    result = {"inputs": [], "outputs": []}
-    checked = 0
-    for index in range(graph.TensorsLength()):
-        tensor = graph.Tensors(index)
-        quantization = tensor.Quantization()
-        if quantization is not None:
-            for offset in range(quantization.ScaleLength()):
-                scale = quantization.Scale(offset)
-                if not math.isfinite(scale) or scale <= 0:
-                    raise ValueError(f"量化 Scale 非法: {tensor.Name()},scale={scale}")
-                checked += 1
-    result["quantization_scales_checked"] = checked
-    for kind, length, index in (("inputs", graph.InputsLength, graph.Inputs),
-                                ("outputs", graph.OutputsLength, graph.Outputs)):
-        for offset in range(length()):
-            tensor = graph.Tensors(index(offset))
-            if tensor.Type() != TensorType.INT16:
-                raise ValueError(f"原生图包含非 INT16 的 {kind}: {tensor.Name()}")
-            result[kind].append({"name": tensor.Name().decode(), "dtype": "INT16",
-                                 "shape": tensor.ShapeAsNumpy().tolist()})
-    return result
-
-
-def single_file(folder, pattern):
-    """要求编译目录中存在唯一且非空的目标文件."""
-    matches = list(folder.glob(pattern))
-    if len(matches) != 1 or matches[0].stat().st_size == 0:
-        raise ValueError(f"期望唯一非空文件: {folder}/{pattern}")
-    return matches[0]
-
-
-def write_run_script(output):
-    """生成已验证的 Token/文本输入入口,正确处理原生 CLI 的生成计数."""
-    (output / "scripts/run.sh").write_text(
-        '#!/usr/bin/env bash\n'
-        '# 运行原生双语 Demo,保留实际输出与运行日志.\n'
-        'set -euo pipefail\n'
-        'ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"\n'
-        'cd "${ROOT}"\n'
-        'RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)}"\n'
-        '[[ "${RUN_ID}" =~ ^[A-Za-z0-9_-]+$ ]] || exit 2\n'
-        'MAX_TOKENS="${MAX_NEW_TOKENS:-768}"\n'
-        '[[ "${MAX_TOKENS}" =~ ^[0-9]+$ ]] && (( MAX_TOKENS >= 2 )) || exit 2\n'
-        '# 原生 CLI 的 -m 统计首 Token 后的调用次数,总生成上限需减 1.\n'
-        'case "${INPUT_MODE:-tokens}" in\n'
-        '    tokens) TOKEN_OPTION=(--read-tokens); SUFFIX=.tokens.txt ;;\n'
-        '    text) TOKEN_OPTION=(); SUFFIX=.txt ;;\n'
-        '    *) echo "[错误] INPUT_MODE 必须为 tokens 或 text." >&2; exit 2 ;;\n'
-        'esac\n'
-        'mkdir -p "results/${RUN_ID}"\n'
-        'for language in zh en; do\n'
-        '    echo "[板端] ${language} Demo"\n'
-        '    llm_cmdline_tool scripts/config-yocto.yaml "${TOKEN_OPTION[@]}" '
-        '-i "scripts/prompts/${language}_demo${SUFFIX}" '
-        '-m "$((MAX_TOKENS - 1))" 2>&1 | '
-        'tee "results/${RUN_ID}/${language}_demo.log"\n'
-        'done\n')
+from tools.files import copy_public_tools, sha256, single_file
+from tools.llm.package import graph_contract, write_run_script
 
 
 def package(work, output, prefill, quantized_prefix=None):
@@ -176,6 +111,7 @@ def package(work, output, prefill, quantized_prefix=None):
         yaml.safe_dump({"modelOptions": options, "runtimeOptions": runtime},
                        sort_keys=False, allow_unicode=True))
     write_run_script(output)
+    copy_public_tools(output / "scripts/tools", ("files",))
     shutil.copyfile(model / "LICENSE", output / "LICENSE")
     (output / "README.md").write_text(
         f"# DeepSeek-R1-Distill-Qwen-1.5B\n\n"
@@ -301,6 +237,7 @@ def record_board_results(work, output, results):
     (output / "results/summary.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
     write_run_script(output)
+    copy_public_tools(output / "scripts/tools", ("files",))
     readme = (output / "README.md").read_text().replace(
         "当前打包状态为 compiled_pending_board,板端结果需另行记录.",
         "当前状态为 board_verified,仅表示板端推理与双语样例完成,正式质量待评测.")

@@ -31,7 +31,7 @@ LIBRARIES := $(LIB_DIR)/libneuronusdk_runtime.mtk.so.8 \
              $(LIB_DIR)/libopencv_imgcodecs.so.409 \
              $(LIB_DIR)/libopencv_imgproc.so.409 \
              $(LIB_DIR)/libopencv_core.so.409
-CPPFLAGS += -I"$(OPENCV_BUILD)" \
+CPPFLAGS += -I"$(MTK_MODELS_ROOT)" -I"$(OPENCV_BUILD)" \
             -I"$(OPENCV_SOURCE)/modules/core/include" \
             -I"$(OPENCV_SOURCE)/modules/imgproc/include" \
             -I"$(OPENCV_SOURCE)/modules/imgcodecs/include" \
@@ -44,7 +44,7 @@ LDLIBS += -pthread -ldl
 all: $(TARGET)
 
 # 保留头文件依赖,源码、库文件或构建规则变化时重新编译.
-$(TARGET): $(SOURCES) $(HEADER) $(RUNTIME_HEADER) $(LIBRARIES) Makefile
+$(TARGET): $(MTK_MODELS_ROOT)/tools/boxes.h $(MTK_MODELS_ROOT)/tools/board/common.h $(SOURCES) $(HEADER) $(RUNTIME_HEADER) $(LIBRARIES) Makefile
 	mkdir -p "$(@D)"
 	$(CROSS_CXX) $(CPPFLAGS) $(CXXFLAGS) \
 	    $(SOURCES) $(LIBRARIES) $(LDFLAGS) $(LDLIBS) -o "$@"

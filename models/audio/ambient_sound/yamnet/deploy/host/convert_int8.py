@@ -13,18 +13,7 @@ from tqdm import tqdm
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from audio_utils import load_records, load_waveform, preprocess
 
-
-def tensor_metadata(detail, dtype_name):
-    """验证单张量真实整数类型和量化尺度,拒绝猜测默认尺度."""
-    quantization = detail["quantization"]
-    scales, zeros = quantization["scales"], quantization["zero_points"]
-    dtype = str(detail.get("dtype", detail.get("type", ""))).lower()
-    if len(scales) != 1 or float(scales[0]) <= 0 or len(zeros) != 1:
-        raise ValueError(f"不支持的量化参数: {detail}.")
-    if dtype_name not in dtype or f"u{dtype_name}" in dtype:
-        raise ValueError(f"IO 必须为 {dtype_name}: {detail}.")
-    return {"shape": [int(value) for value in detail["shape"]],
-            "dtype": dtype_name, "scale": float(scales[0]), "zero_point": int(zeros[0])}
+from tools.quantization import tensor_metadata
 
 
 def audit_w8a16(reader, tail_only=False):
@@ -151,7 +140,7 @@ def main():
         raise ValueError("必须为单输入和单输出.")
     input_dtype = "int16" if args.precision == "w8a16" else "int8"
     output_dtype = "int16" if args.precision in ("w8a16", "int8_tail16") else "int8"
-    contract = [tensor_metadata(inputs[0], input_dtype), tensor_metadata(outputs[0], output_dtype)]
+    contract = [tensor_metadata(inputs[0], input_dtype, include_name=False), tensor_metadata(outputs[0], output_dtype, include_name=False)]
     audit = (audit_w8a16(reader, args.precision == "int8_tail16")
              if args.precision in ("w8a16", "int8_tail16") else None)
     if contract[0]["shape"] != [1, 1, 96, 64] or contract[1]["shape"] != [1, 521]:

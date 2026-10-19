@@ -195,8 +195,8 @@ command -v "${CXX}" >/dev/null 2>&1
 test -f "${NEURON_INCLUDE}/neuron/api/RuntimeAPI.h"
 test -f "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8"
 mkdir -p "$(dirname "${BINARY_OUTPUT}")"
-"${CXX}" -std=c++17 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
-    -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/board/benchmark_board.cpp" \
+"${CXX}" -I"${MTK_MODELS_ROOT}" -std=c++17 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
+    -I"${NEURON_INCLUDE}" "${MTK_MODELS_ROOT}/tools/board/benchmark.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" \
     -Wl,--allow-shlib-undefined -pthread -ldl -o "${BINARY_OUTPUT}"
 file "${BINARY_OUTPUT}"
@@ -232,5 +232,13 @@ printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFER
 # 上传统一大小记录工具,后续汇总自动保留模型大小.
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/model_size.py"
+
+
+# 公共模块随部署包放在入口旁,板端不需要安装或访问代码仓库.
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "mkdir -p '${BOARD_DEPLOY_DIR}/board/tools'"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/__init__.py" \
+    "${MODEL_ROOT}/../../../../tools/files.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/tools/"
 
 echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

@@ -1,7 +1,6 @@
 """扩展独立训练集校准覆盖,保留官方模型与测试数据不变."""
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 import random
@@ -9,17 +8,10 @@ import random
 import pyarrow.parquet as parquet
 from transformers import AutoTokenizer
 
+from tools.files import sha256
+
 
 TRAIN_SHA256 = "e83889baabc497075506f91975be5fac0d45c5290b6b20582c8cd1e853d0c9f7"
-
-
-def sha256(path):
-    """分块计算文件哈希,核对独立训练集来源."""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def prepare(work, model, train, segments=64, tokens=512, seed=17):

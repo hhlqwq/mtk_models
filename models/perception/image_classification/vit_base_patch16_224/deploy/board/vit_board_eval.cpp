@@ -23,6 +23,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include "neuron/api/RuntimeAPI.h"
+#include "tools/board/common.h"
 
 namespace fs = std::filesystem;
 
@@ -129,15 +130,15 @@ class NeuronModel {
     options.CPUThreadNum = 1;
     options.suppressInputConversion = true;
     options.suppressOutputConversion = true;
-    Check(NeuronRuntime_create(&options, &runtime_), "create");
+    mtk::CheckRuntime(NeuronRuntime_create(&options, &runtime_), "create");
     try {
-      Check(NeuronRuntime_loadNetworkFromFile(runtime_, path.c_str()), "load");
+      mtk::CheckRuntime(NeuronRuntime_loadNetworkFromFile(runtime_, path.c_str()), "load");
       size_t inputs = 0, outputs = 0, input_size = 0, output_size = 0;
-      Check(NeuronRuntime_getInputNumber(runtime_, &inputs), "input count");
-      Check(NeuronRuntime_getOutputNumber(runtime_, &outputs), "output count");
-      Check(NeuronRuntime_getSingleInputPaddedSize(runtime_, &input_size),
+      mtk::CheckRuntime(NeuronRuntime_getInputNumber(runtime_, &inputs), "input count");
+      mtk::CheckRuntime(NeuronRuntime_getOutputNumber(runtime_, &outputs), "output count");
+      mtk::CheckRuntime(NeuronRuntime_getSingleInputPaddedSize(runtime_, &input_size),
             "input size");
-      Check(NeuronRuntime_getOutputPaddedSize(runtime_, 0, &output_size),
+      mtk::CheckRuntime(NeuronRuntime_getOutputPaddedSize(runtime_, 0, &output_size),
             "output size");
       if (inputs != 1 || outputs != 1 || input_size != 150528 ||
           (output_size != 1000 && output_size != 1008)) {
@@ -162,12 +163,12 @@ class NeuronModel {
   // 对一张图片执行硬件推理,返回类别排序和纯 NPU 耗时.
   std::pair<std::array<int, 5>, double> Infer(std::vector<int8_t>& input) {
     const BufferAttribute attribute{NON_ION_FD};
-    Check(NeuronRuntime_setSingleInput(runtime_, input.data(), input.size(),
+    mtk::CheckRuntime(NeuronRuntime_setSingleInput(runtime_, input.data(), input.size(),
                                        attribute), "set input");
-    Check(NeuronRuntime_setOutput(runtime_, 0, output_.data(), output_.size(),
+    mtk::CheckRuntime(NeuronRuntime_setOutput(runtime_, 0, output_.data(), output_.size(),
                                   attribute), "set output");
     const auto start = std::chrono::steady_clock::now();
-    Check(NeuronRuntime_inference(runtime_), "inference");
+    mtk::CheckRuntime(NeuronRuntime_inference(runtime_), "inference");
     const double elapsed_ms = std::chrono::duration<double, std::milli>(
         std::chrono::steady_clock::now() - start).count();
     std::array<int, 1000> indices;
@@ -184,13 +185,7 @@ class NeuronModel {
   }
 
  private:
-  // 转换 Runtime 状态码为带步骤的错误.
-  static void Check(int result, const std::string& step) {
-    if (result != 0) {
-      throw std::runtime_error("NeuronRuntime " + step + " 失败: " +
-                               std::to_string(result));
-    }
-  }
+
 
   void* runtime_ = nullptr;
   std::vector<int8_t> output_;

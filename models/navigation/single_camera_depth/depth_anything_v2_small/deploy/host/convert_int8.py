@@ -12,24 +12,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from depth_utils import INPUT_SIZE, preprocess
 
-
-def tensor_metadata(detail: dict) -> dict:
-    """读取单个张量的形状和逐张量量化参数。"""
-    quantization = detail["quantization"]
-    scales = quantization["scales"]
-    zeros = quantization["zero_points"]
-    dtype = str(detail.get("dtype", detail.get("type", ""))).lower()
-    if len(scales) != 1 or len(zeros) != 1 or float(scales[0]) <= 0:
-        raise ValueError(f"不支持的量化参数: {detail}")
-    if "int8" not in dtype or "uint8" in dtype:
-        raise ValueError(f"要求 INT8 张量: {detail}")
-    return {
-        "name": str(detail["name"]),
-        "shape": [int(value) for value in detail["shape"]],
-        "dtype": "int8",
-        "scale": float(scales[0]),
-        "zero_point": int(zeros[0]),
-    }
+from tools.quantization import tensor_metadata
 
 
 def convert_model(onnx: Path, image_dir: Path, output: Path,

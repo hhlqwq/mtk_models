@@ -22,6 +22,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include "neuron/api/RuntimeAPI.h"
+#include "tools/board/common.h"
 
 namespace fs = std::filesystem;
 
@@ -75,21 +76,10 @@ struct Timing {
 };
 
 // 检查 Runtime 返回码,失败时立即中止.
-void CheckRuntime(int result, const std::string& operation) {
-  if (result != NEURONRUNTIME_NO_ERROR) {
-    throw std::runtime_error(operation + " 失败,错误码: " +
-                             std::to_string(result));
-  }
-}
+using mtk::CheckRuntime;
 
 // 解析非负整数参数.
-int ParseInteger(const std::string& value, const std::string& name) {
-  try {
-    return std::stoi(value);
-  } catch (const std::exception&) {
-    throw std::invalid_argument("无效整数参数 " + name + ": " + value);
-  }
-}
+using mtk::ParseInteger;
 
 // 解析命令行参数.
 Options ParseOptions(int argc, char** argv) {

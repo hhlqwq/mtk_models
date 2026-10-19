@@ -7,19 +7,13 @@ import os
 from pathlib import Path
 import re
 import shlex
-import subprocess
 import sys
 
 import yaml
 
 from tools.storage import REPO_ROOT, load_model_config
 
-
-def run_command(command: list, **kwargs) -> None:
-    """显示本步骤实际调用的命令,失败时立即停止."""
-    arguments = [str(item) for item in command]
-    print(f"[执行] {shlex.join(arguments)}", flush=True)
-    subprocess.run(arguments, check=True, **kwargs)
+from tools.process import run_command
 
 
 def upload(config: dict, paths: dict, config_path: Path) -> None:
@@ -61,6 +55,8 @@ def upload(config: dict, paths: dict, config_path: Path) -> None:
                   deploy / "board/accuracy_protocol.json", paths["work"] / "fastsam_board",
                   *[paths["repo"] / "tools" / name for name in
                     ("render_examples.py", "summarize_board_result.py", "model_size.py")]],
+        "board/tools": [paths["repo"] / "tools" / name for name in
+                        ("__init__.py", "files.py", "process.py")],
         "examples/input": [samples,
                            *sorted((paths["model"] / "examples/input").glob("sample_*.jpg"))],
     }
@@ -73,7 +69,7 @@ def upload(config: dict, paths: dict, config_path: Path) -> None:
         sample = paths["model"] / "examples/input" / f"sample_{position}.jpg"
         if not sample.is_file():
             raise FileNotFoundError(f"缺少固定示例图片: {sample}.")
-    directories = [f"{destination}/{name}" for name in ("models", "board", "examples/input")]
+    directories = [f"{destination}/{name}" for name in ("models", "board", "board/tools", "examples/input")]
     run_command(["ssh", *ssh_options, board_host,
                  "mkdir -p " + " ".join(shlex.quote(path) for path in directories)])
     for folder, files in groups.items():

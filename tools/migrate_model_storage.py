@@ -2,7 +2,6 @@
 
 import argparse
 from functools import partial
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -10,23 +9,14 @@ import shutil
 
 from storage import REPO_ROOT, storage_roots
 
+from tools.files import sha256 as file_sha256
+
+sha256 = partial(file_sha256, progress=True)
+
 
 CODE_SUFFIXES = {".py", ".sh", ".cpp", ".cc", ".c", ".h", ".hpp", ".md"}
 SOURCE_RECORDS = {"LICENSE", "LICENSE.txt", "source_url.txt",
                   "source_manifest.json", ".gitignore", "CMakeLists.txt"}
-
-
-def sha256(path):
-    """分块计算文件哈希,大文件每 512 MiB 显示进度."""
-    digest = hashlib.sha256()
-    processed = 0
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(8 * 1024 * 1024), b""):
-            digest.update(block)
-            processed += len(block)
-            if processed % (512 * 1024 * 1024) == 0:
-                print(f"[哈希] {path.name}: {processed // 1024**2} MiB", flush=True)
-    return digest.hexdigest()
 
 
 def inventory(repo, destination):

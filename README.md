@@ -262,3 +262,21 @@ LLM 资源目录中,`original/` 保存官方权重和 tokenizer,`native/` 保存
 一次性迁移工具为 `tools/migrate_model_storage.py`.先记录迁移清单,确认后使用 `--apply`;每个文件在移除来源前核对大小与 SHA256,同名不同内容的旧目标保存在 `_previous/哈希/` 下.来源不同且内容不一致的模型应分别保留并记录来源.迁移记录应保存在仓库外,不能提交包含内部路径的清单.
 
 G720 的板端连接与工具链配置统一位于 `configs/platforms/genio_720.yaml`,SDK 版本、路径、交叉编译器和容器名称在其 `toolchain` 分组维护.执行 `docker/enter_container.sh` 后,容器终端自动加载平台和资源环境,无需手动执行初始化脚本; 修改环境配置后重新进入终端即可,无需重启容器.FastSAM 的 C++ 构建改由 Makefile 使用这些环境变量完成,不再使用 Python 包装编译命令.
+
+
+## 公共代码
+
+模型只保留自身的输入约定、解码和评测策略,重复的基础功能放在 `tools/`:
+
+| 位置 | 职责 |
+| --- | --- |
+| `tools/files.py`、`tools/process.py` | 文件校验、分块哈希、JSON 读取和命令执行 |
+| `tools/boxes.py`、`tools/boxes.h` | 矩形框 IoU 等基础计算 |
+| `tools/quantization.py` | 逐张量整数 I/O 元数据校验 |
+| `tools/coco.py` | COCO 检测评测,模型入口指定名称和结果状态规则 |
+| `tools/board/` | C++ 文件和统计工具、检测结果处理、共享性能测试源码 |
+| `tools/llm/package.py`、`tools/llm/run_native.sh` | 原生 LLM 张量契约与部署入口 |
+
+部署入口会将板端需要的公共 Python 模块一起复制到部署目录,无需板端访问代码仓库.模型相关的解码、预处理约定和平台适配仍由模型自身维护.
+
+公共 Python 回归测试可在编译容器内执行 `python3 -m unittest discover -s tests -p 'test_*.py'`.C++ 回归测试源码为 `tests/common_cpp_test.cpp`,交叉编译后在目标开发板执行;两者均不需要模型权重或全量数据集.LLM 契约测试使用编译容器已有的 Converter 依赖.

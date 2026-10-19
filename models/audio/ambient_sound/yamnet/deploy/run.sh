@@ -91,7 +91,7 @@ env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
     "${MODELS_DIR}/model_${PRECISION}.tflite" -o "${MODELS_DIR}/model_${PRECISION}.dla"
 
 echo '[容器 3/4] 交叉编译 C++ Runtime 程序并准备参考与示例.'
-aarch64-linux-gnu-g++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
+aarch64-linux-gnu-g++ -I"${MTK_MODELS_ROOT}" -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${NEURON_INCLUDE}" "${SCRIPT_DIR}/board/yamnet_eval.cpp" \
     "${TARGET_LIBS}/libneuronusdk_runtime.mtk.so.8" -Wl,--allow-shlib-undefined -pthread -ldl \
     -o "${BUILD_WORK_DIR}/yamnet_eval"

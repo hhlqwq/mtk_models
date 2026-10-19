@@ -1,7 +1,6 @@
 """准备 MiniCPM5 官方 Token 和原生 GAI 校准输入,不修改原始资源."""
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -14,14 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[6] / "tools"))
 import pyarrow.parquet as parquet
 from storage import reuse_weight
 
-
-def sha256(path):
-    """分块计算资源哈希,避免一次读入完整权重."""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(8 * 1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+from tools.files import sha256
 
 
 def prepare(source, output, context, calibration_train=None, mask_value=-100.0,

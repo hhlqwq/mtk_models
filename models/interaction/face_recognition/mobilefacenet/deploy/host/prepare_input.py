@@ -12,22 +12,10 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from face_utils import list_aligned_faces, load_aligned_face
 
+from tools.quantization import tensor_metadata
+
 
 INPUT_PROTOCOL = "RGB_ImageNet_normalize_aligned_112x112"
-
-
-def tensor_metadata(detail: dict) -> dict:
-    """提取张量形状、类型和逐张量量化参数。"""
-    scales = detail["quantization"]["scales"]
-    zero_points = detail["quantization"]["zero_points"]
-    if len(scales) != 1 or len(zero_points) != 1:
-        raise ValueError(f"不支持该张量量化配置: {detail['name']}")
-    return {
-        "shape": [int(value) for value in detail["shape"]],
-        "dtype": np.dtype(detail["type"].lower()).name,
-        "scale": float(scales[0]),
-        "zero_point": int(zero_points[0]),
-    }
 
 
 def prepare_inputs(tflite: Path, image_dir: Path, output_dir: Path) -> None:
@@ -35,12 +23,14 @@ def prepare_inputs(tflite: Path, image_dir: Path, output_dir: Path) -> None:
     parser = mtk_converter.TFLiteParser(str(tflite))
     input_detail = parser.get_input_tensor_details()[0]
     outputs = parser.get_output_tensor_details()
-    input_meta = tensor_metadata(input_detail)
+    input_meta = tensor_metadata(input_detail, np.dtype(input_detail["type"].lower()).name,
+                                 include_name=False)
     if input_meta["shape"] != [1, 3, 112, 112]:
         raise ValueError(f"输入形状异常: {input_meta['shape']}")
     if input_meta["dtype"] != "int8" or len(outputs) != 1:
         raise ValueError("冒烟程序要求单输入 INT8、单输出图")
-    output_meta = tensor_metadata(outputs[0])
+    output_meta = tensor_metadata(outputs[0], np.dtype(outputs[0]["type"].lower()).name,
+                                  include_name=False)
     if output_meta["dtype"] != "int8" or output_meta["shape"] != [1, 128]:
         raise ValueError(f"输出张量异常: {output_meta}")
     images = list_aligned_faces(image_dir)[:2]

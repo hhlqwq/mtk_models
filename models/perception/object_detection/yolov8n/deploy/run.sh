@@ -101,7 +101,7 @@ echo "[容器 2/4] 交叉编译 C++ 板端评测程序."
 OPENCV_SOURCE="${TOOLCHAIN_ROOT}/opencv-4.9.0/opencv-4.9.0"
 OPENCV_BUILD="${TOOLCHAIN_ROOT}/opencv-4.9.0/build-aarch64-headers"
 TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
-aarch64-linux-gnu-g++ -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
+aarch64-linux-gnu-g++ -I"${MTK_MODELS_ROOT}" -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${OPENCV_BUILD}" -I"${OPENCV_SOURCE}/modules/core/include" \
     -I"${OPENCV_SOURCE}/modules/imgproc/include" \
     -I"${OPENCV_SOURCE}/modules/imgcodecs/include" -I"${NEURON_INCLUDE}" \
@@ -147,5 +147,14 @@ ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" "chmod 755 '${BOARD_DEPLOY_DIR}/board/yo
 # 上传统一大小记录工具,后续汇总自动保留模型大小.
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/model_size.py"
+
+
+# 公共模块随部署包放在入口旁,板端不需要安装或访问代码仓库.
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "mkdir -p '${BOARD_DEPLOY_DIR}/board/tools'"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/__init__.py" \
+    "${MODEL_ROOT}/../../../../tools/files.py" \
+    "${MODEL_ROOT}/../../../../tools/coco.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/tools/"
 
 echo "[NEXT] 开发板执行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

@@ -2,13 +2,14 @@
 
 import argparse
 from collections import defaultdict
-import hashlib
 import json
 from pathlib import Path
 import random
 import time
 
 import numpy as np
+
+from tools.files import sha256
 
 
 DATA_SHA256 = "74a41822ce7d3def56e1682f958469c04642a5336a5ce912fa375fdb90fb25d7"
@@ -38,15 +39,6 @@ def select_questions(rows, limit, seed):
     if len(selected) != limit:
         raise ValueError("分层抽样题数不符.")
     return sorted(selected)
-
-
-def sha256(path):
-    """分块计算数据、协议和交付资源哈希."""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def prepare(args):

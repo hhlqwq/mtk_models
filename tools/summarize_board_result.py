@@ -6,10 +6,7 @@ import math
 import shutil
 from pathlib import Path
 
-
-def read_json(path: Path) -> dict:
-    """读取模型已有的机器可读报告."""
-    return json.loads(path.read_text(encoding="utf-8"))
+from tools.files import read_json
 
 
 def require_count(report: dict, key: str, count: int) -> None:

@@ -2,21 +2,13 @@
 
 import argparse
 import ctypes
-import hashlib
 import json
 from pathlib import Path
 import time
 
 import numpy as np
 
-
-def sha256(path):
-    """分块计算实际板端资源哈希."""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(8 * 1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+from tools.files import sha256
 
 
 def check(code):

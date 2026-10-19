@@ -4,6 +4,8 @@
 import cv2
 import numpy as np
 
+from tools.boxes import box_iou
+
 
 IMAGE_SIZE = 640
 OUTPUT_NAMES = [
@@ -58,17 +60,6 @@ def decode_heads(outputs):
         scores.append(1 / (1 + np.exp(-np.clip(score.ravel(), -80, 80))))
         coefficients.append(coefficient.reshape(32, -1).T)
     return np.concatenate(boxes), np.concatenate(scores), np.concatenate(coefficients)
-
-
-def box_iou(box, boxes):
-    """计算 xyxy 框的交并比."""
-    intersection = np.maximum(
-        np.minimum(box[2:], boxes[:, 2:]) - np.maximum(box[:2], boxes[:, :2]), 0
-    ).prod(axis=1)
-    union = (np.maximum(box[2:] - box[:2], 0).prod()
-             + np.maximum(boxes[:, 2:] - boxes[:, :2], 0).prod(axis=1)
-             - intersection)
-    return intersection / np.maximum(union, 1e-9)
 
 
 def postprocess(outputs, geometry, confidence=0.4, iou=0.9, max_det=100,

@@ -1,7 +1,6 @@
 """离线导出 Qwen2 静态解码分片,保留官方权重与 KV Cache."""
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -10,6 +9,8 @@ import numpy as np
 from torch import nn
 import torch
 from transformers import AutoModelForCausalLM
+
+from tools.files import sha256
 
 
 def stable_rms_norm(hidden, norm):
@@ -83,15 +84,6 @@ class OutputShard(nn.Module):
         """输出指定词表区间的 Logits."""
         return torch.nn.functional.linear(stable_rms_norm(hidden, self.norm),
                                           self.weight)
-
-
-def sha256(path: Path) -> str:
-    """分块计算文件哈希,不一次性读入大权重."""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(8 * 1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def export_graph(module, inputs, path, input_names, output_names):

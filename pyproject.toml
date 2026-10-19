@@ -9,4 +9,7 @@ description = "MTK 模型部署公共工具和 FastSAM 后处理模块."
 requires-python = ">=3.10"
 
 [tool.setuptools]
-packages = ["tools", "models.navigation.segmentation.fastsam.deploy.board"]
+packages = ["tools", "tools.llm", "models.navigation.segmentation.fastsam.deploy.board"]
+
+[tool.setuptools.package-data]
+"tools.llm" = ["*.sh"]

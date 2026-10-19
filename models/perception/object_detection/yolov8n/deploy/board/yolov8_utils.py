@@ -3,6 +3,8 @@
 import cv2
 import numpy as np
 
+from tools.boxes import box_iou
+
 IMAGE_SIZE = 640
 OUTPUT_NAMES = [f"{kind}_{stride}" for stride in (8, 16, 32)
                 for kind in ("box", "score")]
@@ -67,10 +69,7 @@ def postprocess(outputs, geometry, confidence=0.001, iou=0.6, max_det=300):
         current = int(order[0])
         kept.append(current)
         rest = order[1:]
-        intersection = np.maximum(np.minimum(boxes[current, 2:], boxes[rest, 2:])
-                                  - np.maximum(boxes[current, :2], boxes[rest, :2]), 0).prod(axis=1)
-        area = np.maximum(boxes[:, 2:] - boxes[:, :2], 0).prod(axis=1)
-        overlap = intersection / np.maximum(area[current] + area[rest] - intersection, 1e-9)
+        overlap = box_iou(boxes[current], boxes[rest])
         order = rest[(classes[rest] != classes[current]) | (overlap <= iou)]
     boxes = boxes[kept].copy()
     height, width = geometry["original_shape"]

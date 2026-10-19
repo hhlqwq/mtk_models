@@ -1,20 +1,12 @@
 """以相同 INT16 输入执行主机静态图,比较三个后端的逐位置 logits."""
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 
 import numpy as np
 
-
-def sha256(path):
-    """分块计算真实资源哈希."""
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(8 * 1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+from tools.files import sha256
 
 
 def export_tflite(args):

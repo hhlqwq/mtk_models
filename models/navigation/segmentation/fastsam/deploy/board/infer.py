@@ -5,7 +5,6 @@ import json
 import os
 from pathlib import Path
 import re
-import shlex
 import shutil
 import subprocess
 import sys
@@ -14,26 +13,12 @@ import cv2
 import numpy
 import pycocotools.mask
 
+from tools.process import run_command
+
+from tools.files import require_file
+
 sys.dont_write_bytecode = True
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
-
-
-def run_command(command: list, *, quiet: bool = False) -> None:
-    """按需显示命令,保留子进程错误输出,失败时补充命令并停止."""
-    arguments = [str(item) for item in command]
-    if not quiet:
-        print(f"[执行] {shlex.join(arguments)}", flush=True)
-    try:
-        subprocess.run(arguments, check=True)
-    except (subprocess.CalledProcessError, OSError):
-        print(f"[失败命令] {shlex.join(arguments)}", file=sys.stderr, flush=True)
-        raise
-
-
-def require_file(path: Path) -> None:
-    """检查输入文件存在且非空,不运行推理."""
-    if not path.is_file() or path.stat().st_size == 0:
-        raise FileNotFoundError(f"缺少文件或文件为空: {path}.")
 
 
 def infer_image(root: Path, image: Path, output: Path, protocol: dict,

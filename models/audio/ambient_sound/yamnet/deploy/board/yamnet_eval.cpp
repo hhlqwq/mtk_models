@@ -14,18 +14,14 @@
 #include <vector>
 
 #include "neuron/api/RuntimeAPI.h"
+#include "tools/board/common.h"
 
 namespace fs = std::filesystem;
 using Clock = std::chrono::steady_clock;
 
 namespace {
 
-// 检查每一个 Runtime 操作的返回值.
-void Check(int result, const char* operation) {
-  if (result != NEURONRUNTIME_NO_ERROR) {
-    throw std::runtime_error(std::string(operation) + ": " + std::to_string(result));
-  }
-}
+
 
 struct Quantization {
   float scale = 0;
@@ -72,14 +68,14 @@ class Model {
     options.CPUThreadNum = 1;
     options.suppressInputConversion = true;
     options.suppressOutputConversion = true;
-    Check(NeuronRuntime_create(&options, &runtime_), "create");
+    mtk::CheckRuntime(NeuronRuntime_create(&options, &runtime_), "create");
     try {
-      Check(NeuronRuntime_loadNetworkFromFile(runtime_, path.c_str()), "load");
+      mtk::CheckRuntime(NeuronRuntime_loadNetworkFromFile(runtime_, path.c_str()), "load");
       size_t inputs = 0, outputs = 0, input_size = 0, output_size = 0;
-      Check(NeuronRuntime_getInputNumber(runtime_, &inputs), "input count");
-      Check(NeuronRuntime_getOutputNumber(runtime_, &outputs), "output count");
-      Check(NeuronRuntime_getSingleInputPaddedSize(runtime_, &input_size), "input size");
-      Check(NeuronRuntime_getOutputPaddedSize(runtime_, 0, &output_size), "output size");
+      mtk::CheckRuntime(NeuronRuntime_getInputNumber(runtime_, &inputs), "input count");
+      mtk::CheckRuntime(NeuronRuntime_getOutputNumber(runtime_, &outputs), "output count");
+      mtk::CheckRuntime(NeuronRuntime_getSingleInputPaddedSize(runtime_, &input_size), "input size");
+      mtk::CheckRuntime(NeuronRuntime_getOutputPaddedSize(runtime_, 0, &output_size), "output size");
       if (inputs != 1 || outputs != 1 || input_size != 6144 * input_bytes ||
           (output_size != 521 * output_bytes && output_size != 528 * output_bytes)) {
         throw std::runtime_error("原生 IO 布局不匹配: " + std::to_string(input_size) +
@@ -105,12 +101,12 @@ class Model {
   // 每次重新登记 IO,耗时仅覆盖硬件 inference 调用.
   double Infer(const void* input, size_t size) {
     const BufferAttribute attribute{NON_ION_FD};
-    Check(NeuronRuntime_setSingleInput(runtime_, input, size, attribute),
+    mtk::CheckRuntime(NeuronRuntime_setSingleInput(runtime_, input, size, attribute),
           "set input");
-    Check(NeuronRuntime_setOutput(runtime_, 0, output_.data(), output_.size(), attribute),
+    mtk::CheckRuntime(NeuronRuntime_setOutput(runtime_, 0, output_.data(), output_.size(), attribute),
           "set output");
     const auto start = Clock::now();
-    Check(NeuronRuntime_inference(runtime_), "inference");
+    mtk::CheckRuntime(NeuronRuntime_inference(runtime_), "inference");
     return std::chrono::duration<double, std::milli>(Clock::now() - start).count();
   }
 

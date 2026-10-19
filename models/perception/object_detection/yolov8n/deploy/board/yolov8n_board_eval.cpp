@@ -24,6 +24,8 @@
 #include <opencv2/imgproc.hpp>
 
 #include "neuron/api/RuntimeAPI.h"
+#include "tools/board/common.h"
+#include "tools/board/detection.h"
 
 namespace fs = std::filesystem;
 
@@ -81,62 +83,22 @@ struct Timing {
 };
 
 // 读取当前进程的历史峰值常驻内存,Linux 返回单位为 KiB.
-int64_t GetPeakRssKb() {
-  rusage usage{};
-  if (getrusage(RUSAGE_SELF, &usage) != 0) {
-    throw std::runtime_error("getrusage 读取峰值内存失败.");
-  }
-  return static_cast<int64_t>(usage.ru_maxrss);
-}
+using mtk::GetPeakRssKb;
 
 // 检查 Runtime 返回值并保留具体操作名称.
-void CheckRuntime(int result, const std::string& operation) {
-  if (result != NEURONRUNTIME_NO_ERROR) {
-    throw std::runtime_error(operation + " 失败,错误码 " + std::to_string(result));
-  }
-}
+using mtk::CheckRuntime;
 
   // 计算稳定的 Sigmoid.
-  float Sigmoid(float value) {
-    const float clipped = std::clamp(value, -30.0F, 30.0F);
-    return 1.0F / (1.0F + std::exp(-clipped));
-  }
+using mtk::Sigmoid;
 
   // 计算两个 xyxy 检测框的 IoU.
-  float BoxIou(const Detection& left, const Detection& right) {
-    const float x1 = std::max(left.x1, right.x1);
-    const float y1 = std::max(left.y1, right.y1);
-    const float x2 = std::min(left.x2, right.x2);
-    const float y2 = std::min(left.y2, right.y2);
-    const float intersection = std::max(0.0F, x2 - x1) *
-      std::max(0.0F, y2 - y1);
-    const float left_area = std::max(0.0F, left.x2 - left.x1) *
-      std::max(0.0F, left.y2 - left.y1);
-    const float right_area = std::max(0.0F, right.x2 - right.x1) *
-      std::max(0.0F, right.y2 - right.y1);
-    return intersection /
-      std::max(left_area + right_area - intersection, 1.0e-9F);
-  }
+using mtk::BoxIou;
 
   // 解析正整数参数.
-  int ParseInteger(const std::string& value, const std::string& name) {
-    try {
-      return std::stoi(value);
-    }
-    catch (const std::exception&) {
-      throw std::invalid_argument("无效整数参数 " + name + ": " + value);
-    }
-  }
+using mtk::ParseInteger;
 
   // 解析浮点参数.
-  float ParseFloat(const std::string& value, const std::string& name) {
-    try {
-      return std::stof(value);
-    }
-    catch (const std::exception&) {
-      throw std::invalid_argument("无效浮点参数 " + name + ": " + value);
-    }
-  }
+using mtk::ParseFloat;
 
   // 解析命令行参数.
   Options ParseOptions(int argc, char** argv) {
@@ -191,44 +153,13 @@ void CheckRuntime(int result, const std::string& operation) {
   }
 
   // 返回目录中的 JPEG 或 PNG 图片,并按文件名排序.
-  std::vector<fs::path> ListImages(const fs::path& directory, int limit) {
-    std::vector<fs::path> images;
-    for (const auto& entry : fs::directory_iterator(directory)) {
-      std::string extension = entry.path().extension().string();
-      std::transform(extension.begin(), extension.end(), extension.begin(),
-        [](unsigned char value) { return std::tolower(value); });
-      if (entry.is_regular_file() &&
-        (extension == ".jpg" || extension == ".jpeg" || extension == ".png")) {
-        images.push_back(entry.path());
-      }
-    }
-    std::sort(images.begin(), images.end());
-    if (limit > 0 && images.size() > static_cast<size_t>(limit)) {
-      images.resize(limit);
-    }
-    if (images.empty()) {
-      throw std::runtime_error("没有找到 JPEG 或 PNG 图片: " + directory.string());
-    }
-    return images;
-  }
+using mtk::ListImages;
 
   // 将 COCO 文件名转换为数值 image_id.
-  int64_t ImageIdFromPath(const fs::path& image_path) {
-    return std::stoll(image_path.stem().string());
-  }
+using mtk::ImageIdFromPath;
 
   // 从完成清单中读取已处理 image_id.
-  std::unordered_set<int64_t> LoadCompleted(const fs::path& path) {
-    std::unordered_set<int64_t> completed;
-    std::ifstream input(path);
-    std::string line;
-    while (std::getline(input, line)) {
-      if (!line.empty()) {
-        completed.insert(std::stoll(line));
-      }
-    }
-    return completed;
-  }
+using mtk::LoadCompleted;
 
 // 严格读取由本模型的量化脚本生成的固定七列张量契约.
 std::array<TensorInfo, 7> LoadConfig(const fs::path& path) {
@@ -471,148 +402,22 @@ std::vector<Detection> Decode(const NeuronModel& model,
   return candidates;
 }
   // 执行与 torchvision batched_nms 等价的逐类别 NMS.
-  std::vector<Detection> ApplyNms(std::vector<Detection> detections,
-    float iou_threshold, int max_detections) {
-    std::stable_sort(detections.begin(), detections.end(),
-      [](const Detection& left, const Detection& right) {
-        return left.score > right.score;
-      });
-    std::vector<Detection> kept;
-    kept.reserve(std::min<size_t>(detections.size(), max_detections));
-    for (const Detection& candidate : detections) {
-      bool suppressed = false;
-      for (const Detection& selected : kept) {
-        if (candidate.class_id == selected.class_id &&
-          BoxIou(candidate, selected) > iou_threshold) {
-          suppressed = true;
-          break;
-        }
-      }
-      if (!suppressed) {
-        kept.push_back(candidate);
-        if (kept.size() == static_cast<size_t>(max_detections)) {
-          break;
-        }
-      }
-    }
-    return kept;
-  }
+using mtk::ApplyNms;
 
   // 将检测框映射回原图并裁剪到图像边界.
-  void Rescale(std::vector<Detection>* detections,
-    const LetterboxInfo& info) {
-    for (Detection& detection : *detections) {
-      detection.x1 = std::clamp((detection.x1 - info.left) / info.scale,
-        0.0F, static_cast<float>(info.original_width));
-      detection.x2 = std::clamp((detection.x2 - info.left) / info.scale,
-        0.0F, static_cast<float>(info.original_width));
-      detection.y1 = std::clamp((detection.y1 - info.top) / info.scale,
-        0.0F, static_cast<float>(info.original_height));
-      detection.y2 = std::clamp((detection.y2 - info.top) / info.scale,
-        0.0F, static_cast<float>(info.original_height));
-    }
-  }
+using mtk::Rescale;
 
   // 转义 JSON 字符串中的特殊字符.
-  std::string EscapeJson(const std::string& value) {
-    std::ostringstream output;
-    for (const char character : value) {
-      if (character == '\\' || character == '"') {
-        output << '\\';
-      }
-      output << character;
-    }
-    return output.str();
-  }
+using mtk::EscapeJson;
 
   // 将单张图片的检测结果追加为 JSONL.
-  void AppendPredictions(std::ofstream* output, int64_t image_id,
-    const std::vector<Detection>& detections) {
-    *output << std::fixed;
-    for (const Detection& detection : detections) {
-      *output << "{\"image_id\":" << image_id
-        << ",\"category_id\":" << kCocoCategoryIds[detection.class_id]
-        << ",\"bbox\":[" << std::setprecision(3) << detection.x1 << ','
-        << detection.y1 << ',' << detection.x2 - detection.x1 << ','
-        << detection.y2 - detection.y1 << "],\"score\":"
-        << std::setprecision(5) << detection.score << "}\n";
-    }
-    output->flush();
-  }
+using mtk::AppendPredictions;
 
   // 将 JSONL 检测记录转换为 COCOeval 接受的 JSON 数组.
-  void FinalizePredictions(const fs::path& jsonl_path,
-    const fs::path& json_path) {
-    std::ifstream input(jsonl_path);
-    std::ofstream output(json_path);
-    output << "[\n";
-    std::string line;
-    bool first = true;
-    while (std::getline(input, line)) {
-      if (line.empty()) {
-        continue;
-      }
-      if (!first) {
-        output << ",\n";
-      }
-      output << line;
-      first = false;
-    }
-    output << "\n]\n";
-  }
+using mtk::FinalizePredictions;
 
   // 计算延迟统计并写入 JSON.
-  void WriteSummary(const fs::path& path, const std::vector<Timing>& timings,
-    size_t total_images) {
-    auto summarize = [&timings](auto accessor) {
-      std::vector<double> values;
-      values.reserve(timings.size());
-      for (const Timing& timing : timings) {
-        values.push_back(accessor(timing));
-      }
-      std::sort(values.begin(), values.end());
-      const auto percentile = [&values](double ratio) {
-        const double position = ratio * (values.size() - 1);
-        const size_t lower = static_cast<size_t>(std::floor(position));
-        const size_t upper = static_cast<size_t>(std::ceil(position));
-        const double weight = position - lower;
-        return values[lower] * (1.0 - weight) + values[upper] * weight;
-        };
-      const double mean =
-        std::accumulate(values.begin(), values.end(), 0.0) / values.size();
-      return std::array<double, 6>{mean, percentile(0.5), percentile(0.9),
-        percentile(0.95), values.front(),
-        values.back()};
-      };
-    const auto preprocess = summarize(
-      [](const Timing& value) { return value.preprocess_ms; });
-    const auto npu = summarize([](const Timing& value) { return value.npu_ms; });
-    const auto postprocess = summarize(
-      [](const Timing& value) { return value.postprocess_ms; });
-    const auto e2e = summarize([](const Timing& value) { return value.e2e_ms; });
-    const auto write_metric = [](std::ofstream* output, const std::string& name,
-      const std::array<double, 6>& values,
-      bool trailing_comma) {
-        *output << "  \"" << EscapeJson(name) << "\": {\"mean\": "
-          << values[0] << ", \"p50\": " << values[1]
-          << ", \"p90\": " << values[2] << ", \"p95\": "
-          << values[3] << ", \"min\": " << values[4]
-          << ", \"max\": " << values[5] << "}"
-          << (trailing_comma ? "," : "") << "\n";
-      };
-
-  std::ofstream output(path);
-  output << std::fixed << std::setprecision(6);
-  const int64_t peak_rss_kb = GetPeakRssKb();
-  output << "{\n  \"processed_images\": " << total_images << ",\n";
-  output << "  \"peak_rss_kb\": " << peak_rss_kb << ",\n";
-  output << "  \"peak_rss_bytes\": " << peak_rss_kb * 1024 << ",\n";
-    write_metric(&output, "preprocess_ms", preprocess, true);
-    write_metric(&output, "npu_ms", npu, true);
-    write_metric(&output, "postprocess_ms", postprocess, true);
-    write_metric(&output, "e2e_ms", e2e, false);
-    output << "}\n";
-  }
+using mtk::WriteSummary;
 
   // 执行完整板端评测流程.
   void Run(const Options& options) {
@@ -660,7 +465,7 @@ std::vector<Detection> Decode(const NeuronModel& model,
       const double npu_ms = model.Infer(input);
       const auto postprocess_start = std::chrono::steady_clock::now();
       auto detections = ApplyNms(Decode(model, config, options.confidence), options.iou,
-        options.max_detections);
+        options.max_detections, true);
       Rescale(&detections, letterbox_info);
       const auto end = std::chrono::steady_clock::now();
 
@@ -673,7 +478,7 @@ std::vector<Detection> Decode(const NeuronModel& model,
               .count(),
           std::chrono::duration<double, std::milli>(end - e2e_start).count(),
       };
-      AppendPredictions(&predictions, image_id, detections);
+      AppendPredictions(&predictions, image_id, detections, kCocoCategoryIds);
       timings_output << std::fixed << std::setprecision(6) << image_id << ','
         << timing.preprocess_ms << ',' << timing.npu_ms << ','
         << timing.postprocess_ms << ',' << timing.e2e_ms << ','

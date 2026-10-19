@@ -227,7 +227,7 @@ readonly TARGET_LIBS="${TOOLCHAIN_ROOT}/genio720-libs"
 command -v "${CXX}" >/dev/null 2>&1
 test -f "${NEURON_INCLUDE}/neuron/api/RuntimeAPI.h"
 mkdir -p "$(dirname "${BINARY_OUTPUT}")"
-"${CXX}" -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
+"${CXX}" -I"${MTK_MODELS_ROOT}" -std=c++20 -O3 -DNDEBUG -Wall -Wextra -Wpedantic \
     -I"${OPENCV_BUILD}" \
     -I"${OPENCV_SOURCE}/modules/core/include" \
     -I"${OPENCV_SOURCE}/modules/imgproc/include" \
@@ -270,5 +270,13 @@ printf 'BOARD_DATASET_DIR=%q\nBOARD_RESULTS_DIR=%q\nREFERENCE_ACCURACY=%q\nREFER
 # 上传统一大小记录工具,后续汇总自动保留模型大小.
 scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/model_size.py" \
     "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/model_size.py"
+
+
+# 公共模块随部署包放在入口旁,板端不需要安装或访问代码仓库.
+ssh "${SSH_OPTIONS[@]}" "${BOARD_HOST}" \
+    "mkdir -p '${BOARD_DEPLOY_DIR}/board/tools'"
+scp "${SSH_OPTIONS[@]}" "${MODEL_ROOT}/../../../../tools/__init__.py" \
+    "${MODEL_ROOT}/../../../../tools/files.py" \
+    "${BOARD_HOST}:${BOARD_DEPLOY_DIR}/board/tools/"
 
 echo "[NEXT] 在板端运行: bash '${BOARD_DEPLOY_DIR}/run.sh'"

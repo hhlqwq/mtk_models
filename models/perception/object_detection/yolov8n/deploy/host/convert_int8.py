@@ -14,21 +14,7 @@ from tqdm import tqdm
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from yolov8_utils import OUTPUT_NAMES, OUTPUT_SHAPES, preprocess
 
-
-def tensor_metadata(detail):
-    """验证逐张量 INT8 量化参数并转换为可序列化元数据."""
-    quantization = detail["quantization"]
-    scales, zeros = quantization["scales"], quantization["zero_points"]
-    if len(scales) != 1 or len(zeros) != 1 or not float(scales[0]) > 0:
-        raise ValueError(f"不支持的 IO 量化参数: {detail}.")
-    # 数据类型必须由解析器明确提供,不能把浮点输出猜成 INT8.
-    dtype = detail.get("dtype", detail.get("type"))
-    if dtype is None or "int8" not in str(dtype).lower() or "uint8" in str(dtype).lower():
-        raise ValueError(f"要求 INT8 IO,请核实 TFLiteParser 类型字段: {detail}.")
-    return {"name": str(detail["name"]),
-            "shape": [int(value) for value in detail["shape"]],
-            "dtype": "int8", "scale": float(scales[0]),
-            "zero_point": int(zeros[0])}
+from tools.quantization import tensor_metadata
 
 
 def main():

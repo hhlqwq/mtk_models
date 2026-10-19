@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "neuron/api/RuntimeAPI.h"
+#include "tools/board/common.h"
 
 namespace fastsam {
 namespace fs = std::filesystem;
@@ -28,11 +29,7 @@ struct TensorInfo {
 };
 
 // 检查 Runtime 返回值并保留具体操作名称.
-void CheckRuntime(int result, const std::string& operation) {
-    if (result != NEURONRUNTIME_NO_ERROR) {
-        throw std::runtime_error(operation + " 失败,错误码 " + std::to_string(result));
-    }
-}
+using mtk::CheckRuntime;
 
 // 严格读取由本模型的量化脚本生成的固定七列张量契约.
 std::array<TensorInfo, 11> LoadConfig(const fs::path& path) {

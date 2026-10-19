@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "neuron/api/RuntimeAPI.h"
+#include "tools/board/common.h"
 
 namespace fs = std::filesystem;
 
@@ -52,12 +53,7 @@ struct DecodeResult {
 };
 
 // 检查 Runtime 返回码并转换为异常.
-void CheckRuntime(int code, const std::string& operation) {
-  if (code != 0) {
-    throw std::runtime_error(operation + " 失败,code=" +
-                             std::to_string(code));
-  }
-}
+using mtk::CheckRuntime;
 
 // 将 FP32 转为 IEEE 754 binary16 位模式.
 uint16_t FloatToHalf(float value) {

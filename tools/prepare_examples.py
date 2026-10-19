@@ -5,15 +5,12 @@ import csv
 import json
 from pathlib import Path
 
+from tools.files import read_json as load_json
+
 
 COCO_MODELS = ("yolov5s", "yolov8n", "fastsam", "rtmpose_body2d")
 OTHER_MODELS = ("vit_base_patch16_224", "mobilefacenet",
                 "depth_anything_v2_small", "whisper_tiny")
-
-
-def load_json(path: Path):
-    """读取数据集已有标注."""
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def coco_samples(dataset: Path, model: str) -> dict:
