@@ -1,13 +1,13 @@
 // COCO 检测的类别内 NMS、坐标还原与结果记录.
-#ifndef MTK_MODELS_TOOLS_BOARD_DETECTION_H_
-#define MTK_MODELS_TOOLS_BOARD_DETECTION_H_
+#ifndef MTK_MODELS_COMMON_CPP_DETECTION_H_
+#define MTK_MODELS_COMMON_CPP_DETECTION_H_
 #include <array>
 #include <cmath>
 #include <iomanip>
 #include <numeric>
 
-#include "../boxes.h"
-#include "common.h"
+#include "boxes.h"
+#include "board.h"
 namespace mtk {
 // 读取当前 Linux 推理进程的峰值 RSS,单位为 KiB.
 inline int64_t GetPeakRssKb() {
@@ -125,4 +125,4 @@ void WriteSummary(const fs::path& path, const std::vector<Timing>& timings, size
 }
 
 }  // namespace mtk
-#endif  // MTK_MODELS_TOOLS_BOARD_DETECTION_H_
+#endif  // MTK_MODELS_COMMON_CPP_DETECTION_H_

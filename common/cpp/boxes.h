@@ -1,6 +1,6 @@
 // 不依赖模型结构与芯片 SDK 的框计算和稳定 Sigmoid.
-#ifndef MTK_MODELS_TOOLS_BOXES_H_
-#define MTK_MODELS_TOOLS_BOXES_H_
+#ifndef MTK_MODELS_COMMON_CPP_BOXES_H_
+#define MTK_MODELS_COMMON_CPP_BOXES_H_
 
 #include <algorithm>
 #include <cmath>
@@ -30,4 +30,4 @@ inline float Sigmoid(float value) {
 }
 
 }  // namespace mtk
-#endif  // MTK_MODELS_TOOLS_BOXES_H_
+#endif  // MTK_MODELS_COMMON_CPP_BOXES_H_

@@ -17,7 +17,7 @@
 #include <vector>
 
 #include "neuron/api/RuntimeAPI.h"
-#include "tools/board/common.h"
+#include "common/cpp/board.h"
 
 namespace fs = std::filesystem;
 

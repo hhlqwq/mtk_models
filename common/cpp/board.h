@@ -1,6 +1,6 @@
 // Linux 板端的文件、参数、运行时错误与耗时统计工具.
-#ifndef MTK_MODELS_TOOLS_BOARD_COMMON_H_
-#define MTK_MODELS_TOOLS_BOARD_COMMON_H_
+#ifndef MTK_MODELS_COMMON_CPP_BOARD_H_
+#define MTK_MODELS_COMMON_CPP_BOARD_H_
 
 #include <sys/resource.h>
 
@@ -16,7 +16,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "../evaluation.h"
+#include "evaluation.h"
 
 namespace mtk {
 namespace fs = std::filesystem;
@@ -144,4 +144,4 @@ inline double Percentile(const std::vector<double>& sorted, double fraction) {
 }
 
 }  // namespace mtk
-#endif  // MTK_MODELS_TOOLS_BOARD_COMMON_H_
+#endif  // MTK_MODELS_COMMON_CPP_BOARD_H_

@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "tools/board/detection.h"
+#include "common/cpp/detection.h"
 
 namespace fs = std::filesystem;
 

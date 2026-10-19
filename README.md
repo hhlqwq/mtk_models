@@ -266,15 +266,15 @@ G720 的板端连接与工具链配置统一位于 `configs/platforms/genio_720.
 
 ## 公共代码
 
-模型只保留自身的输入约定、解码和评测策略,重复的基础功能放在 `tools/`:
+模型只保留自身的输入约定、解码和评测策略,公共 Python 和 Shell 工具放在 `tools/`,共享 C++ 代码与构建规则放在 `common/cpp/`:
 
 | 位置 | 职责 |
 | --- | --- |
 | `tools/files.py`、`tools/process.py` | 文件校验、分块哈希、JSON 读取和命令执行 |
-| `tools/boxes.py`、`tools/boxes.h` | 矩形框 IoU 等基础计算 |
+| `tools/boxes.py`、`common/cpp/boxes.h` | 矩形框 IoU 等基础计算 |
 | `tools/quantization.py` | 逐张量整数 I/O 元数据校验 |
 | `tools/coco.py` | COCO 检测评测,模型入口指定名称和结果状态规则 |
-| `tools/board/` | C++ 文件和统计工具、检测结果处理、共享性能测试源码 |
+| `common/cpp/` | C++ 板端公共函数、检测结果处理、共享性能测试源码和 Makefile 规则 |
 | `tools/llm/package.py`、`tools/llm/run_native.sh` | 原生 LLM 张量契约与部署入口 |
 
 部署入口会将板端需要的公共 Python 模块一起复制到部署目录,无需板端访问代码仓库.模型相关的解码、预处理约定和平台适配仍由模型自身维护.

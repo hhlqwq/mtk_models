@@ -1,6 +1,6 @@
 // 与 Python 公共工具一致的固定快速子集,不改变默认全量行为.
-#ifndef MTK_MODELS_TOOLS_EVALUATION_H_
-#define MTK_MODELS_TOOLS_EVALUATION_H_
+#ifndef MTK_MODELS_COMMON_CPP_EVALUATION_H_
+#define MTK_MODELS_COMMON_CPP_EVALUATION_H_
 
 #include <algorithm>
 #include <cstdlib>
@@ -49,4 +49,4 @@ inline std::set<std::string> TestSpeechIds(const std::vector<std::string>& value
 }
 
 }  // namespace mtk
-#endif  // MTK_MODELS_TOOLS_EVALUATION_H_
+#endif  // MTK_MODELS_COMMON_CPP_EVALUATION_H_

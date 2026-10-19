@@ -13,7 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "common.h"
+#include "board.h"
 #include "neuron/api/RuntimeAPI.h"
 
 namespace fs = std::filesystem;

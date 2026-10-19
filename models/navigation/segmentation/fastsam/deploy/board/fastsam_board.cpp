@@ -20,7 +20,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include "fastsam_runtime.h"
-#include "tools/boxes.h"
+#include "common/cpp/boxes.h"
 
 namespace fs = std::filesystem;
 

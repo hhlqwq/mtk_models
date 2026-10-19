@@ -21,5 +21,5 @@ LDFLAGS += -Wl,--allow-shlib-undefined
 LDLIBS += "$(LIB_DIR)/libneuronusdk_runtime.mtk.so.8" \
     "$(LIB_DIR)/libopencv_imgcodecs.so.409" "$(LIB_DIR)/libopencv_imgproc.so.409" \
     "$(LIB_DIR)/libopencv_core.so.409" -pthread -ldl
-COMMON_HEADERS := $(wildcard $(MTK_MODELS_ROOT)/tools/*.h $(MTK_MODELS_ROOT)/tools/board/*.h)
+COMMON_HEADERS := $(wildcard $(MTK_MODELS_ROOT)/common/cpp/*.h)
 .DEFAULT_GOAL := all

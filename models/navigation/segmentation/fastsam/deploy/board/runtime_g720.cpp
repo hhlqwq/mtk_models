@@ -12,7 +12,7 @@
 #include <utility>
 
 #include "neuron/api/RuntimeAPI.h"
-#include "tools/board/common.h"
+#include "common/cpp/board.h"
 
 namespace fastsam {
 namespace fs = std::filesystem;

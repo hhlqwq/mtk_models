@@ -24,8 +24,8 @@
 #include <opencv2/imgproc.hpp>
 
 #include "neuron/api/RuntimeAPI.h"
-#include "tools/board/common.h"
-#include "tools/board/detection.h"
+#include "common/cpp/board.h"
+#include "common/cpp/detection.h"
 
 namespace fs = std::filesystem;
 

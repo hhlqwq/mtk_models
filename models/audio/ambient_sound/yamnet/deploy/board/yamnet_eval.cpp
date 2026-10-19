@@ -1,4 +1,4 @@
-#include "tools/evaluation.h"
+#include "common/cpp/evaluation.h"
 // 在 Genio 720 上常驻加载 YAMNet,逐窗口执行真实 NPU 推理并汇总音频分数.
 #include <algorithm>
 #include <chrono>
@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "neuron/api/RuntimeAPI.h"
-#include "tools/board/common.h"
+#include "common/cpp/board.h"
 
 namespace fs = std::filesystem;
 using Clock = std::chrono::steady_clock;
