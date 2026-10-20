@@ -1,4 +1,4 @@
-# 模型目录与部署路线图
+# 模型目录
 
 本目录按照“Scenario → Category → Model”三级结构组织模型，覆盖模型来源、转换、量化、
 MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcomm AI Hub Models 仅作为
@@ -90,42 +90,62 @@ Depth Anything V2 Small 的 DA-2K 同协议 ONNX FP32 点对准确率为 **94.83
 
 精度变化正数表示改善,负数表示下降: 准确率和 AP/AR 用板端减 ONNX,WER 用 ONNX 减板端。量化方式见各模型 README。ORT `session.Run` 与独立 NPU 调用耗时分开记录,不直接混排。
 
-## 机器人模型推荐路线图
+## Models List
 
-推荐顺序以“补齐机器人能力闭环、复用现有工程资产、控制 MTK 转换风险”为原则，不按模型
-热度排序。
+清单依据 `docs/MTK_models.xlsx` 的“Effort评估”工作表,按“是否适配”列为“做”筛选,共 48 个版本条目.序号沿用原表,表示本轮适配范围,不代表已完成部署.
 
-| 优先级 | 推荐模型或工作项 | 目标能力 | 建议目录 | 推荐理由 | 进入实现前的关键门槛 |
-| --- | --- | --- | --- | --- | --- |
-| P0 | DeepLabV3-Plus-MobileNet | 地面、道路、墙体和障碍物语义分割 | `navigation/segmentation/deeplabv3_plus_mobilenet` | 轻量 CNN、固定输入输出，适合先建立机器人可通行区域闭环 | 锁定官方源码、权重、许可证、数据集和类别映射；先检查空洞卷积与 resize 算子 |
-| P0 | YOLOv5s → Genio 5100 | 第二平台部署基线 | 复用现有 YOLOv5s 包 | Genio 720 证据最完整，最适合验证框架的平台抽象与兼容性 | 核对 G5100 SDK、编译架构、Runtime、量化和板端部署差异 |
-| P1 | Depth Anything V2 Small | 单目相对深度、障碍物远近和空间结构 | `navigation/single_camera_depth/depth_anything_v2_small` | 能把二维检测扩展为空间感知，直接服务移动机器人导航 | 固定输入尺寸；检查 Transformer、插值和量化误差；不得把相对深度直接当作安全米制距离 |
-| P1 | MediaPipe Hand Gesture | 手检测、21 点关键点和手势控制 | `interaction/gesture/mediapipe_hand_gesture` | 能形成直观的人机交互 Demo，并补足现有 RTMPose 的手部能力 | 按子模型分别验证检测、关键点和分类；动作控制必须使用多帧确认与超时失效 |
-| 已完成 | YAMNet W8A16 | 警报、撞击、玻璃破碎和机械异常声识别 | `audio/ambient_sound/yamnet` | MobileNetV1 架构轻量，可与 Whisper 形成“语音内容 + 环境事件”双通路 | ESC-50 全量实测已完成；后续接入实时麦克风并使用真实机器人环境噪声验证 |
-| P2 | OSNet + BoxMOT | 人员持续跟踪和身份保持 | `slam/object_tracking/boxmot_osnet` | 可复用现有 YOLO 检测结果，ReID 上 NPU、关联和 Kalman Filter 留在 CPU | 分开统计 Detector、ReID 和 Tracker 的耗时与资源，不能把 BoxMOT 当作单一 NPU 模型 |
-| P2 | SuperPoint → LightGlue | 视觉定位、特征匹配和 SLAM | `slam/localization/superpoint_lightglue` | 补齐机器人定位能力，适合按两个独立模型分阶段推进 | 先固定最大关键点数验证 SuperPoint；LightGlue 的动态匹配和注意力先允许 CPU 执行 |
-| P3 | FastSAM / EdgeSAM / MobileSAM | 点选目标、抓取区域和开放分割 | 复用 FastSAM，其他模型暂留目标清单 | 适合机械臂和交互展示，但不应替代持续运行的基础语义分割 | 评估提示输入、多阶段图、内存占用和许可证限制 |
-| P3 | PointPillar-Tiny / CenterPoint | 3D 点云障碍物检测 | `pointcloud/pointcloud/<model>` | 面向带激光雷达的机器人，长期价值高 | 先确定雷达硬件、点云格式、标定、数据集、体素化和 3D 后处理边界 |
+| 原表序号 | 场景 | 类别 | 具体版本 |
+| ---: | --- | --- | --- |
+| 1 | 感知 | 目标检测 | YOLOv5n-v7.0（640×640） |
+| 2 | 感知 | 目标检测 | YOLOv5m-v7.0（640×640） |
+| 3 | 感知 | 目标检测 | YOLOv8n（640×640） |
+| 4 | 感知 | 目标检测 | YOLOv8m（640×640） |
+| 5 | 感知 | 目标检测 | RT-DETRv2-S（640×640） |
+| 6 | 感知 | 分类 | SqueezeNet-1.1 |
+| 7 | 感知 | 分类 | ResNet50 |
+| 8 | 感知 | 分类 | ResNet101 |
+| 9 | 感知 | 分类 | MobileNetV3-Large |
+| 10 | 感知 | 分类 | ViT-B/16 |
+| 11 | 交互 | 手势识别 | MediaPipe Gesture Recognizer（Palm+Hand Landmark+Gesture Classifier） |
+| 12 | 交互 | 手部关键点 | DepthAI Hand Tracker（PalmDetection+HandLandmark 21点） |
+| 13 | 交互 | 人脸识别 | MobileFaceNet |
+| 14 | 交互 | 姿态估计 | MoveNet SinglePose Lightning（192×192） |
+| 15 | 交互 | 姿态估计 | RTMPose-m WholeBody（256×192，133点） |
+| 16 | 交互 | 姿态估计 | HRNet-W32（COCO 17点） |
+| 17 | 交互 | 姿态估计 | BlazePose GHUM Lite（33点） |
+| 18 | 交互 | 文本识别 | PROCR v4 |
+| 19 | 导航 | 语义分割 | Fast-SCNN（Cityscapes 19类） |
+| 20 | 导航 | 语义分割 | DeepLabV3-MobileNetV3-Large（VOC 21类） |
+| 21 | 导航 | 语义分割 | segformer-b0-finetuned-ade-512-512 |
+| 22 | 导航 | 语义分割 | FastSAM-s |
+| 23 | 导航 | 语义分割 | FastSAM-x |
+| 24 | 导航 | 语义分割 | EdgeSAM（Image Encoder+Prompt Decoder） |
+| 25 | 导航 | 单目深度 | Depth Anything V2-Small（ViT-S） |
+| 26 | 导航 | 双目深度 | StereoNetPlus-v1.2.1（MixVarGENet + FPN，SceneFlow） |
+| 27 | 导航 | 视觉基础模型 | DINOv2 ViT-S/14（dinov2_vits14） |
+| 28 | 生成式AI | 视觉语言 | CLIP ViT-B/16 |
+| 31 | 生成式AI | 大语言模型 | MiniCPM5-2B |
+| 32 | 生成式AI | 大语言模型 | DeepSeek-R1-Distill-Qwen-1.5B |
+| 33 | 生成式AI | 大语言模型 | DeepSeek-R1-Distill-Qwen-7B |
+| 34 | 生成式AI | VLM | InternVL3-1B |
+| 35 | 生成式AI | VLM | InternVL3-8B |
+| 37 | 生成式AI | VLM | Gemma 4 E2B |
+| 38 | 生成式AI | VLM | Gemma 4 E4B |
+| 42 | 音频 | 语音合成 | MeloTTS |
+| 43 | 音频 | 语音合成 | PiperTTS |
+| 44 | 音频 | 环境音频 | WebRTC AEC3 |
+| 45 | 音频 | 环境音频 | DeepFilterNet v3 |
+| 46 | 音频 | 环境音频 | YAMNet（TF Hub，521类） |
+| 47 | SLAM | 目标跟踪 | YOLOv8n + OSNet_x0_25 + BoT-SORT（BoxMOT） |
+| 48 | SLAM | 定位 | MobileNetVLAD（mobilenetvlad_depth-0.35） |
+| 49 | SLAM | 定位 | HF-Net |
+| 50 | SLAM | 定位 | SuperPoint（MagicLeap pretrained） |
+| 51 | SLAM | 定位 | LightGlue（SuperPoint，固定1024关键点） |
+| 52 | 点云 | 点云 | PointPillar-Tiny |
+| 53 | 点云 | 点云 | CenterPoint-Pillar 0.2（SECOND + SECFPN） |
+| 54 | 点云 | 3D融合 | MIT BEVFusion |
 
-### 建议实施顺序
-
-```text
-阶段 1：DeepLabV3-Plus-MobileNet / Genio 720
-   └── 同步建立 YOLOv5s / Genio 5100 平台基线
-
-阶段 2：Depth Anything V2 Small
-   ├── 检测框 + 相对深度融合
-   └── 可通行区域 + 深度风险融合
-
-阶段 3：MediaPipe Hand Gesture / YAMNet 实时采集应用
-   └── 根据产品更偏人机交互还是环境安全感知二选一
-
-阶段 4：OSNet + BoxMOT
-   └── 复用 YOLO，形成稳定人员跟踪和跟随能力
-
-阶段 5：SuperPoint，再评估 LightGlue
-   └── 进入视觉定位和 SLAM 能力建设
-```
+原表标记“不做”的 6 项: Llama3.2, Qwen3, Qwen3-VL, whisper, Qwen3-ASR, Moonshine tiny (streaming).此筛选不删除仓库已有模型或历史实测结果.
 
 ## 目录结构
 
