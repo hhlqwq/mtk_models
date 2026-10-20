@@ -85,7 +85,6 @@
   },
   "error_diagnosis": {
     "date": "2026-10-16",
-    "evidence": "diagnostics.json#root_cause_diagnostic",
     "confirmed": [
       "late_layer_mlp_int4_approximation_loss",
       "rare_a16_activation_clipping"

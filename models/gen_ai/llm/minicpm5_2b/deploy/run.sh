@@ -17,6 +17,8 @@ if [[ "${MTK_EVAL_TEST}" == 1 && "${EVAL_RUN_ID}" != *_test ]]; then
     export EVAL_RUN_ID="${EVAL_RUN_ID}_test"
 fi
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
+    exec 9>"${SCRIPT_DIR}/.run.lock"
+    flock -n 9 || { echo '[错误] 本模型已有运行任务.' >&2; exit 2; }
     export PYTHONPATH="${SCRIPT_DIR}/board${PYTHONPATH:+:${PYTHONPATH}}"
     echo "[板端 1/3] 生成、输入一致性及性能检查: ${EVAL_RUN_ID}."
     python3 "${SCRIPT_DIR}/board/infer.py"
@@ -31,6 +33,9 @@ else
     echo '[资源预检] 检查 NAS 数据集和模型路径,不读取模型权重.'
     "${MTK_GAI_PYTHON}" "${SCRIPT_DIR}/host/evaluate_reference.py" --check-data
     MODEL_BUILD_DIR="$(python3 "${MTK_MODELS_ROOT}/tools/storage.py" --print-build-dir "${SCRIPT_DIR}/../config.yaml")"
+    mkdir -p "${MODEL_BUILD_DIR}"
+    exec 9>"${MODEL_BUILD_DIR}/.run.lock"
+    flock -n 9 || { echo '[错误] 本模型已有转换任务.' >&2; exit 2; }
     echo '[容器 1/10] 校验官方来源并准备转换副本.'
     "${MTK_GAI_PYTHON}" "${SCRIPT_DIR}/host/prepare_model.py"
     echo '[容器 2/10] 检查评测资源与完整题集上下文需求.'

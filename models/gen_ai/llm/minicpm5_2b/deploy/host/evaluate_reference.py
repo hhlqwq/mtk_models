@@ -70,7 +70,7 @@ def evaluate_mode(native, prepare_only, datasets):
     run_id = os.environ["EVAL_RUN_ID"]
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id):
         raise ValueError("运行编号只允许字母、数字、下划线和连字符.")
-    output = native.work / "evaluation" / run_id / mode
+    output = native.work / "evaluation" / mode
     mmlu, corpus = datasets
     graph = None if prepare_only else single_file(
         Path(f"{native.quantized}_{native.prefill}t{native.context}c"), "*.tflite")

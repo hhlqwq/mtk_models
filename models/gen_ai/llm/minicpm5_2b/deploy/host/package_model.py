@@ -155,8 +155,14 @@ def main():
     run_id = os.environ["EVAL_RUN_ID"]
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id):
         raise ValueError("运行编号只允许字母、数字、下划线和连字符.")
-    evaluation = native.work / "evaluation" / run_id / mode
-    output = native.ctx.work / "packages" / run_id
+    evaluation = native.work / "evaluation" / mode
+    output = native.ctx.work / "package"
+    if (output.is_symlink() or output.resolve().parent != native.ctx.work.resolve()
+            or not output.resolve().is_relative_to(native.ctx.output.resolve())):
+        raise ValueError("临时部署包必须位于本模型 build/package.")
+    if output.exists():
+        print("[清理] 替换上一次临时部署包.", flush=True)
+        shutil.rmtree(output)
     package(native.work, output, native.prefill, native.quantized)
     shutil.copyfile(native.ctx.model / "deploy/run.sh", output / "run.sh")
     board = output / "board"
@@ -194,6 +200,14 @@ def main():
          "sha256": sha256(path, progress=True)}
         for path in sorted(output.rglob("*")) if path.is_file() and path != manifest_path]
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+    destination = native.ctx.output / "models"
+    if destination.is_symlink():
+        raise ValueError("当前部署包不能是软链接.")
+    if destination.exists():
+        shutil.rmtree(destination)
+    output.rename(destination)
+    output = destination
+    manifest_path = output / "manifest.json"
     (native.work / "deployment_package.json").write_text(json.dumps({
         "path": str(output), "mode": mode, "run_id": run_id,
         "manifest_sha256": sha256(manifest_path)}, indent=2) + "\n")

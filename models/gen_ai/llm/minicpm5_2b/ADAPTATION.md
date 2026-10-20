@@ -19,4 +19,4 @@
 
 ## 证据
 
-当前评价指标见 [README](README.md)和[统一汇总](results/summary.json).层误差、接口范围、执行一致性及优化诊断保存在 [diagnostics.json](results/diagnostics.json),原始评价和短生成证据保存在 [evidence.json](results/evidence.json).使用文档不重复列出逐次实验过程.
+当前评价指标见 [README](README.md)和[统一汇总](results/summary.json),当前模型的评价与短生成证据见 [evidence.json](results/evidence.json).不保留历史诊断与逐次实验文件.

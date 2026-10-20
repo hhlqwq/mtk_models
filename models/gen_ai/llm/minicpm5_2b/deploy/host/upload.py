@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import shlex
+import shutil
 
 from tools.deploy import arguments
 from tools.evaluation import is_test
@@ -45,7 +46,9 @@ target.mkdir(parents=True,exist_ok=True)
     run_command(["ssh", *options, host,
                  "python3 -c " + shlex.quote(guard) + " " + shlex.quote(target)])
     # 不删除板端已有结果; 每次运行使用独立运行编号.
-    run_command(["rsync", "-a", "--info=progress2", "-e", "ssh -o BatchMode=yes",
+    run_command(["rsync", "-a", "--delete", "--exclude=results/", "--exclude=.run.lock",
+                 "--rsync-path", f"flock -n {shlex.quote(target + '/.run.lock')} rsync",
+                 "--info=progress2", "-e", "ssh -o BatchMode=yes",
                  str(package) + "/", f"{host}:{shlex.quote(target)}/"])
     verify = """
 import hashlib,json,sys
@@ -69,6 +72,11 @@ for index,row in enumerate(files,1):
 """
     run_command(["ssh", *options, host, "python3 -c " + shlex.quote(verify) + " "
                  + shlex.quote(target) + " " + shlex.quote(record["manifest_sha256"])])
+    expected = native.ctx.output / "build/native"
+    if native.work.is_symlink() or native.work.resolve() != expected.resolve():
+        raise ValueError("拒绝清理本模型 build/native 以外的转换目录.")
+    print("[清理] 上传核对完成,删除本次转换中间文件,保留当前部署包.", flush=True)
+    shutil.rmtree(native.work)
     flag = " -test" if is_test() else ""
     print(f"[下一步] 在板端执行: cd {shlex.quote(target)} && bash run.sh{flag}", flush=True)
 

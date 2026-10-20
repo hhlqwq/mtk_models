@@ -33,7 +33,9 @@ def paths(root, config_path, run_id=None):
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id):
         raise ValueError("运行编号只允许字母、数字、下划线和连字符.")
     config = json.loads(Path(config_path).read_text(encoding="utf-8"))
-    result = root / config["board"].get("results_dir", "results") / run_id
+    result_name = ("latest_test" if is_test() else "latest") if config["board"].get(
+        "retain_latest", False) else run_id
+    result = root / config["board"].get("results_dir", "results") / result_name
     return argparse.Namespace(root=root, config=config, run_id=run_id,
         dataset=Path(config["board"]["dataset_dir"]), result=result, work=result / "work")
 

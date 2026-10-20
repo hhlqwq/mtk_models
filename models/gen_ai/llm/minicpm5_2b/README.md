@@ -76,7 +76,6 @@ minicpm5_2b/
 └── results/
     ├── summary.json          当前已有交付模型成绩
     ├── evidence.json         首轮评价、性能、短生成和质量证据
-    └── diagnostics.json      逐层、接口、执行一致性及历史优化诊断
 ```
 
 公共 Python 实现在仓库 `tools/llm/`;公共 Neuron 桥接源码为 `common/cpp/neuron_bridge.cpp`,MiniCPM 和 DeepSeek 的 Makefile 共用.板端生成调用系统 `llm_cmdline_tool`,PPL/MMLU 通过桥接库调用真实 Neuron MDLA Runtime,不回退 CPU.板端需要 Python、NumPy 和匹配的 Runtime,不需要主机的 Torch、Transformers 或 Converter.
@@ -85,12 +84,12 @@ minicpm5_2b/
 
 ## 资源和部署目录
 
-外部模型资源根目录为 `models_root/gen_ai/llm/minicpm5_2b/`.官方输入在 `original/`,默认中间产物在 `build/native/`,部署包在 `build/packages/运行编号/`.中间产物不进入 Git.
+外部模型资源根目录为 `models_root/gen_ai/llm/minicpm5_2b/`,只保留 `original/`、`models/` 和 `build/` 三类目录.官方权重及来源记录在 `original/`,当前部署包在 `models/`,本次转换使用 `build/native/`,打包暂存使用 `build/package/`.新转换替换旧工作目录;新包完整生成后替换当前部署包,上传并核对成功后删除转换中间文件.失败保留本次现场,下次运行替换,不积累历史副本.
 
 上传后的板端目录为:
 
 ```text
-minicpm5_2b/current/
+minicpm5_2b/
 ├── run.sh                    与主机相同的入口
 ├── config.json               已解析的模型配置及准备模式
 ├── manifest.json             交付文件清单、精度及图接口
@@ -101,12 +100,12 @@ minicpm5_2b/current/
 ├── scripts/                  原生 CLI YAML 及 Prompt
 ├── board/                    模型执行代码、公共模块及 AArch64 桥接库
 ├── evaluation/full或test/    与本次模型匹配的题集、输入契约和 FP32 参考
-└── results/运行编号/          原始日志、逐题结果和本次汇总
+└── results/                 最新全量和快速结果,分别位于 latest/ 和 latest_test/
 ```
 
-同一模型重复执行只新增运行编号,快速运行编号带 `_test`.上传保留已有结果,但会更新当前部署文件;发现进程占用部署目录时拒绝覆盖,不停止其他进程.
+同一模型重复执行替换对应模式的上一次输出,运行编号保存在结果内容中.入口使用文件锁拒绝并发运行.上传同步删除过期部署文件,保留最新结果;发现进程占用部署目录时拒绝覆盖,不停止其他进程.
 
-淘汰的历史低精度模型只保留文档、配置摘要、评价结论和必要哈希,不长期保留模型包或中间数据.历史运行路径保留原样;结果 JSON 合并后以原文件名去掉 `.json` 为顶层键,例如 `evidence.json` 的 `first_round_summary` 和 `diagnostics.json` 的 `root_cause_diagnostic`.
+仓库和 NAS 不保存淘汰模型、旧部署包、历史诊断及逐次实验记录.只保留当前选定模型的来源、最新汇总和必要评价证据.当前已有包仍可使用 `bash scripts/run.sh` 执行双语 Demo,仅保留 `results/latest_demo/`;该入口不代表全量评价.
 
 ## 当前结果
 
@@ -119,4 +118,4 @@ minicpm5_2b/current/
 
 统一性能为 Prefill 288.67 token/s、Decode 8.15 token/s,使用固定 128 Token 输入、最多生成 128 Token.性能运行未到 EOS,不代表自由生成质量通过.短生成四题均包含正确答案并停止,严格按要求只输出答案为 3/4,不能表述为指令遵从全部通过.
 
-[统一汇总](results/summary.json)、[评价证据](results/evidence.json)、[诊断记录](results/diagnostics.json) 和 [适配说明](ADAPTATION.md) 保留原有范围和限制.新入口只有完成对应板端评价、核对输入及模型哈希后才产生新的运行汇总,不会自动修改仓库中的历史成绩;运行完成也不自动宣布精度合格.
+[统一汇总](results/summary.json)、[评价证据](results/evidence.json) 和 [适配说明](ADAPTATION.md) 记录当前选定模型的范围和限制.新入口只有完成对应板端评价、核对输入及模型哈希后才产生新汇总,运行完成也不自动宣布精度合格.

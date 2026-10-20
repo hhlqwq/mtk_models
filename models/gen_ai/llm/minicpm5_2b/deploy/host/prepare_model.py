@@ -11,7 +11,7 @@ from transformers import AutoTokenizer
 from tools.deploy import configure_parser
 from tools.files import sha256
 from tools.llm.native import settings
-from tools.storage import reuse_weight
+from tools.storage import model_storage, reuse_weight
 
 
 def prepare(source, output, context, calibration_train=None, mask_value=-100.0,
@@ -173,7 +173,15 @@ def main():
         "calibration_train": lambda c: Path(settings(c).train) if settings(c).train else None,
     })
     args = parser.parse_args()
-    (args.output / "calibration_complete.txt").unlink(missing_ok=True)
+    if args.output.is_symlink() or args.output.resolve() == args.source.resolve():
+        raise ValueError("转换目录不能是软链接或原始资源目录.")
+    expected = model_storage(Path(__file__).resolve().parents[2]) / "build/native"
+    if (args.output.resolve() != expected.resolve()
+            or not args.output.resolve().is_relative_to(expected.parents[1].resolve())):
+        raise ValueError("MiniCPM 转换目录必须为模型资源下的 build/native.")
+    if args.output.exists():
+        print("[清理] 替换上一次转换工作目录,保留官方资源及当前部署包.", flush=True)
+        shutil.rmtree(args.output)
     prepare(args.source, args.output, args.context, args.calibration_train,
             args.mask_value, args.rotate)
 
