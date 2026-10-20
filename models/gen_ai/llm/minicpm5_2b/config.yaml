@@ -5,11 +5,15 @@ model:
   output_dir: .
 data:
   dataset_dir: .
+  # 相对于 dataset_dir,运行前准备固定版本的离线文件,不自动下载.
+  wikitext_test: wikitext/wikitext-2-raw-v1/test-00000-of-00001.parquet
+  mmlu_test: mmlu/all/test-00000-of-00001.parquet
 board:
-  deploy_dir: minicpm5_2b
+  deploy_dir: minicpm5_2b/current
   dataset_dir: .
   results_dir: results
 conversion:
+  # 全量题集超限时按入口报告增大上下文并重新转换,禁止截题或丢题.
   context: 1024
   max_new_tokens: 512
 native:
@@ -26,3 +30,8 @@ native:
   weight_optimization: none
   weight_opt_config: ''
   calibration_train: ''
+evaluation:
+  # -test 只缩小评价范围,不改变校准和量化配方.
+  test_mmlu_questions: 16
+  test_wikitext_blocks: 4
+  reference_device: cuda

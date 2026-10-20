@@ -43,7 +43,7 @@
     "generated_tokens": 128,
     "scope": "fixed_128_input_max_128_generated"
   },
-  "evidence": "first_round_summary.json",
+  "evidence": "evidence.json#first_round_summary",
   "model_size": {
     "unit": "MB",
     "compiled_dla": 2292.52,
@@ -80,13 +80,16 @@
     "text_token_parity": 4,
     "exact_token_match_fp32": 3,
     "strict_answer_only_format_passed": 3,
-    "evidence": "native_smoke.json",
+    "evidence": "evidence.json#native_smoke",
     "quality_qualified": false
   },
   "error_diagnosis": {
     "date": "2026-10-16",
-    "evidence": "root_cause_diagnostic.json",
-    "confirmed": ["late_layer_mlp_int4_approximation_loss", "rare_a16_activation_clipping"],
+    "evidence": "diagnostics.json#root_cause_diagnostic",
+    "confirmed": [
+      "late_layer_mlp_int4_approximation_loss",
+      "rare_a16_activation_clipping"
+    ],
     "global_range_guard_adopted": false,
     "current_delivery_replaced": false,
     "main_quality_gap_resolved": false,

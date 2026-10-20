@@ -4,18 +4,14 @@ import argparse
 import json
 from pathlib import Path
 import shutil
-import sys
-
-from transformers import AutoTokenizer
-
 
 import pyarrow.parquet as parquet
-from tools.storage import reuse_weight
-
-from tools.files import sha256
+from transformers import AutoTokenizer
 
 from tools.deploy import configure_parser
+from tools.files import sha256
 from tools.llm.native import settings
+from tools.storage import reuse_weight
 
 
 def prepare(source, output, context, calibration_train=None, mask_value=-100.0,

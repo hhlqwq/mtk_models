@@ -129,8 +129,10 @@ def evaluate(args):
         raise ValueError("快速语料必须使用 -test,不能作为正式评测输入.")
     contract = json.loads((args.quality_data / "board_input_contract.json").read_text())
     manifest = json.loads((args.package / "manifest.json").read_text())
-    if report["protocol"] != "fixed_text_rows_v1" or report["block_tokens"] != 128:
+    if report["protocol"] not in ("fixed_text_rows_v1", "full_test_block128_v1") or report["block_tokens"] != 128:
         raise ValueError("需要统一的原始文本评价协议.")
+    if is_test() and report.get("evaluation_scope") == "full":
+        raise ValueError("全量输入不能作为快速结果,请先上传 -test 对应评价资源.")
     if contract["tflite_sha256"] != report["tflite_sha256"]:
         raise ValueError("输入契约与主机质量报告不符.")
     inputs_path = args.quality_data / "board_inputs.npz"
@@ -234,6 +236,9 @@ def evaluate(args):
                   elapsed_seconds=time.perf_counter() - started, block_timings=rows,
                   dla_sha256=sha256(model_path), embedding_sha256=sha256(embedding_path),
                   bridge_sha256=sha256(args.library), cpu_fallback=False)
+    if report["protocol"] == "full_test_block128_v1":
+        result.update(scope="wikitext2_full_test_block128_reset_context",
+                      full_test_requested=True, text_rows=report["text_rows"])
     if args.diagnostic_blocks:
         result.update(scope="logits_diagnostic_prefix_not_full_accuracy",
                       blocks=len(token_blocks), scored_tokens=len(nll_values),

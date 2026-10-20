@@ -56,7 +56,10 @@ def prepare(args):
     rows = parquet.read_table(args.dataset).to_pylist()
     if len(rows) != 14042 or len({row["subject"] for row in rows}) != 57:
         raise ValueError("完整 MMLU 题数或学科数不符.")
-    selected = (sorted(random.Random(args.seed).sample(range(len(rows)), 16))
+    test_questions = getattr(args, "test_questions", 16)
+    if not 1 <= test_questions <= len(rows):
+        raise ValueError("快速 MMLU 题数必须在有效题集范围内.")
+    selected = (sorted(random.Random(args.seed).sample(range(len(rows)), test_questions))
                 if is_test() else select_questions(rows, args.limit, args.seed))
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
     choices = [tokenizer.encode(" " + letter, add_special_tokens=False)
@@ -83,9 +86,11 @@ def prepare(args):
     protocol = {"dataset": "cais/mmlu", "dataset_sha256": DATA_SHA256,
                 "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
                 "split": "test", "shots": 0, "subjects": subject_count,
-                "scope": "first_round_stratified_subset" if args.limit else "full_test",
+                "scope": "smoke_subset" if is_test() else (
+                    "first_round_stratified_subset" if args.limit else "full_test"),
                 "dataset_questions": len(rows), "sampling_seed": args.seed,
-                "sampling": "fixed_seed_smoke_subset" if is_test() else "proportional_subject_largest_remainder",
+                "sampling": "fixed_seed_smoke_subset" if is_test() else (
+                    "all_test_questions" if args.limit == 0 else "proportional_subject_largest_remainder"),
                 "selected_source_question_ids": selected,
                 "questions": len(cases), "maximum_prompt_tokens": maximum,
                 "context": args.context, "choice_token_ids": [x[0] for x in choices],
@@ -94,7 +99,7 @@ def prepare(args):
                 "model_config_sha256": sha256(args.model / "config.json")}
     if is_test():
         record_selection(row["source_question_id"] for row in cases)
-        protocol.update(status=result_status(), **scope_metadata())
+    protocol.update(status=result_status(), **scope_metadata())
     # 长度检查结果仍落盘,便于确定实际所需上下文;不输出截断题目.
     (args.output / "length_report.json").write_text(
         json.dumps(protocol, indent=2) + "\n")
@@ -105,7 +110,7 @@ def prepare(args):
     protocol["cases_sha256"] = sha256(args.output / "cases.json")
     if args.graph:
         # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
-        from evaluate_quality import export_board_inputs
+        from tools.llm.evaluate_quality import export_board_inputs
         from mtk_llm_sdk.utils import generate_utils, utils
 
         export_board_inputs(args.model, args.graph, args.output)
@@ -173,7 +178,7 @@ class QuantizedExecutor:
     def run(self):
         """返回全部原始输出,避免重复量化或丢失 KV."""
         # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
-        from compare_logits import raw_output_list
+        from tools.llm.compare_logits import raw_output_list
 
         feed = {item["name"]: value for item, value in
                 zip(self.contract["inputs"], self.inputs)}
@@ -193,6 +198,8 @@ def evaluate(args):
         raise ValueError("MMLU 题目 Token 文件哈希不符.")
     if protocol.get("evaluation_scope") == "subset" and not is_test():
         raise ValueError("快速题集必须使用 -test,不能作为正式评测输入.")
+    if is_test() and protocol.get("evaluation_scope") == "full":
+        raise ValueError("当前输入为全量题集,请先在容器执行 run.sh -test 准备快速题集.")
     cases = json.loads((args.data / "cases.json").read_text())
     if args.diagnostic_questions:
         if args.diagnostic_questions > len(cases):
@@ -224,7 +231,7 @@ def evaluate(args):
             return output[protocol["choice_token_ids"]].numpy().tolist()
     else:
         # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
-        from evaluate_board_quality import HardwareModel, transfer_cache
+        from tools.llm.evaluate_board_quality import HardwareModel, transfer_cache
 
         manifest = json.loads((args.package / "manifest.json").read_text())
         if manifest["context"] != protocol["context"]:
@@ -328,7 +335,7 @@ def main():
     parser.add_argument("--graph", type=Path)
     parser.add_argument("--context", type=int, default=1024)
     parser.add_argument("--limit", type=int, default=1000,
-                        help="首轮默认 1000 题,0 表示完整测试集.")
+                        help="独立工具保留首轮 1000 题默认值,模型一键入口显式传入 0 使用完整测试集.")
     parser.add_argument("--seed", type=int, default=17)
     parser.add_argument("--diagnostic-questions", type=int, default=0,
                         help="仅用于覆盖不同长度的多块执行诊断,不代替千题成绩.")
