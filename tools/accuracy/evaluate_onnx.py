@@ -67,7 +67,7 @@ def infer(session: ort.InferenceSession, tensor: np.ndarray) -> list:
 
 def evaluate_vit(args, deploy: Path) -> tuple:
     """按板端 OpenCV 缩放和中心裁剪协议计算 ImageNet Top-1."""
-    helper = load_module("vit_metrics", deploy / "evaluate_full_accuracy.py")
+    helper = load_module("vit_metrics", deploy / "full_accuracy_board.py")
     labels = helper.read_labels(args.dataset_root / "val_labels_0based.txt")
     paths = sorted((args.dataset_root / "val").glob("*.JPEG"))
     if len(paths) != 50000:
@@ -197,7 +197,7 @@ def evaluate_pose(args, deploy: Path) -> tuple:
     """复用官方人体检测框、SimCC 解码和 WholeBody OKS-NMS 协议."""
     # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     from rtmpose_utils import preprocess_image, decode_prediction
-    metrics = load_module("pose_metrics", deploy / "evaluate_coco_wholebody.py")
+    metrics = load_module("pose_metrics", deploy / "full_accuracy_board.py")
     detections = json.loads((args.dataset_root /
         "person_detection_results/COCO_val2017_detections_AP_H_56_person.json").read_text())
     if len(detections) != 104125:
@@ -261,8 +261,8 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
     # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     import whisper
     from whisper.tokenizer import get_tokenizer
-    helper = load_module("whisper_metrics", deploy / "evaluate_accuracy.py")
-    assets = load_module("whisper_assets", deploy.parent / "host" / "export_board_assets.py")
+    helper = load_module("whisper_metrics", deploy / "full_accuracy_board.py")
+    assets = load_module("whisper_assets", deploy.parent / "host" / "export_onnx.py")
     sources = load_sources(args.dataset_root)
     chosen = select_samples(sorted(sources), args.model, required=SPEECH_EXAMPLES)
     sources = {key: sources[key] for key in chosen}
@@ -331,19 +331,14 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
     return "WER", accuracy["value"], len(predictions)
 
 
-def main() -> None:
-    """只保存核心精度,成功后清理本次专用临时目录."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model", choices=MODELS, required=True)
-    parser.add_argument("--onnx", type=Path, required=True)
-    parser.add_argument("--decoder-onnx", type=Path)
-    parser.add_argument("--dataset-root", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--temp-dir", type=Path, help="评测临时文件的父目录.")
-    add_test_argument(parser)
-    args = parser.parse_args()
-    if args.model == "whisper_tiny" and args.decoder_onnx is None:
-        parser.error("Whisper 精度评测需要 --decoder-onnx.")
+def evaluate_model(*, model, onnx, dataset_root, output, decoder_onnx=None, temp_dir=None):
+    """直接执行公共浮点评测,CLI 和各模型入口共用同一实现."""
+    if model not in MODELS:
+        raise ValueError(f"不支持的模型: {model}.")
+    if model == "whisper_tiny" and decoder_onnx is None:
+        raise ValueError("Whisper 精度评测需要 Decoder ONNX.")
+    args = argparse.Namespace(model=model, onnx=Path(onnx), dataset_root=Path(dataset_root),
+                              output=Path(output), decoder_onnx=decoder_onnx, temp_dir=temp_dir)
     deploy = ROOT / "models" / MODELS[args.model] / "deploy" / "board"
     if args.model != "fastsam":
         sys.path.insert(0, str(deploy))
@@ -365,6 +360,24 @@ def main() -> None:
         ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     shutil.rmtree(args.work_dir)
     print(f"[ONNX] {metric}: {value:.6f}; 汇总: {args.output}", flush=True)
+
+
+
+def main() -> None:
+    """只保存核心精度,成功后清理本次专用临时目录."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", choices=MODELS, required=True)
+    parser.add_argument("--onnx", type=Path, required=True)
+    parser.add_argument("--decoder-onnx", type=Path)
+    parser.add_argument("--dataset-root", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--temp-dir", type=Path, help="评测临时文件的父目录.")
+    add_test_argument(parser)
+    args = parser.parse_args()
+    if args.model == "whisper_tiny" and args.decoder_onnx is None:
+        parser.error("Whisper 精度评测需要 --decoder-onnx.")
+    evaluate_model(model=args.model, onnx=args.onnx, dataset_root=args.dataset_root,
+                   output=args.output, decoder_onnx=args.decoder_onnx, temp_dir=args.temp_dir)
 
 
 if __name__ == "__main__":

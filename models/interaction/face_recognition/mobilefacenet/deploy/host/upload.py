@@ -8,7 +8,7 @@ def main():
     ctx = arguments(__file__)
     upload(ctx, [
         ctx.output / "model_int8.dla",
-        ctx.work / "board_input/metadata.json",
+        ctx.work / "metadata.json",
 ], [
         ctx.work / "mobilefacenet_board",
     ])

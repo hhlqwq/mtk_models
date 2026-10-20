@@ -10,6 +10,8 @@ from pathlib import Path
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
+from tools.board import configure_parser
+
 from tools.evaluation import (
     matching_reference,
     add_test_argument, coco_ids, is_test, result_status, scope_metadata,
@@ -124,7 +126,7 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
     print(summary_text, end="", flush=True)
 
 
-def parse_args(description=__doc__) -> argparse.Namespace:
+def parse_args(description=__doc__, *, entry=None) -> argparse.Namespace:
     """解析输入报告路径和同协议 FP32 精度基准."""
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--annotations", type=Path, required=True)
@@ -137,4 +139,15 @@ def parse_args(description=__doc__) -> argparse.Namespace:
     parser.add_argument("--run-id")
     parser.add_argument("--fp32-report", type=Path)
     add_test_argument(parser)
+    if entry is not None:
+        configure_parser(parser, entry, {
+            "annotations": lambda c: c.dataset / "annotations/instances_val2017.json",
+            "predictions": lambda c: c.work / "predictions.json",
+            "processed_ids": lambda c: c.work / "processed_ids.txt",
+            "timings": lambda c: c.work / "timing_summary_current_run.json",
+            "metrics": lambda c: c.result / "summary.json",
+            "run_id": lambda c: c.run_id,
+            "fp32_report": lambda c: c.root / "models" / (
+                "onnx_reference_test.json" if is_test() else "onnx_reference.json"),
+        })
     return parser.parse_args()

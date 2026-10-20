@@ -1,20 +1,12 @@
-"""读取本次 C++ 检测输出,按原有 COCO 协议计算精度."""
+"""使用公共 COCO 检测评测,保留 yolov5s 的结果状态规则."""
 
-from tools.board import command, context
-from tools.evaluation import is_test
+from tools.coco import evaluate_coco, parse_args
 
 
 def main():
-    """使用与推理相同的配置和运行编号,保留同范围浮点报告匹配."""
-    ctx = context(__file__)
-    command(ctx, "evaluate_coco.py",
-            "--annotations", ctx.dataset / "annotations/instances_val2017.json",
-            "--predictions", ctx.work / "predictions.json",
-            "--processed-ids", ctx.work / "processed_ids.txt",
-            "--timings", ctx.work / "timing_summary_current_run.json",
-            "--metrics", ctx.result / "summary.json", "--run-id", ctx.run_id,
-            "--fp32-report", ctx.root / "models" / (
-                "onnx_reference_test.json" if is_test() else "onnx_reference.json"))
+    """读取本模型参数,交给公共评测主体执行."""
+    evaluate_coco(parse_args(__doc__, entry=__file__), model="yolov5s",
+                  status_without_reference="complete")
 
 
 if __name__ == "__main__":

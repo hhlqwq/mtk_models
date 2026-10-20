@@ -1,14 +1,41 @@
-"""将 Whisper 的 Encoder 和 Decoder ONNX 分别转换为 FP32 TFLite."""
+"""将 Whisper-Tiny FP32 ONNX 转换为 MTK FP32 TFLite."""
 
-from tools.deploy import arguments, python
+import argparse
+from pathlib import Path
+
+import mtk_converter
+
+from tools.deploy import configure_parser
 
 
-def main():
-    """读取配置,将两个中间模型保存到 build."""
-    ctx = arguments(__file__)
-    for name in ("encoder", "decoder_step"):
-        python(ctx, "convert_fp32.py", "--onnx", ctx.output / f"{name}_fp32.onnx",
-               "--output", ctx.work / f"{name}_fp32.tflite")
+def convert_model(source: Path, output: Path) -> None:
+    """使用 MTK Converter 转换单个静态 ONNX.
+
+    Args:
+        source: FP32 ONNX 路径.
+        output: TFLite 输出路径.
+    """
+    output.parent.mkdir(parents=True, exist_ok=True)
+    converter = mtk_converter.OnnxConverter.from_model_proto_file(str(source))
+    converter.quantize = False
+    converter.convert_to_tflite(str(output))
+
+
+def main() -> None:
+    """默认转换 Encoder 和 Decoder,显式参数仍支持单个 ONNX."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--onnx", type=Path)
+    parser.add_argument("--output", type=Path)
+    ctx = configure_parser(parser, __file__, {})
+    args = parser.parse_args()
+    if bool(args.onnx) != bool(args.output):
+        parser.error("--onnx 和 --output 必须一起指定.")
+    if args.onnx:
+        convert_model(args.onnx, args.output)
+    else:
+        for index, name in enumerate(("encoder", "decoder_step"), 1):
+            print(f"[转换 {index}/2] {name}", flush=True)
+            convert_model(ctx.output / f"{name}_fp32.onnx", ctx.work / f"{name}_fp32.tflite")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 """使用对齐人脸校准 MobileFaceNet 并生成 MTK INT8 TFLite。"""
 
 import argparse
+import json
 import sys
 from collections.abc import Iterator
 from pathlib import Path
@@ -13,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from face_utils import list_aligned_faces, load_aligned_face
 
 from tools.deploy import configure_parser
-from tools.storage import storage_roots
+from tools.quantization import tensor_metadata
 
 
 def calibration_data(images: list[Path]) -> Iterator[list[np.ndarray]]:
@@ -41,7 +42,27 @@ def convert_model(onnx: Path, image_dir: Path, output: Path,
     converter.use_per_output_channel_quantization = True
     output.parent.mkdir(parents=True, exist_ok=True)
     converter.convert_to_tflite(str(output))
+    save_metadata(output)
     print(f"[OK] INT8 TFLite: {output}")
+
+
+def save_metadata(tflite: Path) -> None:
+    """量化后立即核对 C++ 所需的输入输出契约并保存元数据."""
+    parser = mtk_converter.TFLiteParser(str(tflite))
+    inputs, outputs = parser.get_input_tensor_details(), parser.get_output_tensor_details()
+    if len(inputs) != 1 or len(outputs) != 1:
+        raise ValueError("MobileFaceNet 要求单输入单输出.")
+    contract = [tensor_metadata(item, np.dtype(item["type"].lower()).name,
+                                include_name=False) for item in (inputs[0], outputs[0])]
+    if (contract[0]["shape"] != [1, 3, 112, 112] or contract[1]["shape"] != [1, 128] or
+            any(info["dtype"] != "int8" for info in contract)):
+        raise ValueError(f"MobileFaceNet 张量契约无效: {contract}.")
+    destination = tflite.with_name("metadata.json")
+    destination.write_text(json.dumps({
+        "input": contract[0], "output": contract[1],
+        "input_protocol": "RGB_ImageNet_normalize_aligned_112x112",
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[元数据] {destination}", flush=True)
 
 
 def main() -> None:

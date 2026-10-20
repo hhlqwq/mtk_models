@@ -63,12 +63,6 @@ def configure_parser(parser, entry, bindings):
     return ctx
 
 
-def python(ctx, filename, *arguments, executable=None, **kwargs):
-    """调用已有独立实现,保留原始异常和命令输出."""
-    run_command([executable or sys.executable, ctx.model / "deploy/host" / filename,
-                 *arguments], **kwargs)
-
-
 def reference_path(ctx):
     """快速参考单独命名,不覆盖全量报告."""
     return ctx.work / ("onnx_reference_test.json" if is_test() else "onnx_reference.json")

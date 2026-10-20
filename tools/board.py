@@ -52,10 +52,11 @@ def configure_parser(parser, entry, bindings):
     if not any(action.dest == "config" for action in parser._actions):
         parser.add_argument("--config", type=Path)
     bootstrap = argparse.ArgumentParser(add_help=False)
-    bootstrap.add_argument("--config", type=Path)
+    default_config = next(action.default for action in parser._actions if action.dest == "config")
+    bootstrap.add_argument("--config", type=Path, default=default_config)
     bootstrap.add_argument("--run-id", default=os.environ.get("EVAL_RUN_ID"))
     options, _ = bootstrap.parse_known_args()
-    if options.config is None:
+    if options.config is None or "-h" in sys.argv or "--help" in sys.argv:
         return
     ctx = paths(Path(entry).resolve().parent.parent, options.config, options.run_id)
     for action in parser._actions:

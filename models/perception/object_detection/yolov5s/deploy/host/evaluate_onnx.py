@@ -1,19 +1,18 @@
-"""读取 YAML 并执行与板端同协议的浮点精度评测."""
+"""读取模型配置并直接执行 YOLOv5 ONNX 精度评测."""
 
-import sys
+from argparse import Namespace
 
-from tools.deploy import arguments, python, reference_path
-from tools.evaluation import is_test
-from tools.process import run_command
+from tools.accuracy.yolov5s_val_coco import evaluate_onnx_accuracy
+from tools.deploy import arguments, reference_path
 
 
 def main():
-    """评测当前模式的样本,快速参考单独保存."""
+    """保持原有 COCO 阈值、尺寸和样本范围,直接调用评测函数."""
     ctx = arguments(__file__)
-    run_command([sys.executable, ctx.repo / "tools/accuracy/yolov5s_val_coco.py",
-                 "--onnx", ctx.output / "model_fp32.onnx", "--images-dir", ctx.dataset / "images",
-                 "--ann", ctx.dataset / "annotations/instances_val2017.json",
-                 "--summary", reference_path(ctx)])
+    evaluate_onnx_accuracy(Namespace(
+        onnx=ctx.output / "model_fp32.onnx", images_dir=ctx.dataset / "images",
+        ann=ctx.dataset / "annotations/instances_val2017.json", summary=reference_path(ctx),
+        image_size=640, confidence=0.001, iou=0.6, max_det=300))
 
 
 if __name__ == "__main__":

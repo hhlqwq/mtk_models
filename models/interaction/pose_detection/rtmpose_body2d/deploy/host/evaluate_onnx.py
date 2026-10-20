@@ -1,18 +1,14 @@
-"""读取 YAML 并执行与板端同协议的浮点精度评测."""
+"""读取模型配置,直接调用公共 ONNX 精度评测函数."""
 
-import sys
-
-from tools.deploy import arguments, python, reference_path
-from tools.evaluation import is_test
-from tools.process import run_command
+from tools.accuracy.evaluate_onnx import evaluate_model
+from tools.deploy import arguments, reference_path
 
 
 def main():
-    """评测当前模式的样本,快速参考单独保存."""
+    """使用本模型的固定 ONNX 和数据协议,不再启动中转 Python 进程."""
     ctx = arguments(__file__)
-    run_command([sys.executable, ctx.repo / "tools/accuracy/evaluate_onnx.py",
-                 "--model", "rtmpose_body2d", "--onnx", ctx.output / "model_mtk_compatible.onnx",
-                 "--dataset-root", ctx.dataset, "--output", reference_path(ctx)])
+    evaluate_model(model="rtmpose_body2d", onnx=ctx.output / "model_mtk_compatible.onnx",
+                   dataset_root=ctx.dataset, output=reference_path(ctx))
 
 
 if __name__ == "__main__":

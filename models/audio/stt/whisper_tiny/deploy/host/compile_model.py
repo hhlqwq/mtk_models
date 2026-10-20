@@ -1,6 +1,6 @@
 """读取模型配置并使用 NCC 生成最终 DLA."""
 
-from tools.deploy import arguments, compile_dla, python
+from tools.deploy import arguments, compile_dla
 
 
 def main():

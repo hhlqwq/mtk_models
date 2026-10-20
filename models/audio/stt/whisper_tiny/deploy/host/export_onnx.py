@@ -1,13 +1,17 @@
 """从 OpenAI 官方 tiny.pt 导出固定 Shape Encoder 与 Decoder-Step ONNX."""
 
 import argparse
+from importlib import metadata
+import shutil
 from pathlib import Path
 from typing import Any
 
 from torch import nn
+import numpy as np
 import torch
 import whisper
 from whisper.model import MultiHeadAttention
+from whisper.tokenizer import get_tokenizer
 
 from tools.deploy import configure_parser
 from tools.storage import storage_roots
@@ -262,6 +266,65 @@ def export_models(weights: Path, output_dir: Path,
     print(f"[OK] Decoder-Step: {decoder_path}")
 
 
+SOURCE_FILES = (
+    "tokenizer.py",
+    "assets/multilingual.tiktoken",
+    "normalizers/__init__.py",
+    "normalizers/basic.py",
+    "normalizers/english.py",
+    "normalizers/english.json",
+)
+
+
+def export_assets(output_dir: Path) -> None:
+    """导出官方 80 Mel 滤波器和英文 Greedy 解码规则,不运行推理."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    filters = whisper.audio.mel_filters(torch.device("cpu"), 80)
+    if tuple(filters.shape) != (80, 201):
+        raise ValueError(f"Whisper Mel 滤波器形状异常: {filters.shape}.")
+    np.asarray(filters, dtype="<f4").tofile(output_dir / "mel_filters_f32.bin")
+
+    tokenizer = get_tokenizer(multilingual=True, language="en",
+                              task="transcribe")
+    suppressed = set(tokenizer.non_speech_tokens)
+    suppressed.update((tokenizer.transcribe, tokenizer.translate,
+                       tokenizer.sot, tokenizer.sot_prev, tokenizer.sot_lm))
+    if tokenizer.no_speech is not None:
+        suppressed.add(tokenizer.no_speech)
+    suppress_first = set(tokenizer.encode(" "))
+    suppress_first.add(tokenizer.eot)
+    join = lambda values: ",".join(map(str, values))
+    config = "\n".join((
+        f"initial={join(tokenizer.sot_sequence_including_notimestamps)}",
+        f"suppress={join(sorted(suppressed))}",
+        f"suppress_first={join(sorted(suppress_first))}",
+        f"eot={tokenizer.eot}",
+        "max_generated_tokens=196",
+    )) + "\n"
+    (output_dir / "decode_config.txt").write_text(
+        config, encoding="utf-8")
+    print(f"[OK] C++ Whisper 静态资源: {output_dir}.")
+
+
+def export_vendor(output_dir: Path) -> None:
+    """复制固定版本的原版文本组件。"""
+    version = metadata.version("openai-whisper")
+    if version != "20250625":
+        raise ValueError(f"OpenAI Whisper 版本不符: {version}。")
+    source_root = Path(whisper.__file__).resolve().parent
+    package_root = output_dir / "whisper"
+    package_root.mkdir(parents=True, exist_ok=True)
+    (package_root / "__init__.py").write_text("", encoding="utf-8")
+    for relative in SOURCE_FILES:
+        source = source_root / relative
+        destination = package_root / relative
+        if not source.is_file():
+            raise FileNotFoundError(source)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+        print(f"[EXPORT] {relative}", flush=True)
+
+
 def parse_args() -> argparse.Namespace:
     """解析命令行参数.
 
@@ -284,3 +347,5 @@ if __name__ == "__main__":
     arguments = parse_args()
     export_models(arguments.weights, arguments.output_dir,
                   arguments.max_tokens)
+    export_assets(arguments.work_dir)
+    export_vendor(arguments.work_dir / "whisper_eval_vendor")

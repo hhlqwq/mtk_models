@@ -5,13 +5,10 @@ import json
 import math
 import os
 from pathlib import Path
-import sys
-
-import yaml
 
 from tools.storage import REPO_ROOT, load_model_config
 
-from tools.process import run_command
+from tools.accuracy.evaluate_onnx import evaluate_model
 
 from tools.evaluation import add_test_argument, is_test, result_status
 
@@ -22,10 +19,9 @@ def onnx_eval(config: dict, paths: dict, config_path: Path) -> None:
     # 先写入临时文件,校验完成后再发布本次报告.
     pending = paths["work"] / "tmp" / ("onnx_reference_test.pending.json" if is_test() else "onnx_reference.pending.json")
     pending.unlink(missing_ok=True)
-    run_command([sys.executable, paths["repo"] / "tools/accuracy/evaluate_onnx.py",
-                 "--model", "fastsam", "--onnx", paths["output"] / "model_fp32.onnx",
-                 "--dataset-root", paths["dataset"],
-                 "--output", pending, "--temp-dir", paths["work"] / "tmp"], cwd=paths["work"])
+    evaluate_model(model="fastsam", onnx=paths["output"] / "model_fp32.onnx",
+                   dataset_root=paths["dataset"], output=pending,
+                   temp_dir=paths["work"] / "tmp")
     if not pending.is_file() or pending.stat().st_size == 0:
         raise FileNotFoundError(f"ONNX 评测未生成报告: {pending}.")
     report = json.loads(pending.read_text(encoding="utf-8"))

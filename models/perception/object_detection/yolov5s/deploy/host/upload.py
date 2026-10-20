@@ -2,7 +2,7 @@
 
 import os
 
-from tools.deploy import arguments, python, upload
+from tools.deploy import arguments, upload
 from tools.evaluation import is_test
 from tools.process import run_command
 

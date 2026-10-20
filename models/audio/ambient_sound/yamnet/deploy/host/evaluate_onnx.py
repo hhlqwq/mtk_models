@@ -1,19 +1,81 @@
-"""读取 YAMNet 配置并执行当前独立浮点步骤."""
+"""按同协议直接计算 TensorFlow 或 ONNX 浮点精度."""
 
-import os
+import argparse
+import json
+from pathlib import Path
+import sys
 
-from tools.deploy import arguments, python
+import numpy as np
+from tqdm import tqdm
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
+from audio_utils import load_records, load_waveform, mapping, metrics, preprocess
+
+from tools.deploy import configure_parser
+
+from tools.evaluation import (
+    add_test_argument, audio_records, result_status, scope_metadata,
+)
+
+
+from export_model import original_models
+
+
+def evaluate(args):
+    """对全量 2000 条音频求窗口平均分数,保存结果和校准折外指标."""
+    records = audio_records(load_records(args.dataset))
+    indices = mapping(args.models_dir / "upstream/yamnet_class_map.csv")
+    if args.mode == "tensorflow":
+        frames, _ = original_models(args.models_dir)
+    else:
+        # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
+        import onnxruntime as ort
+        options = ort.SessionOptions()
+        options.intra_op_num_threads = 2
+        session = ort.InferenceSession(str(args.models_dir / "model_fp32.onnx"),
+                                       options, providers=["CPUExecutionProvider"])
+    all_scores = []
+    for row in tqdm(records, desc=f"YAMNet {args.mode} 全量精度"):
+        waveform = load_waveform(args.dataset / "audio" / row["filename"])
+        if args.mode == "tensorflow":
+            patch_scores = frames(waveform)[0].numpy()
+        else:
+            patch_scores = np.concatenate([
+                session.run(None, {"audio": patch[None]})[0]
+                for patch in preprocess(waveform)])
+        all_scores.append(patch_scores.mean(axis=0))
+    scores = np.stack(all_scores)
+    if scores.shape != (len(records), 521) or not np.isfinite(scores).all():
+        raise ValueError("浮点分数覆盖不完整或含非有限数.")
+    args.output.mkdir(parents=True, exist_ok=True)
+    np.save(args.output / "scores.npy", scores)
+    summary = {"status": result_status(), **scope_metadata(), "samples": len(records), "backend": args.mode, "metric": "ESC-50 projected macro AP",
+               "metrics": metrics(scores, records, indices)}
+    if args.mode == "onnx" and args.reference:
+        reference = np.load(args.reference / "scores.npy")
+        np.testing.assert_allclose(scores, reference, atol=3e-5, rtol=3e-4)
+        summary["maximum_reference_score_error"] = float(np.max(np.abs(scores-reference)))
+    (args.output / "summary.json").write_text(json.dumps(summary, indent=2))
+    print(f"[OK] {summary}", flush=True)
 
 
 def main():
-    """TensorFlow 使用公共专用环境,路径由 Docker 启动时加载."""
-    ctx = arguments(__file__)
-    python(ctx, "export_evaluate.py", "--mode", "tensorflow", "--models-dir", ctx.output,
-           "--dataset", ctx.dataset, "--output", ctx.work / "tensorflow",
-           executable=os.environ["MTK_YAMNET_PYTHON"])
-    python(ctx, "export_evaluate.py", "--mode", "onnx", "--models-dir", ctx.output,
-           "--dataset", ctx.dataset, "--output", ctx.work / "onnx",
-           "--reference", ctx.work / "tensorflow")
+    """评测选定浮点后端,每个 Python 环境直接执行同一份评测实现."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--backend", dest="mode", choices=["tensorflow", "onnx"], default="onnx")
+    parser.add_argument("--models-dir", type=Path, required=True)
+    parser.add_argument("--dataset", type=Path, required=True)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--reference", type=Path)
+    add_test_argument(parser)
+    ctx = configure_parser(parser, __file__, {
+        "models_dir": lambda c: c.output, "dataset": lambda c: c.dataset,
+    })
+    args = parser.parse_args()
+    args.output = args.output or ctx.work / args.mode
+    if args.mode == "onnx" and args.reference is None:
+        args.reference = ctx.work / "tensorflow"
+    evaluate(args)
 
 
 if __name__ == "__main__":
