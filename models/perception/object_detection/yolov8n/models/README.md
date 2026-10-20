@@ -1,7 +1,3 @@
 # 模型资源
 
-离线放置官方 `yolov8n.pt`,具体来源、大小和哈希见 `source_url.txt`.
-编译脚本生成 `model_fp32.onnx`,`model_int8.tflite`,`model_int8.dla`,
-`runtime_config.csv` 和元数据.权重、转换产物和临时数据不进入普通 Git.
-
-模型文件已改为使用外部资源目录,详见上级 README 的模型资源路径说明.此目录只保留源码、文档和公开来源记录.
+本目录保存 [source_url.txt](source_url.txt) 等公开来源记录.官方权重、上游源码和转换产物位于 NAS 对应模型资源目录,实际文件名由本模型 `config.yaml` 指定.

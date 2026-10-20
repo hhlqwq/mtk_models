@@ -24,7 +24,7 @@ bash models/gen_ai/llm/minicpm5_2b/deploy/run.sh
 bash models/gen_ai/llm/minicpm5_2b/deploy/run.sh -test
 ```
 
-脚本依次执行官方资源校验、题集长度预检、校准、量化、静态图导出、双 DLA 编译、FP32 参考评价、公共桥接库交叉编译、打包和上传.每步显示进度,失败立即停止.上传后逐文件核对 SHA256,不会自动在板端执行推理.
+脚本先检查 NAS 数据集和模型路径,再依次执行官方资源校验、题集长度预检、校准、量化、静态图导出、双 DLA 编译、FP32 参考评价、公共桥接库交叉编译、打包和上传.每步显示进度,失败立即停止.上传后逐文件核对 SHA256,不会自动在板端执行推理.
 
 在 92 开发板进入配置指定的部署目录,默认是:
 
@@ -55,19 +55,19 @@ bash run.sh -test
 
 1. 在仓库 `configs/storage.local.json` 配置 `models_root` 和 `dataset_root`,确认容器挂载及 SDK、GAI Python、交叉编译环境已经准备好.
 2. 官方模型及 `source_manifest.json` 放在外部资源目录 `models_root/gen_ai/llm/minicpm5_2b/original/`.具体文件、下载 URL、大小和 SHA256 见 [来源记录](models/source_url.txt) 与 [来源清单](models/source_manifest.json).入口离线运行,不自动下载.
-3. 在本模型 `config.yaml` 的 `data.wikitext_test`、`data.mmlu_test` 中填写相对于 `data.dataset_dir` 的实际数据集路径,也可填写绝对路径.默认路径是布局示例,脚本会在量化前检查文件和固定版本哈希.
+3. 数据集统一放在 NAS `dataset_root` 内,`config.yaml` 中的 `data.wikitext_test` 和 `data.mmlu_test` 按该根目录定位.默认使用 `wikitext/wikitext-2-raw-v1/` 和 `mmlu/all/`,禁止指向 `/tmp`.入口在读取权重前检查文件和版本,不会搜索临时目录或自动下载.
 4. WikiText2 使用 [Salesforce/wikitext](https://huggingface.co/datasets/Salesforce/wikitext) 的 `wikitext-2-raw-v1`,revision `b08601e04326c79dfdd32d625aee71d232d685c3`;MMLU 使用 [cais/mmlu](https://huggingface.co/datasets/cais/mmlu),revision `c30699e8356da336a370243923dbaf21066bb9fe`.校准只能使用训练数据或独立自编样例,测试集不参与校准.
 
 **完整 MMLU 与当前交付的 1024 Token 上下文不是同一个已验证范围.** 入口在校准、量化前检查所选题集的最长输入,将长度信息写入本次 `evaluation/运行编号/模式/mmlu/length_report.json`.如果超出 `conversion.context`,会报告所需长度并停止.应将上下文调整到足够大的 128 整数倍后重新转换和编译;不截断、不丢题、不把固定千题冒充全量.更大上下文的编译、内存和板端兼容性尚未验证.
 
-本次默认量化配置仍为常规 W4A16、32 批校准、未启用旋转.已有交付模型使用旋转 seed=0、128 批校准及归档的 16 样本分阶段 Hessian 配方,直接运行默认配置不会复现同一模型.本次重构保持默认量化参数,没有重新编译或更新既有模型成绩.
+默认量化配置为常规 W4A16、32 批校准、未启用旋转.已有交付模型使用旋转 seed=0、128 批校准及归档的 16 样本分阶段 Hessian 配方,直接运行默认配置不会复现同一模型.
 
 ## 源码结构
 
 ```text
 minicpm5_2b/
 ├── README.md                 使用方法、评价范围与当前指标
-├── ADAPTATION.md             适配过程、误差分析和历史优化结论
+├── ADAPTATION.md             转换约定与精度检查
 ├── config.yaml               模型、数据集、转换和评价配置
 ├── models/                   官方来源 URL 与哈希清单
 ├── deploy/
@@ -86,7 +86,7 @@ minicpm5_2b/
 
 ## 资源和部署目录
 
-外部模型资源根目录为 `models_root/gen_ai/llm/minicpm5_2b/`.官方输入在 `original/`,默认中间产物在 `build/native/`,本次打包在 `build/packages/运行编号/`.中间产物不进入 Git.
+外部模型资源根目录为 `models_root/gen_ai/llm/minicpm5_2b/`.官方输入在 `original/`,默认中间产物在 `build/native/`,部署包在 `build/packages/运行编号/`.中间产物不进入 Git.
 
 上传后的板端目录为:
 
@@ -105,13 +105,13 @@ minicpm5_2b/current/
 └── results/运行编号/          原始日志、逐题结果和本次汇总
 ```
 
-同一模型重复执行只新增运行编号,快速运行编号带 `_test`.上传保留已有结果,但会更新当前部署文件;发现进程占用部署目录时拒绝覆盖,不停止其他进程.已有板端 `minicpm5_2b/results/first_round/` 和 `results/validation/` 属于先前交付模型的证据,本次只修改仓库代码,没有覆盖它们.
+同一模型重复执行只新增运行编号,快速运行编号带 `_test`.上传保留已有结果,但会更新当前部署文件;发现进程占用部署目录时拒绝覆盖,不停止其他进程.
 
 淘汰的历史低精度模型只保留文档、配置摘要、评价结论和必要哈希,不长期保留模型包或中间数据.历史运行路径保留原样;结果 JSON 合并后以原文件名去掉 `.json` 为顶层键,例如 `evidence.json` 的 `first_round_summary` 和 `diagnostics.json` 的 `root_cause_diagnostic`.
 
-## 当前已有实测
+## 当前结果
 
-以下是重构前当前交付模型的固定首轮子集成绩,不是新入口的全量成绩.全 W4A16,Prefill=128、Decode=1、上下文=1024,`quality_qualified=false`.
+以下为当前交付模型的固定首轮子集成绩,不是全量基准.全 W4A16,Prefill=128、Decode=1、上下文=1024,`quality_qualified=false`.
 
 | 指标 | 官方 FP32 | 当前交付 W4A16 |
 |---|---:|---:|

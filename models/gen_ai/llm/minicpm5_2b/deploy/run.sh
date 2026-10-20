@@ -28,6 +28,8 @@ else
     : "${MTK_GAI_PYTHON:?请先通过 docker/enter_container.sh 进入容器}"
     : "${MTK_MODELS_ROOT:?缺少公共项目环境}"
     export PYTHONPATH="${MTK_MODELS_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
+    echo '[资源预检] 检查 NAS 数据集和模型路径,不读取模型权重.'
+    "${MTK_GAI_PYTHON}" "${SCRIPT_DIR}/host/evaluate_reference.py" --check-data
     MODEL_BUILD_DIR="$(python3 "${MTK_MODELS_ROOT}/tools/storage.py" --print-build-dir "${SCRIPT_DIR}/../config.yaml")"
     echo '[容器 1/10] 校验官方来源并准备转换副本.'
     "${MTK_GAI_PYTHON}" "${SCRIPT_DIR}/host/prepare_model.py"

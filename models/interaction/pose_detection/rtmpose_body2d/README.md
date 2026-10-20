@@ -1,16 +1,12 @@
 # RTMPose Body2d
 
-编译与转换步骤统一在 Docker 容器内执行: 先在仓库根目录运行 `bash docker/enter_container.sh`,再进入本模型目录运行原有 `deploy/run.sh` 或 `deploy/run_native.sh` 入口.模型脚本不再调用 Docker 或在主机和容器之间复制文件; 上传完成后,板端入口仍在开发板执行.
-
 人体 WholeBody 姿态估计，输入为 256×192 RGB 人体裁剪图，输出 133 个关节点。正式上游为 OpenMMLab MMPose v1.3.2；来源见[模型卡](model_card.md)。
 
 量化方式: INT8 训练后量化 (PTQ),采用逐输出通道权重量化.
 
 ## 第一步: 编译并上传
 
-所有配置均在脚本顶部,按模型与校准数据、产物与临时目录、板端地址与数据、ONNX 精度数据、编译环境分组.脚本已填写当前部署环境的路径,使用时按注释调整等号右侧的值; 编译主机和 Docker 须能访问相同数据,板端路径独立配置.
-
-在 [run.sh](deploy/run.sh) 中配置 ONNX、校准图片及标注、模型输出目录、COCO-WholeBody 数据集、Docker 与交叉编译环境、板端地址和部署目录。
+模型、数据集和部署路径见 [config.yaml](config.yaml),工具链与 NAS 根目录按[仓库说明](../../../../README.md)配置.
 
 在编译主机的本模型目录运行:
 
@@ -18,7 +14,7 @@
 bash deploy/run.sh
 ```
 
-脚本在 Docker 中量化和编译 DLA，在主机交叉编译板端 C++ 程序并上传。
+入口在当前容器完成量化、DLA 编译、C++ 构建和上传。
 
 ## 第二步: 开发板测试
 
@@ -32,11 +28,11 @@ bash run.sh
 
 ## 数据与精度评测
 
-在脚本顶部填写 `ONNX_DATASET_DIR`,必须与板端数据采用同一份样本、标注及评测协议。编译主机在 Docker 中自动评测 ONNX,只记录任务核心精度,不记录主机耗时或内存。
+参考评价使用 `config.yaml` 指定的数据集,与板端保持相同样本、标注和预后处理协议.
 
 数据目录要求: COCO WholeBody: images/、annotations/coco_wholebody_val_v1.0.json 和 person_detection_results/COCO_val2017_detections_AP_H_56_person.json.
 
-人体检测文件使用官方标准 JSON 数组.板端 C++ 清单工具在内存中包装后读取,无需修改数据文件或增加依赖; 检测框编号和排序保持不变.更新该工具后,需在编译主机重新运行 `bash deploy/run.sh`,编译并上传新的板端程序.
+人体检测文件使用官方标准 JSON 数组.板端 C++ 清单工具在内存中包装后读取,无需修改数据文件或增加依赖; 检测框编号和排序保持不变.
 
 精度变化以百分点表示,正数为改善,负数为下降.
 
@@ -121,10 +117,3 @@ examples/
 - `results/summary.json`: 上传后的最新测试汇总.
 
 示例图片来源: 示例 1: [原图](http://farm7.staticflickr.com/6199/6207968507_effbfb5a1f_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/); 示例 2: [原图](http://farm6.staticflickr.com/5328/8789640387_14e10562cb_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/); 示例 3: [原图](http://farm4.staticflickr.com/3446/3232237447_13d84bd0a1_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/).
-
-## 模型资源路径
-
-原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/interaction/pose_detection/rtmpose_body2d`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.
-
-
-模型参数读取根目录的 `config.yaml`,公共工具链环境在进入 Docker 时自动加载.部署入口只编排独立步骤,C++ 使用 `deploy/board/Makefile` 构建.板端沿用原部署目录,快速结果位于 `results/运行编号_test/`.

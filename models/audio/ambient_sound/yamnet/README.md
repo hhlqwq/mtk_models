@@ -1,369 +1,55 @@
 # YAMNet / Genio 720
 
-编译与转换步骤统一在 Docker 容器内执行: 先在仓库根目录运行 `bash docker/enter_container.sh`,再进入本模型目录运行原有 `deploy/run.sh` 或 `deploy/run_native.sh` 入口.模型脚本不再调用 Docker 或在主机和容器之间复制文件; 上传完成后,板端入口仍在开发板执行.
+Google YAMNet 环境声音分类模型,输出 AudioSet 521 类分数.默认使用全 W8A16:权重 INT8、激活及原生 I/O 为 INT16.输入为 16 kHz 单声道音频生成的 `1×1×96×64` Log-Mel 窗口,CPU 处理音频,C++ Neuron Runtime 执行 MDLA 推理.
 
-机器人环境声音分类,Google 原始 YAMNet,521 类 AudioSet 标签.固定网络输入
-`1x1x96x64` Log-Mel 窗口,音频为 16 kHz 单声道.默认交付 `w8a16`: 权重 INT8,
-全网络激活 INT16.同时保留 `int8_tail16`: 前段激活 INT8,第12层 pointwise 输出
-至分类头使用 INT16 激活.两者均通过板端全量测试,详细对比见下节.
-CPU 音频前处理加 C++ Neuron Runtime NPU 推理,FP16/W8A8 作为历史参考与对照.
-高通 YAMNet 仅作为功能与交付参考,不使用高通权重或预编译模型.
+来源和许可证见 [模型卡](model_card.md)与[资源记录](models/source_url.txt).官方权重、源码和 ESC-50 数据集须提前放在 NAS,不在运行时下载.
 
-## 当前交付结果
+## 配置与运行
 
-模型总览只展示 **全 W8A16** 的交付指标,此处比较两个保留方案.
-两者使用相同 Google 模型、第一折的 200 个校准窗口和固定标签映射.
+模型与数据路径、量化精度在 [config.yaml](config.yaml) 中设置,公共工具链由编译容器加载.转换依赖 TensorFlow CPU 2.15.1、tf2onnx 1.16.1 等专用环境,使用平台配置中的 `MTK_YAMNET_PYTHON`;板端需要 ffmpeg 和 NumPy.
 
-| 方案 | 精度 AP (%) | NPU 单次推理平均耗时 (ms) | 推理进程峰值 RSS (MiB) |
-| --- | ---: | ---: | ---: |
-| **全 W8A16,默认交付** | **73.90** | **1.320** | **10.75** |
-| 第12层 pointwise 输出起 INT16,可选 | 73.46 | 1.273 | 未单独归档 |
-
-**推理覆盖:** ESC-50 全部 **2000 条音频**,共 **20000 个窗口**,均完成板端推理.
-
-**精度评测:** 使用未参与校准的第 2-5 折,共 1600 条音频;排除 3 个没有直接
-标签映射的类别共 96 条,按剩余 **47 类、1504 条有效样本**计算宏平均 AP.
-2000 条是推理覆盖数量,1504 条是 AP 的有效评测数量,两者用途不同.
-
-**计时口径:** 表中耗时来自同条件三轮交替测试,每个模型合计 6000 次推理,
-每次加载后预热 20 次.一次推理输入为 `1x1x96x64`,batch=1;
-仅统计 `NeuronRuntime_inference` 调用,不含音频采集、解码和特征提取.
-RSS 来自全 W8A16 交付运行;局部方案没有单独归档 RSS,不复用其他方案的数据.
-
-同协议 ONNX FP32 参考 AP 为 **74.15%**;全 W8A16 和局部 INT16 分别损失
-约 **0.25 / 0.68 个百分点**.局部方案本次平均快约 **0.046 ms,3.51%**.
-Top-1、包含校准折的全量投影指标及逐轮耗时保留在
-[summary.json](results/summary.json),不在主结果表展开.
-
-<details>
-<summary>性能补充与两种方案的部署信息</summary>
-
-随后在目标板端使用同一批前200条音频缓存,每轮2000窗,交替运行三轮,
-每个模型合计6000窗,每次加载后先预热20次.计时仅覆盖硬件模式的
-`NeuronRuntime_inference`调用,排除音频解码、特征提取和窗口等待.
-
-| 同条件交替测试补充 | 全 W8A16 | 局部 INT16 |
-| --- | ---: | ---: |
-| 中位数 | 0.5615 ms | 0.5300 ms |
-| P95 | 0.8012 ms | 0.7725 ms |
-
-两个模型都有少量慢窗口,将平均耗时拉高;原因未定位,不作为固定性能保证.
-各自早期全量运行的平均值为全 W8A16 **0.516 ms**,局部 INT16 **0.493 ms**;
-运行状态不同,这些记录不用于两个方案的同条件比较.
-模型总览使用原全 W8A16 交付运行的 0.516 ms,与本页配对测试分开注明.
-
-| 部署项目 | 全 W8A16 | 局部 INT16 |
-| --- | --- | --- |
-| 入口名称 | `w8a16` | `int8_tail16` |
-| 原生输入 / 输出 | INT16 / INT16 | INT8 / INT16 |
-| 输入 / 输出有效字节数 | 12288 / 1042 | 6144 / 1042 |
-| DLA 大小 | 3986767 bytes | 4043567 bytes |
-| 精度运行编号 | `20261009_yamnet_esc50_w8a16_v1` | `20261009_yamnet_tail16_diagnosis` |
-
-全W8A16产物保存在配置的板端模型目录.
-局部方案已验证产物保留在对应诊断工作目录,文件为
-`tail16.tflite` / `tail16.dla` / `tail16_config.csv`;板端仅保留DLA和运行配置.
-局部DLA SHA256为 `810b476ec61df9c83e8e099ecbe4eef1b8e01385525a5e34dfecec7772f929df`.
-同条件交替测试的原始计时位于板端同目录的 `paired_w8a16_093230/`.
-所有交付、局部精度和配对耗时汇总保留在唯一的 `results/summary.json`.
-
-当前源码默认编译全W8A16,局部方案可用 `YAMNET_PRECISION=int8_tail16` 显式编译.
-已有板端旧入口需同步新代码和局部产物后才能使用该精度名称;
-上面的局部实测结果来自独立板端诊断程序,不是尚未执行的新入口测试.
-
-</details>
-
-## 来源和资源准备
-
-官方源码: https://github.com/tensorflow/models/tree/34a21326906b9574fa11c4d6d0a5c534ff039267/research/audioset/yamnet
-
-官方权重: https://storage.googleapis.com/audioset/yamnet.h5
-
-源码和权重按原始 Google 实现使用,源码许可证 Apache-2.0.
-具体下载地址、大小和 SHA256 见 [source_url.txt](models/source_url.txt).
-ESC-50 原始资源保存 NAS,板端保留原始 WAV 与元数据.
-ESC-50 整体为 CC BY-NC 3.0,各音频出处和许可见原始数据的 `LICENSE`.
-
-进入编译容器后,在项目根目录准备资源:
-
-```bash
-python3 models/audio/ambient_sound/yamnet/deploy/host/prepare_assets.py \
-  --models-dir "${MTK_MODEL_STORAGE_ROOT}/audio/ambient_sound/yamnet" \
-  --dataset-dir "${MTK_DATASET_ROOT}/ESC-50"
-```
-
-若需要已有代理,使用 `--proxy socks5h://主机:端口`,脚本不修改代理配置.
-下载和解压不会覆盖已有原始文件.各下载文件哈希记入本地资源清单.
-
-导出依赖安装在临时目录的独立环境,不升级 Docker 全局包:
-
-```bash
-work="${TMPDIR:-/tmp}/yamnet"
-python -m venv "$work/venv"
-"$work/venv/bin/pip" install \
-  tensorflow-cpu==2.15.1 tf2onnx==1.16.1 onnx==1.16.1 numpy==1.26.4 scipy==1.11.4 tqdm==4.66.5
-"$work/venv/bin/pip" install --no-deps tf-keras==2.15.0
-export YAMNET_EXPORT_PYTHON="$work/venv/bin/python"
-```
-
-已有环境可用 `YAMNET_EXPORT_PYTHON` 指定实际 Python 路径.编译主机和板端需要
-ffmpeg,板端 Python 需要 NumPy;MTK Converter 和 ONNX Runtime 复用现有 Docker.
-本次隔离依赖的锁定版本和具体下载 URL、文件哈希分别保存在主机临时目录的
-`requirements_locked.txt` 和 `dependency_sources.json`.
-
-## 两步运行
-
-通过 `bash docker/enter_container.sh` 进入编译容器后,在项目根目录执行:
+在仓库根目录进入容器后,执行:
 
 ```bash
 bash models/audio/ambient_sound/yamnet/deploy/run.sh
 ```
 
-主机执行官方前向比较、固定图导出、TensorFlow 与 ONNX 全量精度评测,
-默认全 W8A16 PTQ 转换、`--arch=mdla5.3 --suppress-output --disallow-bridge`
-DLA 编译、C++ 交叉编译和板端上传.不会自动下载或安装依赖.
-默认方案的原生输入和输出均为 INT16,Runtime 分别验证两者字节布局.
-`YAMNET_PRECISION=fp16` 可显式使用原 FP16 流程.
-可用 `YAMNET_PRECISION=int8 bash models/audio/ambient_sound/yamnet/deploy/run.sh`
-执行 200 窗 PTQ 校准的 INT8 对照流程,当前 W8A8 配方存在明显退化,需继续优化.
-W8A16 入口为 `YAMNET_PRECISION=w8a16 bash models/audio/ambient_sound/yamnet/deploy/run.sh`,
-使用 INT8 权重、INT16 激活与原生 INT16 IO.转换后逐层检查 27 层卷积和 1 层
-全连接的实际精度,板端全量结果见下方 W8A16 实测表.
-各精度使用独立的 `runtime_config_精度.csv` 和 `quantization_精度.json`,
-保留旧版 `runtime_config.csv` 作为既有部署的兼容入口.
-评测与缓存写入脚本配置的构建目录,模型产物保存在配置的外部资源目录.
-
-上传完成后登录开发板,在配置的模型部署目录执行:
+入口完成导出、PTQ、DLA 编译、浮点参考评价、C++ 构建及上传.在板端部署目录执行:
 
 ```bash
-EVAL_RUN_ID=自定义运行编号 bash run.sh
+bash run.sh
 ```
 
-原始数据同步到配置的板端数据集目录.板端从 WAV 解码并生成
-全部音频窗口,20 次预热后逐窗执行真实 NPU 推理,最后计算精度和示例结果.
-部署目录下的 `results/<运行编号>/` 保留原始证据,
-已有目录拒绝覆盖.仓库 `results/` 只保留最终 `summary.json`.
+两端加 `-test` 使用固定小子集.默认 `conversion.precision=w8a16`,可选 `int8_tail16` 为后段局部 INT16 激活方案.精度由配置选择,不同方案的运行参数和结果分别记录.
 
-## 评测协议
+## 评价协议
 
-采用官方周期 Hann 400 点、帧移 160 点、FFT 512 点、64 Mel 频带,
-125-7500 Hz,`log(mel + 0.001)`,96 帧窗口、48 帧步长.尾段补零与官方一致.
-三后端均经 ffmpeg 重采样,每条音频对全部窗口的 521 类分数求均值.
+ESC-50 共 2000 条音频、20000 个窗口.第一折每类两条音频、每条前两窗构成 200 个校准窗口.主精度使用未参与校准的第 2-5 折,排除无直接标签映射的 `drinking_sipping`、`can_opening`、`washing_machine`,按 47 类、1504 条音频计算投影宏平均 AP,不等同于 AudioSet mAP.
 
-ESC-50 全部 2000 条均执行推理.标签投影固定在 `deploy/board/audio_utils.py`,
-47 类具有直接对应标签;`drinking_sipping`、`can_opening`、`washing_machine`
-没有直接对应标签,保留推理分数但不参与投影精度,不以近似标签冒充正确映射.
-第一折每类两条音频、每条前两窗用于 200 窗整数校准;历史 FP16 不使用校准数据.
-主精度仅使用第 2-5 折的 1600 条音频,排除上述 3 类的 96 条,剩余 1504 条
-有效样本.包含第一折的其他指标仅作原始记录,保留在 `summary.json`.
-交付精度为 ESC-50 固定标签投影的宏平均 AP,不等同于官方 AudioSet mAP.
-AP 对同分数组统一处理,避免 INT8 并列分数导致乐观结果.
+前处理使用周期 Hann 400 点、帧移 160、FFT 512、64 Mel 频带、125–7500 Hz 和 `log(mel + 0.001)`.每个窗口 96 帧,步长 48 帧,尾段补零;每条音频对全部窗口的 521 类分数求均值.三个后端使用相同前处理和标签投影.
 
-NPU 单次推理平均耗时及 P95 只覆盖常驻模型的 `NeuronRuntime_inference`.
-前处理与推理阶段分开计时,实时率使用两阶段实际处理时间之和,不宣称实时麦克风
-端到端延迟.C++ 推理和 Python 前处理进程峰值 RSS 分别记录,不含 ffmpeg 子进程.
+纯 NPU 延迟仅统计预热后的 `NeuronRuntime_inference`,不包含音频解码、特征提取、采集等待或指标汇总.RSS 为指定推理进程的峰值,不代表全部驱动内存.
 
-## 历史验证与环境
+## 结果
 
-<details>
-<summary>展开浮点参考、旧量化结果及环境记录</summary>
+当前全 W8A16 交付指标见 [summary.json](results/summary.json):
 
-旧 FP16 运行 `20261009_yamnet_esc50_fp16_v2` 已检查音频哈希、标注、标签映射、
-窗口顺序和分数覆盖.该运行作为历史参考,不作为当前交付结果.
-
-| 历史后端 | 精度 AP (%) |
+| 指标 | 结果 |
 | --- | ---: |
-| Google TensorFlow FP32 | 74.1457 |
-| ONNX Runtime FP32 | 74.1456 |
-| Genio 720 NPU FP16 | 74.1440 |
-| Genio 720 NPU W8A8 | 43.9329 |
-
-所有 AP 使用前述同一评测范围.完整历史指标保留在
-[summary.json](results/summary.json) 的 `fp16_reference` 和 `int8_diagnostic`.
-INT8 逐输出通道权重 PTQ 首轮运行 `20261009_yamnet_esc50_v1`,AP 下降
-**30.2127 个百分点**,当前保留为量化对照而非默认部署.扩大校准窗口以及其他校准
-实验未改善结果,当时采用 FP16,当前默认交付全 W8A16;FP16 为权重半精度压缩和硬件降精度执行,
-无需 PTQ 校准,没有使用 Qualcomm 预导出模型或 CPU 推理桥接.
-
-音频窗口覆盖 0.96 秒 Mel 帧,含 STFT 尾部实际需要 15600 个采样点,每窗步长
-0.48 秒;NPU 耗时不含音频采集等待和前处理.RTF 为分阶段处理时间之和,
-不是实时麦克风演示.两种进程 RSS 分别记录,不包含 ffmpeg 子进程.
-
-一致性验证: 原始 Google 与固定窗口模型比较 10 段音频,最大分数差异
-`2.74e-5`;TensorFlow 与 ONNX 全量最大分数差异 `2.22e-5`.NumPy 与官方
-前处理最大特征差异 `1.35e-4`,主机与板端 10 段音频最大差异 `9.73e-5`.
-100 ms 分块的流式缓存与离线窗口一致,尚未接入实际麦克风采集.
-
-编译环境: Docker 容器,NeuroPilot SDK `8.0.11-build20260211`,
-Converter `8.16.0`,NCC `8.2.31`,独立 TensorFlow CPU `2.15.1`,tf-keras `2.15.0`,
-tf2onnx `1.16.1`,ONNX Runtime `1.18.0`.板端 Runtime 库 `8.2.16`,
-Linux `6.6.137-mtk+ga246e0c68c39-g429091ed5965`,CPU governor `schedutil`,
-ffmpeg `6.1.4`,NumPy `1.26.4`;未修改板端固件或全局依赖.
-原生 FP16 输入为 **12288 bytes**,输出为 **1042 bytes**,CPU 仅前处理及结果汇总.
-
-产物 SHA256:
-
-| 产物 | bytes | SHA256 |
-| --- | ---: | --- |
-| ONNX FP32 | 14935577 | `a2deca938ea590b8fe2643408ea9df73a956e482b0a5525308f930f71ca301a8` |
-| FP16 TFLite | 7498828 | `8fb178803a3fc6d79646f8174b2ea64ea4d182979c92aebf5db818d5915f701f` |
-| FP16 DLA | 7638678 | `5c5894c1ca938730961da0ce6f0ecc21221c67aef4840a3d33e0600333d0c69d` |
-
-板端详细证据留在 部署目录下的 `results/20261009_yamnet_esc50_fp16_v2/`,包含实际分数、逐窗耗时、
-音频哈希与日志;Git 中 `results/` 仅保留 `summary.json`.浮点结果、依赖锁定和下载来源记录保留在对应的构建工作目录.
-
-</details>
-
-## 全 W8A16 交付运行记录
-
-运行 `20261009_yamnet_esc50_w8a16_v1`,推理覆盖和精度评测范围均采用前述协议.
-下表耗时对应原交付运行,与首页的同条件配对测试分开记录.
-
-| 项目 | W8A16 实测 |
-| --- | ---: |
-| 精度 AP | 73.8964% |
-| NPU 单次推理平均耗时 | 0.516 ms,约 516 μs |
-| NPU 单次推理 P95 | 0.620 ms |
+| ONNX FP32 投影 AP | 74.1456% |
+| NPU 投影 AP | 73.8964% |
+| 精度变化 | -0.2491 个百分点 |
+| NPU 平均耗时 | 0.516 ms/窗口 |
 | 推理进程峰值 RSS | 10.75 MiB |
-| DLA 大小 | 3986767 bytes,3.80 MiB |
 
-转换后核验 **28 个主计算层**的 INT8 权重、INT16 激活与 INT32 偏置;
-全部张量为 INT8 28 个、INT16 33 个、INT32 31 个,无浮点张量.
-NCC 使用 `--arch=mdla5.3 --suppress-output --disallow-bridge`,Runtime 使用硬件模式.
-原生输入为 `12288 bytes`,输出为 `1042 bytes`;两者均为有符号 INT16,
-不是 FP16.输入 scale/zero_point 为 `0.00017911930626723915 / 5797`,
-输出为 `0.0000152587890625 / -32768`.
-
-W8A16 TFLite SHA256: `03751967e37fb901b27f302465dff279dc85f96fde970822989dcc0fb1366b42`.
-
-W8A16 DLA SHA256: `04692e6ec7cec50b8680aa36231699706f41ebd3948497ddc2d75b2f31238caf`.
-
-原始分数、逐窗计时、三条声音示例和哈希证据位于板端
-部署目录下的 `results/20261009_yamnet_esc50_w8a16_v1/`.
-W8A16 示例 Top-5 已内嵌唯一结果文件的 `examples`,原有示例文件保留 FP16 输出.
-新 Runtime 对原 FP16 和 W8A8 分别全量回归,每种均为 2000 条 / 20000 窗,
-全部分数与原结果逐值一致.当前默认入口为全 W8A16,局部 INT16 作为可选方案保留.
-已上传两种产物后,板端可显式切换,不用重新编译:
-
-```bash
-YAMNET_PRECISION=w8a16 EVAL_RUN_ID=新的运行编号 \
-  bash run.sh
-```
-
-### 与高通量化参考的关系
-
-[高通官方 YamNet 模型卡](https://huggingface.co/qualcomm/YamNet) 同时列出 W8A8
-和 W8A16,两者权重均为 INT8,激活位宽分别为 8 和 16.其 QCS6490 性能表中的
-TFLite W8A8 为 0.505 ms,ONNX W8A16 为 0.722 ms,对应用户参考截图的两条路径.
-这些是该设备的部署性能,没有提供本项目同协议 ESC-50 投影 AP.
-[官方源码封装](https://github.com/qualcomm/ai-hub-models/blob/v0.63.0/src/qai_hub_models/models/yamnet/model.py)
-采用 `torch_audioset` 版本,校准数据接口为 AudioSet;本项目继续采用 Google 官方
-TensorFlow 源码与原始权重,没有使用高通预导出产物作为移植源.
-
-当前 MTK W8A8 配方的 AP 43.9329% 只能说明该配方尚未达到精度目标,
-不能推断 YAMNet 无法做 INT8 部署.W8A16 使用 INT8 权重已取得 AP 73.8964%,
-支持优先排查 W8A8 激活量化尺度和逐层误差的判断;本次已完成以下定位与对照验证.
-
-## W8A8 精度下降定位与算子改法验证
-
-<details>
-<summary>展开算子排查与候选方案记录</summary>
-
-2026-10-09 在原 Google 模型、原 200 窗校准集和相同标签映射上完成诊断.
-主因是 **第 12 层 pointwise 输出与第 13 层 depthwise 输出的小激活被 INT8
-量化舍入为零**,随后在末端卷积放大;单独替换 Sigmoid 或平均池化未解决问题.
-
-小批诊断固定使用第 2 折每类首条音频,共 50 条 / 500 窗,其中 47 类有直接映射.
-以下为主机模拟和因果对照,不能代替板端全量指标:
-
-| 小批对照 | 投影宏平均 AP |
-| --- | ---: |
-| ONNX FP32 | 79.7163% |
-| 原 W8A8 模拟 | 46.4882% |
-| 仅将最终 FP32 概率量化为 INT8 | 78.6018% |
-| 仅量化 FP32 logits,再计算 Sigmoid 和输出量化 | 78.7098% |
-| INT8 主干与 logits,CPU 浮点 Sigmoid | 49.9184% |
-| INT8 主干,浮点全连接与 Sigmoid | 47.4691% |
-| INT8 主干,浮点池化、全连接与 Sigmoid | 47.4530% |
-| 平均池化替换为等价 depthwise Conv,纯 W8A8 | 46.6872% |
-| Sigmoid 前增加 logits 范围限制 [-12,12],纯 W8A8 | 46.4882% |
-
-逐层相对 RMSE 在第 12 层 pointwise 约 10.17%,第 13 层 pointwise 约 41.17%,
-第 14 层 depthwise 约 170.78%.误差跳变的位置与信息最先丢失的位置并不相同:
-对原始浮点激活 **只插入一次 INT8 量化,前后均用浮点计算**,第 12 层 pointwise
-输出量化后的小批 AP 降至 59.4512%,第 13 层 depthwise 输出量化后降至 45.3931%.
-两个边界分别有 72.8739% / 66.3414% 的正激活被舍入为零,饱和比例仅约
-0.00417% / 0.00098%.这些比例针对本次固定小批,说明主要问题是小值分辨率,
-而不是大量超出量化范围的截断.
-
-分类 logits 范围约 [-600.95,24.53],INT8 步长约 2.45,确实很粗;
-但仅对浮点 logits 做同尺度量化的对照没有复现主干的严重下降.
-额外 Clip 的输出步长虽减小到约 0.094,上游全连接输出仍先使用 2.45 的步长,
-已丢失的信息没有恢复.池化替换的浮点最大分数误差为 `1.79e-7`,Clip 为
-`6.11e-6`,两者均通过浮点功能检查,量化后仍未恢复精度.
-
-对敏感位置继续进行局部精度和有界通道重参数化验证.重参数化仅作用于上述
-两个边界,缩放激活对应的前层权重/偏置并反向缩放后层权重,排除极小或无响应
-通道,因子范围 [1,16];浮点最大分数误差 `5.36e-7`,量化仍为纯 W8A8.
-
-以下板端候选均完成相同推理覆盖;精度 AP 均按前述 1504 条有效样本计算,
-与上方 50 条小批模拟的统计范围不同.
-
-| 板端候选 | 精度 AP (%) |
-| --- | ---: |
-| ONNX FP32 参考 | 74.1456 |
-| 原 W8A8 | 43.9329 |
-| 两个敏感边界做等价通道重参数化,纯 W8A8 | 66.4728 |
-| 仅两个敏感边界使用 INT16 激活,其余 INT8 | 71.9474 |
-| 第 12 层 pointwise 输出至分类头使用 INT16 激活 | 73.4619 |
-| 全模型 W8A16 | 73.8964 |
-
-最小候选实际只有 `layer12/pointwise_conv/relu/Relu:0_ndsc_0` 和
-`layer13/depthwise_conv/relu/Relu:0_ndsc_0` 两个 INT16 激活输出,28 个主计算层
-的权重仍为 INT8,原生输入/输出均为 INT8.仅提高第 14 块两个输入边界的小批
-AP 为 47.1415%,没有恢复精度,进一步支持第 12/13 块敏感边界的定位.
-宽范围候选的输入为 INT8、输出为 INT16.两种局部方案均为混合激活位宽,
-不能标为纯 W8A8.全部候选采用硬件 Runtime,编译包含 `--disallow-bridge`.
-
-**可行结论:** 等价通道重参数化已将纯 W8A8 全量 AP 提升约 22.54 个百分点,
-但仍落后参考约 7.67 个百分点.局部 INT16 可明显恢复精度,其中宽范围方案与
-参考相差约 0.68 个百分点;现有全 W8A16 的差距更小.不应直接删除主干卷积或
-ReLU 来修复量化误差,这样会改变原模型函数.当前已验证结果优先支持保留模型
-结构并调整敏感激活精度,没有证据证明只移除一个算子就能恢复纯 W8A8 精度.
-
-本次最早宽范围候选全量平均为 0.493 ms / 窗,后续候选及短时复测共同出现
-约 9 ms 的 P95 长尾,三个候选复测平均均约 3 ms.因此当前不据此宣称候选
-更快,需固定板端运行状态后再比较性能.精度结果、完整窗口覆盖和真实张量
-类型均已核验;所有原始计时保留,不将较小的一次耗时替换为统一性能结论.
-
-用户选择保留全W8A16和宽范围局部INT16两种方案,默认交付为 `w8a16`,
-可选入口名称为 `int8_tail16`.局部转换入口已接入源码,新入口的正式同步与回归
-尚未执行;此节的精度与计时来自已经完成的板端诊断运行.
-诊断汇总内嵌 [results/summary.json](results/summary.json) 的 `int8_operator_diagnosis`,
-`results/` 仍只含这一个文件.临时脚本、候选 ONNX/TFLite/DLA、校准配置、原始
-分数与日志保存在对应诊断工作目录,板端记录包含三个候选的 `*_full_work` 和短时性能对照.
-全量工作目录的特征缓存为原 FP16 已验证缓存的只读符号链接,没有修改原始音频.
-
-</details>
+报告分别记录交付运行和配对性能测量,不同测量条件的延迟不混用.局部精度方案与诊断数据保留在结果文件中,不在使用文档重复展示实验过程.
 
 ## 声音示例
 
-编译时从 ESC-50 固定选择狗叫、玻璃破碎和警笛各一条,样例来源随部署上传.
-板端输出原始 521 类 Top-5,取回后保存在 `examples/output/sample_*_events.json`.
-示例音频许可归属见 ESC-50 原始 `LICENSE`,不将整个数据集纳入 Git.
+| 输入 | 来源类别 | 输出 |
+| --- | --- | --- |
+| [sample_1.wav](examples/input/sample_1.wav) | dog | [JSON](examples/output/sample_1_events.json) |
+| [sample_2.wav](examples/input/sample_2.wav) | glass_breaking | [JSON](examples/output/sample_2_events.json) |
+| [sample_3.wav](examples/input/sample_3.wav) | siren | [JSON](examples/output/sample_3_events.json) |
 
-| 输入与原始 ESC-50 文件 | 类别 | 原始 521 类 Top-5 分数,FP16 板端实际输出 | 输出 |
-| --- | --- | --- | --- |
-| [sample_1.wav](examples/input/sample_1.wav),`1-100032-A-0.wav` | dog | Silence: 0.7020; Dog: 0.1093; Domestic animals, pets: 0.1067; Animal: 0.0849; Bow-wow: 0.0805 | [JSON](examples/output/sample_1_events.json) |
-| [sample_2.wav](examples/input/sample_2.wav),`1-20133-A-39.wav` | glass_breaking | Silence: 0.3021; Coin (dropping): 0.1169; Glass: 0.1055; Cutlery, silverware: 0.0752; Dishes, pots, and pans: 0.0736 | [JSON](examples/output/sample_2_events.json) |
-| [sample_3.wav](examples/input/sample_3.wav),`1-31482-A-42.wav` | siren | Siren: 0.2582; Opera: 0.2390; Alarm: 0.2340; Classical music: 0.1889; Emergency vehicle: 0.1812 | [JSON](examples/output/sample_3_events.json) |
-
-示例对 5 秒音频的 10 窗分数求均值,短促声音可能被静音背景主导;以上保留真实输出,
-没有按期望类别修改模型分数.样例逐条归属和许可见 [ESC-50 原始 LICENSE](https://github.com/karolpiczak/ESC-50/blob/33c8ce9eb2cf0b1c2f8bcf322eb349b6be34dbb6/LICENSE).
-
-## 模型资源路径
-
-原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/audio/ambient_sound/yamnet`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.
-
-
-模型参数读取根目录的 `config.yaml`,公共工具链环境在进入 Docker 时自动加载.部署入口只编排独立步骤,C++ 使用 `deploy/board/Makefile` 构建.板端沿用原部署目录,快速结果位于 `results/运行编号_test/`.
+仓库中的上述输出为 FP16 示例,不作为当前 W8A16 的评价结果.原始样例出处和许可见 [ESC-50 LICENSE](https://github.com/karolpiczak/ESC-50/blob/33c8ce9eb2cf0b1c2f8bcf322eb349b6be34dbb6/LICENSE).

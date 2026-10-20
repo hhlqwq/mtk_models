@@ -1,6 +1,7 @@
 """检查完整题集长度,生成同范围 FP32 参考及板端评价资源."""
 
 import argparse
+import json
 import os
 from pathlib import Path
 import re
@@ -11,9 +12,56 @@ from tools.evaluation import is_test
 from tools.files import require_file, sha256, single_file
 from tools.llm import evaluate_mmlu, evaluate_quality
 from tools.llm.native import settings
+from tools.storage import storage_roots
 
 
-def evaluate_mode(native, prepare_only):
+def check_data(ctx):
+    """在读取权重前检查 NAS 正式资源,不从临时目录回退或自动下载."""
+    roots = storage_roots()
+    dataset_root = roots["dataset_root"].resolve()
+    models_root = roots["models_root"].resolve()
+    temporary = (Path("/tmp"), Path("/var/tmp"))
+    if any(root.is_relative_to(base) for root in (dataset_root, models_root)
+           for base in temporary):
+        raise ValueError("models_root 和 dataset_root 必须指向 NAS,不能使用临时目录.")
+    source = Path(os.environ.get("MODEL_SOURCE", ctx.config["model"]["source"])).resolve()
+    work = Path(os.environ.get(
+        "NATIVE_WORK", ctx.output / ctx.config["native"]["work_dir"])).resolve()
+    if not all(path.is_relative_to(models_root)
+               for path in (source, work, ctx.output.resolve())):
+        raise ValueError("官方模型和转换资源必须位于 NAS models_root 内.")
+    manifest = require_file(source / "source_manifest.json")
+    for entry in json.loads(manifest.read_text())["files"]:
+        path = (source / entry["name"]).resolve()
+        if not path.is_relative_to(models_root):
+            raise ValueError(f"官方资源不能引用 NAS 之外的文件: {path}.")
+        require_file(path)
+    checks = (
+        ("mmlu_test", evaluate_mmlu.DATA_SHA256),
+        ("wikitext_test", "5f1bea067869d04849c0f975a2b29c4ff47d867f484f5010ea5e861eab246d91"),
+    )
+    result = []
+    for key, expected in checks:
+        path = (ctx.dataset / ctx.config["data"][key]).resolve()
+        if not path.is_relative_to(dataset_root):
+            raise ValueError(f"{key} 必须位于 NAS dataset_root 内: {path}.")
+        if not path.is_file() or path.stat().st_size == 0:
+            raise FileNotFoundError(f"NAS 缺少 {key}: {path}.请先准备正式数据,不会搜索 /tmp.")
+        if sha256(path) != expected:
+            raise ValueError(f"{key} 与固定版本不一致: {path}.")
+        result.append(path)
+        print(f"[资源就绪] {key}: {path}", flush=True)
+    train = os.environ.get("CALIBRATION_TRAIN", ctx.config["native"]["calibration_train"])
+    if train:
+        path = Path(train).resolve()
+        if not path.is_relative_to(dataset_root):
+            raise ValueError("校准训练集必须使用 NAS dataset_root 内的绝对路径.")
+        if sha256(require_file(path)) != "e83889baabc497075506f91975be5fac0d45c5290b6b20582c8cd1e853d0c9f7":
+            raise ValueError("WikiText2 train 与固定版本不一致.")
+    return result
+
+
+def evaluate_mode(native, prepare_only, datasets):
     """准备当前模式的输入和参考,同一次流水线使用独立运行目录."""
     config = native.ctx.config
     if native.prefill != 128 or native.context % 128:
@@ -23,11 +71,7 @@ def evaluate_mode(native, prepare_only):
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id):
         raise ValueError("运行编号只允许字母、数字、下划线和连字符.")
     output = native.work / "evaluation" / run_id / mode
-    data = config["data"]
-    mmlu = require_file(native.ctx.dataset / data["mmlu_test"])
-    corpus = require_file(native.ctx.dataset / data["wikitext_test"])
-    if sha256(corpus) != "5f1bea067869d04849c0f975a2b29c4ff47d867f484f5010ea5e861eab246d91":
-        raise ValueError("WikiText2 test 哈希不符,量化前停止.")
+    mmlu, corpus = datasets
     graph = None if prepare_only else single_file(
         Path(f"{native.quantized}_{native.prefill}t{native.context}c"), "*.tflite")
     mmlu_args = SimpleNamespace(
@@ -59,15 +103,20 @@ def main():
     """全量部署同时携带快速参考,快速部署只准备固定小子集."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--check-data", action="store_true")
     parser.add_argument("--config", type=Path)
     options = parser.parse_args()
-    native = settings(context(__file__, options.config))
+    ctx = context(__file__, options.config)
+    datasets = check_data(ctx)
+    if options.check_data:
+        return
+    native = settings(ctx)
     original_mode = os.environ.get("MTK_EVAL_TEST", "0")
     modes = ("test",) if is_test() else ("full", "test")
     try:
         for mode in modes:
             os.environ["MTK_EVAL_TEST"] = "1" if mode == "test" else "0"
-            evaluate_mode(native, options.prepare_only)
+            evaluate_mode(native, options.prepare_only, datasets)
     finally:
         os.environ["MTK_EVAL_TEST"] = original_mode
 

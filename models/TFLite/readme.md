@@ -4,7 +4,7 @@
 官网分成三大块(其中TFLite为 TFLite 模型和预编译的深度学习归档文件 (DLA), onnx runtime是onnx运行时模型推理)
 
 ### 1. TFLite(LiteRT) - Analytical AI
-   专注于三大主要视觉 AI 任务：图像分类、目标检测和识别, 测试脚本[benchmark_dla.sh](benchmark_dla.sh)，实测结果 [01_Analytical_result.md](01_Analytical_result.md)(2026/09/20/ 17:56).
+   专注于三大主要视觉 AI 任务：图像分类、目标检测和识别, 测试脚本[benchmark_dla.sh](01_AnalyticalAI/benchmark_dla.sh)，实测结果 [01_Analytical_result.md](01_AnalyticalAI/01_Analytical_result.md).
 
 | task | name | source | type | inputsize | Infer(ms) | 实测 |
 | ------ | ------ | ------ | ------ | ------ | ------ |  ------ |
@@ -48,7 +48,7 @@
 | Qwen2.5-7B-Instruct | [Qwen2.5-7B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/qwen2.5-7b.zip) | 69.47 / 4.73 | [64.74 / 4.05](02_Generative\qwen2.5-7b\benchmark_qwen2.5-7b.log) |
 | gemma3-1B (Text-Only) | [gemma3-1B (Text-Only)](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/gemma3-1b.zip) | 583.01 / 26.44 | [failed](02_Generative\gemma3-1b\gemma3_1b_single.log) |
 | gemma3-4B (Text-Only) | [gemma3-4B (Text-Only)](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/gemma3-4b.zip) | 176.79 / 5.93 | [failed](02_Generative\gemma3-4b\benchmark_gemma3-4b.log) |
-| llama3.2-1B-Instruct | [llama3.2-1B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/llama3.2-1b.zip) | 400.57 / 24.开发板 | [380.4 / 18.56](02\llama3.2-1b\benchmark_llama3.2-1b.log) |
+| llama3.2-1B-Instruct | [llama3.2-1B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/llama3.2-1b.zip) | 400.57 / 24.开发板 | [380.4 / 18.56](02_Generative/llama3.2-1b/benchmark_llama3.2-1b.log) |
 | llama3.2-3B-Instruct | [llama3.2-3B-Instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/llama3.2-3b.zip) | 153.56 / 10.36 |  [144.58 / 6.58](02_Generative\llama3.2-3b\benchmark_llama3.2-3b.log) |
 | Phi-3-mini-4k-instruct | [Phi-3-mini-4k-instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/phi-3-mini-4k-instruct.zip) | 127.56 / 7.28 | [127.91 / 6.62](02_Generative\Phi-3-mini-4k-instruct\benchmark_phi-3-mini-4k-instruct.log) |
 | Phi-3.5-mini-instruct | [Phi-3.5-mini-instruct](https://mediatek-aiot.s3.ap-southeast-1.amazonaws.com/aiot/download/iot-ai-hub/model-zoo/gai/genio-360-360p-420-520-720/phi-3.5-mini-instruct.zip) | 136.63 / 6.29 | [138.42 / 6.05](02_Generative\Phi-3.5-mini-instruct\benchmark_phi-3.5-mini-instruct.log) |

@@ -7,7 +7,7 @@ ONNX 使用 1.13.1,满足当前 Converter 的 `>=1.3,<1.14` 约束.ONNX Runtime 
 ## 配置
 
 - [平台配置](../configs/platforms/genio_720.yaml): 容器名称、SDK 路径、交叉编译器和开发板连接信息.
-- `configs/storage.local.json`: 模型与数据集根目录,可通过 `container_image` 指定已准备的镜像; 该文件不提交 Git.
+- `configs/storage.local.json`: NAS 模型与数据集根目录,可通过 `container_image` 指定已准备的镜像; 该文件不提交 Git.
 - 构建参数 `PYTHON_SOURCE_URL`: Python 源码下载地址,默认值见 Dockerfile.
 
 SDK、模型、数据集和交叉编译库需按各自来源记录提前准备.下载地址和资源哈希应随本地资源清单保存,不将个人目录写入公共文档.
@@ -37,13 +37,4 @@ bash docker/enter_container.sh
 
 现有容器的镜像或挂载不匹配时,先保留环境再安排重建,创建脚本不自动删除旧容器.平台和资源环境在进入容器时自动初始化,无需手动执行环境脚本.修改配置后重新进入终端即可.
 
-GPU 是否实际参与任务应以执行提供程序和运行证据为准.最终部署性能以开发板 NPU 实测为准,不能用编译主机的 GPU 性能替代.历史环境验证见[环境核对记录](../docs/genio_720_environment_audit_20260907.md).
-
-
-## 公共环境
-
-平台参数统一读取配置文件 `configs/platforms/genio_720.yaml`. SDK、交叉编译器和专用 Python 环境
-集中保存在 `/data/users/hailong.he/data/MTKG720`.通过 `docker/enter_container.sh` 进入容器时自动加载,
-不需要在模型目录再次执行环境脚本.新容器将整个工具链根目录按相同绝对路径挂载.
-
-已有容器缺少此挂载时需要保存环境后重建;创建脚本会检查挂载,不会自动删除旧容器.
+GPU 是否实际参与任务应以执行提供程序和运行证据为准.最终部署性能以开发板 NPU 实测为准,不能用编译主机的 GPU 性能替代.

@@ -18,6 +18,5 @@
 | build/config.json | 上传时生成的板端配置快照 |
 | build/cache/、build/tmp/ | 缓存与临时文件 |
 | build/source_url.txt | 原始模型和依赖的公开来源记录 |
-| build/README.md | 本资源布局说明 |
 
 资源根目录只保留原始 PT 权重、最终 ONNX、最终 DLA 和 build 目录.build 中间文件平铺,子目录只保留 cache 和 tmp.评测临时文件先保存到 tmp,报告校验通过后发布为 onnx_reference.json; 缺失时上传直接停止,不生成占位报告.

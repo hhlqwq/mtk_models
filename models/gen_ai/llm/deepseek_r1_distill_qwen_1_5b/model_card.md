@@ -50,15 +50,3 @@ ONNX 为 FP32,板端 DLA 原生输入输出为 FP16,Runtime 加载时校验数�
 地瓜 [RDK S 系列 Model Zoo](https://github.com/D-Robotics/rdk_model_zoo_s) 与
 [S100 LLM 工具链](https://developer.d-robotics.cc/rdk_s_doc/Advanced_development/toolchain_development/LLM_Toolchain/s100_LLM_Toolchain)
 仅作为模型选型、量化和指标展示参考.不使用厂商预编译 `.hbm` 作为 MTK 转换输入.
-
-## 当前状态
-
-官方资源、原始框架、标准导出和编译脚本已建立,完整 ONNX 一致性检查通过.
-Genio 720 为 `board_verified`,运行 `20261010_deepseek_fp16_v3` 已完成中英文最终回答,
-样例逐 Token NLL 数值检查通过; Genio 5100 为 `not_started`.
-不将自编双语样例视为正式基准精度,也不将 FP16 结果视为 W4A16 验证.
-环境核查范围、后续流程与限制见 [README](README.md).
-
-原生 W4A16 使用 Prompt 128 Token、Decode 1 Token 的两个 DLA,INT16 embedding、KV Cache 和 I/O.
-运行 `20261010_deepseek_w4a16_v2` 双语样例完成 EOS,Decode 约 16.75 Token/s.
-英文样例存在语法问题,本次只确认板端推理,不作为正式量化质量验收.

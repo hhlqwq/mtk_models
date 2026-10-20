@@ -13,7 +13,3 @@
 ## 规格
 
 输入为 NCHW 224×224 RGB,输出为 ImageNet-1K 的 1000 类 logits。评测使用 ILSVRC2012 val 全量 50000 张图片,核心精度为 Top-1。
-
-## 当前测试结果
-
-当前结果来自 [results/summary.json](results/summary.json),ImageNet val2012 全量 50000 张图片.核心指标与效果示例见 [README](README.md#当前测试结果)。

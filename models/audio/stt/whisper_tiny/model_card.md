@@ -18,7 +18,3 @@ Greedy Search.
 
 `complete` 只表示指定 Run 无失败或缺失样例,不表示精度达到产品要求。Whisper 可能产生
 遗漏、错误文本、繁简体差异或重复幻觉,不应用于未经人工复核的高风险决策.
-
-## 当前测试结果
-
-以用户上传的 `results/summary.json` 为准,当前待上传。核心指标见 [README](README.md#当前测试结果)。

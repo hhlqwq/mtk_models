@@ -1,24 +1,7 @@
 # YOLOv8n / Genio 720
 
-编译与转换步骤统一在 Docker 容器内执行: 先在仓库根目录运行 `bash docker/enter_container.sh`,再进入本模型目录运行原有 `deploy/run.sh` 或 `deploy/run_native.sh` 入口.模型脚本不再调用 Docker 或在主机和容器之间复制文件; 上传完成后,板端入口仍在开发板执行.
-
 COCO 80 类目标检测,固定输入 `1x3x640x640` RGB,INT8 PTQ,目标为
-MT8189 / MDLA 5.3.2026-10-08 已完成官方权重导出、INT8 量化、DLA 编译、
-10 张冒烟和三后端 COCO val2017 全量评测,Genio 720 状态为完整交付.
-
-## 与原有模型流程的核对
-
-YOLOv5s 和本模型均采用"编译主机运行 deploy/run.sh,开发板运行上传的 run.sh"两步入口.
-
-| 模型 | 转换与量化 | 板端执行 | 本次核对范围 |
-| --- | --- | --- | --- |
-| YOLOv5s | 官方源码加 MTK 补丁,TorchScript -> INT8 TFLite -> MDLA 5.3 DLA | C++ Neuron Runtime,COCO 5000 张 | 脚本与依赖路径复核,Shell 语法通过;保留原有实测结果 |
-| YOLOv8n | 官方权重导出六个原始头,INT8 TFLite -> MDLA 5.3 DLA | C++ Neuron Runtime,CPU DFL 与 NMS | 本次执行导出、量化、编译及板端评测 |
-
-FastSAM 的 Ultralytics 8.0.111 和原始头量化实现用于复用转换方式.
-以上复核不会把旧模型的历史测试结果改记为本次重跑结果.
-另已对 Depth Anything V2 Small、RTMPose、MobileFaceNet、ViT 和 Whisper
-现有入口执行 Shell 语法检查,八个原有模型全部通过;本次没有修改这些模型实现.
+MT8189 / MDLA 5.3.
 
 ## 官方来源
 
@@ -120,10 +103,3 @@ Genio 5100 尚未执行,上述数字只对应 Genio 720.
 ![滑雪场景检测](examples/output/sample_3_detections.jpg)
 
 示例图片来源: 示例 1: [原图](http://farm9.staticflickr.com/8035/8024364858_9c41dc1666_z.jpg) / [图片许可](http://creativecommons.org/licenses/by-nc/2.0/); 示例 2: [原图](http://farm8.staticflickr.com/7434/9138147604_c6225224b8_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/); 示例 3: [原图](http://farm8.staticflickr.com/7015/6795644157_f019453ae7_z.jpg) / [图片许可](http://creativecommons.org/licenses/by/2.0/).
-
-## 模型资源路径
-
-原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/perception/object_detection/yolov8n`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.
-
-
-模型参数读取根目录的 `config.yaml`,公共工具链环境在进入 Docker 时自动加载.部署入口只编排独立步骤,C++ 使用 `deploy/board/Makefile` 构建.板端沿用原部署目录,快速结果位于 `results/运行编号_test/`.

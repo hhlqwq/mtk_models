@@ -1,7 +1,3 @@
-# 模型产物
+# 模型资源
 
-转换后应包含 `yolov5s.pt`、`yolov5s.torchscript`、`model_fp32.onnx`、
-`model_int8.tflite` 和 `model_int8.dla`.这些二进制文件默认被 `.gitignore` 排除；正式发布时
-使用 Git LFS 或 Release.
-
-模型文件已改为使用外部资源目录,详见上级 README 的模型资源路径说明.此目录只保留源码、文档和公开来源记录.
+本目录保存 [source_url.txt](source_url.txt) 等公开来源记录.官方权重、上游源码和转换产物位于 NAS 对应模型资源目录,实际文件名由本模型 `config.yaml` 指定.

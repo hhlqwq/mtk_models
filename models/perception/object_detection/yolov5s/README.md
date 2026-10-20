@@ -1,16 +1,12 @@
 # YOLOv5s · Genio 720
 
-编译与转换步骤统一在 Docker 容器内执行: 先在仓库根目录运行 `bash docker/enter_container.sh`,再进入本模型目录运行原有 `deploy/run.sh` 或 `deploy/run_native.sh` 入口.模型脚本不再调用 Docker 或在主机和容器之间复制文件; 上传完成后,板端入口仍在开发板执行.
-
 COCO 80 类目标检测。模型来源和许可证见[模型卡](model_card.md)。
 
 量化方式: INT8 训练后量化 (PTQ),使用 100 张图片校准.
 
 ## 第一步: 编译并上传
 
-所有配置均在脚本顶部,按模型与校准数据、产物与临时目录、板端地址与数据、ONNX 精度数据、编译环境分组.脚本已填写当前部署环境的路径,使用时按注释调整等号右侧的值; 编译主机和 Docker 须能访问相同数据,板端路径独立配置.
-
-在 [run.sh](deploy/run.sh) 顶部确认 `MODEL_WEIGHTS`、`CALIBRATION_DIR`、`BOARD_DEPLOY_DIR` 和 `BOARD_DATASET_DIR`,按需调整 `MODEL_OUTPUT_DIR`、`OUTPUT_DLA`。其余配置仅在 Docker、SDK 或交叉编译环境变化时修改。资源地址见 [source_url.txt](models/source_url.txt)。模型、校准集及产物路径必须同时对编译主机和 Docker 容器可见。
+模型、数据集和部署路径见 [config.yaml](config.yaml),资源来源见 [source_url.txt](models/source_url.txt).
 
 在编译主机的本模型目录运行:
 
@@ -18,13 +14,13 @@ COCO 80 类目标检测。模型来源和许可证见[模型卡](model_card.md)�
 bash deploy/run.sh
 ```
 
-脚本在 Docker 中生成 DLA,自动评测 ONNX FP32 全量精度,在编译主机交叉编译板端 C++ 程序,然后上传文件和实测 FP32 基准。`FP32_IMAGES_DIR` 与 `FP32_ANNOTATIONS` 必须指向与板端相同的 COCO val2017 5000 张图片及标注。校准仅使用其中 100 张图片,与全量精度评测分开。
+入口在当前容器完成转换、DLA 编译、ONNX FP32 评价、C++ 构建和上传.配置的数据目录须包含与板端相同的 COCO val2017 图片及标注。校准仅使用其中 100 张图片,与全量精度评测分开。
 
-浮点模型只记录 mAP@0.5:0.95,不测试 PyTorch 精度,不统计编译主机耗时或内存。Docker 需安装 ONNX Runtime、pycocotools、OpenCV、PyTorch、torchvision 和 tqdm; PyTorch 仅用于解码和 NMS。模型产物写入脚本配置的输出目录。脚本不下载模型或数据。
+浮点模型只记录 mAP@0.5:0.95,不测试 PyTorch 精度,不统计编译主机耗时或内存。Docker 需安装 ONNX Runtime、pycocotools、OpenCV、PyTorch、torchvision 和 tqdm; PyTorch 仅用于解码和 NMS。模型产物写入配置指定的 NAS 资源目录。脚本不下载模型或数据。
 
 ## 第二步: 开发板测试
 
-使用脚本中配置的 `BOARD_HOST` 登录开发板，并执行第一步打印的 `[NEXT]` 命令。
+登录平台配置指定的开发板,进入上传入口打印的部署目录。
 
 板端使用 C++ 完成 JPEG 预处理、Neuron Runtime 推理、YOLO 解码和 NMS,直接生成 COCO 预测与耗时记录,无需回传 5000 张图片的原始 NPU 输出。
 
@@ -38,7 +34,7 @@ bash run.sh
 
 ## 数据与精度评测
 
-结果写入 `BOARD_RESULTS_DIR`，默认位于 `BOARD_DEPLOY_DIR/results`。测试要求 `BOARD_DATASET_DIR/images/` 中有 5000 张 COCO val2017 图片、`BOARD_DATASET_DIR/annotations/instances_val2017.json`，板端还需 `pycocotools`、NumPy 和 OpenCV。若 SSH 提示主机密钥变化，先核对板端指纹，再更新编译主机上执行脚本用户的 `known_hosts`。
+结果写入 `BOARD_RESULTS_DIR`，默认位于 `BOARD_DEPLOY_DIR/results`。测试要求 `BOARD_DATASET_DIR/images/` 中有 5000 张 COCO val2017 图片、`BOARD_DATASET_DIR/annotations/instances_val2017.json`，板端还需 `pycocotools`、NumPy 和 OpenCV。
 
 ## 当前测试结果
 
@@ -101,10 +97,3 @@ NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
 - `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.
-
-## 模型资源路径
-
-原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/perception/object_detection/yolov5s`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.
-
-
-模型参数读取根目录的 `config.yaml`,公共工具链环境在进入 Docker 时自动加载.部署入口只编排独立步骤,C++ 使用 `deploy/board/Makefile` 构建.板端沿用原部署目录,快速结果位于 `results/运行编号_test/`.

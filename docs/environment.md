@@ -19,7 +19,7 @@
 | ncc-tflite | Neuron 8.2.31 | TFLite 到 DLA 编译 |
 | neuronrt | 板端 8.2.16 | DLA NPU 推理 |
 | ONNX Runtime | 板端 1.20.2 | Neuron/XNNPACK/CPU Execution Provider 在线推理 |
-| llm_cmdline_tool | `neuropilot-bin` 1.0-r0 | GAI LLM/VLM 命令行入口；模型推理待验证 |
+| llm_cmdline_tool | `neuropilot-bin` 1.0-r0 | GAI LLM/VLM 命令行入口 |
 
 编译器与板端运行时版本必须同时记录,不能只写“NeuroPilot SDK 8”.项目采用 NCC 8.2.31 和板端 Runtime 8.2.16,该组合不能仅凭版本信息推断所有模型兼容.
 
@@ -49,8 +49,16 @@ GPU 可用于原始框架或 ONNX 浮点基准.实际使用的设备取决于任
 
 ## 目录与结果
 
-项目、模型和数据集在主机与容器中使用相同绝对路径.模型资源读写挂载,数据集只读挂载; 完整内部路径仅保存在本地配置及运行记录中.
+正式模型和数据集统一保存在 NAS,主机与容器使用相同绝对路径;临时目录仅存放可丢弃的中间文件.模型资源读写挂载,数据集只读挂载; 完整内部路径仅保存在本地配置及运行记录中.
 
 校准集和正式评测集分别记录,不能将校准子集或单张示例的结果描述为全量精度.更换固件、Runtime 或关键依赖后,已有历史结果仍按原环境标识,需重新评测才能更新结论.
 
-历史事实与原始环境记录见[环境核对报告](genio_720_environment_audit_20260907.md)和[系统升级记录](genio_720_v26_upgrade_20260921.md).
+## 公共代码检查
+
+在已准备依赖的编译容器内执行 Python 回归测试:
+
+```bash
+python3 -m unittest discover -s tests -p "test_*.py"
+```
+
+`tests/common_cpp_test.cpp` 需要交叉编译并在目标板执行.LLM 契约检查依赖 Converter.

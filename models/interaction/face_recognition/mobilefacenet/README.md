@@ -1,18 +1,14 @@
 # MobileFaceNet
 
-编译与转换步骤统一在 Docker 容器内执行: 先在仓库根目录运行 `bash docker/enter_container.sh`,再进入本模型目录运行原有 `deploy/run.sh` 或 `deploy/run_native.sh` 入口.模型脚本不再调用 Docker 或在主机和容器之间复制文件; 上传完成后,板端入口仍在开发板执行.
-
 人脸特征提取与验证，输入为对齐后的 112×112 RGB 人脸。模型不包含人脸检测、活体检测或开放集拒识。来源见[模型卡](model_card.md)。
 
 量化方式: INT8 训练后量化 (PTQ),采用逐输出通道权重量化.
 
 ## 第一步: 编译并上传
 
-所有配置均在脚本顶部,按模型与校准数据、产物与临时目录、板端地址与数据、ONNX 精度数据、编译环境分组.脚本已填写当前部署环境的路径,使用时按注释调整等号右侧的值; 编译主机和 Docker 须能访问相同数据,板端路径独立配置.
+模型、数据集和部署路径见 [config.yaml](config.yaml),工具链与 NAS 根目录按[仓库说明](../../../../README.md)配置.
 
-在 [run.sh](deploy/run.sh) 中配置权重、对齐人脸校准集、模型输出目录、板端 LFW 数据集目录、编译环境、板端地址和部署目录。
-
-校准默认按文件名排序选取 100 张对齐人脸,数量由脚本顶部的 `CALIBRATION_SAMPLES` 配置.支持 JPG、JPEG 和 PNG,保留原始文件名即可,不要求添加 `_aligned` 标记.
+校准默认按文件名排序选取 100 张对齐人脸,数量由 `config.yaml` 的转换参数配置.支持 JPG、JPEG 和 PNG,保留原始文件名即可,不要求添加 `_aligned` 标记.
 
 在编译主机的本模型目录运行:
 
@@ -20,7 +16,7 @@
 bash deploy/run.sh
 ```
 
-脚本在 Docker 中转换并编译 DLA，在主机交叉编译 C++ 程序并上传所需文件。
+入口在当前容器完成转换、DLA 编译、C++ 构建和上传。
 
 ## 第二步: 开发板测试
 
@@ -34,7 +30,7 @@ bash run.sh
 
 ## 数据与精度评测
 
-在脚本顶部填写 `ONNX_DATASET_DIR`,必须与板端数据采用同一份样本、标注及评测协议。编译主机在 Docker 中自动评测 ONNX,只记录任务核心精度,不记录主机耗时或内存。
+参考评价使用 `config.yaml` 指定的数据集,与板端保持相同样本、标注和预后处理协议.
 
 数据目录要求: 对齐后的 LFW 包含 `images/`、`pairs.csv` 和 `alignment_summary.json`,覆盖 7701 张验证图、6000 对及 10 折.原始图片与对齐图片分别保存,编译主机和板端配置均指向对齐数据目录.
 
@@ -108,12 +104,3 @@ LFW 全量 6000 对,采用 MTCNN 五点对齐后的 7701 张人脸,进行十折�
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
 - `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.
-
-## 模型资源路径
-
-原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/interaction/face_recognition/mobilefacenet`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.
-
-
-模型参数读取根目录的 `config.yaml`,公共工具链环境在进入 Docker 时自动加载.部署入口只编排独立步骤,C++ 使用 `deploy/board/Makefile` 构建.板端沿用原部署目录,快速结果位于 `results/运行编号_test/`.
-
-板端职责与 FastSAM 一致: `mobilefacenet_board.cpp` 完成已对齐人脸的预处理、SDK 推理和特征单位化. `infer.py` 只调度 C++ 程序,`full_accuracy_board.py` 只计算精度,随后生成效果示例和汇总.性能统计来自实际评测图片的 `NeuronRuntime_inference` 调用.

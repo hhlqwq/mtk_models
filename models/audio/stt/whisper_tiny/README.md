@@ -1,28 +1,12 @@
 # Whisper-Tiny
 
-编译与转换步骤统一在 Docker 容器内执行: 先在仓库根目录运行 `bash docker/enter_container.sh`,再进入本模型目录运行原有 `deploy/run.sh` 或 `deploy/run_native.sh` 入口.模型脚本不再调用 Docker 或在主机和容器之间复制文件; 上传完成后,板端入口仍在开发板执行.
-
 多语言语音识别。输入为 16 kHz 单声道音频，板端运行 Encoder 和 Decoder 两个 DLA。模型来源见[模型卡](model_card.md)。
 
 量化方式: 未进行整数定点量化,采用浮点模型部署.
 
-### 量化验证
-
-当前 Genio 720 / MDLA 5.3 下已尝试以下整数方案,正式部署仍使用通过全量测试的浮点模型。
-
-| 方案 | 转换与编译 | 验证结果 |
-| --- | --- | --- |
-| W8A8 | 双模型转换及严格 NPU 编译通过 | 当前校准配方下,20 条音频 WER **100.00%**,出现重复输出,不用于部署 |
-| W8A16 | 双模型转换通过,严格 NPU 编译失败 | `BATCH_MATMUL` 不支持非对称 16 位第二输入 |
-| W16A16 | 双模型转换通过,严格 NPU 编译失败 | `FULLY_CONNECTED` 报 `invalid constant data`,同时存在 16 位算子支持限制 |
-
-实验使用 8 条真实音频及其自回归 token / KV cache 状态校准,在 20 条音频上验证。同批浮点板端 WER 为 **2.64%**;未用于校准的 12 条音频上,浮点 WER 为 **2.41%**,W8A8 为 **100.00%**。小样本结果不替代下方全量结果,也不代表其他校准配方或混合精度方案的结果。
-
 ## 第一步: 编译并上传
 
-所有配置均在脚本顶部,按模型与校准数据、产物与临时目录、板端地址与数据、ONNX 精度数据、编译环境分组.脚本已填写当前部署环境的路径,使用时按注释调整等号右侧的值; 编译主机和 Docker 须能访问相同数据,板端路径独立配置.
-
-在 [run.sh](deploy/run.sh) 中配置 Encoder、Decoder ONNX，模型输出目录，LibriSpeech `test-clean` 数据集，Docker 容器、交叉编译工具链，以及 `BOARD_HOST`、`BOARD_DEPLOY_DIR`。
+模型、数据集和部署路径见 [config.yaml](config.yaml),工具链与 NAS 根目录按[仓库说明](../../../../README.md)配置.
 
 在编译主机的本模型目录运行:
 
@@ -30,7 +14,7 @@
 bash deploy/run.sh
 ```
 
-脚本在 Docker 中转换并编译双 DLA，在主机交叉编译板端 C++ 程序，然后上传所需文件。
+转换、双 DLA 编译、参考评价和上传均在当前容器内完成。
 
 双 DLA 编译限定 `mdla5.3`,禁止桥接并保留浮点输入输出.出现不支持的算子时编译直接失败,不上传含板端不支持目标的模型.旧 DLA 若报 `EDPA_1_2` 或加载失败,需要重新编译两个模型后上传.
 
@@ -46,7 +30,7 @@ bash run.sh
 
 ## 数据与精度评测
 
-在脚本顶部填写 `ONNX_DATASET_DIR`,必须与板端数据采用同一份样本、标注及评测协议。编译主机在 Docker 中自动评测 ONNX,只记录任务核心精度,不记录主机耗时或内存。
+参考评价使用 `config.yaml` 指定的数据集,与板端保持相同样本、标注和预后处理协议.
 
 数据目录要求: LibriSpeech test-clean: 保留官方目录下的 FLAC 音频和 *.trans.txt,2620 条音频.
 
@@ -128,10 +112,3 @@ examples/
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
 - `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.
-
-## 模型资源路径
-
-原始权重、ONNX、量化模型、DLA 和配套运行参数使用仓库外的模型存储目录.先配置 `configs/storage.local.json` 的 `models_root` 和 `dataset_root`,完整内部路径仅保存本地.本模型的外部目录为 `models_root/audio/stt/whisper_tiny`;编译入口自动读取配置,转换产物也写入此目录.仓库中的 `models/` 只保留源码、文档和公开来源记录.板端继续使用上传的部署目录.
-
-
-模型参数读取根目录的 `config.yaml`,公共工具链环境在进入 Docker 时自动加载.部署入口只编排独立步骤,C++ 使用 `deploy/board/Makefile` 构建.板端沿用原部署目录,快速结果位于 `results/运行编号_test/`.

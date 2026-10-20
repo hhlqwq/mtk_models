@@ -8,7 +8,7 @@
 
 - [config.yaml](config.yaml): 模型、校准数据、输出和板端部署目录.
 - [G720 平台配置](../../../../configs/platforms/genio_720.yaml): 工具链和开发板连接信息.
-- `configs/storage.local.json`: 模型和数据集的本地存储根目录,准备方式见[仓库说明](../../../../README.md#模型与数据存储).
+- `configs/storage.local.json`: 模型和数据集的本地存储根目录,准备方式见[仓库说明](../../../../README.md#存储规则).
 
 在项目根目录进入编译容器:
 
@@ -81,6 +81,3 @@ C++ 前后处理与芯片推理实现分开,当前仅提供 G720 实现.进入�
 模型资源保存在 `models_root/navigation/segmentation/fastsam/`,原始权重、ONNX 和 DLA 位于该目录根层,其余产物保存在 `build/`.文件用途见[资源布局说明](models/README.md).
 
 板端结果位于配置的 `board.results_dir/<运行编号>/`,包含评测汇总和效果示例.仓库中的 `examples/` 保存固定示例,`results/summary.json` 保存已有测试汇总.
-
-
-模型参数读取根目录的 `config.yaml`,公共工具链环境在进入 Docker 时自动加载.部署入口只编排独立步骤,C++ 使用 `deploy/board/Makefile` 构建.板端沿用原部署目录,快速结果位于 `results/运行编号_test/`.

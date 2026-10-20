@@ -90,31 +90,9 @@ ncc-tflite \
 
 本项目追加 `--suppress-output --disallow-bridge`,是因为默认输出桥可能被派发到 MT8189 不具备的 EDPA 目标.抑制桥接后输出为 MDLA 原生 NCHW INT8,宽度方向可能存在 16 元素对齐,后处理必须按真实输出布局还原.
 
-## 7. 当前已完成结果
+## 7. 结果入口
 
-### 7.1 精度
-
-| 后端 | mAP@0.5:0.95 | 说明 |
-| --- | ---: | --- |
-| PyTorch FP32 | 0.3708 | 本项目统一协议 |
-| FP32 ONNX | 0.3709 | 与 PyTorch 基本一致 |
-| MTK NPU INT8,板端 C++ 全处理 | 0.3586 | 正式交付结果 |
-
-板端 INT8 相对 ONNX 损失约 `0.0123`,即 `1.23` 个百分点.是否接受该损失应由具体业务门槛决定,不能仅以"模型可以运行"代替精度验收.
-
-### 7.2 性能
-
-| 项目 | 实测结果 |
-| --- | ---: |
-| 板端 C++ 预处理平均 | 7.716 ms |
-| 板端 C++ NPU 平均 | 9.629 ms |
-| 板端 C++ 后处理平均 | 16.173 ms |
-| 稳态端到端平均 | 33.662 ms |
-| 稳态端到端 P95 | 38.009 ms |
-| 等效吞吐率 | 约 29.71 FPS |
-| 峰值 RSS | 33,224 KiB,约 32.45 MiB |
-
-以上是已完成运行的历史证据.本次文档整理没有重新执行模型转换、编译、板端推理或评测.
+当前结果和计时范围见 [YOLOv5s README](../models/perception/object_detection/yolov5s/README.md),机器可读指标见 [summary.json](../models/perception/object_detection/yolov5s/results/summary.json).学习文档只说明流程,不重复维护指标表.
 
 ## 8. MTK 官网资料导航
 
