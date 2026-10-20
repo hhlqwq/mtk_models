@@ -184,8 +184,8 @@ scenarios:
         models:
           - id: pointpillar_tiny
             display_name: PointPillar-Tiny
-          - id: centerpoint_tint
-            display_name: CenterPoint-Tint
+          - id: centerpoint
+            display_name: CenterPoint
   three_d:
     display_name: 3D
     categories:
