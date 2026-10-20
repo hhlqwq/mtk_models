@@ -1,6 +1,6 @@
 # DeepSeek-R1-Distill-Qwen-1.5B
 
-使用 [DeepSeek 官方模型](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B),固定 revision `ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562`.28 层、hidden=1536、Q/KV Head=12/2、RoPE=10000.来源和许可见 [模型卡](model_card.md)及[资源记录](models/source_url.txt).
+使用 [DeepSeek 官方模型](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B).28 层、hidden=1536、Q/KV Head=12/2、RoPE=10000.详细版本、来源和许可见[模型卡](model_card.md)及[资源记录](models/source_url.txt).
 
 ## 配置与运行
 

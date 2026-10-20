@@ -1,6 +1,6 @@
 # MiniCPM5-2B
 
-面向 Genio 720 / MDLA 5.3 的全 W4A16 适配.官方输入为 [openbmb/MiniCPM5-2B](https://huggingface.co/openbmb/MiniCPM5-2B),固定 revision `f97400052a43d642bbc6e9975e2397e3ae6a6b52`,许可证 Apache-2.0.42 层、hidden=2048、Q/KV Head=16/2,约 2.52B 参数.其他 Model Zoo 仅作为交付结构参考.
+面向 Genio 720 / MDLA 5.3 的全 W4A16 适配.使用官方 [openbmb/MiniCPM5-2B](https://huggingface.co/openbmb/MiniCPM5-2B) 模型,许可证 Apache-2.0.42 层、hidden=2048、Q/KV Head=16/2,约 2.52B 参数.详细版本与文件校验信息见[来源清单](models/source_manifest.json).其他 Model Zoo 仅作为交付结构参考.
 
 ## 一键执行
 
@@ -56,7 +56,7 @@ bash run.sh -test
 1. 在仓库 `configs/storage.local.json` 配置 `models_root` 和 `dataset_root`,确认容器挂载及 SDK、GAI Python、交叉编译环境已经准备好.
 2. 官方模型及 `source_manifest.json` 放在外部资源目录 `models_root/gen_ai/llm/minicpm5_2b/original/`.具体文件、下载 URL、大小和 SHA256 见 [来源记录](models/source_url.txt) 与 [来源清单](models/source_manifest.json).入口离线运行,不自动下载.
 3. 数据集统一放在 NAS `dataset_root` 内,`config.yaml` 中的 `data.wikitext_test` 和 `data.mmlu_test` 按该根目录定位.默认使用 `wikitext/wikitext-2-raw-v1/` 和 `mmlu/all/`,禁止指向 `/tmp`.入口在读取权重前检查文件和版本,不会搜索临时目录或自动下载.
-4. WikiText2 使用 [Salesforce/wikitext](https://huggingface.co/datasets/Salesforce/wikitext) 的 `wikitext-2-raw-v1`,revision `b08601e04326c79dfdd32d625aee71d232d685c3`;MMLU 使用 [cais/mmlu](https://huggingface.co/datasets/cais/mmlu),revision `c30699e8356da336a370243923dbaf21066bb9fe`.校准只能使用训练数据或独立自编样例,测试集不参与校准.
+4. WikiText2 使用 [Salesforce/wikitext](https://huggingface.co/datasets/Salesforce/wikitext) 的 `wikitext-2-raw-v1`;MMLU 使用 [cais/mmlu](https://huggingface.co/datasets/cais/mmlu) 的 test 集.校准只能使用训练数据或独立自编样例,测试集不参与校准.
 
 **完整 MMLU 与当前交付的 1024 Token 上下文不是同一个已验证范围.** 入口在校准、量化前检查所选题集的最长输入,将长度信息写入本次 `evaluation/运行编号/模式/mmlu/length_report.json`.如果超出 `conversion.context`,会报告所需长度并停止.应将上下文调整到足够大的 128 整数倍后重新转换和编译;不截断、不丢题、不把固定千题冒充全量.更大上下文的编译、内存和板端兼容性尚未验证.
 
