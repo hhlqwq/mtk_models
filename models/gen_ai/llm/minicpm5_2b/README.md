@@ -6,7 +6,7 @@
 
 参数统一放在本模型的 `config.yaml`,工具链环境由仓库 `docker/enter_container.sh` 加载.正常执行不传阶段参数,只提供 `-test` 少量评价选项.
 
-在 Ubuntu89 的仓库根目录进入 Docker:
+在编译主机的仓库根目录进入 Docker:
 
 ```bash
 bash docker/enter_container.sh
@@ -26,10 +26,9 @@ bash models/gen_ai/llm/minicpm5_2b/deploy/run.sh -test
 
 脚本先检查 NAS 数据集和模型路径,再依次执行官方资源校验、题集长度预检、校准、量化、静态图导出、双 DLA 编译、FP32 参考评价、公共桥接库交叉编译、打包和上传.每步显示进度,失败立即停止.上传后逐文件核对 SHA256,不会自动在板端执行推理.
 
-在 92 开发板进入配置指定的部署目录,默认是:
+上传后,在开发板进入脚本输出的部署目录,执行:
 
 ```bash
-cd /root/hailong.he/open_models/minicpm5_2b/current
 bash run.sh
 ```
 
