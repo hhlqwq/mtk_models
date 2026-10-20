@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-readonly BOARD_ROOT="${1:-/root/hailong.he}"
+readonly BOARD_ROOT="${1:-${MTK_BOARD_ROOT:?请传入板端根目录或设置 MTK_BOARD_ROOT}}"
 readonly ARCHIVE_DATE="${ARCHIVE_DATE:-$(date +%Y%m%d)}"
 readonly ARCHIVE_ROOT="${BOARD_ROOT}/archive/${ARCHIVE_DATE}/layout_normalization"
 readonly LEGACY_ROOT="${ARCHIVE_ROOT}/legacy"

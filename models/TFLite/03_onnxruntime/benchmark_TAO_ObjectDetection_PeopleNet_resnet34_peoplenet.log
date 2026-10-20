@@ -21,7 +21,7 @@ Run 10: 78.26 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet.onnx
+Model: <board_root>/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

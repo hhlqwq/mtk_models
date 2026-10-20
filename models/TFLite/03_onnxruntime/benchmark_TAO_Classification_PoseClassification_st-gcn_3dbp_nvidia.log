@@ -23,7 +23,7 @@ Run 10: 288.00 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/Classification/PoseClassification/st-gcn_3dbp_nvidia.onnx
+Model: <board_root>/ort/TAO/Classification/PoseClassification/st-gcn_3dbp_nvidia.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

@@ -23,7 +23,7 @@ Run 10: 49.17 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/EfficientNet/efficientnet_b0_quant.onnx
+Model: <board_root>/ort/Legacy/Classification/EfficientNet/efficientnet_b0_quant.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

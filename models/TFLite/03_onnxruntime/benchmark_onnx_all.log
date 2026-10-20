@@ -1,6 +1,6 @@
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/EfficientNet/efficientnet_b0_fp32.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_EfficientNet_efficientnet_b0_fp32.log
+MODEL: <board_root>/ort/Legacy/Classification/EfficientNet/efficientnet_b0_fp32.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_EfficientNet_efficientnet_b0_fp32.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -25,7 +25,7 @@ Run 10: 2.75 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/EfficientNet/efficientnet_b0_fp32.onnx
+Model: <board_root>/ort/Legacy/Classification/EfficientNet/efficientnet_b0_fp32.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -34,8 +34,8 @@ Average Inference Time: 2.77 ms
 Min Inference Time: 2.74 ms
 Max Inference Time: 2.81 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/EfficientNet/efficientnet_b0_quant.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_EfficientNet_efficientnet_b0_quant.log
+MODEL: <board_root>/ort/Legacy/Classification/EfficientNet/efficientnet_b0_quant.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_EfficientNet_efficientnet_b0_quant.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -62,7 +62,7 @@ Run 10: 49.17 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/EfficientNet/efficientnet_b0_quant.onnx
+Model: <board_root>/ort/Legacy/Classification/EfficientNet/efficientnet_b0_quant.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -71,8 +71,8 @@ Average Inference Time: 48.74 ms
 Min Inference Time: 48.41 ms
 Max Inference Time: 49.18 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_fp32.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV2_mobilenet_v2_fp32.log
+MODEL: <board_root>/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_fp32.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_MobileNetV2_mobilenet_v2_fp32.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -97,7 +97,7 @@ Run 10: 1.51 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_fp32.onnx
+Model: <board_root>/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_fp32.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -106,8 +106,8 @@ Average Inference Time: 1.54 ms
 Min Inference Time: 1.50 ms
 Max Inference Time: 1.62 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_quant.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV2_mobilenet_v2_quant.log
+MODEL: <board_root>/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_quant.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_MobileNetV2_mobilenet_v2_quant.log
 ============================================================
 [0;93m2026-09-30 08:57:36.253972665 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.17/conv/conv.1/conv.1.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
 [0;93m2026-09-30 08:57:36.254034357 [W:onnxruntime:, graph.cc:4285 CleanUnusedInitializersAndNodeArgs] Removing initializer '/features/features.17/conv/conv.0/conv.0.2/Constant_1_output_0'. It is not used by any node and should be removed from the model.[m
@@ -204,7 +204,7 @@ Run 10: 1.24 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_quant.onnx
+Model: <board_root>/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_quant.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -213,8 +213,8 @@ Average Inference Time: 2.46 ms
 Min Inference Time: 1.22 ms
 Max Inference Time: 7.33 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV3/mobilenet_v3_small_fp32.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV3_mobilenet_v3_small_fp32.log
+MODEL: <board_root>/ort/Legacy/Classification/MobileNetV3/mobilenet_v3_small_fp32.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_MobileNetV3_mobilenet_v3_small_fp32.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -241,7 +241,7 @@ Run 10: 21.89 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/MobileNetV3/mobilenet_v3_small_fp32.onnx
+Model: <board_root>/ort/Legacy/Classification/MobileNetV3/mobilenet_v3_small_fp32.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -250,8 +250,8 @@ Average Inference Time: 22.15 ms
 Min Inference Time: 19.41 ms
 Max Inference Time: 25.04 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/MobileNetV3/mobilenet_v3_small_quant.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_MobileNetV3_mobilenet_v3_small_quant.log
+MODEL: <board_root>/ort/Legacy/Classification/MobileNetV3/mobilenet_v3_small_quant.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_MobileNetV3_mobilenet_v3_small_quant.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -288,8 +288,8 @@ Traceback (most recent call last):
     sess.initialize_session(providers, provider_options, disabled_optimizers)
 onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/ResNet/resnet18_fp32.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_ResNet_resnet18_fp32.log
+MODEL: <board_root>/ort/Legacy/Classification/ResNet/resnet18_fp32.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_ResNet_resnet18_fp32.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -314,7 +314,7 @@ Run 10: 3.48 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/ResNet/resnet18_fp32.onnx
+Model: <board_root>/ort/Legacy/Classification/ResNet/resnet18_fp32.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -323,8 +323,8 @@ Average Inference Time: 3.49 ms
 Min Inference Time: 3.47 ms
 Max Inference Time: 3.57 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/ResNet/resnet18_quant.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_ResNet_resnet18_quant.log
+MODEL: <board_root>/ort/Legacy/Classification/ResNet/resnet18_quant.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_ResNet_resnet18_quant.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -351,7 +351,7 @@ Run 10: 1.81 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/ResNet/resnet18_quant.onnx
+Model: <board_root>/ort/Legacy/Classification/ResNet/resnet18_quant.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -360,8 +360,8 @@ Average Inference Time: 1.82 ms
 Min Inference Time: 1.78 ms
 Max Inference Time: 1.93 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/SqueezeNet/squeezenet_fp32.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_SqueezeNet_squeezenet_fp32.log
+MODEL: <board_root>/ort/Legacy/Classification/SqueezeNet/squeezenet_fp32.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_SqueezeNet_squeezenet_fp32.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -388,7 +388,7 @@ Run 10: 11.56 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/SqueezeNet/squeezenet_fp32.onnx
+Model: <board_root>/ort/Legacy/Classification/SqueezeNet/squeezenet_fp32.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -397,8 +397,8 @@ Average Inference Time: 14.51 ms
 Min Inference Time: 11.56 ms
 Max Inference Time: 19.34 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/SqueezeNet/squeezenet_quant.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_SqueezeNet_squeezenet_quant.log
+MODEL: <board_root>/ort/Legacy/Classification/SqueezeNet/squeezenet_quant.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_SqueezeNet_squeezenet_quant.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -425,7 +425,7 @@ Run 10: 11.21 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/SqueezeNet/squeezenet_quant.onnx
+Model: <board_root>/ort/Legacy/Classification/SqueezeNet/squeezenet_quant.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -434,8 +434,8 @@ Average Inference Time: 13.42 ms
 Min Inference Time: 11.18 ms
 Max Inference Time: 23.11 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/VGG/vgg16_fp32.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_VGG_vgg16_fp32.log
+MODEL: <board_root>/ort/Legacy/Classification/VGG/vgg16_fp32.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_VGG_vgg16_fp32.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -460,7 +460,7 @@ Run 10: 32.99 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/VGG/vgg16_fp32.onnx
+Model: <board_root>/ort/Legacy/Classification/VGG/vgg16_fp32.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -469,8 +469,8 @@ Average Inference Time: 32.78 ms
 Min Inference Time: 32.53 ms
 Max Inference Time: 33.01 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Classification/VGG/vgg16_quant.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Classification_VGG_vgg16_quant.log
+MODEL: <board_root>/ort/Legacy/Classification/VGG/vgg16_quant.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Classification_VGG_vgg16_quant.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -495,7 +495,7 @@ Run 10: 11.92 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/VGG/vgg16_quant.onnx
+Model: <board_root>/ort/Legacy/Classification/VGG/vgg16_quant.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -504,8 +504,8 @@ Average Inference Time: 11.94 ms
 Min Inference Time: 11.80 ms
 Max Inference Time: 12.03 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/DiffusionPolicy/model_diffusion_sampling/model_diffusion_sampling.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_DiffusionPolicy_model_diffusion_sampling_model_diffusion_sampling.log
+MODEL: <board_root>/ort/Legacy/DiffusionPolicy/model_diffusion_sampling/model_diffusion_sampling.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_DiffusionPolicy_model_diffusion_sampling_model_diffusion_sampling.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -534,7 +534,7 @@ Run 10: 104.56 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/DiffusionPolicy/model_diffusion_sampling/model_diffusion_sampling.onnx
+Model: <board_root>/ort/Legacy/DiffusionPolicy/model_diffusion_sampling/model_diffusion_sampling.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -543,8 +543,8 @@ Average Inference Time: 103.96 ms
 Min Inference Time: 103.08 ms
 Max Inference Time: 105.50 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/MobileSam/mobilesam_encoder/transformed_mobilesam_encoder_tiny.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_MobileSam_mobilesam_encoder_transformed_mobilesam_encoder_tiny.log
+MODEL: <board_root>/ort/Legacy/MobileSam/mobilesam_encoder/transformed_mobilesam_encoder_tiny.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_MobileSam_mobilesam_encoder_transformed_mobilesam_encoder_tiny.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -574,8 +574,8 @@ Traceback (most recent call last):
     sess.initialize_session(providers, provider_options, disabled_optimizers)
 onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Omni6DPose/scale_policy/ScalePolicy.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Omni6DPose_scale_policy_ScalePolicy.log
+MODEL: <board_root>/ort/Legacy/Omni6DPose/scale_policy/ScalePolicy.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Omni6DPose_scale_policy_ScalePolicy.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -604,8 +604,8 @@ Traceback (most recent call last):
     sess.initialize_session(providers, provider_options, disabled_optimizers)
 onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Recognition/VGGFace/vggface_fp32.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Recognition_VGGFace_vggface_fp32.log
+MODEL: <board_root>/ort/Legacy/Recognition/VGGFace/vggface_fp32.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Recognition_VGGFace_vggface_fp32.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -630,7 +630,7 @@ Run 10: 33.43 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Recognition/VGGFace/vggface_fp32.onnx
+Model: <board_root>/ort/Legacy/Recognition/VGGFace/vggface_fp32.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -639,8 +639,8 @@ Average Inference Time: 33.40 ms
 Min Inference Time: 33.21 ms
 Max Inference Time: 33.53 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/Recognition/VGGFace/vggface_quant.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_Recognition_VGGFace_vggface_quant.log
+MODEL: <board_root>/ort/Legacy/Recognition/VGGFace/vggface_quant.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_Recognition_VGGFace_vggface_quant.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -676,7 +676,7 @@ Run 10: 122.14 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Recognition/VGGFace/vggface_quant.onnx
+Model: <board_root>/ort/Legacy/Recognition/VGGFace/vggface_quant.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -685,8 +685,8 @@ Average Inference Time: 137.17 ms
 Min Inference Time: 121.55 ms
 Max Inference Time: 158.89 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/RegionNormalizedGrasp/anchornet/anchornet.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_RegionNormalizedGrasp_anchornet_anchornet.log
+MODEL: <board_root>/ort/Legacy/RegionNormalizedGrasp/anchornet/anchornet.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_RegionNormalizedGrasp_anchornet_anchornet.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -713,7 +713,7 @@ Run 10: 19.94 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/RegionNormalizedGrasp/anchornet/anchornet.onnx
+Model: <board_root>/ort/Legacy/RegionNormalizedGrasp/anchornet/anchornet.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -722,8 +722,8 @@ Average Inference Time: 19.34 ms
 Min Inference Time: 15.90 ms
 Max Inference Time: 21.33 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/RegionNormalizedGrasp/localnet/localnet.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_RegionNormalizedGrasp_localnet_localnet.log
+MODEL: <board_root>/ort/Legacy/RegionNormalizedGrasp/localnet/localnet.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_RegionNormalizedGrasp_localnet_localnet.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -750,7 +750,7 @@ Run 10: 24.04 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/RegionNormalizedGrasp/localnet/localnet.onnx
+Model: <board_root>/ort/Legacy/RegionNormalizedGrasp/localnet/localnet.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -759,8 +759,8 @@ Average Inference Time: 23.20 ms
 Min Inference Time: 20.35 ms
 Max Inference Time: 27.53 ms
 ============================================================
-MODEL: /root/hailong.he/ort/Legacy/YoloWorld/yoloworld_xl/yoloworld_xl.onnx
-LOG  : /root/hailong.he/ort/benchmark_Legacy_YoloWorld_yoloworld_xl_yoloworld_xl.log
+MODEL: <board_root>/ort/Legacy/YoloWorld/yoloworld_xl/yoloworld_xl.onnx
+LOG  : <board_root>/ort/benchmark_Legacy_YoloWorld_yoloworld_xl_yoloworld_xl.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -793,7 +793,7 @@ Run 10: 440.74 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/YoloWorld/yoloworld_xl/yoloworld_xl.onnx
+Model: <board_root>/ort/Legacy/YoloWorld/yoloworld_xl/yoloworld_xl.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -802,8 +802,8 @@ Average Inference Time: 440.64 ms
 Min Inference Time: 432.40 ms
 Max Inference Time: 454.43 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/Classification/PoseClassification/st-gcn_3dbp_nvidia.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_Classification_PoseClassification_st-gcn_3dbp_nvidia.log
+MODEL: <board_root>/ort/TAO/Classification/PoseClassification/st-gcn_3dbp_nvidia.onnx
+LOG  : <board_root>/ort/benchmark_TAO_Classification_PoseClassification_st-gcn_3dbp_nvidia.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -830,7 +830,7 @@ Run 10: 288.00 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/Classification/PoseClassification/st-gcn_3dbp_nvidia.onnx
+Model: <board_root>/ort/TAO/Classification/PoseClassification/st-gcn_3dbp_nvidia.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -839,8 +839,8 @@ Average Inference Time: 285.24 ms
 Min Inference Time: 277.56 ms
 Max Inference Time: 291.96 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_640x640.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_model_ocdnet_640x640.log
+MODEL: <board_root>/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_640x640.onnx
+LOG  : <board_root>/ort/benchmark_TAO_OCR_Ocrnet_resnet_model_ocdnet_640x640.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -865,7 +865,7 @@ Run 10: 69.33 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_640x640.onnx
+Model: <board_root>/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_640x640.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -874,8 +874,8 @@ Average Inference Time: 69.18 ms
 Min Inference Time: 68.90 ms
 Max Inference Time: 69.46 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_736x1280.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_model_ocdnet_736x1280.log
+MODEL: <board_root>/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_736x1280.onnx
+LOG  : <board_root>/ort/benchmark_TAO_OCR_Ocrnet_resnet_model_ocdnet_736x1280.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -900,7 +900,7 @@ Run 10: 151.80 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_736x1280.onnx
+Model: <board_root>/ort/TAO/OCR/Ocrnet_resnet/model_ocdnet_736x1280.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -909,8 +909,8 @@ Average Inference Time: 151.41 ms
 Min Inference Time: 150.96 ms
 Max Inference Time: 151.80 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_ocrnet_resnet50.log
+MODEL: <board_root>/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50.onnx
+LOG  : <board_root>/ort/benchmark_TAO_OCR_Ocrnet_resnet_ocrnet_resnet50.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -937,7 +937,7 @@ Run 10: 27.43 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50.onnx
+Model: <board_root>/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -946,8 +946,8 @@ Average Inference Time: 23.42 ms
 Min Inference Time: 21.08 ms
 Max Inference Time: 27.43 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50_pruned.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_Ocrnet_resnet_ocrnet_resnet50_pruned.log
+MODEL: <board_root>/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50_pruned.onnx
+LOG  : <board_root>/ort/benchmark_TAO_OCR_Ocrnet_resnet_ocrnet_resnet50_pruned.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -974,7 +974,7 @@ Run 10: 17.59 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50_pruned.onnx
+Model: <board_root>/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50_pruned.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -983,8 +983,8 @@ Average Inference Time: 18.69 ms
 Min Inference Time: 17.43 ms
 Max Inference Time: 23.39 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/OCR/ocdnet_mixnet/ocdnet_mixnet_640x640.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_OCR_ocdnet_mixnet_ocdnet_mixnet_640x640.log
+MODEL: <board_root>/ort/TAO/OCR/ocdnet_mixnet/ocdnet_mixnet_640x640.onnx
+LOG  : <board_root>/ort/benchmark_TAO_OCR_ocdnet_mixnet_ocdnet_mixnet_640x640.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1009,7 +1009,7 @@ Run 10: 341.69 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/OCR/ocdnet_mixnet/ocdnet_mixnet_640x640.onnx
+Model: <board_root>/ort/TAO/OCR/ocdnet_mixnet/ocdnet_mixnet_640x640.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1018,8 +1018,8 @@ Average Inference Time: 341.46 ms
 Min Inference Time: 340.93 ms
 Max Inference Time: 342.58 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/ObjectDetection/LPDNet/LPDNet_CCPD_pruned_tao5.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_LPDNet_LPDNet_CCPD_pruned_tao5.log
+MODEL: <board_root>/ort/TAO/ObjectDetection/LPDNet/LPDNet_CCPD_pruned_tao5.onnx
+LOG  : <board_root>/ort/benchmark_TAO_ObjectDetection_LPDNet_LPDNet_CCPD_pruned_tao5.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1044,7 +1044,7 @@ Run 10: 7.07 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/ObjectDetection/LPDNet/LPDNet_CCPD_pruned_tao5.onnx
+Model: <board_root>/ort/TAO/ObjectDetection/LPDNet/LPDNet_CCPD_pruned_tao5.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1053,8 +1053,8 @@ Average Inference Time: 7.06 ms
 Min Inference Time: 7.00 ms
 Max Inference Time: 7.14 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/ObjectDetection/LPDNet/LPDNet_usa_pruned_tao5.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_LPDNet_LPDNet_usa_pruned_tao5.log
+MODEL: <board_root>/ort/TAO/ObjectDetection/LPDNet/LPDNet_usa_pruned_tao5.onnx
+LOG  : <board_root>/ort/benchmark_TAO_ObjectDetection_LPDNet_LPDNet_usa_pruned_tao5.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1079,7 +1079,7 @@ Run 10: 3.39 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/ObjectDetection/LPDNet/LPDNet_usa_pruned_tao5.onnx
+Model: <board_root>/ort/TAO/ObjectDetection/LPDNet/LPDNet_usa_pruned_tao5.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1088,8 +1088,8 @@ Average Inference Time: 3.44 ms
 Min Inference Time: 3.39 ms
 Max Inference Time: 3.53 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_PeopleNet_resnet34_peoplenet.log
+MODEL: <board_root>/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet.onnx
+LOG  : <board_root>/ort/benchmark_TAO_ObjectDetection_PeopleNet_resnet34_peoplenet.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1114,7 +1114,7 @@ Run 10: 78.26 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet.onnx
+Model: <board_root>/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1123,8 +1123,8 @@ Average Inference Time: 78.07 ms
 Min Inference Time: 77.67 ms
 Max Inference Time: 78.36 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet_int8.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_ObjectDetection_PeopleNet_resnet34_peoplenet_int8.log
+MODEL: <board_root>/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet_int8.onnx
+LOG  : <board_root>/ort/benchmark_TAO_ObjectDetection_PeopleNet_resnet34_peoplenet_int8.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1149,7 +1149,7 @@ Run 10: 19.94 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet_int8.onnx
+Model: <board_root>/ort/TAO/ObjectDetection/PeopleNet/resnet34_peoplenet_int8.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1158,8 +1158,8 @@ Average Inference Time: 19.79 ms
 Min Inference Time: 19.67 ms
 Max Inference Time: 19.94 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/PoseEstimation/BodyPoseNet/bodypose.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_BodyPoseNet_bodypose.log
+MODEL: <board_root>/ort/TAO/PoseEstimation/BodyPoseNet/bodypose.onnx
+LOG  : <board_root>/ort/benchmark_TAO_PoseEstimation_BodyPoseNet_bodypose.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1184,7 +1184,7 @@ Run 10: 41.54 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/PoseEstimation/BodyPoseNet/bodypose.onnx
+Model: <board_root>/ort/TAO/PoseEstimation/BodyPoseNet/bodypose.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1193,8 +1193,8 @@ Average Inference Time: 41.31 ms
 Min Inference Time: 40.86 ms
 Max Inference Time: 41.54 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/PoseEstimation/Centerpose/camera_FAN_small.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_Centerpose_camera_FAN_small.log
+MODEL: <board_root>/ort/TAO/PoseEstimation/Centerpose/camera_FAN_small.onnx
+LOG  : <board_root>/ort/benchmark_TAO_PoseEstimation_Centerpose_camera_FAN_small.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1223,8 +1223,8 @@ Traceback (most recent call last):
     sess.initialize_session(providers, provider_options, disabled_optimizers)
 onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/PoseEstimation/Centerpose/chair_DLA34.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_Centerpose_chair_DLA34.log
+MODEL: <board_root>/ort/TAO/PoseEstimation/Centerpose/chair_DLA34.onnx
+LOG  : <board_root>/ort/benchmark_TAO_PoseEstimation_Centerpose_chair_DLA34.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1253,8 +1253,8 @@ Traceback (most recent call last):
     sess.initialize_session(providers, provider_options, disabled_optimizers)
 onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/refiner_net.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_FoundationPose_refiner_net.log
+MODEL: <board_root>/ort/TAO/PoseEstimation/FoundationPose/refiner_net.onnx
+LOG  : <board_root>/ort/benchmark_TAO_PoseEstimation_FoundationPose_refiner_net.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1282,7 +1282,7 @@ Run 10: 66.98 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/refiner_net.onnx
+Model: <board_root>/ort/TAO/PoseEstimation/FoundationPose/refiner_net.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1291,8 +1291,8 @@ Average Inference Time: 60.59 ms
 Min Inference Time: 56.06 ms
 Max Inference Time: 66.98 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/score_net.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_FoundationPose_score_net.log
+MODEL: <board_root>/ort/TAO/PoseEstimation/FoundationPose/score_net.onnx
+LOG  : <board_root>/ort/benchmark_TAO_PoseEstimation_FoundationPose_score_net.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1320,7 +1320,7 @@ Run 10: 36.20 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/score_net.onnx
+Model: <board_root>/ort/TAO/PoseEstimation/FoundationPose/score_net.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1329,8 +1329,8 @@ Average Inference Time: 33.78 ms
 Min Inference Time: 29.25 ms
 Max Inference Time: 38.94 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/PoseEstimation/Multi3DCenterpose/Multiclass_CenterPose_DLA34.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_PoseEstimation_Multi3DCenterpose_Multiclass_CenterPose_DLA34.log
+MODEL: <board_root>/ort/TAO/PoseEstimation/Multi3DCenterpose/Multiclass_CenterPose_DLA34.onnx
+LOG  : <board_root>/ort/benchmark_TAO_PoseEstimation_Multi3DCenterpose_Multiclass_CenterPose_DLA34.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1359,8 +1359,8 @@ Traceback (most recent call last):
     sess.initialize_session(providers, provider_options, disabled_optimizers)
 onnxruntime.capi.onnxruntime_pybind11_state.EPFail: [ONNXRuntimeError] : 11 : EP_FAIL : Failed to Compile.
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/Re-Identification/ReIdentificationNet/resnet50_market1501_aicity156.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_Re-Identification_ReIdentificationNet_resnet50_market1501_aicity156.log
+MODEL: <board_root>/ort/TAO/Re-Identification/ReIdentificationNet/resnet50_market1501_aicity156.onnx
+LOG  : <board_root>/ort/benchmark_TAO_Re-Identification_ReIdentificationNet_resnet50_market1501_aicity156.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1385,7 +1385,7 @@ Run 10: 7.00 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/Re-Identification/ReIdentificationNet/resnet50_market1501_aicity156.onnx
+Model: <board_root>/ort/TAO/Re-Identification/ReIdentificationNet/resnet50_market1501_aicity156.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1394,8 +1394,8 @@ Average Inference Time: 7.01 ms
 Min Inference Time: 6.94 ms
 Max Inference Time: 7.09 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/Recognition/ActionRecognitionNet/resnet18_2d_rgb_hmdb5_32.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_Recognition_ActionRecognitionNet_resnet18_2d_rgb_hmdb5_32.log
+MODEL: <board_root>/ort/TAO/Recognition/ActionRecognitionNet/resnet18_2d_rgb_hmdb5_32.onnx
+LOG  : <board_root>/ort/benchmark_TAO_Recognition_ActionRecognitionNet_resnet18_2d_rgb_hmdb5_32.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1420,7 +1420,7 @@ Run 10: 14.95 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/Recognition/ActionRecognitionNet/resnet18_2d_rgb_hmdb5_32.onnx
+Model: <board_root>/ort/TAO/Recognition/ActionRecognitionNet/resnet18_2d_rgb_hmdb5_32.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1429,8 +1429,8 @@ Average Inference Time: 14.92 ms
 Min Inference Time: 14.82 ms
 Max Inference Time: 15.02 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_amr_rel.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_amr_rel.log
+MODEL: <board_root>/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_amr_rel.onnx
+LOG  : <board_root>/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_amr_rel.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1457,7 +1457,7 @@ Run 10: 16.57 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_amr_rel.onnx
+Model: <board_root>/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_amr_rel.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1466,8 +1466,8 @@ Average Inference Time: 13.93 ms
 Min Inference Time: 11.26 ms
 Max Inference Time: 16.57 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_shuffleseg.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_shuffleseg.log
+MODEL: <board_root>/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_shuffleseg.onnx
+LOG  : <board_root>/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_shuffleseg.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1494,7 +1494,7 @@ Run 10: 13.03 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_shuffleseg.onnx
+Model: <board_root>/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_shuffleseg.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential
@@ -1503,8 +1503,8 @@ Average Inference Time: 13.60 ms
 Min Inference Time: 11.24 ms
 Max Inference Time: 16.69 ms
 ============================================================
-MODEL: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.onnx
-LOG  : /root/hailong.he/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.log
+MODEL: <board_root>/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.onnx
+LOG  : <board_root>/ort/benchmark_TAO_Segmentation_PeopleSemSegNet_peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.log
 ============================================================
 INFO: Android SDK version: 31
 INFO: NeuronApi error: unable to open library libneuron_adapter.so, dllerror: 
@@ -1531,7 +1531,7 @@ Run 10: 162.14 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.onnx
+Model: <board_root>/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_vanilla_unet_dynamic_etlt_int8_fp16.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

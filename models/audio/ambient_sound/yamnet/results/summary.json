@@ -205,7 +205,7 @@
       ]
     }
   ],
-  "board_evidence_dir": "/root/hailong.he/open_models/yamnet/results/20261009_yamnet_esc50_w8a16_v1",
+  "board_evidence_dir": "<board_root>/open_models/yamnet/results/20261009_yamnet_esc50_w8a16_v1",
   "delivery_precision": "w8a16",
   "alternative_precision": "int8_tail16",
   "fp16_reference": {
@@ -322,8 +322,8 @@
       }
     },
     "environment": {
-      "compile_host": "192.168.0.89",
-      "container": "hhl_g720_8011",
+      "compile_host": "compile_host",
+      "container": "compile_container",
       "neuropilot_sdk": "8.0.11-build20260211",
       "ncc_tflite": "8.2.31",
       "mtk_converter": "8.16.0",
@@ -331,7 +331,7 @@
       "tf_keras": "2.15.0",
       "tf2onnx": "1.16.1",
       "onnx_runtime": "1.18.0",
-      "board": "192.168.0.92",
+      "board": "target_board",
       "soc": "MT8189 / Genio 720",
       "arch": "mdla5.3",
       "neuron_runtime_library": "8.2.16",
@@ -357,7 +357,7 @@
       "model_fp32.onnx": "a2deca938ea590b8fe2643408ea9df73a956e482b0a5525308f930f71ca301a8",
       "model_fp16.tflite": "8fb178803a3fc6d79646f8174b2ea64ea4d182979c92aebf5db818d5915f701f"
     },
-    "board_evidence_dir": "/root/hailong.he/open_models/yamnet/results/20261009_yamnet_esc50_fp16_v2"
+    "board_evidence_dir": "<board_root>/open_models/yamnet/results/20261009_yamnet_esc50_fp16_v2"
   },
   "int8_diagnostic": {
     "status": "not_recommended",
@@ -951,7 +951,7 @@
       "host_and_docker": "/tmp/hailongcodex/2026-10-09/yamnet/operator_diagnosis",
       "board": "/tmp/hailongcodex/2026-10-09/yamnet/operator_diagnosis",
       "runtime": "硬件模式,20次预热,NCC --arch=mdla5.3 --suppress-output --disallow-bridge",
-      "features_cache": "/root/hailong.he/open_models/yamnet/results/20261009_yamnet_esc50_fp16_v2/work/features.bin"
+      "features_cache": "<board_root>/open_models/yamnet/results/20261009_yamnet_esc50_fp16_v2/work/features.bin"
     },
     "full_diagnostic_report": "/tmp/hailongcodex/2026-10-09/yamnet/operator_diagnosis/diagnostic_report.json"
   },
@@ -1085,7 +1085,7 @@
       }
     ],
     "source": "board_file_stat",
-    "directory": "/root/hailong.he/open_models/yamnet/models",
+    "directory": "<board_root>/open_models/yamnet/models",
     "collected_on": "2026-10-12",
     "scope": "current_deployment_files_not_reverified_original_run"
   }

@@ -21,7 +21,7 @@ Run 10: 7.00 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/Re-Identification/ReIdentificationNet/resnet50_market1501_aicity156.onnx
+Model: <board_root>/ort/TAO/Re-Identification/ReIdentificationNet/resnet50_market1501_aicity156.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

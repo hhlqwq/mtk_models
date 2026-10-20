@@ -23,7 +23,7 @@ Run 10: 16.57 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_amr_rel.onnx
+Model: <board_root>/ort/TAO/Segmentation/PeopleSemSegNet/peoplesemsegnet_amr_rel.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

@@ -202,10 +202,10 @@ def performance_summary(records: list[dict]) -> dict:
 
 
 def preprocessing_summary(records: list[dict]) -> dict:
-    """汇总 Ubuntu89 音频读取、Log-Mel 和缓存写入耗时."""
+    """汇总编译主机音频读取、Log-Mel 和缓存写入耗时."""
     metric_keys = ("audio_decode_ms", "log_mel_ms", "mel_write_ms")
     return {
-        "host": "ubuntu89",
+        "host": "compile_host",
         "cache_hits": sum(bool(item["cache_hit"]) for item in records),
         "metrics": {
             key: statistics([float(item[key]) for item in records])

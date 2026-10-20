@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 在 92 记录本次评测的系统和 Runtime 身份,不修改系统设置.
+# 在开发板记录本次评测的系统和 Runtime 身份,不修改系统设置.
 
 set -euo pipefail
 

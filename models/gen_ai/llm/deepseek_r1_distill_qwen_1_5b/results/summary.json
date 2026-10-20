@@ -1487,7 +1487,7 @@
       }
     ],
     "source": "board_file_stat",
-    "directory": "/root/hailong.he/open_models/deepseek_r1_distill_qwen_1_5b/models",
+    "directory": "<board_root>/open_models/deepseek_r1_distill_qwen_1_5b/models",
     "collected_on": "2026-10-12",
     "scope": "current_deployment_files_not_reverified_original_run"
   }

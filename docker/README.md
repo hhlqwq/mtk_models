@@ -6,7 +6,7 @@ ONNX 使用 1.13.1,满足当前 Converter 的 `>=1.3,<1.14` 约束.ONNX Runtime 
 
 ## 配置
 
-- [平台配置](../configs/platforms/genio_720.yaml): 容器名称、SDK 路径、交叉编译器和开发板连接信息.
+- [平台配置模板](../configs/platforms/genio_720.yaml): 公共平台规格.复制为同目录的 `genio_720.local.yaml`,在副本中填写容器名称、SDK 路径、交叉编译器和开发板连接信息;本地副本不提交 Git.
 - `configs/storage.local.json`: NAS 模型与数据集根目录,可通过 `container_image` 指定已准备的镜像; 该文件不提交 Git.
 - 构建参数 `PYTHON_SOURCE_URL`: Python 源码下载地址,默认值见 Dockerfile.
 

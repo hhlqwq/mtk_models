@@ -1,7 +1,7 @@
 #!/bin/bash
 set -u
 
-ROOT="/root/hailong.he/ort"
+ROOT="${MTK_ONNX_ROOT:-/opt/mtk/ort}"
 BENCH="/usr/share/onnxruntime_benchmark/onnxruntime_benchmark.py"
 
 RUNS="${RUNS:-10}"
@@ -26,7 +26,7 @@ fi
 
 # Known bad models already observed on this board.
 KNOWN_BAD=(
-"/root/hailong.he/ort/Legacy/Classification/DenseNet/densenet121_quant.onnx"
+"/opt/mtk/ort/Legacy/Classification/DenseNet/densenet121_quant.onnx"
 )
 
 for m in "${KNOWN_BAD[@]}"; do

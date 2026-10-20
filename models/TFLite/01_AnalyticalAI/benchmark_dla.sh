@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ROOT_DIR=${1:-${MTK_BOARD_MODELZOO_ROOT:-/root/hailong.he/MTK_G720_DLA}}
+ROOT_DIR=${1:-${MTK_BOARD_MODELZOO_ROOT:-/opt/mtk/MTK_G720_DLA}}
 COUNT=${COUNT:-1000}
 RESULT="benchmark_g720.csv"
 LOG_DIR="benchmark_logs"

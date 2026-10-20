@@ -9,7 +9,7 @@
 
 ## 快速开始
 
-在 `configs/storage.local.json` 配置 NAS 的 `models_root` 和 `dataset_root`,格式见 [配置示例](configs/storage.example.json).开发板地址及工具链参数位于 [G720 平台配置](configs/platforms/genio_720.yaml).
+在 `configs/storage.local.json` 配置 NAS 的 `models_root` 和 `dataset_root`,格式见 [配置示例](configs/storage.example.json).将 [G720 平台配置](configs/platforms/genio_720.yaml) 复制为同目录的 `genio_720.local.yaml`,在本地副本中填写开发板地址、容器名称和工具链路径.两份本地配置均不提交 Git;环境变量可覆盖本地平台配置,也可用 `MTK_PLATFORM_CONFIG` 指定本地平台文件.
 
 在 Ubuntu 编译主机的仓库根目录进入已有容器:
 

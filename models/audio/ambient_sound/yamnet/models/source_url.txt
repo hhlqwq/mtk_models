@@ -15,6 +15,6 @@ ESC-50 下载大小: 645832161 bytes
 ESC-50 压缩包 SHA256: 661183a6f53ef04f12c9bd618fed0ddc1713280d6c94a5a5431e844ba6f6a21f
 ESC-50 数据许可: CC BY-NC 3.0,具体音频归属见原始 LICENSE
 原始数据: 本地存储配置 dataset_root 下的 ESC-50.
-板端数据: /root/hailong.he/datasets/ESC-50
+板端数据: <board_root>/datasets/ESC-50
 下载经既有 SOCKS 代理访问以上原始 URL,未使用替代模型来源.
 高通交付参考: https://aihub.qualcomm.com/models/yamnet

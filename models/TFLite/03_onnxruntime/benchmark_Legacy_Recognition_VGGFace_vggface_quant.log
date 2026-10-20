@@ -32,7 +32,7 @@ Run 10: 122.14 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Recognition/VGGFace/vggface_quant.onnx
+Model: <board_root>/ort/Legacy/Recognition/VGGFace/vggface_quant.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

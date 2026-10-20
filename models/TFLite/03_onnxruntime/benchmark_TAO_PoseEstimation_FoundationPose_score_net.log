@@ -24,7 +24,7 @@ Run 10: 36.20 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/PoseEstimation/FoundationPose/score_net.onnx
+Model: <board_root>/ort/TAO/PoseEstimation/FoundationPose/score_net.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

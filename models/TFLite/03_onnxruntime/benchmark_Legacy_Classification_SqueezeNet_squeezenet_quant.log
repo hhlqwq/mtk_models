@@ -23,7 +23,7 @@ Run 10: 11.21 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/SqueezeNet/squeezenet_quant.onnx
+Model: <board_root>/ort/Legacy/Classification/SqueezeNet/squeezenet_quant.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

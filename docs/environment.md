@@ -2,7 +2,7 @@
 
 ## 配置与版本
 
-[G720 平台配置](../configs/platforms/genio_720.yaml) 保存开发板连接信息及 `toolchain` 工具链配置.实际路径和设备地址按使用环境填写,模型与数据集根目录保存在不提交 Git 的 `configs/storage.local.json`.
+[G720 平台配置](../configs/platforms/genio_720.yaml) 只保存公共规格和空的环境字段.复制为同目录的 `genio_720.local.yaml`,填写开发板连接信息和 `toolchain` 工具链路径;加载时本地值覆盖公共配置,环境变量优先级最高.可通过 `MTK_PLATFORM_CONFIG` 指定其他本地平台文件.模型与数据集根目录保存在 `configs/storage.local.json`,两类本地配置均不提交 Git,缺少必需环境字段时入口会明确报错.
 
 - `toolchain.host_sdk_root`: 构建镜像使用的主机 SDK 来源.
 - `toolchain.sdk_root`: 容器中的 SDK、NCC 与 Runtime 头文件.

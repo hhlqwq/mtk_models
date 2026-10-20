@@ -30,7 +30,7 @@
       }
     ],
     "source": "board_file_stat",
-    "directory": "/root/hailong.he/open_models/fastsam/models",
+    "directory": "<board_root>/open_models/fastsam/models",
     "collected_on": "2026-10-12",
     "scope": "current_deployment_files_not_reverified_original_run"
   }

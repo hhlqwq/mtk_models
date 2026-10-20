@@ -25,7 +25,7 @@ Run 10: 104.56 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/DiffusionPolicy/model_diffusion_sampling/model_diffusion_sampling.onnx
+Model: <board_root>/ort/Legacy/DiffusionPolicy/model_diffusion_sampling/model_diffusion_sampling.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

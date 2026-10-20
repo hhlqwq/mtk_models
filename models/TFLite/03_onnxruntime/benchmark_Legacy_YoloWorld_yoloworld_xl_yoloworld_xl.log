@@ -29,7 +29,7 @@ Run 10: 440.74 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/YoloWorld/yoloworld_xl/yoloworld_xl.onnx
+Model: <board_root>/ort/Legacy/YoloWorld/yoloworld_xl/yoloworld_xl.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

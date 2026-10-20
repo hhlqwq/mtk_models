@@ -115,7 +115,7 @@
         "scripts/config-yocto.yaml",
         "--read-tokens",
         "-i",
-        "/root/hailong.he/open_models/minicpm5_w4_light_hessian_validation_v8/board_data/performance_128.tokens.txt",
+        "<board_root>/open_models/minicpm5_w4_light_hessian_validation_v8/board_data/performance_128.tokens.txt",
         "-m",
         "127"
       ],

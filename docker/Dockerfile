@@ -20,13 +20,14 @@ RUN python -m pip config --global set global.index-url https://mirrors.aliyun.co
 COPY requirements.txt yolov5-requirements.txt /opt/mtk-build/
 RUN python -m pip install torch==2.0.0+cu118 torchvision==0.15.1+cu118 --index-url https://download.pytorch.org/whl/cu118 \
     && python -m pip install -r /opt/mtk-build/requirements.txt -r /opt/mtk-build/yolov5-requirements.txt
-ENV NCC_ROOT=/data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host
+ARG MTK_SDK_ROOT=/opt/mtk/neuropilot-sdk
+ENV NCC_ROOT=${MTK_SDK_ROOT}/neuron_sdk/host
 # sdk 是构建脚本传入的服务器本地 SDK, 无远程下载.
-COPY --from=sdk / /data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/
+COPY --from=sdk / ${MTK_SDK_ROOT}/
 RUN python -m pip install \
-    /data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/offline_tool/mtk_converter-8.16.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl \
-    /data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/offline_tool/mtk_quantization-8.2.1-py3-none-any.whl \
-    && ln -s /data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211/neuron_sdk/host/lib/libc++.so.1 /usr/local/lib/libc++.so.1 \
+    ${MTK_SDK_ROOT}/offline_tool/mtk_converter-8.16.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl \
+    ${MTK_SDK_ROOT}/offline_tool/mtk_quantization-8.2.1-py3-none-any.whl \
+    && ln -s ${MTK_SDK_ROOT}/neuron_sdk/host/lib/libc++.so.1 /usr/local/lib/libc++.so.1 \
     && nvrtc_path="$(find /usr/local/lib/python3.11/site-packages/torch/lib -maxdepth 1 -name 'libnvrtc-*.so.*' -print -quit)" \
     && test -n "${nvrtc_path}" \
     && ln -s "$(basename "${nvrtc_path}")" /usr/local/lib/python3.11/site-packages/torch/lib/libnvrtc.so \
@@ -42,5 +43,5 @@ COPY setup_container.sh verify_environment.py /opt/mtk-build/
 RUN bash /opt/mtk-build/setup_container.sh --build \
     && python -m pip freeze > /opt/mtk-build/installed-requirements.txt
 LABEL mtk.environment="ubuntu22.04-np8.0.11-py311-cu118"
-WORKDIR /data/users/hailong.he/github/mtk_models
+WORKDIR /workspace/mtk_models
 CMD ["sleep", "infinity"]

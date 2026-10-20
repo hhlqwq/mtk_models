@@ -93,7 +93,7 @@ Run 10: 1.24 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_quant.onnx
+Model: <board_root>/ort/Legacy/Classification/MobileNetV2/mobilenet_v2_quant.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

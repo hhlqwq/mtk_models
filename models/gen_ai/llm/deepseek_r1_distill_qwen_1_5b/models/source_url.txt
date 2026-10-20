@@ -7,7 +7,7 @@
 model.safetensors 实际大小: 3554214621 bytes.
 model.safetensors SHA-256: 58858233513d76b8703e72eed6ce16807b523328188e13329257fb9594462945.
 资源目录: D:/tmp/hailongcodex/2026-10-10/deepseek_source.
-Ubuntu89 与 Docker 副本: /tmp/hailongcodex/2026-10-10/deepseek_source.
+编译主机 与 Docker 副本: /tmp/hailongcodex/2026-10-10/deepseek_source.
 许可: DeepSeek MIT; Qwen2.5-Math 基础模型 Apache-2.0.
 
 官方资源下载地址:
@@ -31,7 +31,7 @@ https://genio.mediatek.com/doc/iot-aihub/ai_hub/supported_os/yocto/litert_gai/ll
 用户提供的官方下载对象: https://s3.dualstack.cn-north-1.amazonaws.com.cn/mediatek.neuropilot.com/e88327a6-f5ed-4ad8-93ef-f240b9a112a8.gz
 原链接带 600 秒有效期的 AWS 签名参数,此处记录稳定对象地址,不能作为匿名永久下载链接.
 文件: GAI-Deployment-Toolkit-v2.0.8_qwen2.5-0.5b-1.5b-7b-v0.1.tar.gz
-服务器: /data/users/hailong.he/data/MTKG720/GAI_Toolkit/
+服务器: <toolchain_root>/GAI_Toolkit/
 实际大小: 571891487 bytes
 SHA256: da10e770e2950542ab17c63182b0b932348ab05ffdceb18cbb097555ca6127f5
 

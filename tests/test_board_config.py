@@ -23,10 +23,10 @@ class BoardConfigTest(unittest.TestCase):
         self.config = self.folder / "config.json"
         self.config.write_text(json.dumps({
             "name": "fastsam",
-            "board": {"dataset_dir": "/root/hailong.he/datasets/coco/val2017",
-                      "deploy_dir": "/root/hailong.he/open_models/fastsam",
+            "board": {"dataset_dir": "/opt/mtk/datasets/coco/val2017",
+                      "deploy_dir": "/opt/mtk/open_models/fastsam",
                       "results_dir": "results"}}))
-        self.root = Path("/root/hailong.he/open_models/fastsam")
+        self.root = Path("/opt/mtk/open_models/fastsam")
         self.environment = mock.patch.dict(os.environ, {}, clear=True)
         self.environment.start()
 

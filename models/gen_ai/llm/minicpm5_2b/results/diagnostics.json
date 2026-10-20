@@ -2343,7 +2343,7 @@
     "raw_evidence_directory": "/tmp/hailongcodex/2026-10-16/root_cause_evidence",
     "candidate_directory": "/tmp/hailongcodex/2026-10-16/minicpm5_a16_guard_static",
     "evidence_archive": {
-      "tool_archive_path": "/data/users/hailong.he/data/MTKG720/GAI_Toolkit/MiniCPM5-2B/error-diagnostics.tar.gz",
+      "tool_archive_path": "<toolchain_root>/GAI_Toolkit/MiniCPM5-2B/error-diagnostics.tar.gz",
       "package_relative_path": "results/root_cause_evidence.tar.gz",
       "bytes": 159716,
       "sha256": "9354f576d18cfbfd84604ddecc7a105ec1a9adeae06ef077f486942c412686a8"

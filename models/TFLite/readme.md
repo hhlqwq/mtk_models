@@ -72,7 +72,7 @@
 
 ##### 3.1. ONNX 批量测试
 ```bash
-cd /root/hailong.he/ort
+cd /opt/mtk/ort
 tar -xzf onnx_benchmark_autorun.tar.gz
 ```
 ##### 3.2 安装并启动服务
@@ -91,15 +91,15 @@ systemctl status onnx-benchmark.service
 ```
 ##### 3.4. 查看实时日志
 ```bash
-tail -f /root/hailong.he/ort/benchmark_onnx_service.log
+tail -f /opt/mtk/ort/benchmark_onnx_service.log
 ```
 ##### 3.5. 查看测试结果
 ```bash
-cat /root/hailong.he/ort/benchmark_onnx_summary.csv
+cat /opt/mtk/ort/benchmark_onnx_summary.csv
 ```
 ##### 3.6. 查看异常模型
 ```bash
-cat /root/hailong.he/ort/.benchmark_state/kernel_oops_models.txt
+cat /opt/mtk/ort/.benchmark_state/kernel_oops_models.txt
 ```
 ##### 3.7. 停止自动测试
 ```bash

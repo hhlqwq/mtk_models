@@ -21,7 +21,7 @@ Run 10: 11.92 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/Legacy/Classification/VGG/vgg16_quant.onnx
+Model: <board_root>/ort/Legacy/Classification/VGG/vgg16_quant.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

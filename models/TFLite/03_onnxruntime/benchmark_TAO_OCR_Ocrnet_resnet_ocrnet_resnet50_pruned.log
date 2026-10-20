@@ -23,7 +23,7 @@ Run 10: 17.59 ms
 
 Benchmark Results:
 Provider: NeuronExecutionProvider
-Model: /root/hailong.he/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50_pruned.onnx
+Model: <board_root>/ort/TAO/OCR/Ocrnet_resnet/ocrnet_resnet50_pruned.onnx
 Runs: 10
 Threads: 1
 Thread Mode: sequential

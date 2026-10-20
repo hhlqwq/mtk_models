@@ -1,8 +1,9 @@
+# 公开平台规格; 复制为同目录的 genio_5100.local.yaml 后填写真实地址和路径.
 id: genio_5100
 name: MediaTek Genio 5100
 soc: 待确认
-board_host: 待确认
-board_root: /root/hailong.he
+board_host: ""
+board_root: ""
 os: 待确认
 npu: 待确认
 neuron_runtime: 待确认

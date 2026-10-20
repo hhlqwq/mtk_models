@@ -1,11 +1,12 @@
+# 公开平台规格; 复制为同目录的 genio_720.local.yaml 后填写真实地址和路径.
 id: genio_720
 name: MediaTek Genio 720 EVK
 soc: MT8189
-board_host: root@192.168.0.92
-board_root: /root/hailong.he
-board_open_models_root: /root/hailong.he/open_models
-board_datasets_root: /root/hailong.he/datasets
-board_modelzoo_root: /root/hailong.he/MTK_G720_DLA
+board_host: ""
+board_root: ""
+board_open_models_root: ""
+board_datasets_root: ""
+board_modelzoo_root: ""
 os: Rity Demo 26.0-release
 kernel: 6.6.137-mtk+ga246e0c68c39-g429091ed5965
 npu: MDLA 5.3
@@ -15,8 +16,8 @@ llm_cmdline_tool: /usr/sbin/llm_cmdline_tool
 
 # G720 对应的一套编译工具链,环境配置统一从此处读取.
 toolchain:
-  root: /data/users/hailong.he/data/MTKG720
-  container_name: hhl_g720_8011
+  root: ""
+  container_name: ""
   id: neuropilot_8_0_11
   python: "3.11"
   neuropilot_sdk: 8.0.11
@@ -24,12 +25,12 @@ toolchain:
   mtk_quantization: 8.2.1
   neuron_compiler: 8.2.31
   # 主机与容器共用相同 SDK 目录.
-  sdk_root: /data/users/hailong.he/data/MTKG720/NeuroPilotSDK/neuropilot-sdk-basic-8.0.11-build20260211
+  sdk_root: ""
   # 主机已有的 C++ 资源,在容器中按相同绝对路径挂载或准备.
-  cpp_toolchain_root: /data/users/hailong.he/data/MTKG720/cpp_toolchain
+  cpp_toolchain_root: ""
   # 主机与容器使用公共目录中的交叉编译器.
-  cross_cxx: /data/users/hailong.he/data/MTKG720/cpp_toolchain/gcc/bin/aarch64-linux-gnu-g++
+  cross_cxx: ""
   # 分别使用已准备的 SDK、旧版分片导出及 TensorFlow 环境.
-  gai_python: /data/users/hailong.he/data/MTKG720/envs/gai/bin/python
-  llm_python: /data/users/hailong.he/data/MTKG720/envs/llm_export/bin/python
-  yamnet_python: /data/users/hailong.he/data/MTKG720/envs/yamnet/bin/python
+  gai_python: ""
+  llm_python: ""
+  yamnet_python: ""

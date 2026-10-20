@@ -105,11 +105,22 @@ def load_model_config(config_path):
 
 
 def platform_environment():
-    """读取 G720 平台配置,生成进入容器时使用的公共环境变量."""
+    """合并公开规格与本地环境配置,环境变量具有最高优先级."""
     config = yaml.safe_load(
         (REPO_ROOT / "configs/platforms/genio_720.yaml").read_text(encoding="utf-8"))
+    local_path = Path(os.environ.get(
+        "MTK_PLATFORM_CONFIG", REPO_ROOT / "configs/platforms/genio_720.local.yaml"))
+    if "MTK_PLATFORM_CONFIG" in os.environ or local_path.is_file():
+        local = yaml.safe_load(local_path.read_text(encoding="utf-8")) or {}
+        if not isinstance(local, dict) or not isinstance(local.get("toolchain", {}), dict):
+            raise ValueError("本地平台配置及 toolchain 必须是映射.")
+        config["toolchain"].update(local.get("toolchain", {}))
+        config.update({key: value for key, value in local.items() if key != "toolchain"})
     toolchain = config["toolchain"]
-    sdk = Path(os.environ.get("MTK_NP_ROOT") or toolchain["sdk_root"])
+    sdk_value = os.environ.get("MTK_NP_ROOT") or toolchain["sdk_root"]
+    if not sdk_value:
+        raise ValueError("请在 configs/platforms/genio_720.local.yaml 配置 toolchain.sdk_root,或设置 MTK_NP_ROOT.")
+    sdk = Path(sdk_value)
     ncc = Path(os.environ.get("NCC_ROOT") or sdk / "neuron_sdk/host")
     defaults = {
         "MTK_TOOLCHAIN_ROOT": toolchain["root"],
@@ -131,7 +142,11 @@ def platform_environment():
         "MTK_BOARD_DATASETS_ROOT": config["board_datasets_root"],
         "MTK_BOARD_MODELZOO_ROOT": config["board_modelzoo_root"],
     }
-    return {name: os.environ.get(name) or value for name, value in defaults.items()}
+    environment = {name: os.environ.get(name) or value for name, value in defaults.items()}
+    missing = [name for name, value in environment.items() if not value]
+    if missing:
+        raise ValueError("请在本地平台配置或环境变量中填写: " + ", ".join(missing))
+    return environment
 
 
 def main():
