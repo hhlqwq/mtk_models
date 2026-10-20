@@ -1,25 +1,21 @@
-"""读取板端 JSON 配置,完成本模型推理与原始指标计算."""
+"""调度模型 C++ 程序完成预处理、SDK 推理和后处理,不计算精度."""
 
-from tools.board import command, context
-from tools.evaluation import is_test
+import json
+
+from full_accuracy_board import load_pairs
+from tools.board import context, infer_images
 
 
 def main():
-    """执行当前运行,快速结果仅在 results 下追加 _test 后缀."""
+    """使用统一 JSON 配置,快速与全量结果保存到同一模型的 results 下."""
     ctx = context(__file__)
-    if ctx.result.exists():
-        raise FileExistsError(f"结果目录已存在: {ctx.result}.")
-    print(f"[板端] 结果目录: {ctx.result}", flush=True)
-    command(ctx, "full_accuracy_board.py", "--dataset-root", ctx.dataset,
-            "--model", ctx.root / "models/model_int8.dla",
-            "--metadata", ctx.root / "models/metadata.json",
-            "--run-dir", ctx.work, "--run-id", ctx.run_id)
-    inputs = sorted((ctx.work / "inputs").glob("*.bin"))
-    if not inputs:
-        raise FileNotFoundError("缺少当前推理输入.")
-    command(ctx, "benchmark_board", "--model", ctx.root / "models/model_int8.dla",
-            "--input", inputs[0], "--report", ctx.work / "report/benchmark.json",
-            "--warmup", "1" if is_test() else "10", "--repeats", "5" if is_test() else "100")
+    rows = load_pairs(ctx.dataset)
+    names = sorted({row[field] for row in rows for field in ("image_a", "image_b")})
+    images = [(name, ctx.dataset / "images" / name) for name in names]
+    metadata = json.loads((ctx.root / "models/metadata.json").read_text(encoding="utf-8"))
+    if metadata.get("input_protocol") != "RGB_ImageNet_normalize_aligned_112x112":
+        raise ValueError("量化元数据未声明已对齐人脸的 RGB ImageNet 输入协议.")
+    infer_images(ctx, "mobilefacenet_board", images, metadata, [1, 3, 112, 112], [1, 128])
 
 
 if __name__ == "__main__":

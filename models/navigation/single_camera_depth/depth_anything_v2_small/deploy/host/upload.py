@@ -1,10 +1,6 @@
 """读取模型配置并上传到原有板端部署目录."""
 
-import os
-
-from tools.deploy import arguments, python, upload
-from tools.evaluation import is_test
-from tools.process import run_command
+from tools.deploy import arguments, upload
 
 
 def main():
@@ -14,7 +10,7 @@ def main():
         ctx.output / "model_int8.dla",
         ctx.work / "model_int8.json",
 ], [
-        ctx.work / "benchmark_board",
+        ctx.work / "depth_anything_board",
     ])
 
 

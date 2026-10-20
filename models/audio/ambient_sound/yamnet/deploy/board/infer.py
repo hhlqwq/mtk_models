@@ -1,7 +1,6 @@
-"""读取板端 JSON 配置,完成本模型推理与原始指标计算."""
+"""读取板端配置并调度 C++ 推理,不计算精度指标."""
 
 from tools.board import command, context
-from tools.evaluation import is_test
 
 
 def main():
@@ -16,9 +15,7 @@ def main():
         runtime = ctx.root / "models/runtime_config.csv"
     command(ctx, "evaluate.py", "--mode", "prepare", "--dataset", ctx.dataset, "--work", ctx.work)
     command(ctx, "yamnet_eval", ctx.root / "models" / f"model_{precision}.dla", runtime, ctx.work)
-    command(ctx, "evaluate.py", "--mode", "summarize", "--dataset", ctx.dataset, "--work", ctx.work,
-            "--models-dir", ctx.root / "models", "--output", ctx.result,
-            "--run-id", ctx.run_id, "--precision", precision)
+
 
 
 if __name__ == "__main__":

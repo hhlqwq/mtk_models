@@ -1,7 +1,6 @@
-"""读取板端 JSON 配置,完成本模型推理与原始指标计算."""
+"""读取板端配置并调度 C++ 推理,不计算精度指标."""
 
 from tools.board import command, context
-from tools.evaluation import is_test
 
 
 def main():
@@ -17,11 +16,7 @@ def main():
     command(ctx, "whisper_board_eval", ctx.root / "models/encoder_fp32.dla",
             ctx.root / "models/decoder_step_fp32.dla", cache / "board_manifest.tsv",
             ctx.root / "models/decode_config.txt", ctx.work / "board_predictions.jsonl")
-    command(ctx, "evaluate_accuracy.py", "--dataset", "librispeech",
-            "--source-manifest", cache / "source_manifest.jsonl",
-            "--board-predictions", ctx.work / "board_predictions.jsonl",
-            "--preprocess-metrics", cache / "preprocess_metrics.jsonl",
-            "--output-dir", ctx.work / "report")
+
 
 
 if __name__ == "__main__":

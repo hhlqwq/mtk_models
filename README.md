@@ -306,6 +306,8 @@ LLM 评测入口支持 `-test`,MMLU 使用 16 题,WikiText 使用前 4 个诊断
 
 `deploy/run.sh` 只列出独立步骤.导出、转换、DLA 编译、浮点评测、上传位于 `deploy/host`,
 板端代码位于 `deploy/board`,C++ 程序通过 `deploy/board/Makefile` 构建.
+板端将推理与评测分开: `infer.py` 调度直接调用 SDK 的 C++ 程序,`full_accuracy_board.py` 读取预测并计算精度;
+`run.sh` 显式列出推理、评测、示例和汇总阶段.任务自身的指标协议由各模型维护.
 模型中间产物集中到外部资源目录的 `build`.板端配置使用上传的 JSON 快照,
 快速与全量始终使用相同部署目录,快速结果保存为 `results/运行编号_test/`.
 

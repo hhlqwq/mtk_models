@@ -82,7 +82,7 @@ DA-2K 全量 1033 张图片、2068 个点对,结果见 [summary.json](results/su
 ```text
 部署目录/
 ├── run.sh
-├── board_paths.conf
+├── config.json
 ├── models/              # 模型与推理所需参数.
 ├── board/               # 板端程序、评测代码及必要依赖.
 ├── examples/input/      # 少量示例输入及来源清单.
@@ -105,3 +105,5 @@ DA-2K 全量 1033 张图片、2068 个点对,结果见 [summary.json](results/su
 
 
 模型参数读取根目录的 `config.yaml`,公共工具链环境在进入 Docker 时自动加载.部署入口只编排独立步骤,C++ 使用 `deploy/board/Makefile` 构建.板端沿用原部署目录,快速结果位于 `results/运行编号_test/`.
+
+板端职责与 FastSAM 一致: `depth_anything_board.cpp` 完成图片预处理、SDK 推理、反量化和原图尺寸深度恢复. `infer.py` 只调度 C++ 程序,`full_accuracy_board.py` 只计算精度,随后生成效果示例和汇总.性能统计来自实际评测图片的 `NeuronRuntime_inference` 调用.

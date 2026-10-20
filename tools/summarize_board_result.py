@@ -67,11 +67,12 @@ def extract_result(model: str, work_dir: Path) -> dict:
             else:
                 require_count(report, "total_pairs", 2068)
             metric, key, count = "DA-2K 点对准确率", "pairwise_accuracy", report["total_pairs"] if is_test() else 2068
-        timing = read_json(work_dir / "report" / "benchmark.json")
+        if report.get("backend") != "cpp_neuron_runtime_hw":
+            raise ValueError("需要直接调用 SDK 的 C++ 推理报告.")
         result.update(samples=count, metric=metric, board_accuracy=report[key],
-                      npu_mean_ms=timing["mean_ms"],
-                      peak_rss_kib=timing.get("peak_rss_kib"),
-                      timing_scope="独立 C++ 常驻模型,按本次模式预热并重复同一输入")
+                      npu_mean_ms=report["npu_mean_ms"],
+                      peak_rss_kib=report["peak_rss_kib"],
+                      timing_scope=report["timing_scope"])
     elif model == "fastsam":
         require_count(report, "images", 100 if is_test() else 5000)
         result.update(samples=100 if is_test() else 5000, metric="segm AR@100", board_accuracy=report["AR_100"],
@@ -103,8 +104,6 @@ def summarize(args: argparse.Namespace) -> None:
         raise ValueError("峰值 RSS 无效.")
     result["peak_rss_mib"] = None if peak_rss is None else float(peak_rss) / 1024.0
     result["memory_scope"] = "推理进程峰值 RSS"
-    if args.model in ("mobilefacenet", "depth_anything_v2_small"):
-        result["memory_scope"] = "独立 C++ 常驻推理进程峰值 RSS"
     accuracy = float(result["board_accuracy"])
     if not math.isfinite(accuracy) or accuracy < 0 or (
             result["metric"] != "WER" and accuracy > 1):

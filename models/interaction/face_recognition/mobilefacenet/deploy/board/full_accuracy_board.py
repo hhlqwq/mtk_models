@@ -3,14 +3,12 @@
 import argparse
 import csv
 import json
-import subprocess
-import time
 from collections import Counter
 from pathlib import Path
 
 import numpy as np
 
-from face_utils import load_aligned_face
+from tools.board import configure_parser, inference_records
 
 from tools.evaluation import add_test_argument, lfw_pairs, result_status, scope_metadata
 
@@ -22,12 +20,14 @@ def parse_args() -> argparse.Namespace:
     """解析固定数据集、模型与运行目录。"""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset-root", type=Path, required=True)
-    parser.add_argument("--model", type=Path, required=True)
-    parser.add_argument("--metadata", type=Path, required=True)
-    parser.add_argument("--run-dir", type=Path, required=True)
+    parser.add_argument("--work-dir", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
-    parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--output", type=Path, required=True)
     add_test_argument(parser)
+    configure_parser(parser, __file__, {
+        "dataset_root": lambda c: c.dataset, "work_dir": lambda c: c.work,
+        "run_id": lambda c: c.run_id, "output": lambda c: c.work / "report/summary.json",
+    })
     return parser.parse_args()
 
 
@@ -59,37 +59,13 @@ def load_pairs(dataset_root: Path) -> list[dict[str, str]]:
     return lfw_pairs(rows)
 
 
-def make_input(image: Path, metadata: dict, destination: Path) -> None:
-    """按上游 RGB 归一化协议缩放并量化原始 LFW 图。"""
-    input_meta = metadata["input"]
-    if (input_meta["shape"] != [1, 3, 112, 112] or
-            input_meta["dtype"] != "int8"):
-        raise ValueError("输入元数据与已验证模型不符。")
-    tensor = load_aligned_face(image)
-    scale = float(input_meta["scale"])
-    if scale <= 0:
-        raise ValueError("输入量化 scale 必须大于 0。")
-    quantized = np.clip(
-        np.round(tensor / scale) + int(input_meta["zero_point"]),
-        -128, 127).astype(np.int8)
-    quantized.tofile(destination)
-
-
-def load_feature(path: Path, metadata: dict) -> np.ndarray:
-    """反量化并单位化板端 128 维人脸特征。"""
-    output_meta = metadata["output"]
-    if (output_meta["shape"] != [1, 128] or
-            output_meta["dtype"] != "int8"):
-        raise ValueError("输出元数据与已验证模型不符。")
-    values = np.fromfile(path, dtype=np.int8)
-    if values.size != 128:
-        raise ValueError(f"板端人脸特征长度异常: {path}。")
-    feature = ((values.astype(np.float32) - output_meta["zero_point"]) *
-               output_meta["scale"])
-    norm = float(np.linalg.norm(feature))
-    if not np.isfinite(norm) or norm <= 0:
-        raise ValueError(f"板端人脸特征无效: {path}。")
-    return feature / norm
+def load_feature(path: Path) -> np.ndarray:
+    """读取 C++ 已反量化并单位化的 128 维特征,不重复执行后处理."""
+    feature = np.fromfile(path, dtype=np.float32)
+    if (feature.size != 128 or not np.isfinite(feature).all() or
+            not np.isclose(np.linalg.norm(feature), 1.0, atol=1e-5)):
+        raise ValueError(f"C++ 人脸特征无效: {path}.")
+    return feature
 
 
 def best_threshold(scores: np.ndarray, labels: np.ndarray) -> float:
@@ -157,85 +133,34 @@ def evaluate_pairs(rows: list[dict[str, str]],
 
 
 def evaluate(args: argparse.Namespace) -> None:
-    """逐张执行硬件推理并计算全部验证对,支持安全续跑。"""
+    """仅计算 C++ 预测的十折人脸验证指标,不执行模型推理."""
     rows = load_pairs(args.dataset_root)
-    metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
-    if metadata.get("input_protocol") != "RGB_ImageNet_normalize_aligned_112x112":
-        raise ValueError("量化元数据未使用修正后的 RGB 输入协议。")
-    if not args.model.is_file():
-        raise FileNotFoundError(f"缺少模型: {args.model}。")
-    if args.resume:
-        if not args.run_dir.is_dir():
-            raise FileNotFoundError(args.run_dir)
-    elif args.run_dir.exists():
-        raise FileExistsError(args.run_dir)
-    for name in ("inputs", "outputs", "logs", "checkpoints", "report"):
-        (args.run_dir / name).mkdir(parents=True, exist_ok=True)
-    names = sorted({row[field] for row in rows
-                    for field in ("image_a", "image_b")})
+    names = {row[field] for row in rows for field in ("image_a", "image_b")}
+    records = inference_records(args.work_dir, names)
     features = {}
-    records = {}
-    wall_times = []
-    for index, name in enumerate(names, start=1):
-        image = args.dataset_root / "images" / name
-        stem = Path(name).stem
-        input_path = args.run_dir / "inputs" / f"{stem}.bin"
-        output_path = args.run_dir / "outputs" / f"{stem}.bin"
-        checkpoint = args.run_dir / "checkpoints" / f"{stem}.json"
-        if checkpoint.exists():
-            if not args.resume:
-                raise FileExistsError(checkpoint)
-            record = json.loads(checkpoint.read_text(encoding="utf-8"))
-            if record.get("image") != name or not output_path.is_file():
-                raise ValueError(f"续跑检查点不匹配: {checkpoint}。")
-        else:
-            if input_path.exists() or output_path.exists():
-                raise ValueError(f"存在未完成的逐图文件,请先检查: {stem}。")
-            make_input(image, metadata, input_path)
-            started = time.perf_counter()
-            with (args.run_dir / "logs" / f"{stem}.log").open("w") as log:
-                subprocess.run(
-                    ["/usr/sbin/neuronrt", "-m", "hw", "-a", str(args.model),
-                     "-i", str(input_path), "-o", str(output_path)],
-                    stdout=log, stderr=subprocess.STDOUT, check=True)
-            cli_wall_ms = (time.perf_counter() - started) * 1000.0
-            feature = load_feature(output_path, metadata)
-            record = {
-                "image": name,
-                "feature_norm": float(np.linalg.norm(feature)),
-                "cli_wall_ms": cli_wall_ms,
-            }
-            temporary = checkpoint.with_suffix(".json.tmp")
-            temporary.write_text(json.dumps(record, ensure_ascii=False) + "\n",
-                                 encoding="utf-8")
-            temporary.replace(checkpoint)
-        features[name] = load_feature(output_path, metadata)
-        records[name] = record
-        wall_times.append(float(record["cli_wall_ms"]))
+    for index, name in enumerate(sorted(names), 1):
+        features[name] = load_feature(args.work_dir / records[name]["directory"] / "feature.bin")
         if index % 100 == 0 or index == len(names):
-            print(f"[PROGRESS] MobileFaceNet {index}/{len(names)} 张。",
-                  flush=True)
+            print(f"[评测] LFW {index}/{len(names)}", flush=True)
     verification, details = evaluate_pairs(rows, features)
+    times = [row["npu_ms"] for row in records.values()]
     report = {
         "status": result_status(), **scope_metadata(),
-        "model": "mobilefacenet",
-        "run_id": args.run_id,
+        "model": "mobilefacenet", "run_id": args.run_id,
         "dataset": "LFW_upstream_MTCNN_5_point_aligned",
         "input_protocol": "RGB_ImageNet_normalize_aligned_112x112",
-        "distinct_images": len(names),
-        **verification,
-        "cli_wall_mean_ms": float(np.mean(wall_times)),
-        "cli_wall_p95_ms": float(np.percentile(wall_times, 95)),
-        "timing_scope": "per-image neuronrt CLI including process startup and model load",
+        "distinct_images": len(names), **verification,
+        "backend": "cpp_neuron_runtime_hw", "npu_mean_ms": float(np.mean(times)),
+        "npu_p95_ms": float(np.percentile(times, 95)),
+        "peak_rss_kib": max(row["peak_rss_kib"] for row in records.values()),
+        "timing_scope": "逐图加载模型,单独统计 NeuronRuntime_inference 调用",
     }
-    report_dir = args.run_dir / "report"
-    (report_dir / "summary.json").write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8")
-    with (report_dir / "pair_results.jsonl").open("w", encoding="utf-8") as out:
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    with (args.output.parent / "pair_results.jsonl").open("w", encoding="utf-8") as stream:
         for detail in details:
-            out.write(json.dumps(detail, ensure_ascii=False) + "\n")
-    print(f"[OK] LFW 十折板端验证: {report_dir}。", flush=True)
+            stream.write(json.dumps(detail, ensure_ascii=False) + "\n")
+    print(f"[评测] LFW 验证准确率: {report['verification_accuracy']:.6f}; {args.output}", flush=True)
 
 
 if __name__ == "__main__":

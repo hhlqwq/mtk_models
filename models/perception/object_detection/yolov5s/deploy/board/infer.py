@@ -1,7 +1,6 @@
-"""读取板端 JSON 配置,完成本模型推理与原始指标计算."""
+"""读取板端配置并调度 C++ 推理,不计算精度指标."""
 
 from tools.board import command, context
-from tools.evaluation import is_test
 
 
 def main():
@@ -15,14 +14,7 @@ def main():
                  "--images", ctx.dataset / "images", "--output-dir", ctx.work,
                  "--warmup", "20", "--confidence", "0.001", "--iou", "0.6", "--max-det", "300"]
     command(ctx, "yolov5s_board_eval", *arguments)
-    command(ctx, "evaluate_coco.py",
-            "--annotations", ctx.dataset / "annotations/instances_val2017.json",
-            "--predictions", ctx.work / "predictions.json",
-            "--processed-ids", ctx.work / "processed_ids.txt",
-            "--timings", ctx.work / "timing_summary_current_run.json",
-            "--metrics", ctx.result / "summary.json", "--run-id", ctx.run_id,
-            "--fp32-report", ctx.root / "models" / (
-                "onnx_reference_test.json" if is_test() else "onnx_reference.json"))
+
 
 
 if __name__ == "__main__":

@@ -1,7 +1,6 @@
-"""读取板端 JSON 配置,完成本模型推理与原始指标计算."""
+"""读取板端配置并调度 C++ 推理,不计算精度指标."""
 
 from tools.board import command, context
-from tools.evaluation import is_test
 
 
 def main():
@@ -17,12 +16,7 @@ def main():
     command(ctx, "rtmpose_board_eval", "--model", ctx.root / "models/model_int8.dla",
             "--images", ctx.dataset / "images", "--manifest", ctx.work / "person_detections.tsv",
             "--output-dir", ctx.work, "--warmup", "20", "--progress-interval", "500")
-    command(ctx, "evaluate_coco_wholebody.py", "--annotations",
-            ctx.dataset / "annotations/coco_wholebody_val_v1.0.json",
-            "--predictions", ctx.work / "predictions.jsonl",
-            "--formatted", ctx.work / "wholebody_predictions.json",
-            "--metrics", ctx.work / "coco_wholebody_metrics.json",
-            "--summary-log", ctx.work / "coco_wholebody_summary.log")
+
 
 
 if __name__ == "__main__":

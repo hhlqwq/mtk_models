@@ -92,7 +92,7 @@ LFW 全量 6000 对,采用 MTCNN 五点对齐后的 7701 张人脸,进行十折�
 ```text
 部署目录/
 ├── run.sh
-├── board_paths.conf
+├── config.json
 ├── models/              # 模型与推理所需参数.
 ├── board/               # 板端程序、评测代码及必要依赖.
 ├── examples/input/      # 少量示例输入及来源清单.
@@ -115,3 +115,5 @@ LFW 全量 6000 对,采用 MTCNN 五点对齐后的 7701 张人脸,进行十折�
 
 
 模型参数读取根目录的 `config.yaml`,公共工具链环境在进入 Docker 时自动加载.部署入口只编排独立步骤,C++ 使用 `deploy/board/Makefile` 构建.板端沿用原部署目录,快速结果位于 `results/运行编号_test/`.
+
+板端职责与 FastSAM 一致: `mobilefacenet_board.cpp` 完成已对齐人脸的预处理、SDK 推理和特征单位化. `infer.py` 只调度 C++ 程序,`full_accuracy_board.py` 只计算精度,随后生成效果示例和汇总.性能统计来自实际评测图片的 `NeuronRuntime_inference` 调用.

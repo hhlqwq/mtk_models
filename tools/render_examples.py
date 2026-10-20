@@ -163,14 +163,12 @@ def segmentation(args, manifest) -> None:
 def depth(args, manifest) -> None:
     """复用深度输出展示原图与相对深度,颜色较暖表示更近."""
     # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
-    from full_accuracy_board import load_output, load_protocol
+    from full_accuracy_board import load_output
 
-    metadata = read_json(args.models_dir / "model_int8.json")
-    paths = sorted(load_protocol(args.dataset_root))
-    indices = {relative: index for index, relative in enumerate(paths, 1)}
+    rows = read_jsonl(args.work_dir / "predictions.jsonl")
+    indices = {row["image"]: row["directory"] for row in rows}
     for position, item in enumerate(manifest["samples"], 1):
-        values = load_output(args.work_dir / "outputs" /
-                             f"{indices[item['image']]:05d}.bin", metadata)
+        values = load_output(args.work_dir / indices[item["image"]] / "depth.bin")
         normalized = (values - values.min()) / (values.max() - values.min())
         colored = cv2.applyColorMap((normalized * 255).astype(np.uint8),
                                     cv2.COLORMAP_TURBO)
