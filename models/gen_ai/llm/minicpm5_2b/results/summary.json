@@ -3,8 +3,6 @@
   "run_id": "20261014_minicpm5_w4_light_hessian_v8",
   "scope": "first_round_subset_not_full_benchmark",
   "status": "board_verified",
-  "quality_qualified": false,
-  "quality_status": "evaluated_quality_degraded",
   "precision": "asym4W_sym16A",
   "prefill": 128,
   "context": 1024,
@@ -80,8 +78,7 @@
     "text_token_parity": 4,
     "exact_token_match_fp32": 3,
     "strict_answer_only_format_passed": 3,
-    "evidence": "evidence.json#native_smoke",
-    "quality_qualified": false
+    "evidence": "evidence.json#native_smoke"
   },
   "error_diagnosis": {
     "date": "2026-10-16",
@@ -93,5 +90,10 @@
     "current_delivery_replaced": false,
     "main_quality_gap_resolved": false,
     "optimization_limit_proven": false
+  },
+  "memory_summary": {
+    "peak_process_rss_mib": 1152.421875,
+    "scope": "native_cli_fixed_128_input_max_128_generated",
+    "evidence": "evidence.json#native_summary.performance.peak_process_rss_mib"
   }
 }

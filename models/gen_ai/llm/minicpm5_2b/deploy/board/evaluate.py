@@ -1,5 +1,7 @@
 """按上传的同协议输入执行 MMLU 与 WikiText2 真实 MDLA 评价."""
 
+import json
+import resource
 from types import SimpleNamespace
 
 from tools.board import context
@@ -24,6 +26,11 @@ def main():
     evaluate_board_quality.evaluate(SimpleNamespace(
         package=ctx.root, quality_data=data / "quality", library=library,
         output=ctx.result / "wikitext", diagnostic_blocks=0, decode_steps=0))
+    memory = {"peak_process_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
+              "scope": "mmlu_and_wikitext_python_process"}
+    (ctx.result / "evaluation_memory.json").write_text(
+        json.dumps(memory, indent=2) + "\n")
+    print(f"[评价进程峰值 RSS] {memory['peak_process_rss_mib']:.2f} MiB.", flush=True)
     print(f"[板端评价完成] {ctx.result}", flush=True)
 
 

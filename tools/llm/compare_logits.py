@@ -186,7 +186,7 @@ def summarize(args):
     summary = summarize_pairs(pairs)
     result = {"scope": "prefill_logits_diagnostic_prefix_not_full_accuracy",
               "blocks": blocks, "positions": blocks * 127, "input_ids": ids,
-              "decode_accuracy_verified": False, "quality_qualified": False,
+              "decode_accuracy_verified": False,
               "status": "diagnostic_evaluated_quality_not_qualified",
               "threshold": "not_assigned_no_pass_claim", "summary": summary,
               "details": pairs, "files": files}

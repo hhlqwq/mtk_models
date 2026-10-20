@@ -314,8 +314,7 @@ def evaluate(args):
                   evaluated_questions=len(done), accuracy=correct / len(done),
                   subject_accuracy={name: sum(values) / len(values)
                                     for name, values in groups.items()},
-                  elapsed_seconds_this_run=time.perf_counter() - started,
-                  quality_qualified=False)
+                  elapsed_seconds_this_run=time.perf_counter() - started)
     if args.diagnostic_questions:
         report["scope"] = "multiblock_diagnostic_not_first_round_accuracy"
         report["diagnostic_case_ids"] = [row["id"] for row in cases]

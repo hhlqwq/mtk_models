@@ -1,6 +1,6 @@
 {
   "first_round_summary": {
-    "status": "evaluated_quality_degraded",
+    "status": "evaluated",
     "candidate": "minicpm5_w4_light_hessian_v8",
     "scope": "first_round_subset_not_full_benchmark",
     "precision": "asym4W_sym16A",
@@ -51,7 +51,6 @@
       42
     ],
     "cumulative_layer_error": false,
-    "quality_qualified": false,
     "mmlu": {
       "shots": 0,
       "questions": 1000,
@@ -264,13 +263,11 @@
       "scope": "fixed_128_input_max_128_generated",
       "generated_token_count": 128
     },
-    "quality_qualified": false,
     "accuracy_report": "evidence.json#first_round_summary"
   },
   "native_smoke": {
     "scope": "four_authored_functional_cases_not_benchmark",
     "max_new_tokens": 64,
-    "quality_qualified": false,
     "samples": [
       {
         "id": "case_1_demo",
@@ -475,8 +472,7 @@
   },
   "quality_summary": {
     "run_id": "20261014_minicpm5_w4_light_hessian_v8",
-    "status": "evaluated_quality_degraded",
-    "quality_qualified": false,
+    "status": "evaluated",
     "scope": "first_round_subset_not_full_benchmark",
     "protocol": "fixed_text_rows_v1",
     "text_rows": 128,

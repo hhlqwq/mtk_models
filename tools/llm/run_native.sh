@@ -20,5 +20,37 @@ rm -rf -- "results/${RUN_ID}"
 mkdir -p "results/${RUN_ID}"
 for language in zh en; do
     echo "[板端] ${language} Demo"
-    llm_cmdline_tool scripts/config-yocto.yaml "${TOKEN_OPTION[@]}" -i "scripts/prompts/${language}_demo${SUFFIX}" -m "$((MAX_TOKENS - 1))" 2>&1 | tee "results/${RUN_ID}/${language}_demo.log"
+    python3 - "results/${RUN_ID}/${language}.memory.json" \
+        llm_cmdline_tool scripts/config-yocto.yaml "${TOKEN_OPTION[@]}" \
+        -i "scripts/prompts/${language}_demo${SUFFIX}" -m "$((MAX_TOKENS - 1))" \
+        <<'PY' 2>&1 | tee "results/${RUN_ID}/${language}_demo.log"
+import json
+from pathlib import Path
+import resource
+import subprocess
+import sys
+
+subprocess.run(sys.argv[2:], check=True)
+peak = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss / 1024
+if peak <= 0:
+    raise RuntimeError("没有采集到有效的推理进程峰值 RSS.")
+Path(sys.argv[1]).write_text(json.dumps({"peak_process_rss_mib": peak}) + "\n")
+print(f"[推理进程峰值 RSS] {peak:.2f} MiB.", flush=True)
+PY
 done
+python3 - "results/${RUN_ID}" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+folder = Path(sys.argv[1])
+peaks = {name: json.loads((folder / f"{name}.memory.json").read_text())["peak_process_rss_mib"]
+         for name in ("zh", "en")}
+report = {"scope": "bilingual_generation_demo", "memory_summary": {
+    "peak_process_rss_mib": max(peaks.values()), "by_language_mib": peaks,
+    "scope": "native_cli_process"}}
+(folder / "summary.json").write_text(json.dumps(report, indent=2) + "\n")
+for name in peaks:
+    (folder / f"{name}.memory.json").unlink()
+print(f"[Demo 汇总] 峰值 RSS={max(peaks.values()):.2f} MiB; {folder / 'summary.json'}.")
+PY

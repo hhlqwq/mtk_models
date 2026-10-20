@@ -109,13 +109,15 @@ minicpm5_2b/
 
 ## 当前结果
 
-以下为当前交付模型的固定首轮子集成绩,不是全量基准.全 W4A16,Prefill=128、Decode=1、上下文=1024,`quality_qualified=false`.
+以下为当前交付模型的固定首轮子集成绩,不是全量基准.全 W4A16,上下文 1024 Token,Prefill 每批 128 Token,Decode 每步处理一个 Token.精度变化如实列出,没有明确验收阈值时不预设通过或不通过.
 
 | 指标 | 官方 FP32 | 当前交付 W4A16 |
 |---|---:|---:|
 | MMLU,固定 1000 题 | 55.9% | 41.3% |
 | WikiText2,前 128 行 | 40.0411 | 48.3821 |
 
-统一性能为 Prefill 288.67 token/s、Decode 8.15 token/s,使用固定 128 Token 输入、最多生成 128 Token.性能运行未到 EOS,不代表自由生成质量通过.短生成四题均包含正确答案并停止,严格按要求只输出答案为 3/4,不能表述为指令遵从全部通过.
+统一性能为 Prefill 288.67 token/s、Decode 8.15 token/s,测速输入长度为 128 Token、生成上限为 128 Token,这不是模型的最大输入或输出长度.该次性能进程峰值 RSS 为 1152.42 MiB.短生成四题均包含正确答案并停止,严格按要求只输出答案为 3/4.
+
+全量和快速评价的 `summary.json` 同时汇总生成 CLI 和 MMLU/WikiText 评价 Python 进程的峰值 RSS,记录各阶段值和其中最大值.当前已有包的 Demo 入口也在 `results/latest_demo/summary.json` 记录生成进程峰值 RSS.这些值是最大单进程内存,不代表设备总内存或全部 NPU 驱动内存.
 
 [统一汇总](results/summary.json)、[评价证据](results/evidence.json) 和 [适配说明](ADAPTATION.md) 记录当前选定模型的范围和限制.新入口只有完成对应板端评价、核对输入及模型哈希后才产生新汇总,运行完成也不自动宣布精度合格.

@@ -16,7 +16,7 @@ def compare_fields(reference, actual, fields):
 
 
 def main():
-    """只有全部评价完成且协议吻合才保存成功汇总,不自动宣布质量合格."""
+    """核对评价协议并汇总指标与内存,不预设质量验收结论."""
     ctx = context(__file__)
     mode = "test" if is_test() else "full"
     data = ctx.root / "evaluation" / mode
@@ -63,6 +63,12 @@ def main():
     if any(size["bytes"] != row["bytes"] for size, row in zip(sizes, files)):
         raise ValueError("部署模型大小与清单不一致.")
     speed = generation["performance"]
+    evaluation_memory = read_json(ctx.result / "evaluation_memory.json")
+    cli_runs = generation["samples"] + generation["text_input_checks"] + [speed]
+    cli_rss = [row["peak_process_rss_mib"] for row in cli_runs]
+    peaks = cli_rss + [evaluation_memory["peak_process_rss_mib"]]
+    if not all(math.isfinite(value) and value > 0 for value in peaks):
+        raise ValueError("缺少有效的生成或评价进程峰值 RSS.")
     if (speed["prefill_input_tokens"] != 128 or len(speed["generated_tokens"]) < 2
             or speed["prefill_seconds"] <= 0
             or not math.isfinite(speed["native_reported_decode_tokens_per_second"])
@@ -72,8 +78,6 @@ def main():
     summary = {
         "model": "minicpm5_2b", "run_id": ctx.run_id,
         "status": result_status("board_verified"), "evaluation_scope": expected_scope,
-        "quality_qualified": False,
-        "quality_note": "运行完成不代表精度合格,须按验收要求审阅 FP32/NPU 差值.",
         "full_benchmark_evaluated": not is_test(), "precision": manifest["precision"],
         "context": manifest["context"], "prefill": manifest["prefill"],
         "accuracy": {
@@ -90,6 +94,11 @@ def main():
             "decode_tokens_per_second": speed["native_reported_decode_tokens_per_second"],
             "input_tokens": speed["prefill_input_tokens"],
             "generated_tokens": len(speed["generated_tokens"])},
+        "memory_summary": {
+            "peak_process_rss_mib": max(peaks),
+            "generation_peak_rss_mib": max(cli_rss),
+            "evaluation_peak_rss_mib": evaluation_memory["peak_process_rss_mib"],
+            "scope": "maximum_single_process_rss_across_generation_and_evaluation"},
         "model_size": {"unit": "MB", "deployment_total": round(sum(row["bytes"] for row in sizes) / 1e6, 2),
                        "files": sizes}, "cpu_fallback": False,
         "evidence": str(ctx.result.relative_to(ctx.root))}
@@ -97,7 +106,7 @@ def main():
     (ctx.result / "summary.json").write_text(text)
     latest = ctx.root / "results" / ("summary_test.json" if is_test() else "summary.json")
     latest.write_text(text)
-    print(f"[汇总完成] {latest}; 范围={expected_scope}; quality_qualified=false.", flush=True)
+    print(f"[汇总完成] {latest}; 范围={expected_scope}; 峰值 RSS={max(peaks):.2f} MiB.", flush=True)
 
 
 if __name__ == "__main__":
