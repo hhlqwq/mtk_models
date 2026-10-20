@@ -51,7 +51,7 @@ target.mkdir(parents=True,exist_ok=True)
                  "--info=progress2", "-e", "ssh -o BatchMode=yes",
                  str(package) + "/", f"{host}:{shlex.quote(target)}/"])
     verify = """
-import hashlib,json,sys
+import hashlib,json,shutil,sys
 from pathlib import Path
 root=Path(sys.argv[1])
 manifest=root/'manifest.json'
@@ -69,6 +69,13 @@ for index,row in enumerate(files,1):
     if path.stat().st_size!=row['bytes'] or digest.hexdigest()!=row['sha256']:
         raise ValueError('上传文件校验失败: '+str(path))
     print('[上传核对] '+str(index)+'/'+str(len(files))+' '+row['name'],flush=True)
+results=root/'results'
+if results.is_symlink() or not results.resolve().is_relative_to(root.resolve()):
+    raise ValueError('结果目录越界')
+if results.exists():
+    shutil.rmtree(results)
+results.mkdir()
+print('[清理] 新部署包校验完成,移除上一部署包的评价输出.',flush=True)
 """
     run_command(["ssh", *options, host, "python3 -c " + shlex.quote(verify) + " "
                  + shlex.quote(target) + " " + shlex.quote(record["manifest_sha256"])])
