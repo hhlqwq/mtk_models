@@ -5,58 +5,77 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 目录结构、模型卡、Demo 和评测方式的 `delivery_reference`，实际模型必须使用官方或原作者
 公开源码与权重完成 MTK 侧转换和验证。
 
-## 模型规格
+## Models List
 
-本次补充 LLM: [DeepSeek-R1-Distill-Qwen-1.5B](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md).
-目标为中英文文本问答与推理,来源为 DeepSeek 官方权重,地瓜 RDK 仅作为部署参考.
-Genio 720 已完成 FP16 双语 Demo 与三后端样例数值检查 (`board_verified`),
-Genio 5100 尚未开始.原生 W4A16 双语推理已验证,Decode 约 16.75 Token/s,资源约 2.04 GB.
-英文输出存在语法问题,正式量化质量待评测; 详见模型 README 中的独立原生报告.
+依据 `docs/MTK_models.xlsx` 的“Effort评估”工作表,按“是否适配”为“做”保留 48 个版本,序号沿用原表.另在表末保留本轮计划外的 YOLOv5s 和 Whisper-Tiny 历史实测,共 50 行.型号与结果按具体版本对应,不在不同规模模型之间复用数据.
 
-输入为导出模型的张量形状,图像统一按 `N×C×H×W` 表示,批量大小为 1。音频模型的采样率均为 16 kHz。
+原始权重与 ONNX 为公共参考;量化方式、编译后大小、性能和精度按平台分别记录.G5100 暂无已回收实测,预留独立列.`—` 表示尚无可引用记录,不代表零或已完成适配.点击模型名称查看完整版本、来源和限制,点击“报告”查看实测依据.平台“编译与性能”单元格依次列出量化方式、DLA 大小、NPU 耗时和 RSS.
 
-| 模型 | 具体版本 / 权重 | 模型输入 | 参数量 (M) | FP32 ONNX 大小 (MB) | 部署 DLA 大小 (MB) |
-| --- | --- | --- | ---: | ---: | --- |
-| [DeepSeek-R1-Distill-Qwen-1.5B](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md) | DeepSeek 官方固定 revision,实际参数包含独立 LM Head | Token + KV Cache,上下文 1024,28 层 | 1777.09 | 6175.24 (38 个分片合计) | FP16 **3089.46**,另需 embedding **466.75** |
-| [YAMNet](audio/ambient_sound/yamnet/README.md) | Google AudioSet 521 类,源码 `34a2132` | Log-Mel `1×1×96×64`,单声道音频 | 3.73 | 14.94 | W8A16 **3.99** |
-| [YOLOv8n](perception/object_detection/yolov8n/README.md) | YOLOv8-N,Ultralytics `v8.0.111` | RGB `1×3×640×640` | 3.16 | 12.66 | INT8 **3.53** |
-| [YOLOv5s](perception/object_detection/yolov5s/README.md) | YOLOv5-S,官方 `v7.0` 权重 | RGB `1×3×640×640` | 7.24 | 28.94 | INT8 **7.66** |
-| [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | ViT-B/16,TorchVision `IMAGENET1K_V1` | RGB `1×3×224×224` | 86.57 | 346.44 | INT8 **88.00** |
-| [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | RTMPose-M WholeBody 133 点,MMPose `v1.3.2` | RGB 人体裁剪 `1×3×256×192` | 17.95 | 71.83 | INT8 **19.14** |
-| [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | foamliu MobileFaceNet,`v1.0` 权重,128 维特征 | RGB 对齐人脸 `1×3×112×112` | 1.00 | 4.00 | INT8 **1.41** |
-| [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | Depth Anything V2 Small,ViT-S/14 | RGB `1×3×518×518` | 24.79 | 98.97 | INT8 **25.83** |
-| [FastSAM-s](navigation/segmentation/fastsam/README.md) | 官方 `FastSAM-s.pt`,Ultralytics `v8.0.111` | RGB `1×3×640×640` | 11.79 | 47.18 | INT8 **12.29** |
-| [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | OpenAI 多语言 `tiny`,源码 `v20250625` | encoder: Log-Mel `1×80×3000`; decoder: token + KV cache | 37.18 | 230.79 (双模型合计) | 浮点 **116.03** (双模型合计) |
+| 模型 / 版本 (原表序号) | 场景 / 类别 | 输入 / 参数量 (M) | 原始权重 / FP32 ONNX (MB) | 数据集 / 指标 / 参考基线 | G720 量化方式 / 编译与性能 | G720 精度 / 变化 | G5100 量化方式 / 编译与性能 | G5100 精度 / 变化 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| YOLOv5n-v7.0（640×640）<br>原表 1 | 感知 / 目标检测 | — | — | — | — | — | — | — |
+| YOLOv5m-v7.0（640×640）<br>原表 2 | 感知 / 目标检测 | — | — | — | — | — | — | — |
+| [YOLOv8n（640×640）](perception/object_detection/yolov8n/README.md)<br>原表 3<br>YOLOv8-N,Ultralytics `v8.0.111` | 感知 / 目标检测 | RGB `1×3×640×640`<br>3.16 M | 原始 .pt: 6.53<br>ONNX: 12.66 | COCO val2017,5000 张<br>bbox mAP@0.5:0.95<br>ONNX: 36.6260% | **W8A8**<br>DLA: 3.53 MB<br>NPU: 6.283 ms/图<br>RSS: 31.32 MiB | 35.3510%<br>下降 1.2750 个百分点<br>[报告](perception/object_detection/yolov8n/results/summary.json) | — | — |
+| YOLOv8m（640×640）<br>原表 4 | 感知 / 目标检测 | — | — | — | — | — | — | — |
+| RT-DETRv2-S（640×640）<br>原表 5 | 感知 / 目标检测 | — | — | — | — | — | — | — |
+| SqueezeNet-1.1<br>原表 6 | 感知 / 分类 | — | — | — | — | — | — | — |
+| ResNet50<br>原表 7 | 感知 / 分类 | — | — | — | — | — | — | — |
+| ResNet101<br>原表 8 | 感知 / 分类 | — | — | — | — | — | — | — |
+| MobileNetV3-Large<br>原表 9 | 感知 / 分类 | — | — | — | — | — | — | — |
+| [ViT-B/16](perception/image_classification/vit_base_patch16_224/README.md)<br>原表 10<br>ViT-B/16,TorchVision `IMAGENET1K_V1` | 感知 / 分类 | RGB `1×3×224×224`<br>86.57 M | 原始 .pth: 346.33<br>ONNX: 346.44 | ImageNet val2012,50000 张<br>Top-1 Accuracy<br>ONNX: 80.66% | **W8A8**<br>DLA: 88.00 MB<br>NPU: 51.754 ms/图<br>RSS: 141.30 MiB | 79.40%<br>下降 1.2660 个百分点<br>[报告](perception/image_classification/vit_base_patch16_224/results/summary.json) | — | — |
+| MediaPipe Gesture Recognizer（Palm+Hand Landmark+Gesture Classifier）<br>原表 11 | 交互 / 手势识别 | — | — | — | — | — | — | — |
+| DepthAI Hand Tracker（PalmDetection+HandLandmark 21点）<br>原表 12 | 交互 / 手部关键点 | — | — | — | — | — | — | — |
+| [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md)<br>原表 13<br>foamliu MobileFaceNet,`v1.0` 权重,128 维特征 | 交互 / 人脸识别 | RGB 对齐人脸 `1×3×112×112`<br>1.00 M | 原始 .pt: 4.14<br>ONNX: 4.00 | LFW,MTCNN 五点对齐,6000 对<br>验证准确率<br>ONNX: 99.38% | **W8A8**<br>DLA: 1.41 MB<br>NPU: 0.515 ms/图<br>RSS: 8.25 MiB | 99.32%<br>下降 0.0667 个百分点<br>[报告](interaction/face_recognition/mobilefacenet/results/summary.json) | — | — |
+| MoveNet SinglePose Lightning（192×192）<br>原表 14 | 交互 / 姿态估计 | — | — | — | — | — | — | — |
+| [RTMPose-m WholeBody（256×192，133点）](interaction/pose_detection/rtmpose_body2d/README.md)<br>原表 15<br>RTMPose-M WholeBody 133 点,MMPose `v1.3.2` | 交互 / 姿态估计 | RGB 人体裁剪 `1×3×256×192`<br>17.95 M | 原始 .pth: 72.01<br>ONNX: 71.83 | COCO-WholeBody val2017,104125 个人体<br>WholeBody AP<br>ONNX: 57.04% | **W8A8**<br>DLA: 19.14 MB<br>NPU: 3.862 ms/人体裁剪<br>RSS: 32.74 MiB | 53.24%<br>下降 3.7961 个百分点<br>[报告](interaction/pose_detection/rtmpose_body2d/results/summary.json) | — | — |
+| HRNet-W32（COCO 17点）<br>原表 16 | 交互 / 姿态估计 | — | — | — | — | — | — | — |
+| BlazePose GHUM Lite（33点）<br>原表 17 | 交互 / 姿态估计 | — | — | — | — | — | — | — |
+| PROCR v4<br>原表 18 | 交互 / 文本识别 | — | — | — | — | — | — | — |
+| Fast-SCNN（Cityscapes 19类）<br>原表 19 | 导航 / 语义分割 | — | — | — | — | — | — | — |
+| DeepLabV3-MobileNetV3-Large（VOC 21类）<br>原表 20 | 导航 / 语义分割 | — | — | — | — | — | — | — |
+| segformer-b0-finetuned-ade-512-512<br>原表 21 | 导航 / 语义分割 | — | — | — | — | — | — | — |
+| [FastSAM-s](navigation/segmentation/fastsam/README.md)<br>原表 22<br>官方 `FastSAM-s.pt`,Ultralytics `v8.0.111` | 导航 / 语义分割 | RGB `1×3×640×640`<br>11.79 M | 原始 .pt: 23.83<br>ONNX: 47.18 | COCO val2017,5000 张<br>类别无关 segm AR@100<br>ONNX: 39.02% | **W8A8**<br>DLA: 12.29 MB<br>NPU: 14.725 ms/图<br>RSS: 64.55 MiB | 37.57%<br>下降 1.4507 个百分点<br>[报告](navigation/segmentation/fastsam/results/summary.json) | — | — |
+| FastSAM-x<br>原表 23 | 导航 / 语义分割 | — | — | — | — | — | — | — |
+| EdgeSAM（Image Encoder+Prompt Decoder）<br>原表 24 | 导航 / 语义分割 | — | — | — | — | — | — | — |
+| [Depth Anything V2-Small（ViT-S）](navigation/single_camera_depth/depth_anything_v2_small/README.md)<br>原表 25<br>Depth Anything V2 Small,ViT-S/14 | 导航 / 单目深度 | RGB `1×3×518×518`<br>24.79 M | 原始 .pth: 99.22<br>ONNX: 98.97 | DA-2K,2068 个点对<br>点对准确率<br>ONNX: 94.83% | **W8A8**<br>DLA: 25.83 MB<br>NPU: 133.017 ms/图<br>RSS: 33.04 MiB | 85.78%<br>下降 9.0426 个百分点<br>[报告](navigation/single_camera_depth/depth_anything_v2_small/results/summary.json) | — | — |
+| StereoNetPlus-v1.2.1（MixVarGENet + FPN，SceneFlow）<br>原表 26 | 导航 / 双目深度 | — | — | — | — | — | — | — |
+| DINOv2 ViT-S/14（dinov2_vits14）<br>原表 27 | 导航 / 视觉基础模型 | — | — | — | — | — | — | — |
+| CLIP ViT-B/16<br>原表 28 | 生成式AI / 视觉语言 | — | — | — | — | — | — | — |
+| [MiniCPM5-2B](gen_ai/llm/minicpm5_2b/README.md)<br>原表 31 | 生成式AI / 大语言模型 | Token + KV Cache<br>上下文 1024,Prefill 128 / Decode 1<br>约 2520 M | 原始 .safetensors: 5033.56<br>ONNX: — | MMLU test,57 学科固定 1000 题,0-shot<br>Accuracy,FP32: 55.90%<br>WikiText2 test 前 128 行/7366 Token<br>PPL,FP32: 40.04 (均为子集) | **W4A16 (INT4/INT16)**<br>DLA: 2292.52 MB<br>embedding: 534.77 MB<br>部署合计: 2827.29 MB<br>NPU: Prefill: 288.67 Token/s<br>Decode: 8.15 Token/s (128 输入/最多 128 输出)<br>RSS: — | MMLU: 41.30%,下降 14.60 个百分点<br>WikiText2 PPL: 48.38,上升 8.34<br>首轮子集,质量未通过<br>[报告](gen_ai/llm/minicpm5_2b/results/summary.json) | — | — |
+| [DeepSeek-R1-Distill-Qwen-1.5B](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md)<br>原表 32<br>DeepSeek 官方固定 revision,实际参数包含独立 LM Head | 生成式AI / 大语言模型 | Token + KV Cache,上下文 1024,28 层<br>1777.09 M | 原始 .safetensors: 3554.21<br>ONNX: 6175.24 (38 个分片合计) | 自编双语短文本,26 Token (非正式基准)<br>PPL,ONNX: 144.57 | **W16A16 (FP16 浮点)**<br>DLA: 3089.46 MB<br>embedding: 466.75 MB<br>部署合计: 3556.21 MB<br>NPU: 220.11 ms/Token (纯 NPU)<br>RSS: 148.10 MiB | PPL: 145.05,上升 0.48<br>仅样例数值检查,非正式精度<br>[报告](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/results/summary.json) | — | — |
+| DeepSeek-R1-Distill-Qwen-7B<br>原表 33 | 生成式AI / 大语言模型 | — | — | — | — | — | — | — |
+| InternVL3-1B<br>原表 34 | 生成式AI / VLM | — | — | — | — | — | — | — |
+| InternVL3-8B<br>原表 35 | 生成式AI / VLM | — | — | — | — | — | — | — |
+| Gemma 4 E2B<br>原表 37 | 生成式AI / VLM | — | — | — | — | — | — | — |
+| Gemma 4 E4B<br>原表 38 | 生成式AI / VLM | — | — | — | — | — | — | — |
+| MeloTTS<br>原表 42 | 音频 / 语音合成 | — | — | — | — | — | — | — |
+| PiperTTS<br>原表 43 | 音频 / 语音合成 | — | — | — | — | — | — | — |
+| WebRTC AEC3<br>原表 44 | 音频 / 环境音频 | — | — | — | — | — | — | — |
+| DeepFilterNet v3<br>原表 45 | 音频 / 环境音频 | — | — | — | — | — | — | — |
+| [YAMNet（TF Hub，521类）](audio/ambient_sound/yamnet/README.md)<br>原表 46<br>Google AudioSet 521 类,源码 `34a2132` | 音频 / 环境音频 | Log-Mel `1×1×96×64`,单声道音频<br>3.73 M | 原始 .h5: 15.30<br>ONNX: 14.94 | ESC-50 第 2-5 折,47 类/1504 条有效音频<br>标签投影宏平均 AP<br>ONNX: 74.1456% | **W8A16**<br>DLA: 3.99 MB<br>NPU: 0.516 ms/窗口<br>RSS: 10.75 MiB | 73.8964%<br>下降 0.2491 个百分点<br>[报告](audio/ambient_sound/yamnet/results/summary.json) | — | — |
+| YOLOv8n + OSNet_x0_25 + BoT-SORT（BoxMOT）<br>原表 47 | SLAM / 目标跟踪 | — | — | — | — | — | — | — |
+| MobileNetVLAD（mobilenetvlad_depth-0.35）<br>原表 48 | SLAM / 定位 | — | — | — | — | — | — | — |
+| HF-Net<br>原表 49 | SLAM / 定位 | — | — | — | — | — | — | — |
+| SuperPoint（MagicLeap pretrained）<br>原表 50 | SLAM / 定位 | — | — | — | — | — | — | — |
+| LightGlue（SuperPoint，固定1024关键点）<br>原表 51 | SLAM / 定位 | — | — | — | — | — | — | — |
+| PointPillar-Tiny<br>原表 52 | 点云 / 点云 | — | — | — | — | — | — | — |
+| CenterPoint-Pillar 0.2（SECOND + SECFPN）<br>原表 53 | 点云 / 点云 | — | — | — | — | — | — | — |
+| MIT BEVFusion<br>原表 54 | 点云 / 3D融合 | — | — | — | — | — | — | — |
+| [YOLOv5s-v7.0 (本轮计划外)](perception/object_detection/yolov5s/README.md)<br>YOLOv5-S,官方 `v7.0` 权重 | 感知 / 目标检测 | RGB `1×3×640×640`<br>7.24 M | 原始 .pt: 14.81<br>ONNX: 28.94 | COCO val2017,5000 张<br>bbox mAP@0.5:0.95<br>ONNX: 37.09% | **W8A8**<br>DLA: 7.66 MB<br>NPU: 9.757 ms/图<br>RSS: 33.23 MiB | 35.86%<br>下降 1.2272 个百分点<br>[报告](perception/object_detection/yolov5s/results/summary.json) | — | — |
+| [Whisper-Tiny (本轮计划外)](audio/stt/whisper_tiny/README.md)<br>OpenAI 多语言 `tiny`,源码 `v20250625` | 音频 / 语音识别 | encoder: Log-Mel `1×80×3000`; decoder: token + KV cache<br>37.18 M | 原始 .pt: 75.57<br>ONNX: 230.79 (双模型合计) | LibriSpeech test-clean,2620 条音频<br>WER (越低越好)<br>ONNX: 7.5584% | **浮点 (实际 W/A 位宽待核实)**<br>DLA: 116.03 MB<br>NPU: 379.187 ms/条音频 (Encoder+Decoder)<br>RSS: 105.53 MiB | 7.5603%<br>上升 0.0019 个百分点<br>[报告](audio/stt/whisper_tiny/results/summary.json) | — | — |
 
-参数量按当前原始网络统计,`1 M = 100 万个参数`,不计 BatchNorm 运行统计量等缓冲区。文件大小来自当前生成文件,`1 MB = 1,000,000 bytes`,与运行时峰值内存分开记录。
+### 数据说明
 
-Whisper 参数量统计原始完整网络,encoder / decoder 文件大小分别为 ONNX **32.87 / 197.92 MB**、DLA **16.60 / 99.43 MB**。模型来源与完整版本见各模型的 `model_card.md` 和 `models/source_url.txt`。
+- 输入按 `N×C×H×W` 表示,图像 batch=1;音频采样率为 16 kHz.参数量 `1 M = 100 万`,不含 BatchNorm 运行统计量等缓冲区.
+- 文件大小采用十进制 MB,`1 MB = 1,000,000 bytes`;RSS 为 MiB,与文件大小分开记录.原始权重为当前官方/原作者检查点文件实际大小,保留格式,不将其等同于 FP32 网络大小.多分片、双模型按实际必需文件合计;DLA 不含外置 embedding,有外置权重时另列部署合计.
+- `WnAm` 表示权重 n 位、激活 m 位.浮点必须同时标明 FP16/FP32,不可与同位宽整数定点量化混淆;W8A8 为 INT8 PTQ,主要权重采用逐输出通道量化,不表示偏置、全部算子或文件 I/O 都是 8 位.Whisper 已确认浮点部署,现有报告未明确全部 W/A 位宽,暂不强行标为 W16A16.
+- 精度仅比较同模型、同数据集与同评测协议的参考基线.表中直接写“上升/下降”,准确率/AP/AR 越高越好,WER/PPL 越低越好;PPL 差值不是百分点.差值按报告原始数值计算,不由展示后舍入值相减.MiniCPM5 使用原框架 FP32 参考,不是 ONNX 基线.
+- 原始权重大小为本次只读文件统计;性能、RSS、精度与 DLA 大小沿用已归档结果,本次未重新运行模型.不同模型的常驻/逐图加载、计时和内存范围不同,不直接作为统一性能排名.
+- Whisper 完整原始网络为 37.18 M;encoder/decoder ONNX 分别 32.87/197.92 MB,DLA 分别 16.60/99.43 MB.完整来源见各模型 `model_card.md` 与 `models/source_url.txt`.
 
-## 当前测试结果
+原表标记“不做”的 6 项为 Llama3.2、Qwen3、Qwen3-VL、whisper、Qwen3-ASR、Moonshine tiny (streaming),不删除已有历史结果.
 
-根据已回收的各模型板端 `results/summary.json` 更新。参考基准必须与板端模型及评测协议匹配; 未上传结果的模型不预填数字。
-
-每个已部署模型的汇总必须保留 `model_size`,单位为 MB (十进制),保留两位小数.
-`compiled_dla` 为本次使用的 DLA 文件合计,`auxiliary_weights` 为外置 embedding,
-`deployment_total` 为二者合计,`files` 保存文件明细.Whisper 的 encoder/decoder、
-LLM 的全部实际使用分片须合计,不包含历史副本、评测输入输出或运行时 RSS.
-`source_weights`、`fp32_onnx`、`quantized_tflite` 没有实际文件时为 `null`.
-现有大小记录直接取自板端现存文件,没有重新执行推理或评测; 采集日期与原评测运行编号分别保留.
-原生 LLM 大小同时保存在 `native_summary.json`,与 FP16 部署分开记录.
-后续部署脚本通过 `tools/model_size.py` 自动补充大小,新模型须按模板接入该入口.
-
-| 模型 | 板端 NPU 平均耗时 (ms) | 峰值 RSS (MiB) | 核心精度 | 精度变化 (百分点) |
-| --- | ---: | ---: | --- | ---: |
-| [DeepSeek FP16](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md) | **220.11/Token** | **148.10** | 自编双语 26 Token 的 PPL **145.05**,非正式精度 | 不适用 |
-| [YAMNet W8A16](audio/ambient_sound/yamnet/README.md) | **0.516** | **10.75** | ESC-50 47 类投影宏平均 AP **73.8964%** | **-0.2491** |
-| [YOLOv8n](perception/object_detection/yolov8n/README.md) | **6.28** | **31.32** | mAP@0.5:0.95 **35.35%** | **-1.275** |
-| [YOLOv5s](perception/object_detection/yolov5s/README.md) | **9.76** | **33.23** | mAP@0.5:0.95 **35.86%** | **-1.23** |
-| [ViT-Base Patch16 224](perception/image_classification/vit_base_patch16_224/README.md) | **51.75** | **141.30** | Top-1 **79.40%** | **-1.27** |
-| [RTMPose Body2d](interaction/pose_detection/rtmpose_body2d/README.md) | **3.86** | **32.74** | WholeBody AP **53.24%** | **-3.80** |
-| [MobileFaceNet](interaction/face_recognition/mobilefacenet/README.md) | **0.52** | **8.25** | LFW 验证准确率 **99.32%** | **-0.07** |
-| [Depth Anything V2 Small](navigation/single_camera_depth/depth_anything_v2_small/README.md) | **133.02** | **33.04** | DA-2K 点对准确率 **85.78%** | **-9.04** |
-| [FastSAM-s](navigation/segmentation/fastsam/README.md) | **14.72** | **64.55** | segm AR@100 **37.57%** | **-1.45** |
-| [Whisper-Tiny](audio/stt/whisper_tiny/README.md) | **379.19/条音频** | **105.53** | WER **7.56%** | 下降不足 0.01 |
+### 评测口径与限制
 
 DeepSeek 结果来自运行 `20261010_deepseek_fp16_v3`,batch=1、上下文 1024、FP16、
 逐 Token Prefill、Greedy 生成上限 512.中文 / 英文 Demo 分别在 73 / 412 Token 到达 EOS,
@@ -64,6 +83,8 @@ TTFT 为 3.245 / 3.112 秒,端到端 Decode 为 3.78 / 3.81 Token/s.
 表中 220.11 ms 为模型算子的纯 NPU 调用平均耗时; RSS 未覆盖全部 NPU 驱动内存,
 本次系统可用内存下降约 3512.09 MiB.三后端自编短文本 PPL 为 144.57 / 144.57 / 145.05,
 仅验证数值,不能替代正式基准.结果与实际文本见 [DeepSeek README](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md).
+
+DeepSeek 另有独立的 **W4A16 (INT4/INT16)** 原生方案,DLA 合计 **1570.21 MB**,embedding **466.75 MB**,部署合计 **2036.96 MB**;双语样例 Decode 约 **16.75 Token/s**.该方案尚未完成正式精度评测,英文样例存在语法问题,不得套用表中 FP16 的 PPL 或 RSS.详见 [native_summary.json](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/results/native_summary.json).
 
 YOLOv5s 结果来自运行 `20261008_032807_67603`,COCO val2017 全量 5000 张; ONNX FP32 与板端精度均为本次同协议实测,ONNX mAP 为 **37.09%**。结果文件见 [summary.json](perception/object_detection/yolov5s/results/summary.json)。
 
@@ -87,65 +108,6 @@ YAMNet 交付方案为全 W8A16,运行 `20261009_yamnet_esc50_w8a16_v1`.
 [YAMNet README](audio/ambient_sound/yamnet/README.md).
 
 Depth Anything V2 Small 的 DA-2K 同协议 ONNX FP32 点对准确率为 **94.83%**,板端为 **85.78%**,精度下降 **9.04 个百分点**。结果见 [summary.json](navigation/single_camera_depth/depth_anything_v2_small/results/summary.json)。
-
-精度变化正数表示改善,负数表示下降: 准确率和 AP/AR 用板端减 ONNX,WER 用 ONNX 减板端。量化方式见各模型 README。ORT `session.Run` 与独立 NPU 调用耗时分开记录,不直接混排。
-
-## Models List
-
-清单依据 `docs/MTK_models.xlsx` 的“Effort评估”工作表,按“是否适配”列为“做”筛选,共 48 个版本条目.序号沿用原表,表示本轮适配范围,不代表已完成部署.
-
-| 原表序号 | 场景 | 类别 | 具体版本 |
-| ---: | --- | --- | --- |
-| 1 | 感知 | 目标检测 | YOLOv5n-v7.0（640×640） |
-| 2 | 感知 | 目标检测 | YOLOv5m-v7.0（640×640） |
-| 3 | 感知 | 目标检测 | YOLOv8n（640×640） |
-| 4 | 感知 | 目标检测 | YOLOv8m（640×640） |
-| 5 | 感知 | 目标检测 | RT-DETRv2-S（640×640） |
-| 6 | 感知 | 分类 | SqueezeNet-1.1 |
-| 7 | 感知 | 分类 | ResNet50 |
-| 8 | 感知 | 分类 | ResNet101 |
-| 9 | 感知 | 分类 | MobileNetV3-Large |
-| 10 | 感知 | 分类 | ViT-B/16 |
-| 11 | 交互 | 手势识别 | MediaPipe Gesture Recognizer（Palm+Hand Landmark+Gesture Classifier） |
-| 12 | 交互 | 手部关键点 | DepthAI Hand Tracker（PalmDetection+HandLandmark 21点） |
-| 13 | 交互 | 人脸识别 | MobileFaceNet |
-| 14 | 交互 | 姿态估计 | MoveNet SinglePose Lightning（192×192） |
-| 15 | 交互 | 姿态估计 | RTMPose-m WholeBody（256×192，133点） |
-| 16 | 交互 | 姿态估计 | HRNet-W32（COCO 17点） |
-| 17 | 交互 | 姿态估计 | BlazePose GHUM Lite（33点） |
-| 18 | 交互 | 文本识别 | PROCR v4 |
-| 19 | 导航 | 语义分割 | Fast-SCNN（Cityscapes 19类） |
-| 20 | 导航 | 语义分割 | DeepLabV3-MobileNetV3-Large（VOC 21类） |
-| 21 | 导航 | 语义分割 | segformer-b0-finetuned-ade-512-512 |
-| 22 | 导航 | 语义分割 | FastSAM-s |
-| 23 | 导航 | 语义分割 | FastSAM-x |
-| 24 | 导航 | 语义分割 | EdgeSAM（Image Encoder+Prompt Decoder） |
-| 25 | 导航 | 单目深度 | Depth Anything V2-Small（ViT-S） |
-| 26 | 导航 | 双目深度 | StereoNetPlus-v1.2.1（MixVarGENet + FPN，SceneFlow） |
-| 27 | 导航 | 视觉基础模型 | DINOv2 ViT-S/14（dinov2_vits14） |
-| 28 | 生成式AI | 视觉语言 | CLIP ViT-B/16 |
-| 31 | 生成式AI | 大语言模型 | MiniCPM5-2B |
-| 32 | 生成式AI | 大语言模型 | DeepSeek-R1-Distill-Qwen-1.5B |
-| 33 | 生成式AI | 大语言模型 | DeepSeek-R1-Distill-Qwen-7B |
-| 34 | 生成式AI | VLM | InternVL3-1B |
-| 35 | 生成式AI | VLM | InternVL3-8B |
-| 37 | 生成式AI | VLM | Gemma 4 E2B |
-| 38 | 生成式AI | VLM | Gemma 4 E4B |
-| 42 | 音频 | 语音合成 | MeloTTS |
-| 43 | 音频 | 语音合成 | PiperTTS |
-| 44 | 音频 | 环境音频 | WebRTC AEC3 |
-| 45 | 音频 | 环境音频 | DeepFilterNet v3 |
-| 46 | 音频 | 环境音频 | YAMNet（TF Hub，521类） |
-| 47 | SLAM | 目标跟踪 | YOLOv8n + OSNet_x0_25 + BoT-SORT（BoxMOT） |
-| 48 | SLAM | 定位 | MobileNetVLAD（mobilenetvlad_depth-0.35） |
-| 49 | SLAM | 定位 | HF-Net |
-| 50 | SLAM | 定位 | SuperPoint（MagicLeap pretrained） |
-| 51 | SLAM | 定位 | LightGlue（SuperPoint，固定1024关键点） |
-| 52 | 点云 | 点云 | PointPillar-Tiny |
-| 53 | 点云 | 点云 | CenterPoint-Pillar 0.2（SECOND + SECFPN） |
-| 54 | 点云 | 3D融合 | MIT BEVFusion |
-
-原表标记“不做”的 6 项: Llama3.2, Qwen3, Qwen3-VL, whisper, Qwen3-ASR, Moonshine tiny (streaming).此筛选不删除仓库已有模型或历史实测结果.
 
 ## 目录结构
 
