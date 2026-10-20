@@ -88,6 +88,16 @@ WikiText2 使用 test 前 128 行原始文本,不加特殊 Token,每块 128 Toke
 
 最终 NAS 根目录采用用户指定的 G720 外部 `models/` 目录,模型包相对路径为 `gen_ai/llm/minicpm5_2b/minicpm5-2b/`.保留该模型目录已有的来源记录,复制后逐文件核对 SHA256,记录在模型包的 `delivery_verification.json` 中.服务器模型可运行,精度尚未通过质量验收.
 
+## 板端目录管理
+
+板端统一入口为 `/root/hailong.he/open_models/minicpm5_2b/`.当前交付包放在 `current/`,固定首轮评价数据和结果放在 `results/first_round/`,当前模型的数值诊断放在 `results/validation/`.进入 `current/` 后执行 `bash scripts/run.sh`;同一模型重复测试使用不同运行编号,结果写入 `current/results/`,不复制整个模型包.
+
+只有权重、静态图或量化接口变化时才建立独立 `candidate/`,候选未通过对应评价前不得覆盖 `current/`.没有待验证候选时不创建空候选目录.已淘汰模型及历史诊断只保留配置、评价范围、精度结论和必要哈希记录,不长期保留模型包及中间数据.先生成文档记录再清理历史文件,当前交付包及对应评价资料保留.
+
+2026-10-20 目录整理保留当前全 W4A16、16 样本 Hessian 双 DLA,不改模型、量化配置或既有评价成绩.历史报告中的绝对路径是当时的运行记录,不重写;现行路径与归档位置以板端本目录的 `README.md` 和 `layout_migration.json` 为准.本次只核对迁移完整性,不重新运行推理或评价.
+
+随后按用户要求删除了 89 上 8 个历史目录中的 132 个文件,合计 11.07 GB.实验摘要保存在原归档记录目录的 `historical_experiments.md` 和 `historical_experiments.json`,原文件哈希保存在 `inventory_before.json`.这些记录不包含可恢复的历史模型包;诊断小子集指标不与首轮千题或完整首轮 PPL 直接比较.
+
 ## 模型资源路径
 
 通过不提交 Git 的 `configs/storage.local.json` 读取 `models_root` 和 `dataset_root`.本模型资源根目录为 `models_root/gen_ai/llm/minicpm5_2b/`: `original/` 保存官方模型,`native/` 保存当前转换、量化和校准资源,`compiled/` 保存编译包归档.原生入口自动读取这些配置,实际完整路径仅保存本地.现有交付包路径按上文记录使用.仓库中的 `models/` 只保留源码、文档和公开来源记录.
