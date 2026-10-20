@@ -39,16 +39,21 @@ int main(int argc, char** argv) {
         const Detection b{1, 0, 3, 2, 0.8F, 0};
         Require(std::abs(mtk::BoxIou(a, b) - 1.0F / 3) < 1.0e-6F, "IoU错误.");
         Require(mtk::BoxIou(0, 0, 0, 0, 0, 0, 0, 0) == 0, "退化框错误.");
-        Require(mtk::Sigmoid(0) == 0.5F && std::isfinite(mtk::Sigmoid(1000)), "Sigmoid错误.");
-        const std::vector<Detection> input{a, b, Detection{0, 0, 2, 2, 0.7F, 1}};
+        Require(mtk::Sigmoid(0) == 0.5F && std::isfinite(mtk::Sigmoid(1000)),
+                "Sigmoid错误.");
+        const std::vector<Detection> input{a, b,
+                                           Detection{0, 0, 2, 2, 0.7F, 1}};
         for (const bool stable : {false, true}) {
             const auto kept = mtk::ApplyNms(input, 0.2F, 100, stable);
-            Require(kept.size() == 2 && kept[1].class_id == 1, "类别内NMS错误.");
-            Require(mtk::ApplyNms(input, 0.2F, 1, stable).size() == 1, "max_det错误.");
+            Require(kept.size() == 2 && kept[1].class_id == 1,
+                    "类别内NMS错误.");
+            Require(mtk::ApplyNms(input, 0.2F, 1, stable).size() == 1,
+                    "max_det错误.");
         }
         std::vector<Detection> boxes{Detection{2, 4, 22, 24, 1, 0}};
         mtk::Rescale(&boxes, Geometry{2, 4, 2.0F, 8, 9});
-        Require(boxes[0].x1 == 0 && boxes[0].x2 == 8 && boxes[0].y2 == 9, "坐标还原错误.");
+        Require(boxes[0].x1 == 0 && boxes[0].x2 == 8 && boxes[0].y2 == 9,
+                "坐标还原错误.");
         Require(mtk::Percentile({1, 3, 5}, 0.5) == 3, "分位数错误.");
         Require(mtk::Percentile({7}, 0.95) == 7, "单元素分位数错误.");
         Require(mtk::ParseInteger("3", "count") == 3, "整数解析错误.");
@@ -62,9 +67,11 @@ int main(int argc, char** argv) {
         Require(rejected, "运行时错误未抛出.");
         mtk::CheckRuntime(0, "fixture");
         std::ofstream(work / "input.bin", std::ios::binary) << "abc";
-        Require(mtk::ReadInput(work / "input.bin").size() == 3, "二进制读取错误.");
+        Require(mtk::ReadInput(work / "input.bin").size() == 3,
+                "二进制读取错误.");
         std::ofstream(work / "done.txt") << "139\n285\n139\n";
-        Require(mtk::LoadCompleted(work / "done.txt").size() == 2, "完成集合错误.");
+        Require(mtk::LoadCompleted(work / "done.txt").size() == 2,
+                "完成集合错误.");
         fs::create_directories(work / "images");
         std::ofstream(work / "images/000139.JPG") << "fixture";
         std::ofstream(work / "images/000285.png") << "fixture";
@@ -75,13 +82,16 @@ int main(int argc, char** argv) {
         std::ofstream predictions(work / "predictions.jsonl");
         mtk::AppendPredictions(&predictions, 139, input, categories);
         predictions.close();
-        mtk::FinalizePredictions(work / "predictions.jsonl", work / "predictions.json");
+        mtk::FinalizePredictions(work / "predictions.jsonl",
+                                 work / "predictions.json");
         const auto prediction_bytes = mtk::ReadInput(work / "predictions.json");
-        const std::string prediction_text(prediction_bytes.begin(), prediction_bytes.end());
-        Require(prediction_text.find("\"category_id\":3") != std::string::npos, "类别映射错误.");
+        const std::string prediction_text(prediction_bytes.begin(),
+                                          prediction_bytes.end());
+        Require(prediction_text.find("\"category_id\":3") != std::string::npos,
+                "类别映射错误.");
         Require(mtk::EscapeJson("a\"b\\c") == "a\\\"b\\\\c", "JSON转义错误.");
-        mtk::WriteSummary(work / "summary.json", std::vector<Timing>{{1, 2, 3, 6}, {3, 4, 5, 12}},
-                          2);
+        mtk::WriteSummary(work / "summary.json",
+                          std::vector<Timing>{{1, 2, 3, 6}, {3, 4, 5, 12}}, 2);
         Require(fs::file_size(work / "summary.json") > 0, "耗时汇总为空.");
         std::cout << "[通过] C++公共工具数值、文件与类别策略验证." << std::endl;
         return 0;

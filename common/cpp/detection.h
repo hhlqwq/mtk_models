@@ -12,15 +12,19 @@ namespace mtk {
 // 读取当前 Linux 推理进程的峰值 RSS,单位为 KiB.
 inline int64_t GetPeakRssKb() {
     rusage usage{};
-    if (getrusage(RUSAGE_SELF, &usage) != 0) throw std::runtime_error("无法读取峰值 RSS.");
+    if (getrusage(RUSAGE_SELF, &usage) != 0)
+        throw std::runtime_error("无法读取峰值 RSS.");
     return usage.ru_maxrss;
 }
 
 // 公用 类别内非极大值抑制,保留模型的排序选择.
 template <typename Detection>
-std::vector<Detection> ApplyNms(std::vector<Detection> detections, float iou_threshold,
-                                int max_detections, bool stable_sort) {
-    const auto compare = [](const Detection& a, const Detection& b) { return a.score > b.score; };
+std::vector<Detection> ApplyNms(std::vector<Detection> detections,
+                                float iou_threshold, int max_detections,
+                                bool stable_sort) {
+    const auto compare = [](const Detection& a, const Detection& b) {
+        return a.score > b.score;
+    };
     if (stable_sort) {
         std::stable_sort(detections.begin(), detections.end(), compare);
     } else {
@@ -65,21 +69,25 @@ void Rescale(std::vector<Detection>* detections, const LetterboxInfo& info) {
 // 公用 单图 COCO 预测记录.
 template <typename Detection, typename Categories>
 void AppendPredictions(std::ofstream* output, int64_t image_id,
-                       const std::vector<Detection>& detections, const Categories& categories) {
+                       const std::vector<Detection>& detections,
+                       const Categories& categories) {
     *output << std::fixed;
     for (const Detection& detection : detections) {
         *output << "{\"image_id\":" << image_id
-                << ",\"category_id\":" << categories[detection.class_id] << ",\"bbox\":["
-                << std::setprecision(3) << detection.x1 << ',' << detection.y1 << ','
-                << detection.x2 - detection.x1 << ',' << detection.y2 - detection.y1
-                << "],\"score\":" << std::setprecision(5) << detection.score << "}\n";
+                << ",\"category_id\":" << categories[detection.class_id]
+                << ",\"bbox\":[" << std::setprecision(3) << detection.x1 << ','
+                << detection.y1 << ',' << detection.x2 - detection.x1 << ','
+                << detection.y2 - detection.y1
+                << "],\"score\":" << std::setprecision(5) << detection.score
+                << "}\n";
     }
     output->flush();
 }
 
 // 公用 各阶段推理耗时汇总.
 template <typename Timing>
-void WriteSummary(const fs::path& path, const std::vector<Timing>& timings, size_t total_images) {
+void WriteSummary(const fs::path& path, const std::vector<Timing>& timings,
+                  size_t total_images) {
     auto summarize = [&timings](auto accessor) {
         std::vector<double> values;
         values.reserve(timings.size());
@@ -94,21 +102,28 @@ void WriteSummary(const fs::path& path, const std::vector<Timing>& timings, size
             const double weight = position - lower;
             return values[lower] * (1.0 - weight) + values[upper] * weight;
         };
-        const double mean = std::accumulate(values.begin(), values.end(), 0.0) / values.size();
+        const double mean =
+            std::accumulate(values.begin(), values.end(), 0.0) / values.size();
         return std::array<double, 6>{
             mean,           percentile(0.5), percentile(0.9), percentile(0.95),
             values.front(), values.back()};
     };
-    const auto preprocess = summarize([](const Timing& value) { return value.preprocess_ms; });
-    const auto npu = summarize([](const Timing& value) { return value.npu_ms; });
-    const auto postprocess = summarize([](const Timing& value) { return value.postprocess_ms; });
-    const auto e2e = summarize([](const Timing& value) { return value.e2e_ms; });
+    const auto preprocess =
+        summarize([](const Timing& value) { return value.preprocess_ms; });
+    const auto npu =
+        summarize([](const Timing& value) { return value.npu_ms; });
+    const auto postprocess =
+        summarize([](const Timing& value) { return value.postprocess_ms; });
+    const auto e2e =
+        summarize([](const Timing& value) { return value.e2e_ms; });
     const auto write_metric = [](std::ofstream* output, const std::string& name,
-                                 const std::array<double, 6>& values, bool trailing_comma) {
+                                 const std::array<double, 6>& values,
+                                 bool trailing_comma) {
         *output << "  \"" << EscapeJson(name) << "\": {\"mean\": " << values[0]
                 << ", \"p50\": " << values[1] << ", \"p90\": " << values[2]
                 << ", \"p95\": " << values[3] << ", \"min\": " << values[4]
-                << ", \"max\": " << values[5] << "}" << (trailing_comma ? "," : "") << "\n";
+                << ", \"max\": " << values[5] << "}"
+                << (trailing_comma ? "," : "") << "\n";
     };
 
     std::ofstream output(path);

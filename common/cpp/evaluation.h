@@ -21,7 +21,8 @@ inline bool IsTestEvaluation() {
 // 与主机一致,固定包含已发布效果示例,再按编号补齐100张.
 inline std::set<int64_t> TestCocoIds(const std::vector<int64_t>& values) {
     const std::set<int64_t> all(values.begin(), values.end());
-    if (all.size() < 100) throw std::runtime_error("COCO快速模式至少需要100张图片.");
+    if (all.size() < 100)
+        throw std::runtime_error("COCO快速模式至少需要100张图片.");
     std::set<int64_t> selected;
     for (const int64_t id : {139, 285, 785, 210299, 252219, 481386}) {
         if (all.count(id)) selected.insert(id);
@@ -34,9 +35,11 @@ inline std::set<int64_t> TestCocoIds(const std::vector<int64_t>& values) {
 }
 
 // Whisper固定5条音频,保留两位说话人的效果示例.
-inline std::set<std::string> TestSpeechIds(const std::vector<std::string>& values) {
+inline std::set<std::string> TestSpeechIds(
+    const std::vector<std::string>& values) {
     const std::set<std::string> all(values.begin(), values.end());
-    if (all.size() < 5) throw std::runtime_error("语音快速模式至少需要5条音频.");
+    if (all.size() < 5)
+        throw std::runtime_error("语音快速模式至少需要5条音频.");
     std::set<std::string> selected;
     for (const std::string id : {"1089-134686-0000", "1188-133604-0000"}) {
         if (all.count(id)) selected.insert(id);

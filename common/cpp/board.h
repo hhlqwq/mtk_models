@@ -24,7 +24,8 @@ namespace fs = std::filesystem;
 // G720 Runtime 的零返回值表示成功,异常中保留操作名称和错误码.
 inline void CheckRuntime(int result, const std::string& operation) {
     if (result != 0) {
-        throw std::runtime_error(operation + " 失败,错误码 " + std::to_string(result));
+        throw std::runtime_error(operation + " 失败,错误码 " +
+                                 std::to_string(result));
     }
 }
 
@@ -54,24 +55,30 @@ inline std::vector<fs::path> ListImages(const fs::path& directory, int limit) {
         std::transform(extension.begin(), extension.end(), extension.begin(),
                        [](unsigned char value) { return std::tolower(value); });
         if (entry.is_regular_file() &&
-            (extension == ".jpg" || extension == ".jpeg" || extension == ".png")) {
+            (extension == ".jpg" || extension == ".jpeg" ||
+             extension == ".png")) {
             images.push_back(entry.path());
         }
     }
     std::sort(images.begin(), images.end());
     if (IsTestEvaluation()) {
         std::vector<int64_t> ids;
-        for (const auto& image : images) ids.push_back(std::stoll(image.stem().string()));
+        for (const auto& image : images)
+            ids.push_back(std::stoll(image.stem().string()));
         const auto selected = TestCocoIds(ids);
-        images.erase(std::remove_if(images.begin(), images.end(), [&](const auto& image) {
-            return !selected.count(std::stoll(image.stem().string()));
-        }), images.end());
+        images.erase(std::remove_if(images.begin(), images.end(),
+                                    [&](const auto& image) {
+                                        return !selected.count(
+                                            std::stoll(image.stem().string()));
+                                    }),
+                     images.end());
     }
     if (limit > 0 && images.size() > static_cast<size_t>(limit)) {
         images.resize(limit);
     }
     if (images.empty()) {
-        throw std::runtime_error("没有找到 JPEG 或 PNG 图片: " + directory.string());
+        throw std::runtime_error("没有找到 JPEG 或 PNG 图片: " +
+                                 directory.string());
     }
     return images;
 }
@@ -107,7 +114,8 @@ inline std::string EscapeJson(const std::string& value) {
 }
 
 // 公用 JSONL 到 COCO JSON 数组转换.
-inline void FinalizePredictions(const fs::path& jsonl_path, const fs::path& json_path) {
+inline void FinalizePredictions(const fs::path& jsonl_path,
+                                const fs::path& json_path) {
     std::ifstream input(jsonl_path);
     std::ofstream output(json_path);
     output << "[\n";

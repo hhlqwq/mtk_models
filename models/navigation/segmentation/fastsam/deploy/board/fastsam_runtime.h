@@ -13,8 +13,9 @@ constexpr int kSize = 640;
 constexpr int kCoefficientCount = 32;
 constexpr std::array<int, 3> kStrides = {8, 16, 32};
 constexpr std::array<const char*, 10> kNames = {
-    "box_8", "score_8", "coefficient_8", "box_16", "score_16",
-    "coefficient_16", "box_32", "score_32", "coefficient_32", "prototype"};
+    "box_8",          "score_8",        "coefficient_8", "box_16",
+    "score_16",       "coefficient_16", "box_32",        "score_32",
+    "coefficient_32", "prototype"};
 
 // 后处理只读取连续的 CHW 浮点张量,平台实现负责量化和内存布局转换.
 struct OutputTensor {
@@ -27,7 +28,7 @@ struct OutputTensor {
 using OutputTensors = std::array<OutputTensor, 10>;
 
 class FastSamRuntime {
- public:
+   public:
     // 读取张量配置; 空路径仅用于不加载模型的 --check-image 模式.
     explicit FastSamRuntime(const std::filesystem::path& config);
     // 释放平台运行时及其缓冲区.
@@ -48,7 +49,7 @@ class FastSamRuntime {
     // 返回结果记录使用的后端名称.
     const char* BackendName() const;
 
- private:
+   private:
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };

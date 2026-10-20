@@ -8,10 +8,11 @@
 namespace mtk {
 
 // 计算 xyxy 坐标框的交并比,退化框面积按零处理.
-inline float BoxIou(float ax1, float ay1, float ax2, float ay2, float bx1, float by1, float bx2,
-                    float by2) {
-    const float intersection = std::max(0.0F, std::min(ax2, bx2) - std::max(ax1, bx1)) *
-                               std::max(0.0F, std::min(ay2, by2) - std::max(ay1, by1));
+inline float BoxIou(float ax1, float ay1, float ax2, float ay2, float bx1,
+                    float by1, float bx2, float by2) {
+    const float intersection =
+        std::max(0.0F, std::min(ax2, bx2) - std::max(ax1, bx1)) *
+        std::max(0.0F, std::min(ay2, by2) - std::max(ay1, by1));
     const float area_a = std::max(0.0F, ax2 - ax1) * std::max(0.0F, ay2 - ay1);
     const float area_b = std::max(0.0F, bx2 - bx1) * std::max(0.0F, by2 - by1);
     return intersection / std::max(area_a + area_b - intersection, 1.0e-9F);

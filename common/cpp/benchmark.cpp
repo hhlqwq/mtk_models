@@ -45,8 +45,8 @@ Options ParseArgs(int argc, char** argv) {
         else
             throw std::invalid_argument("未知参数: " + key);
     }
-    if (options.model.empty() || options.input.empty() || options.report.empty() ||
-        options.warmup < 0 || options.repeats <= 0) {
+    if (options.model.empty() || options.input.empty() ||
+        options.report.empty() || options.warmup < 0 || options.repeats <= 0) {
         throw std::invalid_argument("模型、输入、报告或重复次数无效.");
     }
     return options;
@@ -73,49 +73,61 @@ int Run(const Options& options) {
     void* runtime = nullptr;
     CheckRuntime(NeuronRuntime_create(&environment, &runtime), "create");
     try {
-        CheckRuntime(NeuronRuntime_loadNetworkFromFile(runtime, options.model.c_str()), "load");
+        CheckRuntime(
+            NeuronRuntime_loadNetworkFromFile(runtime, options.model.c_str()),
+            "load");
         size_t input_count = 0;
         size_t output_count = 0;
         size_t input_size = 0;
-        CheckRuntime(NeuronRuntime_getInputNumber(runtime, &input_count), "input count");
-        CheckRuntime(NeuronRuntime_getOutputNumber(runtime, &output_count), "output count");
-        CheckRuntime(NeuronRuntime_getSingleInputPaddedSize(runtime, &input_size), "input size");
-        if (input_count != 1 || output_count == 0 || input.size() != input_size) {
+        CheckRuntime(NeuronRuntime_getInputNumber(runtime, &input_count),
+                     "input count");
+        CheckRuntime(NeuronRuntime_getOutputNumber(runtime, &output_count),
+                     "output count");
+        CheckRuntime(
+            NeuronRuntime_getSingleInputPaddedSize(runtime, &input_size),
+            "input size");
+        if (input_count != 1 || output_count == 0 ||
+            input.size() != input_size) {
             throw std::runtime_error("真实输入与 DLA 输入契约不匹配.");
         }
         std::vector<std::vector<char>> outputs(output_count);
         for (size_t index = 0; index < output_count; ++index) {
             size_t output_size = 0;
-            CheckRuntime(NeuronRuntime_getOutputPaddedSize(runtime, index, &output_size),
-                         "output size");
+            CheckRuntime(
+                NeuronRuntime_getOutputPaddedSize(runtime, index, &output_size),
+                "output size");
             if (output_size == 0) throw std::runtime_error("DLA 输出大小为零.");
             outputs[index].resize(output_size);
         }
         const BufferAttribute attribute{NON_ION_FD};
-        CheckRuntime(NeuronRuntime_setSingleInput(runtime, input.data(), input.size(), attribute),
+        CheckRuntime(NeuronRuntime_setSingleInput(runtime, input.data(),
+                                                  input.size(), attribute),
                      "set input");
         std::vector<double> latency_ms;
         latency_ms.reserve(options.repeats);
         for (int index = 0; index < options.warmup + options.repeats; ++index) {
             for (size_t output = 0; output < outputs.size(); ++output) {
-                CheckRuntime(NeuronRuntime_setOutput(runtime, output, outputs[output].data(),
-                                                     outputs[output].size(), attribute),
+                CheckRuntime(NeuronRuntime_setOutput(
+                                 runtime, output, outputs[output].data(),
+                                 outputs[output].size(), attribute),
                              "set output");
             }
             const auto start = std::chrono::steady_clock::now();
             CheckRuntime(NeuronRuntime_inference(runtime), "inference");
-            const double elapsed =
-                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start)
-                    .count();
+            const double elapsed = std::chrono::duration<double, std::milli>(
+                                       std::chrono::steady_clock::now() - start)
+                                       .count();
             if (index >= options.warmup) latency_ms.push_back(elapsed);
-            if ((index + 1) % 25 == 0 || index + 1 == options.warmup + options.repeats) {
-                std::cout << "[PROGRESS] " << index + 1 << "/" << options.warmup + options.repeats
-                          << std::endl;
+            if ((index + 1) % 25 == 0 ||
+                index + 1 == options.warmup + options.repeats) {
+                std::cout << "[PROGRESS] " << index + 1 << "/"
+                          << options.warmup + options.repeats << std::endl;
             }
         }
         std::sort(latency_ms.begin(), latency_ms.end());
         const double mean =
-            std::accumulate(latency_ms.begin(), latency_ms.end(), 0.0) / latency_ms.size();
+            std::accumulate(latency_ms.begin(), latency_ms.end(), 0.0) /
+            latency_ms.size();
         rusage usage{};
         if (getrusage(RUSAGE_SELF, &usage) != 0) {
             throw std::runtime_error("无法读取进程峰值内存.");
