@@ -32,7 +32,7 @@ native:
   weight_opt_config: ''
   calibration_train: ''
 evaluation:
-  # -test 只缩小评价范围,不改变校准和量化配方.
+  # 默认小批量只缩小评价范围,不改变校准和量化配方;全量精度独立执行.
   test_mmlu_questions: 16
   test_wikitext_blocks: 4
   reference_device: cuda

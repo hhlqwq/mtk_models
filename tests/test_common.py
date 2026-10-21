@@ -117,6 +117,7 @@ class CommonTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             tensor_metadata({**detail, "quantization": {"scales": [0.1, 0.2], "zero_points": [0, 0]}})
 
+    @mock.patch.dict(os.environ, {"MTK_EVAL_SCOPE": "full"})
     def test_coco_model_status_policies(self):
         """用替身评测器验证两模型的状态、精度差和报告字段,不跑全量评测."""
         from tools import coco

@@ -14,7 +14,7 @@ from pycocotools import mask as mask_utils
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
-from tools.evaluation import add_test_argument, coco_ids, result_status, scope_metadata
+from tools.evaluation import coco_ids, is_test, result_status, scope_metadata
 
 
 def parse_args() -> argparse.Namespace:
@@ -44,7 +44,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--work-dir", type=Path, required=not defaults, default=defaults.get("work"))
     parser.add_argument("--protocol", type=Path,
                         default=Path(__file__).with_name("accuracy_protocol.json"))
-    add_test_argument(parser)
     return parser.parse_args()
 
 
@@ -155,10 +154,11 @@ def evaluate(args: argparse.Namespace) -> None:
                 raise ValueError(f"检查点图片 ID 不一致: {image.stem}")
             if record.get("protocol") != protocol:
                 raise ValueError(f"检查点评测协议不一致: {image.stem}")
-            npu_times.append(record["npu_ms"])
-            if record.get("peak_rss_kib") is not None:
-                peak_rss_values.append(record["peak_rss_kib"])
-            end_to_end_times.append(record["end_to_end_ms"])
+            if is_test():
+                npu_times.append(record["npu_ms"])
+                if record.get("peak_rss_kib") is not None:
+                    peak_rss_values.append(record["peak_rss_kib"])
+                end_to_end_times.append(record["end_to_end_ms"])
             completed.write(f"{record['image_id']}\n")
             for prediction in record["predictions"]:
                 if prediction_count:
@@ -192,12 +192,13 @@ def evaluate(args: argparse.Namespace) -> None:
         "AP_75": float(evaluator.stats[2]),
         "AR_10": float(evaluator.stats[7]),
         "AR_100": float(evaluator.stats[8]),
-        "npu_mean_ms": statistics.fmean(npu_times),
-        "peak_rss_kib": max(peak_rss_values) if len(peak_rss_values) == len(images) else None,
-        "npu_p95_ms": float(np.percentile(npu_times, 95)),
-        "end_to_end_mean_ms": statistics.fmean(end_to_end_times),
-        "timing_scope": "C++ per-image model reload; NPU time reported separately",
     }
+    if is_test():
+        summary.update(npu_mean_ms=statistics.fmean(npu_times),
+                       peak_rss_kib=max(peak_rss_values) if len(peak_rss_values) == len(images) else None,
+                       npu_p95_ms=float(np.percentile(npu_times, 95)),
+                       end_to_end_mean_ms=statistics.fmean(end_to_end_times),
+                       timing_scope="C++ per-image model reload; NPU time reported separately")
     (report_dir / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8")

@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
-# 容器内一键转换并上传; 板端运行同一入口,默认全量评测.
+# 容器内一键转换并上传; 板端运行同一入口,默认固定小批量验证.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PYTHONDONTWRITEBYTECODE=1 HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 
-export MTK_EVAL_TEST=0
-if (( $# == 1 )) && [[ "$1" == "-test" ]]; then
-    export MTK_EVAL_TEST=1
-elif (( $# != 0 )); then
-    echo '[错误] 用法: bash run.sh [-test]' >&2
+# 部署固定使用小批量验证,全量精度请运行独立的 evaluate.sh.
+export MTK_EVAL_SCOPE=subset
+if (( $# != 0 )); then
+    echo "[错误] 用法: bash run.sh; 全量精度使用 bash evaluate.sh." >&2
     exit 2
 fi
 export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-if [[ "${MTK_EVAL_TEST}" == 1 && "${EVAL_RUN_ID}" != *_test ]]; then
+if [[ "${MTK_EVAL_SCOPE}" == subset && "${EVAL_RUN_ID}" != *_test ]]; then
     export EVAL_RUN_ID="${EVAL_RUN_ID}_test"
 fi
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then

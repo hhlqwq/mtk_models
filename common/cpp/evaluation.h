@@ -1,4 +1,4 @@
-// 与 Python 公共工具一致的固定快速子集,不改变默认全量行为.
+// 与 Python 公共工具一致,默认使用固定小子集.
 #ifndef MTK_MODELS_COMMON_CPP_EVALUATION_H_
 #define MTK_MODELS_COMMON_CPP_EVALUATION_H_
 
@@ -12,10 +12,14 @@
 
 namespace mtk {
 
-// 快速模式由 run.sh 或显式环境设置传递给 C++ 步骤.
+// 部署入口固定使用 subset,独立全量评价入口传递 full.
 inline bool IsTestEvaluation() {
-    const char* value = std::getenv("MTK_EVAL_TEST");
-    return value != nullptr && std::string(value) == "1";
+    const char* value = std::getenv("MTK_EVAL_SCOPE");
+    const std::string scope = value == nullptr ? "subset" : value;
+    if (scope != "subset" && scope != "full") {
+        throw std::runtime_error("MTK_EVAL_SCOPE 必须为 subset 或 full.");
+    }
+    return scope == "subset";
 }
 
 // 与主机一致,固定包含已发布效果示例,再按编号补齐100张.

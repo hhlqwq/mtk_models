@@ -9,7 +9,7 @@ from pathlib import Path
 from tools.board import configure_parser
 
 from tools.evaluation import (
-    add_test_argument, is_test, record_selection, result_status, scope_metadata,
+    is_test, record_selection, result_status, scope_metadata,
     select_samples,
 )
 
@@ -22,7 +22,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--labels", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
-    add_test_argument(parser)
     configure_parser(parser, __file__, {
         "predictions": lambda c: c.work / "predictions.jsonl",
         "labels": lambda c: c.dataset / "val_labels_0based.txt",
@@ -77,7 +76,7 @@ def evaluate(args: argparse.Namespace) -> None:
                     any(not isinstance(value, int) or
                         not 0 <= value < 1000 for value in predictions)):
                 raise ValueError(f"C++ 预测记录不匹配: {index}.")
-            timing = float(record["npu_ms"])
+            timing = float(record["npu_ms"]) if is_test() else 0.0
             if not math.isfinite(timing) or timing < 0:
                 raise ValueError(f"NPU 耗时非法: {index}.")
             timings.append(timing)
@@ -92,7 +91,7 @@ def evaluate(args: argparse.Namespace) -> None:
         raise ValueError(f"预测数量不完整: {len(timings)}/50000.")
     sorted_times = sorted(timings)
     memory_path = args.predictions.parent / "memory.json"
-    memory = json.loads(memory_path.read_text(encoding="utf-8")) if memory_path.is_file() else {}
+    memory = json.loads(memory_path.read_text(encoding="utf-8")) if is_test() and memory_path.is_file() else {}
     summary = {
         "peak_rss_kib": memory.get("peak_rss_kib"),
         "status": result_status(), **scope_metadata(),
@@ -109,6 +108,9 @@ def evaluate(args: argparse.Namespace) -> None:
         "npu_mean_ms": statistics.fmean(timings),
         "npu_p95_ms": sorted_times[math.ceil(0.95 * len(sorted_times)) - 1],
     }
+    if not is_test():
+        for key in ("peak_rss_kib", "timing_scope", "npu_mean_ms", "npu_p95_ms"):
+            summary.pop(key)
     args.report.mkdir(parents=True, exist_ok=True)
     (args.report / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",

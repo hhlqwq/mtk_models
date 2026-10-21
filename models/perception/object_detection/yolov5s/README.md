@@ -4,6 +4,14 @@ COCO 80 类目标检测。模型来源和许可证见[模型卡](model_card.md)�
 
 量化方式: INT8 训练后量化 (PTQ),使用 100 张图片校准.
 
+## 执行范围
+
+`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: COCO 固定 100 张图片.评价范围不改变校准、量化或编译配方.
+
+全量精度使用独立入口: 容器执行 `bash deploy/evaluate.sh` 生成已有浮点模型的全量参考,单独放入现有部署包后,板端执行 `bash evaluate.sh`.该流程不量化、不编译、不上传,仅推理和计算精度,结果保存为本次运行的 `accuracy_summary.json`.详见[板端评价规范](../../../../docs/genio_720.md).
+
+下文已归档指标保留原运行范围,不因默认入口变化而更新.
+
 ## 第一步: 编译并上传
 
 模型、数据集和部署路径见 [config.yaml](config.yaml),资源来源见 [source_url.txt](models/source_url.txt).
@@ -30,7 +38,7 @@ bash deploy/run.sh
 bash run.sh
 ```
 
-默认执行 COCO val2017 全量 5000 张图片测试,无需参数.
+默认执行固定 100 张图片的小批量验证;全量 5000 张使用独立的 `evaluate.sh`.
 
 ## 数据与精度评测
 
@@ -81,6 +89,7 @@ NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不
 ```text
 部署目录/
 ├── run.sh
+├── evaluate.sh          # 独立全量精度.
 ├── board_paths.conf
 ├── models/              # 模型与推理所需参数.
 ├── board/               # 板端程序、评测代码及必要依赖.
@@ -91,7 +100,7 @@ NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不
 全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后保留汇总和少量效果示例,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
 ## 文件结构
 
-- `deploy/run.sh`: 编译上传和板端测试的唯一 Shell 入口.
+- `deploy/run.sh`: 部署和默认小批量验证入口;全量精度使用独立的 `deploy/evaluate.sh`.
 - `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
 - `deploy/board/`: 板端程序源码、预处理和评测代码.
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.

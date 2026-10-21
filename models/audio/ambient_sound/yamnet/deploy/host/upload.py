@@ -16,13 +16,14 @@ from tools.evaluation import audio_records, is_test, scope_metadata
 from tools.deploy import arguments, upload
 
 
-def prepare_reference(args):
+def prepare_reference(args, *, include_examples=True):
     """整理同范围浮点参考、哈希和固定示例,供当前上传步骤使用."""
     records = audio_records(load_records(args.dataset))
     labels = args.models_dir / "upstream/yamnet_class_map.csv"
     reference = {}
     for backend in ("tensorflow", "onnx"):
-        report = json.loads((args.work / backend / "summary.json").read_text())
+        mode = "test" if is_test() else "full"
+        report = json.loads((args.work / "evaluation" / mode / backend / "summary.json").read_text())
         if (report.get("samples") != len(records) or
                 report.get("evaluation_scope", "full") != scope_metadata()["evaluation_scope"]):
             raise ValueError(f"{backend} 参考报告与本次样本范围不一致.")
@@ -39,6 +40,9 @@ def prepare_reference(args):
     reference.update(scope_metadata())
     filename = "fp32_reference_test.json" if is_test() else "fp32_reference.json"
     (args.models_dir / filename).write_text(json.dumps(reference, indent=2))
+    print(f"[参考] {args.models_dir / filename}", flush=True)
+    if not include_examples:
+        return
     shutil.copy2(labels, args.models_dir / "yamnet_class_map.csv")
     inputs = args.model_root / "examples/input"
     inputs.mkdir(parents=True, exist_ok=True)

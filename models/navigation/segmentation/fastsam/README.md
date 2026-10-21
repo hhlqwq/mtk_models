@@ -4,6 +4,14 @@
 
 模型来源见[模型卡](model_card.md),权重与依赖来源见 [source_url.txt](models/source_url.txt).
 
+## 执行范围
+
+`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: COCO 固定 100 张图片.评价范围不改变校准、量化或编译配方.
+
+全量精度使用独立入口: 容器执行 `bash deploy/evaluate.sh` 生成已有浮点模型的全量参考,单独放入现有部署包后,板端执行 `bash evaluate.sh`.该流程不量化、不编译、不上传,仅推理和计算精度,结果保存为本次运行的 `accuracy_summary.json`.详见[板端评价规范](../../../../docs/genio_720.md).
+
+下文已归档指标保留原运行范围,不因默认入口变化而更新.
+
 ## 配置与运行
 
 - [config.yaml](config.yaml): 模型、校准数据、输出和板端部署目录.

@@ -7,7 +7,6 @@ import sys
 from package import package_model
 
 from tools.deploy import arguments
-from tools.evaluation import is_test
 from tools.llm.native import settings
 from tools.process import run_command
 
@@ -27,8 +26,8 @@ def main():
         str(package) + "/", f"{host}:{shlex.quote(target)}/",
     ])
     print(f"[上传完成] 当前转换资源保留在 {native.work}.", flush=True)
-    flag = " -test" if is_test() else ""
-    print(f"[下一步] 在板端执行: cd {shlex.quote(target)} && bash run.sh{flag}", flush=True)
+    print(f"[下一步] 在板端执行小批量验证: cd {shlex.quote(target)} && bash run.sh", flush=True)
+    print("[独立全量精度] 准备全量评价资源后在部署目录执行 bash evaluate.sh.", flush=True)
 
 
 if __name__ == "__main__":

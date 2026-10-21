@@ -10,7 +10,7 @@ from tools.storage import REPO_ROOT, load_model_config
 
 from tools.accuracy.evaluate_onnx import evaluate_model
 
-from tools.evaluation import add_test_argument, is_test, result_status
+from tools.evaluation import is_test, result_status
 
 
 def onnx_eval(config: dict, paths: dict, config_path: Path) -> None:
@@ -44,7 +44,6 @@ def main() -> None:
     parser.add_argument("--config", type=Path,
                         default=Path(__file__).resolve().parents[2] / "config.yaml")
     parser.add_argument("--work-dir", type=Path, help="覆盖默认的模型外部资源 build 目录.")
-    add_test_argument(parser)
     args = parser.parse_args()
     config_path = args.config.resolve()
     config = load_model_config(config_path)

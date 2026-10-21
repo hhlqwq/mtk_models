@@ -3,6 +3,14 @@
 COCO 80 类目标检测,固定输入 `1x3x640x640` RGB,INT8 PTQ,目标为
 MT8189 / MDLA 5.3.
 
+## 执行范围
+
+`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: COCO 固定 100 张图片.评价范围不改变校准、量化或编译配方.
+
+全量精度使用独立入口: 容器执行 `bash deploy/evaluate.sh` 生成已有浮点模型的全量参考,单独放入现有部署包后,板端执行 `bash evaluate.sh`.该流程不量化、不编译、不上传,仅推理和计算精度,结果保存为本次运行的 `accuracy_summary.json`.详见[板端评价规范](../../../../docs/genio_720.md).
+
+下文已归档指标保留原运行范围,不因默认入口变化而更新.
+
 ## 官方来源
 
 - 实现: https://github.com/ultralytics/ultralytics/tree/v8.0.111
@@ -30,7 +38,7 @@ bash models/perception/object_detection/yolov8n/deploy/run.sh
 bash run.sh
 ```
 
-板端使用配置的 COCO val2017 数据集,执行 20 次预热和 5000 张真实 NPU 推理,计算 mAP、平均 NPU 延迟、端到端延迟及进程峰值 RSS,保存检测效果.各次结果使用独立的 `results/<运行编号>/` 目录,不覆盖已有运行.
+板端使用配置的 COCO val2017 数据集,默认执行 20 次预热和固定 100 张真实 NPU 推理,计算 mAP、平均 NPU 延迟、端到端延迟及进程峰值 RSS,保存检测效果.各次结果使用独立的 `results/<运行编号>/` 目录,不覆盖已有运行.
 
 ## 适配与评测协议
 

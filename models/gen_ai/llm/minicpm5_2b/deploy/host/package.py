@@ -122,8 +122,8 @@ def package(work, output, prefill, quantized_prefix=None):
         "本部署包尚待板端评价.\n\n"
         "在本部署目录运行:\n\n"
         "```bash\nbash run.sh\n```\n\n"
-        "少量评价使用 `bash run.sh -test`.\n"
-        "配置见 config.json,结果见 results/summary.json 或 results/summary_test.json.\n"
+        "无参数默认小批量验证;全量精度单独执行 `bash evaluate.sh`.\n"
+        "配置见 config.json,小批量结果见 results/summary_test.json,全量见独立运行目录的 accuracy_summary.json.\n"
         "具体工具命令及参数由执行代码维护并打印.\n")
     files = []
     for path in sorted(output.rglob("*")):
@@ -163,10 +163,12 @@ def package_model(native):
         shutil.rmtree(output)
     package(native.work, output, native.prefill, native.quantized)
     shutil.copyfile(native.ctx.model / "deploy/run.sh", output / "run.sh")
+    shutil.copyfile(native.ctx.model / "deploy/evaluate.sh", output / "evaluate.sh")
     board = output / "board"
     board.mkdir()
     for name in ("infer.py", "evaluate.py", "summarize.py"):
         shutil.copyfile(native.ctx.model / "deploy/board" / name, board / name)
+    shutil.copyfile(REPO_ROOT / "tools/accuracy_summary.py", board / "accuracy_summary.py")
     library = native.ctx.work / "libneuron_bridge.so"
     with library.open("rb") as stream:
         header = stream.read(20)
@@ -178,7 +180,7 @@ def package_model(native):
     shared.mkdir()
     for name in ("__init__", "evaluate_board_quality", "evaluate_mmlu"):
         shutil.copyfile(REPO_ROOT / "tools/llm" / f"{name}.py", shared / f"{name}.py")
-    modes = ["test"] if is_test() else ["full", "test"]
+    modes = [mode]
     for prepared in modes:
         shutil.copytree(evaluation.parent / prepared, output / "evaluation" / prepared,
                         ignore=shutil.ignore_patterns("*.npy"))

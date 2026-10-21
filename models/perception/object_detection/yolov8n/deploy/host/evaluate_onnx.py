@@ -19,7 +19,7 @@ from export_model import load_model, raw_forward
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from yolov8_utils import COCO_IDS, OUTPUT_NAMES, postprocess, preprocess
 
-from tools.evaluation import add_test_argument, coco_ids, is_test, result_status, scope_metadata
+from tools.evaluation import coco_ids, is_test, result_status, scope_metadata
 from tools.deploy import configure_parser, reference_path
 
 
@@ -88,7 +88,6 @@ def main():
     parser.add_argument("--weights", type=Path)
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    add_test_argument(parser)
     ctx = configure_parser(parser, __file__, {
         "dataset_root": lambda c: c.dataset,
         "output": reference_path,

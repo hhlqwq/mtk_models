@@ -4,6 +4,14 @@ Google YAMNet 环境声音分类模型,输出 AudioSet 521 类分数.默认使�
 
 来源和许可证见 [模型卡](model_card.md)与[资源记录](models/source_url.txt).官方权重、源码和 ESC-50 数据集须提前放在 NAS,不在运行时下载.
 
+## 执行范围
+
+`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: ESC-50 每类每折一条,共 250 条音频.评价范围不改变校准、量化或编译配方.
+
+全量精度使用独立入口: 容器执行 `bash deploy/evaluate.sh` 生成已有浮点模型的全量参考,单独放入现有部署包后,板端执行 `bash evaluate.sh`.该流程不量化、不编译、不上传,仅推理和计算精度,结果保存为本次运行的 `accuracy_summary.json`.详见[板端评价规范](../../../../docs/genio_720.md).
+
+下文已归档指标保留原运行范围,不因默认入口变化而更新.
+
 ## 配置与运行
 
 模型与数据路径、量化精度在 [config.yaml](config.yaml) 中设置,公共工具链由编译容器加载.转换依赖 TensorFlow CPU 2.15.1、tf2onnx 1.16.1 等专用环境,使用平台配置中的 `MTK_YAMNET_PYTHON`;板端需要 ffmpeg 和 NumPy.
@@ -20,7 +28,7 @@ bash models/audio/ambient_sound/yamnet/deploy/run.sh
 bash run.sh
 ```
 
-两端加 `-test` 使用固定小子集.默认 `conversion.precision=w8a16`,可选 `int8_tail16` 为后段局部 INT16 激活方案.精度由配置选择,不同方案的运行参数和结果分别记录.
+两端无参数默认使用固定小子集.默认 `conversion.precision=w8a16`,可选 `int8_tail16` 为后段局部 INT16 激活方案.精度由配置选择,不同方案的运行参数和结果分别记录.
 
 ## 评价协议
 

@@ -1,6 +1,7 @@
 """读取板端配置并调度 C++ 推理,不计算精度指标."""
 
 from tools.board import command, context
+from tools.evaluation import is_test
 
 
 def main():
@@ -15,7 +16,7 @@ def main():
             "--output", ctx.work / "person_detections.tsv")
     command(ctx, "rtmpose_board_eval", "--model", ctx.root / "models/model_int8.dla",
             "--images", ctx.dataset / "images", "--manifest", ctx.work / "person_detections.tsv",
-            "--output-dir", ctx.work, "--warmup", "20", "--progress-interval", "500")
+            "--output-dir", ctx.work, "--warmup", "20" if is_test() else "0", "--progress-interval", "500")
 
 
 

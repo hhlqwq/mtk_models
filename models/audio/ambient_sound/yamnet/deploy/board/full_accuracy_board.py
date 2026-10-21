@@ -15,7 +15,7 @@ from audio_utils import load_records, load_waveform, mapping, metrics, preproces
 from tools.board import configure_parser
 
 from tools.evaluation import (
-    add_test_argument, audio_records, is_test, matching_reference, result_status,
+    audio_records, is_test, matching_reference, result_status,
     scope_metadata,
 )
 
@@ -59,15 +59,6 @@ def summarize(args):
     audio = json.loads((args.work / "audio_manifest.json").read_text())
     if [row["filename"] for row in audio] != [row["filename"] for row in records]:
         raise ValueError("音频顺序不一致.")
-    with (args.work / "timings.csv").open() as stream:
-        timing_rows = list(csv.DictReader(stream))
-    expected = [(clip, patch) for clip, row in enumerate(audio)
-                for patch in range(row["patches"])]
-    if [(int(row["clip"]), int(row["patch"])) for row in timing_rows] != expected:
-        raise ValueError("窗口耗时覆盖不足、重复或顺序错误.")
-    npu = np.array([float(row["npu_ms"]) for row in timing_rows])
-    if not np.isfinite(npu).all() or np.any(npu <= 0):
-        raise ValueError("NPU 耗时含无效数.")
     reference_path = args.models_dir / ("fp32_reference_test.json" if is_test() else "fp32_reference.json")
     if is_test() and not reference_path.exists():
         reference_path = args.models_dir / "fp32_reference.json"
@@ -84,6 +75,28 @@ def summarize(args):
     matched = matching_reference(reference)
     baseline = reference["onnx"]["metrics"]["held_out"]["map"] if matched else None
     primary = actual["held_out"]["map"]
+    if not is_test():
+        summary = {
+            "status": result_status(), **scope_metadata(), "model": "yamnet", "run_id": args.run_id,
+            "precision": args.precision, "dataset": "ESC-50", "samples": len(records),
+            "evaluation_samples": actual["held_out"]["samples"], "evaluation_folds": [2, 3, 4, 5],
+            "metric": "ESC-50 projected macro AP, folds 2-5", "board_accuracy": primary,
+            "reference_accuracy": baseline, "reference_source": "同协议 ONNX FP32" if matched else None,
+            "metrics": actual,
+        }
+        args.output.mkdir(parents=True, exist_ok=True)
+        (args.output / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))
+        print(f"[全量精度] {args.output / 'summary.json'}", flush=True)
+        return
+    with (args.work / "timings.csv").open() as stream:
+        timing_rows = list(csv.DictReader(stream))
+    expected = [(clip, patch) for clip, row in enumerate(audio)
+                for patch in range(row["patches"])]
+    if [(int(row["clip"]), int(row["patch"])) for row in timing_rows] != expected:
+        raise ValueError("窗口耗时覆盖不足、重复或顺序错误.")
+    npu = np.array([float(row["npu_ms"]) for row in timing_rows])
+    if not np.isfinite(npu).all() or np.any(npu <= 0):
+        raise ValueError("NPU 耗时含无效数.")
     with (args.work / "clip_times.csv").open() as stream:
         clip_rows = list(csv.DictReader(stream))
     if [int(row["clip"]) for row in clip_rows] != list(range(len(records))):
@@ -156,7 +169,6 @@ def main():
     parser.add_argument("--run-id")
     parser.add_argument("--precision", choices=["fp16", "int8", "w8a16", "int8_tail16"],
                         default="w8a16")
-    add_test_argument(parser)
     configure_parser(parser, __file__, {
         "dataset": lambda c: c.dataset, "work": lambda c: c.work,
         "models_dir": lambda c: c.root / "models", "output": lambda c: c.result,

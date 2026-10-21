@@ -14,7 +14,7 @@ import numpy as np
 from tools.board import configure_parser
 
 from tools.evaluation import (
-    add_test_argument, is_test, record_selection, scope_metadata,
+    is_test, record_selection, scope_metadata,
 )
 
 
@@ -318,7 +318,6 @@ def parse_args():
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--config", type=Path,
                         default=Path(__file__).resolve().parent.parent / "config.json")
-    add_test_argument(parser)
     configure_parser(parser, __file__, {
         "models": lambda c: c.root / "models",
         "library": lambda c: c.root / "board/libneuron_bridge.so",

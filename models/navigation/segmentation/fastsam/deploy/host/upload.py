@@ -16,7 +16,7 @@ from tools.storage import REPO_ROOT, load_model_config
 from tools.process import run_command
 
 from tools.evaluation import (
-    add_test_argument, coco_ids, is_test, matching_reference, result_status,
+    coco_ids, is_test, matching_reference, result_status,
 )
 
 
@@ -57,14 +57,14 @@ def upload(config: dict, paths: dict, config_path: Path) -> None:
     snapshot.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
     deploy = paths["model"] / "deploy"
     groups = {
-        "": [deploy / "run.sh", snapshot],
+        "": [deploy / "run.sh", deploy / "evaluate.sh", snapshot],
         "models": [paths["output"] / "model_int8.dla",
                    paths["work"] / "runtime_config.csv", reference],
         "board": [deploy / "board/infer.py", deploy / "board/full_accuracy_board.py",
                   deploy / "board/render.py", deploy / "board/summarize.py",
                   deploy / "board/accuracy_protocol.json", paths["work"] / "fastsam_board",
                   *[paths["repo"] / "tools" / name for name in
-                    ("render_examples.py", "summarize_board_result.py", "model_size.py")]],
+                    ("render_examples.py", "summarize_board_result.py", "model_size.py", "accuracy_summary.py")]],
         "board/tools": [paths["repo"] / "tools" / name for name in
                         ("__init__.py", "board.py", "files.py", "process.py", "evaluation.py")],
         "examples/input": [samples,
@@ -87,7 +87,8 @@ def upload(config: dict, paths: dict, config_path: Path) -> None:
         run_command(["scp", *ssh_options, *files, f"{board_host}:{remote}"])
     run_command(["ssh", *ssh_options, board_host,
                  "chmod 755 " + shlex.quote(f"{destination}/board/fastsam_board")])
-    print(f"[下一步] 登录 {board_host},执行: bash {destination}/run.sh{' -test' if is_test() else ''}", flush=True)
+    print(f"[下一步] 在开发板执行小批量验证: bash {destination}/run.sh", flush=True)
+    print(f"[独立全量精度] 资源准备完成后执行: bash {destination}/evaluate.sh", flush=True)
 
 
 def main() -> None:
@@ -96,7 +97,6 @@ def main() -> None:
     parser.add_argument("--config", type=Path,
                         default=Path(__file__).resolve().parents[2] / "config.yaml")
     parser.add_argument("--work-dir", type=Path, help="覆盖默认的模型外部资源 build 目录.")
-    add_test_argument(parser)
     args = parser.parse_args()
     config_path = args.config.resolve()
     config = load_model_config(config_path)

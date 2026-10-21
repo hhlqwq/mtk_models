@@ -11,7 +11,7 @@ import numpy as np
 from tools.files import sha256
 
 from tools.evaluation import (
-    add_test_argument, is_test, record_selection, result_status, scope_metadata,
+    is_test, record_selection, result_status, scope_metadata,
 )
 
 
@@ -126,13 +126,13 @@ def evaluate(args):
         protocol_path = args.quality_data / "tflite_quality.json"
     report = json.loads(protocol_path.read_text())
     if report.get("evaluation_scope") == "subset" and not is_test():
-        raise ValueError("快速语料必须使用 -test,不能作为正式评测输入.")
+        raise ValueError("当前为全量入口,不能使用小批量语料.")
     contract = json.loads((args.quality_data / "board_input_contract.json").read_text())
     manifest = json.loads((args.package / "manifest.json").read_text())
     if report["protocol"] not in ("fixed_text_rows_v1", "full_test_block128_v1") or report["block_tokens"] != 128:
         raise ValueError("需要统一的原始文本评价协议.")
     if is_test() and report.get("evaluation_scope") == "full":
-        raise ValueError("全量输入不能作为快速结果,请先上传 -test 对应评价资源.")
+        raise ValueError("小批量入口需要对应子集资源,不能混用全量输入.")
     if contract["tflite_sha256"] != report["tflite_sha256"]:
         raise ValueError("输入契约与主机质量报告不符.")
     inputs_path = args.quality_data / "board_inputs.npz"
@@ -266,7 +266,6 @@ def main():
     parser.add_argument("--diagnostic-blocks", type=int, default=0,
                         help="仅执行前 N 个块并保存逐位置硬件 logits.")
     parser.add_argument("--decode-steps", type=int, default=0)
-    add_test_argument(parser)
     args = parser.parse_args()
     if is_test():
         args.output = args.output / "test"

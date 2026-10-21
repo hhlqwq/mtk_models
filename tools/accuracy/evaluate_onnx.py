@@ -19,7 +19,7 @@ import onnxruntime as ort
 import tqdm
 
 from tools.evaluation import (
-    SPEECH_EXAMPLES, add_test_argument, coco_ids, is_test, result_status,
+    SPEECH_EXAMPLES, coco_ids, is_test, result_status,
     scope_metadata, select_samples,
 )
 
@@ -372,7 +372,6 @@ def main() -> None:
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--temp-dir", type=Path, help="评测临时文件的父目录.")
-    add_test_argument(parser)
     args = parser.parse_args()
     if args.model == "whisper_tiny" and args.decoder_onnx is None:
         parser.error("Whisper 精度评测需要 --decoder-onnx.")

@@ -4,7 +4,6 @@ from collections import defaultdict
 import hashlib
 import json
 import os
-import sys
 
 
 LIMITS = {"fastsam": 100, "yolov5s": 100, "yolov8n": 100,
@@ -16,15 +15,11 @@ SPEECH_EXAMPLES = ("1089-134686-0000", "1188-133604-0000")
 
 
 def is_test():
-    """显式快速参数或入口导出的模式标记启用小样本评测."""
-    return os.environ.get("MTK_EVAL_TEST") == "1" or any(
-        value in ("-test", "--test") for value in sys.argv[1:])
-
-
-def add_test_argument(parser):
-    """为独立评测入口提供与 run.sh 一致的快速参数."""
-    parser.add_argument("-test", "--test", action="store_true", default=is_test(),
-                        help="固定小子集流程验证,不代表全量精度.")
+    """默认选择固定小子集,全量范围由独立评价入口传递."""
+    scope = os.environ.get("MTK_EVAL_SCOPE", "subset")
+    if scope not in ("subset", "full"):
+        raise ValueError("MTK_EVAL_SCOPE 必须为 subset 或 full.")
+    return scope == "subset"
 
 
 def result_status(status="complete"):

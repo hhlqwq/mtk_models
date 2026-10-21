@@ -1,4 +1,4 @@
-"""验证快速子集、默认全量行为及参考报告的范围隔离."""
+"""验证快速子集、默认小批量与独立全量行为及参考报告的范围隔离."""
 
 import argparse
 import ast
@@ -25,25 +25,27 @@ class EvaluationTest(unittest.TestCase):
         self.arguments.stop()
         self.environment.stop()
 
-    def test_default_full(self):
-        """无参数保留输入全集及原有成功状态."""
+    def test_default_subset_and_explicit_full(self):
+        """默认固定小批量,只有显式全量范围保留全集."""
         values = list(range(5000))
+        self.assertEqual(len(evaluation.coco_ids(values)), 100)
+        self.assertEqual(evaluation.result_status(), "smoke_test")
+        self.assertEqual(evaluation.scope_metadata()["evaluation_scope"], "subset")
+        os.environ["MTK_EVAL_SCOPE"] = "full"
         self.assertEqual(evaluation.coco_ids(values), values)
         self.assertEqual(evaluation.result_status(), "complete")
         self.assertEqual(evaluation.scope_metadata(), {"evaluation_scope": "full"})
 
-    def test_argument_and_failure_status(self):
-        """独立入口识别快速参数,失败状态不被改为成功."""
-        with mock.patch("sys.argv", ["evaluate.py", "-test"]):
-            parser = argparse.ArgumentParser()
-            evaluation.add_test_argument(parser)
-            self.assertTrue(parser.parse_args().test)
-            self.assertEqual(evaluation.result_status(), "smoke_test")
-            self.assertEqual(evaluation.result_status("incomplete"), "incomplete")
+    def test_invalid_scope_and_failure_status(self):
+        """拒绝拼错的范围,失败状态不能改为成功."""
+        self.assertEqual(evaluation.result_status("incomplete"), "incomplete")
+        os.environ["MTK_EVAL_SCOPE"] = "invalid"
+        with self.assertRaises(ValueError):
+            evaluation.is_test()
 
     def test_coco_subset_deterministic(self):
         """固定 100 张包含示例,输入顺序不影响两端指纹."""
-        os.environ["MTK_EVAL_TEST"] = "1"
+        os.environ["MTK_EVAL_SCOPE"] = "subset"
         values = list(range(5000)) + [210299, 252219, 481386]
         selected = evaluation.coco_ids(values)
         digest = evaluation.scope_metadata()["sample_ids_sha256"]
@@ -54,7 +56,7 @@ class EvaluationTest(unittest.TestCase):
 
     def test_lfw_balanced_folds(self):
         """十折每折各选五个同人和异人配对."""
-        os.environ["MTK_EVAL_TEST"] = "1"
+        os.environ["MTK_EVAL_SCOPE"] = "subset"
         rows = [{"fold_id": fold, "is_same": label,
                  "pair_id": (fold - 1) * 600 + label * 300 + index}
                 for fold in range(1, 11) for label in (0, 1)
@@ -68,7 +70,7 @@ class EvaluationTest(unittest.TestCase):
 
     def test_audio_coverage(self):
         """ESC-50 子集每类每折各一条,且固定按文件名排序."""
-        os.environ["MTK_EVAL_TEST"] = "1"
+        os.environ["MTK_EVAL_SCOPE"] = "subset"
         rows = [{"target": target, "fold": fold,
                  "filename": f"{fold}-{target:02d}-{index}.wav"}
                 for fold in range(1, 6) for target in range(50) for index in range(8)]
@@ -78,7 +80,7 @@ class EvaluationTest(unittest.TestCase):
 
     def test_reference_scope(self):
         """拒绝全量参考、其他子集参考及缺少指纹的快速报告."""
-        os.environ["MTK_EVAL_TEST"] = "1"
+        os.environ["MTK_EVAL_SCOPE"] = "subset"
         digest = evaluation.record_selection(["a", "b"])
         self.assertFalse(evaluation.matching_reference({"evaluation_scope": "full"}))
         self.assertFalse(evaluation.matching_reference({"evaluation_scope": "subset"}))
@@ -108,11 +110,11 @@ class EvaluationTest(unittest.TestCase):
                 captured = []
                 namespace = {"__doc__": "参数检查", "argparse": argparse, "Path": Path,
                              "is_test": evaluation.is_test,
-                             "add_test_argument": evaluation.add_test_argument,
                              "evaluate": captured.append, "prepare": captured.append}
                 exec(compile(ast.Module(body=[main], type_ignores=[]), filename, "exec"),
                      namespace)
-                argv = [filename, *arguments, *(["-test"] if quick else [])]
+                os.environ["MTK_EVAL_SCOPE"] = "subset" if quick else "full"
+                argv = [filename, *arguments]
                 with mock.patch("sys.argv", argv):
                     namespace["main"]()
                 self.assertEqual(len(captured), 1)

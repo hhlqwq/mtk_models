@@ -4,6 +4,14 @@ ImageNet-1K 图像分类，输入为 224×224 RGB 图像。正式上游为 PyTor
 
 量化方式: INT8 训练后量化 (PTQ),采用逐输出通道权重量化。
 
+## 执行范围
+
+`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: ImageNet 固定 200 张图片.评价范围不改变校准、量化或编译配方.
+
+全量精度使用独立入口: 容器执行 `bash deploy/evaluate.sh` 生成已有浮点模型的全量参考,单独放入现有部署包后,板端执行 `bash evaluate.sh`.该流程不量化、不编译、不上传,仅推理和计算精度,结果保存为本次运行的 `accuracy_summary.json`.详见[板端评价规范](../../../../docs/genio_720.md).
+
+下文已归档指标保留原运行范围,不因默认入口变化而更新.
+
 ## 第一步: 编译并上传
 
 模型权重、校准与验证数据、输出和板端目录在 [config.yaml](config.yaml) 配置.默认校准按文件名排序跳过前 1000 张,再取 100 张;模型与中间产物写入 NAS 资源目录.
@@ -28,7 +36,7 @@ bash run.sh
 
 ## 数据与精度评测
 
-ViT 默认执行 ImageNet 全量测试,无需额外参数。编译主机与板端均使用相同的 50000 张验证图片和零基类别标签:
+ViT 默认验证固定 200 张图片.完整数据仍按下列 ImageNet 50000 张验证图片和零基标签格式准备,全量评价单独执行 `evaluate.sh`:
 
 ```text
 数据集根目录/
@@ -87,6 +95,7 @@ NPU 耗时为常驻模型对 50000 张图片的 `NeuronRuntime_inference` 平均
 ```text
 部署目录/
 ├── run.sh
+├── evaluate.sh          # 独立全量精度.
 ├── board_paths.conf
 ├── models/              # 模型与推理所需参数.
 ├── board/               # 板端程序、评测代码及必要依赖.
@@ -97,7 +106,7 @@ NPU 耗时为常驻模型对 50000 张图片的 `NeuronRuntime_inference` 平均
 全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后保留汇总和少量效果示例,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
 ## 文件结构
 
-- `deploy/run.sh`: 编译上传和板端测试的唯一 Shell 入口.
+- `deploy/run.sh`: 部署和默认小批量验证入口;全量精度使用独立的 `deploy/evaluate.sh`.
 - `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
 - `deploy/board/`: 板端程序源码、预处理和评测代码.
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.

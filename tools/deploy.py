@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 import sys
 
-from tools.evaluation import add_test_argument, is_test
+from tools.evaluation import is_test
 from tools.process import run_command
 from tools.storage import REPO_ROOT, load_model_config, storage_roots
 
@@ -36,7 +36,6 @@ def arguments(entry):
     parser.add_argument("--config", type=Path,
                         default=Path(entry).resolve().parent.parent.parent / "config.yaml")
     parser.add_argument("--work-dir", type=Path)
-    add_test_argument(parser)
     args = parser.parse_args()
     return context(entry, args.config, args.work_dir)
 
@@ -99,9 +98,9 @@ def upload(ctx, model_files, programs, extra_files=()):
     if reference.is_file():
         model_files = [*model_files, reference]
     groups = {
-        "": [ctx.model / "deploy/run.sh", snapshot],
+        "": [ctx.model / "deploy/run.sh", ctx.model / "deploy/evaluate.sh", snapshot],
         "models": model_files,
-        "board": [*code, *programs],
+        "board": [*code, *programs, ctx.repo / "tools/accuracy_summary.py"],
         "board/tools": [ctx.repo / "tools" / name for name in
             ("__init__.py", "board.py", "evaluation.py", "files.py", "process.py", "coco.py")],
         "examples/input": [*sorted((ctx.model / "examples/input").glob("sample_*"))],
@@ -126,5 +125,5 @@ def upload(ctx, model_files, programs, extra_files=()):
     if programs:
         run_command(["ssh", *options, host, "chmod 755 " + " ".join(
             shlex.quote(str(Path(destination) / "board" / Path(path).name)) for path in programs)])
-    flag = " -test" if is_test() else ""
-    print(f"[下一步] 在开发板执行: bash {destination}/run.sh{flag}", flush=True)
+    print(f"[下一步] 在开发板执行小批量验证: bash {destination}/run.sh", flush=True)
+    print(f"[独立全量精度] 资源准备完成后执行: bash {destination}/evaluate.sh", flush=True)

@@ -14,7 +14,7 @@ from tools.board import configure_parser
 
 from tools.evaluation import (
     matching_reference,
-    add_test_argument, coco_ids, is_test, result_status, scope_metadata,
+    coco_ids, is_test, result_status, scope_metadata,
 )
 
 
@@ -68,13 +68,15 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
     if not math.isfinite(board_map) or not 0.0 <= board_map <= 1.0:
         raise ValueError("COCO mAP 无效,无法汇总精度.")
 
-    timings = json.loads(args.timings.read_text(encoding="utf-8"))
-    if timings["processed_images"] != len(expected_ids):
-        raise ValueError("耗时报告与精度报告的图片数不一致.")
-    npu_mean = float(timings["npu_ms"]["mean"])
-    if not math.isfinite(npu_mean) or npu_mean <= 0.0:
-        raise ValueError("NPU 平均耗时无效.")
-    peak_rss = timings.get("peak_rss_kb")
+    npu_mean = peak_rss = None
+    if is_test():
+        timings = json.loads(args.timings.read_text(encoding="utf-8"))
+        if timings["processed_images"] != len(expected_ids):
+            raise ValueError("耗时报告与精度报告的图片数不一致.")
+        npu_mean = float(timings["npu_ms"]["mean"])
+        if not math.isfinite(npu_mean) or npu_mean <= 0.0:
+            raise ValueError("NPU 平均耗时无效.")
+        peak_rss = timings.get("peak_rss_kb")
     if peak_rss is not None and (not math.isfinite(float(peak_rss)) or float(peak_rss) <= 0):
         raise ValueError("峰值 RSS 无效.")
     peak_rss_mib = None if peak_rss is None else float(peak_rss) / 1024.0
@@ -82,18 +84,21 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
     reference_path = getattr(args, "fp32_report", None)
     if reference_path and reference_path.is_file():
         report = json.loads(reference_path.read_text())
-        if matching_reference(report):
+        if (matching_reference(report) and report.get("model") == model
+                and report.get("samples", report.get("images")) == len(expected_ids)
+                and report.get("status") == result_status()):
             fp32_map = report["map_50_95"]
     if fp32_map is not None and (
             not math.isfinite(fp32_map) or not 0.0 <= fp32_map <= 1.0):
         raise ValueError("FP32 mAP 必须是 0 到 1 之间的数值.")
     loss_pp = None if fp32_map is None else (fp32_map - board_map) * 100.0
     summary_lines = [
-        f"板端 NPU 平均推理耗时: {npu_mean:.3f} ms",
         f"板端 mAP@0.5:0.95: {board_map:.6f}",
     ]
-    summary_lines.append("推理进程峰值 RSS: 未记录." if peak_rss_mib is None else
-                         f"推理进程峰值 RSS: {peak_rss_mib:.3f} MiB")
+    if is_test():
+        summary_lines.append(f"板端 NPU 平均推理耗时: {npu_mean:.3f} ms")
+        summary_lines.append("推理进程峰值 RSS: 未记录." if peak_rss_mib is None else
+                             f"推理进程峰值 RSS: {peak_rss_mib:.3f} MiB")
     if fp32_map is None:
         summary_lines.append("量化精度下降: 未计算,请配置同协议 FP32_MAP 基准.")
     else:
@@ -138,7 +143,6 @@ def parse_args(description=__doc__, *, entry=None) -> argparse.Namespace:
     parser.add_argument("--metrics", type=Path, required=True)
     parser.add_argument("--run-id")
     parser.add_argument("--fp32-report", type=Path)
-    add_test_argument(parser)
     if entry is not None:
         configure_parser(parser, entry, {
             "annotations": lambda c: c.dataset / "annotations/instances_val2017.json",

@@ -2,6 +2,7 @@
 
 面向 MediaTek Genio 720 和 Genio 5100 的开源模型适配仓库,包含模型转换、量化、NPU 部署及精度和性能评价.模型必须来自作者或官方开源项目;Qualcomm AI Hub Models 仅作为目录和交付方式参考.
 
+- [MTK 模型部署 skill](.agents/skills/mtk-model-deploy/SKILL.md): 复用本仓库适配与独立评价流程.
 - [模型总览](models/README.md): 型号、输入、量化方式和已归档指标.
 - [编译环境](docs/environment.md)与 [Docker](docker/README.md): 工具链、依赖和容器配置.
 - [Genio 720 板端规范](docs/genio_720.md): 部署布局、运行要求和评价口径.
@@ -29,7 +30,7 @@ bash models/perception/object_detection/yolov5s/deploy/run.sh
 bash run.sh
 ```
 
-支持快速评价的入口使用 `-test`;默认无参数运行.快速模式只缩小评价范围,不改变校准、量化或编译配方.模型特有的依赖、评价数量和入口差异见对应 README.
+两端无参数默认固定小批量验证,不改变校准、量化或编译配方.全量精度从部署流程拆出: 容器运行对应模型的 `deploy/evaluate.sh`,只读取已有浮点模型生成全量参考及评价输入;资源单独放入现有板端部署包后,执行 `bash evaluate.sh`,只进行全量推理和精度计算.该入口不导出、量化、编译、构建或上传,也不运行性能专项.结果按运行编号保留预测和 `accuracy_summary.json`,不覆盖已归档指标.各模型支持范围及资源位置见对应 README 和[板端规范](docs/genio_720.md).
 
 新建编译环境时使用 `docker/build_image.sh` 和 `docker/create_container.sh`,具体资源要求见 Docker 文档.运行模型时不自动下载权重、数据集或安装依赖.
 

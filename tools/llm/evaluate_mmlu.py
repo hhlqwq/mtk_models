@@ -12,7 +12,7 @@ import numpy as np
 from tools.files import sha256
 
 from tools.evaluation import (
-    add_test_argument, is_test, record_selection, result_status, scope_metadata,
+    is_test, record_selection, result_status, scope_metadata,
 )
 
 
@@ -197,9 +197,9 @@ def evaluate(args):
     if sha256(args.data / "cases.json") != protocol["cases_sha256"]:
         raise ValueError("MMLU 题目 Token 文件哈希不符.")
     if protocol.get("evaluation_scope") == "subset" and not is_test():
-        raise ValueError("快速题集必须使用 -test,不能作为正式评测输入.")
+        raise ValueError("当前为全量入口,不能使用小批量题集.")
     if is_test() and protocol.get("evaluation_scope") == "full":
-        raise ValueError("当前输入为全量题集,请先在容器执行 run.sh -test 准备快速题集.")
+        raise ValueError("当前为小批量入口,请先准备对应的固定子集题集.")
     cases = json.loads((args.data / "cases.json").read_text())
     if args.diagnostic_questions:
         if args.diagnostic_questions > len(cases):
@@ -342,7 +342,6 @@ def main():
     parser.add_argument("--package", type=Path)
     parser.add_argument("--library", type=Path)
     parser.add_argument("--output", type=Path, required=True)
-    add_test_argument(parser)
     args = parser.parse_args()
     if is_test():
         args.output = args.output / "test"

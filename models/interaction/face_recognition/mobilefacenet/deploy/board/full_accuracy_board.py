@@ -10,7 +10,7 @@ import numpy as np
 
 from tools.board import configure_parser, inference_records
 
-from tools.evaluation import add_test_argument, lfw_pairs, result_status, scope_metadata
+from tools.evaluation import is_test, lfw_pairs, result_status, scope_metadata
 
 
 EXPECTED_PAIRS = 6000
@@ -23,7 +23,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--work-dir", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--output", type=Path, required=True)
-    add_test_argument(parser)
     configure_parser(parser, __file__, {
         "dataset_root": lambda c: c.dataset, "work_dir": lambda c: c.work,
         "run_id": lambda c: c.run_id, "output": lambda c: c.work / "report/summary.json",
@@ -143,18 +142,19 @@ def evaluate(args: argparse.Namespace) -> None:
         if index % 100 == 0 or index == len(names):
             print(f"[评测] LFW {index}/{len(names)}", flush=True)
     verification, details = evaluate_pairs(rows, features)
-    times = [row["npu_ms"] for row in records.values()]
+    times = [row["npu_ms"] for row in records.values()] if is_test() else []
     report = {
         "status": result_status(), **scope_metadata(),
         "model": "mobilefacenet", "run_id": args.run_id,
         "dataset": "LFW_upstream_MTCNN_5_point_aligned",
         "input_protocol": "RGB_ImageNet_normalize_aligned_112x112",
         "distinct_images": len(names), **verification,
-        "backend": "cpp_neuron_runtime_hw", "npu_mean_ms": float(np.mean(times)),
-        "npu_p95_ms": float(np.percentile(times, 95)),
-        "peak_rss_kib": max(row["peak_rss_kib"] for row in records.values()),
-        "timing_scope": "逐图加载模型,单独统计 NeuronRuntime_inference 调用",
+        "backend": "cpp_neuron_runtime_hw",
     }
+    if is_test():
+        report.update(npu_mean_ms=float(np.mean(times)), npu_p95_ms=float(np.percentile(times, 95)),
+                      peak_rss_kib=max(row["peak_rss_kib"] for row in records.values()),
+                      timing_scope="逐图加载模型,单独统计 NeuronRuntime_inference 调用")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     with (args.output.parent / "pair_results.jsonl").open("w", encoding="utf-8") as stream:

@@ -41,7 +41,7 @@ def main():
     if not is_test() and (mmlu["evaluated_questions"] != 14042
                           or mmlu["scope"] != "full_test"
                           or ppl["protocol"] != "full_test_block128_v1"):
-        raise ValueError("默认入口必须完成全部 MMLU 与完整 WikiText2 test.")
+        raise ValueError("全量协议必须完成全部 MMLU 与完整 WikiText2 test.")
     if is_test() and (mmlu["evaluated_questions"] != ctx.config["evaluation"]["test_mmlu_questions"]
                       or ppl["blocks"] != ctx.config["evaluation"]["test_wikitext_blocks"]):
         raise ValueError("快速评价数量与配置不符.")

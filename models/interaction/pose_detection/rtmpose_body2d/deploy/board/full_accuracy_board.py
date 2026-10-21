@@ -13,7 +13,7 @@ from xtcocotools.cocoeval import COCOeval
 from tools.board import configure_parser
 
 from tools.evaluation import (
-    add_test_argument, coco_ids, is_test, result_status, scope_metadata,
+    coco_ids, is_test, result_status, scope_metadata,
 )
 
 SIGMAS = np.asarray([
@@ -173,7 +173,7 @@ def evaluate(args: argparse.Namespace) -> None:
             },
             "metrics": metrics,
         }, ensure_ascii=False, indent=2), encoding="utf-8")
-    print("[OK] WholeBody AP 已计算,准备汇总 NPU 耗时.")
+    print("[OK] WholeBody AP 已计算,原始预测和精度报告已保留.")
     print(f"[OK] WholeBody 指标: {args.metrics}")
 
 
@@ -186,7 +186,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--metrics", type=Path, required=True)
     parser.add_argument("--summary-log", type=Path, required=True)
     parser.add_argument("--run-id")
-    add_test_argument(parser)
     configure_parser(parser, __file__, {
         "annotations": lambda c: c.dataset / "annotations/coco_wholebody_val_v1.0.json",
         "predictions": lambda c: c.work / "predictions.jsonl",

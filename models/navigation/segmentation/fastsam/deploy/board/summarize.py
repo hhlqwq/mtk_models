@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import sys
 
-from tools.evaluation import add_test_argument, is_test
+from tools.evaluation import is_test
 
 
 def main() -> None:
@@ -17,7 +17,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=root / "config.json")
     parser.add_argument("--run-id", required=True)
-    add_test_argument(parser)
     args = parser.parse_args()
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.run_id):
         parser.error("运行编号只能包含字母、数字、下划线和连字符.")

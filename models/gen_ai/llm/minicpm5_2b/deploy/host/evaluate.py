@@ -1,7 +1,6 @@
 """直接读取评价数据,生成 FP32 参考和板端输入."""
 
 import argparse
-import os
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -47,7 +46,7 @@ def evaluate_mode(native, datasets):
 
 
 def main():
-    """全量部署同时携带快速参考,快速部署只准备固定小子集."""
+    """仅准备当前范围的参考与评价输入,不触发量化、编译或上传."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path)
     options = parser.parse_args()
@@ -55,14 +54,10 @@ def main():
     datasets = (ctx.dataset / ctx.config["data"]["mmlu_test"],
                 ctx.dataset / ctx.config["data"]["wikitext_test"])
     native = settings(ctx, python_executable=sys.executable)
-    original_mode = os.environ.get("MTK_EVAL_TEST", "0")
-    modes = ("test",) if is_test() else ("full", "test")
-    try:
-        for mode in modes:
-            os.environ["MTK_EVAL_TEST"] = "1" if mode == "test" else "0"
-            evaluate_mode(native, datasets)
-    finally:
-        os.environ["MTK_EVAL_TEST"] = original_mode
+    evaluate_mode(native, datasets)
+    mode = "test" if is_test() else "full"
+    print(f"[评价资源] {native.work / 'evaluation' / mode}; 单独放入板端 evaluation/{mode}.",
+          flush=True)
 
 
 if __name__ == "__main__":

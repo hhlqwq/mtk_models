@@ -1,6 +1,7 @@
 """按同协议直接计算 TensorFlow 或 ONNX 浮点精度."""
 
 import argparse
+from argparse import Namespace
 import json
 from pathlib import Path
 import sys
@@ -14,7 +15,7 @@ from audio_utils import load_records, load_waveform, mapping, metrics, preproces
 from tools.deploy import configure_parser
 
 from tools.evaluation import (
-    add_test_argument, audio_records, result_status, scope_metadata,
+    audio_records, is_test, result_status, scope_metadata,
 )
 
 
@@ -67,15 +68,20 @@ def main():
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--reference", type=Path)
-    add_test_argument(parser)
     ctx = configure_parser(parser, __file__, {
         "models_dir": lambda c: c.output, "dataset": lambda c: c.dataset,
     })
     args = parser.parse_args()
-    args.output = args.output or ctx.work / args.mode
+    mode = "test" if is_test() else "full"
+    args.output = args.output or ctx.work / "evaluation" / mode / args.mode
     if args.mode == "onnx" and args.reference is None:
-        args.reference = ctx.work / "tensorflow"
+        args.reference = ctx.work / "evaluation" / mode / "tensorflow"
     evaluate(args)
+    if not is_test() and args.mode == "onnx":
+        from upload import prepare_reference
+
+        prepare_reference(Namespace(model_root=ctx.model, models_dir=ctx.output,
+                                    dataset=ctx.dataset, work=ctx.work), include_examples=False)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from tools.evaluation import (
-    add_test_argument, is_test, record_selection, scope_metadata,
+    is_test, record_selection, scope_metadata,
 )
 
 from tools.deploy import configure_parser
@@ -204,7 +204,6 @@ def parse_args():
     parser.add_argument("--models", type=Path, required=True)
     parser.add_argument("--corpus", type=Path)
     parser.add_argument("--max-new-tokens", type=int, default=512)
-    add_test_argument(parser)
     configure_parser(parser, __file__, {
         "source": lambda c: Path(c.config["model"]["source"]),
         "models": lambda c: c.output,

@@ -1,67 +1,30 @@
 #!/usr/bin/env bash
-# 单脚本两步流程: 在编译主机编译并上传,在开发板执行测试.
-
+# 新模型入口骨架: 主机部署,板端默认固定小批量验证.
 set -euo pipefail
-export PYTHONDONTWRITEBYTECODE=1
-
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# 编译主机配置区: 只修改等号右侧的路径或名称.板端使用上传的 board_paths.conf.
-if [[ ! -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
-    # 模型目录: 根据本脚本的位置自动确定.
-    MODEL_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-    source "${MODEL_ROOT}/../../../../tools/storage.sh" "${MODEL_ROOT}"
-
-    # 1. 模型与校准数据.
-    # 模型文件: 原始权重或待编译的 ONNX 完整路径.
-    MODEL_SOURCE=""
-    # 校准数据: 编译主机与 Docker 可访问的图片目录.
-    CALIBRATION_DIR=""
-
-    # 2. 产物与临时目录.
-    # 模型输出目录: 转换与编译产物保存在这里.
-    MODEL_OUTPUT_DIR="${MODEL_ASSETS_DIR}"
-    # 临时构建目录: 缓存和中间文件保存在仓库外.
-    BUILD_WORK_DIR="/tmp/hailongcodex/$(date +%F)/model_id"
-
-    # 3. 板端地址与数据.
-    # 板端地址: SSH 用户和地址.
-    BOARD_HOST=""
-    # 板端部署目录: 上传模型、程序和本脚本的目录.
-    BOARD_DEPLOY_DIR=""
-    # 板端结果目录: 保存本次测试汇总.
-    BOARD_RESULTS_DIR="${BOARD_DEPLOY_DIR}/results"
-    # 板端数据: 与 ONNX 评测使用相同数据及标签.
-    BOARD_DATASET_DIR=""
-
-    # 4. ONNX 精度数据.
-    # 浮点精度数据: 编译主机与 Docker 可访问的数据集根目录.
-    ONNX_DATASET_DIR=""
-
-    # 5. 编译环境: 通常无需修改.
-    # Docker 容器: 编译主机上的 Genio 720 编译环境.
-    MTK_G720_CONTAINER=""
-    # C++ 编译器: 编译主机上的 AArch64 交叉编译命令.
-    CROSS_CXX="aarch64-linux-gnu-g++"
-    # SSH 选项: 首次连接接受主机密钥,之后验证保存的密钥.
-    SSH_OPTIONS=(-o BatchMode=yes -o StrictHostKeyChecking=accept-new)
-fi
-
-# 板端阶段: 使用上传的配置执行测试并汇总核心指标.
-if [[ -f "${SCRIPT_DIR}/board_paths.conf" ]]; then
-    source "${SCRIPT_DIR}/board_paths.conf"
-    # 模型与参数位于 models/,板端程序与评测代码位于 board/.
-    # 新模型须上传 tools/model_size.py,在生成 summary.json 后记录文件大小.
-    # python3 "${SCRIPT_DIR}/board/model_size.py" --models-dir "${SCRIPT_DIR}/models" \
-    #     --include "本次使用的模型.dla" --summary "${RESULT_DIR}/summary.json"
-    echo "[TODO] 在开发板执行模型测试,成功后仅保留 summary.json."
-    exit 2
-fi
-
-# 编译主机阶段: 检查配置,转换模型,交叉编译并上传.
+export PYTHONDONTWRITEBYTECODE=1 MTK_EVAL_SCOPE=subset
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if (( $# != 0 )); then
-    echo "[ERROR] 在编译主机直接运行 bash deploy/run.sh,无需参数." >&2
+    echo "[错误] 用法: bash run.sh;全量精度使用独立的 evaluate.sh." >&2
     exit 2
 fi
-echo "[TODO] 在编译主机转换模型、评测 ONNX、交叉编译 C++ 程序并上传."
-exit 2
+export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
+if [[ "${EVAL_RUN_ID}" != *_test ]]; then
+    export EVAL_RUN_ID="${EVAL_RUN_ID}_test"
+fi
+if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
+    CONFIG="${SCRIPT_DIR}/config.json"
+    for step in infer.py full_accuracy_board.py; do
+        [[ -f "${SCRIPT_DIR}/board/${step}" ]] || {
+            echo "[未实现] 请先实现板端 ${step}." >&2
+            exit 2
+        }
+    done
+    echo "[小批量 1/2] 已部署模型推理."
+    python3 "${SCRIPT_DIR}/board/infer.py" --config "${CONFIG}" --run-id "${EVAL_RUN_ID}"
+    echo "[小批量 2/2] 固定子集精度验证."
+    python3 "${SCRIPT_DIR}/board/full_accuracy_board.py" --config "${CONFIG}" --run-id "${EVAL_RUN_ID}"
+else
+    # 根据张量契约实现 deploy/host/,复用公共配置和上传工具后再启用.
+    echo "[未实现] 请实现当前模型的主机导出、量化、编译、小批量参考及打包上传步骤." >&2
+    exit 2
+fi

@@ -10,7 +10,7 @@ import re
 import sys
 import subprocess
 
-from tools.evaluation import add_test_argument, is_test
+from tools.evaluation import is_test
 from tools.process import run_command
 
 
@@ -20,7 +20,6 @@ def context(entry):
     parser = argparse.ArgumentParser(description="执行当前板端独立步骤.")
     parser.add_argument("--config", type=Path, default=root / "config.json")
     parser.add_argument("--run-id", default=os.environ.get("EVAL_RUN_ID"))
-    add_test_argument(parser)
     args = parser.parse_args()
     return paths(root, args.config, args.run_id)
 
@@ -33,7 +32,7 @@ def paths(root, config_path, run_id=None):
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id):
         raise ValueError("运行编号只允许字母、数字、下划线和连字符.")
     config = json.loads(Path(config_path).read_text(encoding="utf-8"))
-    result_name = ("latest_test" if is_test() else "latest") if config["board"].get(
+    result_name = "latest_test" if is_test() and config["board"].get(
         "retain_latest", False) else run_id
     result = root / config["board"].get("results_dir", "results") / result_name
     return argparse.Namespace(root=root, config=config, run_id=run_id,
@@ -49,8 +48,6 @@ def command(ctx, filename, *arguments, **kwargs):
 
 def configure_parser(parser, entry, bindings):
     """为公共指标和绘图工具提供板端配置默认值,保留原命令兼容性."""
-    if not any(action.dest == "test" for action in parser._actions):
-        add_test_argument(parser)
     if not any(action.dest == "config" for action in parser._actions):
         parser.add_argument("--config", type=Path)
     bootstrap = argparse.ArgumentParser(add_help=False)
@@ -106,7 +103,7 @@ def infer_images(ctx, program, images, metadata, input_shape, output_shape):
                 raise
             timing = json.loads((output / "timing.json").read_text(encoding="utf-8"))
             if (timing.get("backend") != "cpp_neuron_runtime_hw" or
-                    not math.isfinite(timing["npu_ms"]) or timing["npu_ms"] <= 0):
+                    (is_test() and (not math.isfinite(timing["npu_ms"]) or timing["npu_ms"] <= 0))):
                 raise ValueError(f"无效的 C++ 推理记录: {output}.")
             record = dict(image=name, directory=str(output.relative_to(ctx.work)), **timing)
             records.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -124,10 +121,11 @@ def inference_records(work, expected):
         directory = Path(row["directory"])
         if (name in records or directory.is_absolute() or ".." in directory.parts or
                 not directory.parts or directory.parts[0] != "raw" or
-                row.get("backend") != "cpp_neuron_runtime_hw" or
-                not math.isfinite(row["npu_ms"]) or row["npu_ms"] <= 0 or
-                type(row["peak_rss_kib"]) is not int or row["peak_rss_kib"] <= 0):
+                row.get("backend") != "cpp_neuron_runtime_hw"):
             raise ValueError(f"无效或重复的推理记录: {name}.")
+        if is_test() and (not math.isfinite(row["npu_ms"]) or row["npu_ms"] <= 0
+                          or type(row["peak_rss_kib"]) is not int or row["peak_rss_kib"] <= 0):
+            raise ValueError(f"小批量性能记录无效: {name}.")
         records[name] = row
     if set(records) != set(expected):
         raise ValueError("推理记录与本次选定评测图片不一致.")

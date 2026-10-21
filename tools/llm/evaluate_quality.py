@@ -18,7 +18,7 @@ from transformers import AutoTokenizer
 from tools.files import sha256
 
 from tools.evaluation import (
-    add_test_argument, is_test, record_selection, result_status, scope_metadata,
+    is_test, record_selection, result_status, scope_metadata,
 )
 
 
@@ -278,7 +278,6 @@ def main():
                         help="仅执行前 N 个固定文本块并保存逐位置 FP32 logits.")
     parser.add_argument("--decode-steps", type=int, default=0,
                         help="诊断模式下额外保存 N 个真实后续 Token 的 Decode 输出.")
-    add_test_argument(parser)
     args = parser.parse_args()
     if is_test():
         args.output = args.output / "test"

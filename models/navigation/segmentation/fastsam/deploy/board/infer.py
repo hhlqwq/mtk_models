@@ -17,7 +17,7 @@ from tools.process import run_command
 
 from tools.files import require_file
 
-from tools.evaluation import add_test_argument, coco_ids
+from tools.evaluation import coco_ids
 
 sys.dont_write_bytecode = True
 os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
@@ -98,7 +98,6 @@ def main() -> None:
     parser.add_argument("--resume", action="store_true", default=os.environ.get("EVAL_RESUME", "0") == "1",
                         help="续跑已有全量推理检查点.")
     parser.add_argument("--image", help="只推理指定图片,相对路径以板端数据集为基准.")
-    add_test_argument(parser)
     args = parser.parse_args()
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.run_id):
         parser.error("运行编号只能包含字母、数字、下划线和连字符.")

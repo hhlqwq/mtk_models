@@ -9,7 +9,7 @@ import subprocess
 import time
 
 from tools.evaluation import (
-    add_test_argument, is_test, record_selection, result_status, scope_metadata,
+    is_test, record_selection, result_status, scope_metadata,
 )
 
 
@@ -98,7 +98,6 @@ def main():
     parser.add_argument("--max-new-tokens", type=int, default=768)
     parser.add_argument("--performance-input", type=Path,
                         help="可选固定 128 Token 输入,单独记录统一性能指标.")
-    add_test_argument(parser)
     args = parser.parse_args()
     if is_test():
         args.max_new_tokens = 32

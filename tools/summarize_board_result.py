@@ -10,7 +10,7 @@ from tools.files import read_json
 
 import os
 from tools.evaluation import (
-    add_test_argument, is_test, matching_reference, result_status, scope_metadata,
+    is_test, matching_reference, result_status, scope_metadata,
 )
 
 from tools.board import configure_parser
@@ -166,7 +166,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reference", default="")
     parser.add_argument("--reference-source", default="用户提供的同协议参考基准")
     parser.add_argument("--reference-report", type=Path, help="参考报告,快速模式须匹配子集指纹.")
-    add_test_argument(parser)
     configure_parser(parser, __file__, {
         "model": lambda c: c.config["name"],
         "work_dir": lambda c: c.work,

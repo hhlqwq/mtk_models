@@ -37,9 +37,10 @@ class BoardConfigTest(unittest.TestCase):
     def test_full_and_quick_results_share_deployment(self):
         """快速模式只给 results 内的运行编号添加后缀."""
         with mock.patch("sys.argv", ["infer.py"]):
+            os.environ["MTK_EVAL_SCOPE"] = "full"
             full = paths(self.root, self.config, "example")
             self.assertEqual(full.result, self.root / "results/example")
-            os.environ["MTK_EVAL_TEST"] = "1"
+            os.environ["MTK_EVAL_SCOPE"] = "subset"
             quick = paths(self.root, self.config, "example")
             self.assertEqual(quick.result, self.root / "results/example_test")
             self.assertEqual(quick.config["board"]["deploy_dir"], str(self.root))

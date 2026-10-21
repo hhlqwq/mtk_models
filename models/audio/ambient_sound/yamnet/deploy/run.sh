@@ -3,15 +3,14 @@
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export MTK_EVAL_TEST=0
-if (( $# == 1 )) && [[ "$1" == "-test" ]]; then
-    export MTK_EVAL_TEST=1
-elif (( $# != 0 )); then
-    echo "[错误] 用法: bash run.sh [-test]" >&2
+# 部署固定使用小批量验证,全量精度请运行独立的 evaluate.sh.
+export MTK_EVAL_SCOPE=subset
+if (( $# != 0 )); then
+    echo "[错误] 用法: bash run.sh; 全量精度使用 bash evaluate.sh." >&2
     exit 2
 fi
 export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-if [[ "${MTK_EVAL_TEST}" == 1 && "${EVAL_RUN_ID}" != *_test ]]; then
+if [[ "${MTK_EVAL_SCOPE}" == subset && "${EVAL_RUN_ID}" != *_test ]]; then
     export EVAL_RUN_ID="${EVAL_RUN_ID}_test"
 fi
 

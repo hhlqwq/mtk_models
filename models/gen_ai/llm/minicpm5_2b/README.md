@@ -4,6 +4,14 @@
 使用官方 [openbmb/MiniCPM5-2B](https://huggingface.co/openbmb/MiniCPM5-2B),许可证 Apache-2.0.
 来源记录见 [source_url.txt](models/source_url.txt).
 
+## 执行范围
+
+`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: 配置指定的 MMLU 16 题和 WikiText2 4 块及功能示例.评价范围不改变校准、量化或编译配方.
+
+全量精度使用独立入口: 容器执行 `bash deploy/evaluate.sh` 生成已有浮点模型的全量参考,单独放入现有部署包后,板端执行 `bash evaluate.sh`.该流程不量化、不编译、不上传,仅推理和计算精度,结果保存为本次运行的 `accuracy_summary.json`.详见[板端评价规范](../../../../docs/genio_720.md).
+
+下文已归档指标保留原运行范围,不因默认入口变化而更新.
+
 ## 运行
 
 模型和数据路径、转换及评价参数统一在 [config.yaml](config.yaml) 配置.
@@ -21,7 +29,7 @@ bash deploy/run.sh
 bash run.sh
 ```
 
-两端加 `-test` 进行少量评价.具体工具命令及参数由代码维护,运行时打印.
+两端无参数默认少量评价,工具命令和参数由执行代码维护并打印.
 
 ## 当前结果
 

@@ -16,7 +16,7 @@ import torch
 from torchvision.ops import batched_nms
 import tqdm
 
-from tools.evaluation import add_test_argument, coco_ids, result_status, scope_metadata
+from tools.evaluation import coco_ids, result_status, scope_metadata
 
 COCO_91_CLASSES = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21,
@@ -182,7 +182,8 @@ def evaluate_onnx_accuracy(args: argparse.Namespace) -> None:
         raise ValueError("ONNX mAP 无效.")
     args.summary.parent.mkdir(parents=True, exist_ok=True)
     args.summary.write_text(json.dumps({
-        "status": result_status(), **scope_metadata(), "backend": "ONNX FP32", "images": len(image_ids),
+        "status": result_status(), **scope_metadata(), "model": "yolov5s",
+        "backend": "ONNX FP32", "images": len(image_ids),
         "map_50_95": value,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[ONNX] mAP@0.5:0.95: {value:.6f}", flush=True)
@@ -199,7 +200,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--confidence", type=float, default=0.001)
     parser.add_argument("--iou", type=float, default=0.6)
     parser.add_argument("--max-det", type=int, default=300)
-    add_test_argument(parser)
     return parser.parse_args()
 
 

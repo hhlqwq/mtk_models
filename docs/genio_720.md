@@ -16,7 +16,23 @@
 bash run.sh
 ```
 
-支持的模型可使用 `bash run.sh -test` 进行固定小子集评价.快速结果单独标记,不得代替全量报告.具体依赖和数量见模型 README.
+`bash run.sh` 无参数默认固定小批量评价,不改变校准或量化配方.小批量结果使用 `_test` 运行后缀,MiniCPM 沿用 `latest_test` 和 `summary_test.json`;这些是结果标识,不是命令参数.小批量不能覆盖正式全量指标.
+
+## 独立全量精度
+
+在已有编译容器内,从所选模型目录执行 `bash deploy/evaluate.sh`.该入口只对已有浮点模型计算全量参考、准备必要评价输入,不导出、校准、量化、编译、构建、打包或上传.缺少模型时停止,不自动重新部署.
+
+普通模型生成模型资源 `build/onnx_reference.json`,单独放入现有板端 `models/onnx_reference.json`;YAMNet 的参考为模型资源 `fp32_reference.json`,放入板端 `models/fp32_reference.json`.MiniCPM 生成模型资源 `build/native/evaluation/full/`,整体放入板端 `evaluation/full/`,必须与现有 DLA 的上下文、词表和输入契约匹配.这些操作只补充评价资源,不替换 DLA 或运行程序.
+
+在现有板端部署目录执行:
+
+```bash
+bash evaluate.sh
+```
+
+板端全量入口只推理已有模型、计算精度,不调用 `run.sh`,不运行 Demo、效果渲染、模型大小统计或性能专项.自然产生的诊断耗时可保留在原始记录中.每次结果使用独立的 `<运行编号>_full` 目录,保存预测、原始指标及 `accuracy_summary.json`,不清理预测或覆盖小批量结果.有匹配参考时计算差值,否则注明参考不可用;YAMNet/LLM 缺必要协议输入时直接报错.
+
+MiniCPM 不依赖先运行生成 Demo;完整 MMLU 为 14042 题,WikiText2 使用完整 test 协议.若现有上下文容纳不了完整题目,报告阻塞,另行安排部署调整,禁止截题或在评价中重新编译.DeepSeek 当前只有生成样例,其全量入口明确报告正式协议尚未实现.
 
 ## 目录
 
@@ -25,7 +41,8 @@ bash run.sh
 ├── datasets/                   板端共享评价数据
 ├── MTK_G720_DLA/               官方 Model Zoo
 └── open_models/<model>/        本仓库适配模型
-    ├── run.sh                  板端入口
+    ├── run.sh                  默认小批量验证
+    ├── evaluate.sh             独立全量精度
     ├── config.json             配置快照
     ├── models/                 模型及运行参数
     ├── board/                  板端程序和必要依赖
