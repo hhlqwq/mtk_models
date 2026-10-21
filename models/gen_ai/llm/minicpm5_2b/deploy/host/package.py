@@ -1,5 +1,6 @@
 """将已编译的原生 MiniCPM5 模型整理为 NAS 同类目录结构."""
 
+import copy
 import json
 import os
 from pathlib import Path
@@ -122,6 +123,19 @@ def package(work, output, prefill, quantized_prefix=None):
         "当前打包状态为 compiled_pending_board,板端结果需另行记录.\n\n"
         "将整个目录复制到板端,执行 `bash run.sh` 全量或 `bash run.sh -test` 快速评价.\n"
         "Demo 使用官方 tokenizer 的 Token 输入,Prompt 文本同时保留供核对.\n"
+        "生成和性能的实际命令在 board/infer.py 中直接构造并打印.\n\n"
+        "单步生成命令,在本部署目录执行:\n\n"
+        "```bash\n"
+        "llm_cmdline_tool scripts/config-yocto.yaml --read-tokens "
+        "-i scripts/prompts/en_demo.tokens.txt -m 511\n"
+        "llm_cmdline_tool scripts/config-yocto.yaml "
+        "-i scripts/prompts/en_demo.txt -m 511\n"
+        "llm_cmdline_tool scripts/config-yocto.yaml --read-tokens "
+        "-i scripts/prompts/performance_128.tokens.txt -m 127\n"
+        "```\n\n"
+        "-m 统计首 Token 后的调用次数,511/127 对应总生成上限 512/128.\n"
+        "生成上限与输入长度之和不得超过上下文;完整运行上限以 config.json 为准.\n"
+        "仅执行英文生成检查;手动命令不生成完整评价汇总.\n"
         f"校准范围: {preparation['calibration_scope']},不代表正式质量基准.\n")
     files = []
     for path in sorted(output.rglob("*")):
@@ -170,14 +184,15 @@ def main():
     for name in ("infer.py", "evaluate.py", "summarize.py"):
         shutil.copyfile(native.ctx.model / "deploy/board" / name, board / name)
     library = native.ctx.work / "libneuron_bridge.so"
-    header = library.read_bytes()[:20]
+    with library.open("rb") as stream:
+        header = stream.read(20)
     if header[:6] != b"\x7fELF\x02\x01" or int.from_bytes(header[18:20], "little") != 183:
         raise ValueError("板端桥接库必须为 AArch64 ELF.")
     shutil.copyfile(library, board / library.name)
     copy_public_tools(board / "tools", ("files", "evaluation", "board", "process"))
     shared = board / "tools/llm"
     shared.mkdir()
-    for name in ("__init__", "evaluate_native", "evaluate_board_quality", "evaluate_mmlu"):
+    for name in ("__init__", "evaluate_board_quality", "evaluate_mmlu"):
         shutil.copyfile(REPO_ROOT / "tools/llm" / f"{name}.py", shared / f"{name}.py")
     modes = ["test"] if is_test() else ["full", "test"]
     for prepared in modes:
@@ -189,7 +204,14 @@ def main():
         raise ValueError("统一性能输入不足 128 Token.")
     (output / "scripts/prompts/performance_128.tokens.txt").write_text(
         " ".join(map(str, tokens)) + "\n")
-    snapshot = native.ctx.config.copy()
+    snapshot = copy.deepcopy(native.ctx.config)
+    snapshot["model"]["source"] = str(native.source)
+    snapshot["conversion"]["context"] = native.context
+    snapshot["native"].update(
+        prefill=native.prefill, calibration_batches=native.batches,
+        rotate=bool(native.rotate), mask_value=native.mask,
+        weight_optimization=native.optimization, weight_opt_config=native.extra,
+        calibration_train=str(native.train))
     snapshot["evaluation"] = dict(
         snapshot["evaluation"], prepared_mode=mode, prepared_modes=modes)
     (output / "config.json").write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n")

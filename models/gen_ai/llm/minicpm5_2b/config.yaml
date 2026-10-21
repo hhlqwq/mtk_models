@@ -18,7 +18,7 @@ conversion:
   context: 1024
   max_new_tokens: 512
 native:
-  # 原生转换中间文件集中到 build,保留 prepare/calibrate/quantize/shape/compile 阶段.
+  # 转换中间文件集中到 build/native,校准、量化和静态图导出由 convert.py 完成.
   work_dir: build/native
   prefill: 128
   calibration_batches: 32

@@ -26,6 +26,8 @@ def main():
     ppl = read_json(ctx.result / "wikitext/npu_quality.json")
     generation = read_json(ctx.result / "board_metrics.json")
     manifest = read_json(ctx.root / "manifest.json")
+    if generation["run_id"] != ctx.run_id:
+        raise ValueError("生成记录不属于本次运行,拒绝混用旧结果.")
     expected_scope = "subset" if is_test() else "full"
     for report in (reference_mmlu, reference_ppl, mmlu, ppl, generation):
         if report["evaluation_scope"] != expected_scope:
@@ -48,11 +50,22 @@ def main():
     prompt = next(row for row in manifest["files"] if row["name"] == prompt_name)
     if hardware["graph_sha256"] != prompt["sha256"] or ppl["dla_sha256"] != prompt["sha256"]:
         raise ValueError("评价使用的 DLA 与交付清单不一致.")
-    for row in generation["samples"]:
+    if len(generation["samples"]) != 1 or generation["samples"][0]["id"] != "en_demo":
+        raise ValueError("需要一个英文生成样本.")
+    if (len(generation["text_input_checks"]) != 1
+            or generation["text_input_checks"][0]["id"] != "en_text_input"):
+        raise ValueError("需要一个英文文本输入检查.")
+    for row in generation["samples"] + generation["text_input_checks"]:
         if sha256(ctx.result / f"{row['id']}.log") != row["log_sha256"]:
             raise ValueError("生成日志哈希不符.")
-    if not all(check["text_equals_token_input_response"] for check in generation["text_input_checks"]):
-        raise ValueError("生成输入一致性检查未通过.")
+    failures = []
+    if not all(check["text_equals_token_input_response"]
+               for check in generation["text_input_checks"]):
+        failures.append("英文文本与 Token 输入输出不同.")
+    if not is_test() and not all(row["eos_reached"] for row in generation["samples"]):
+        failures.append("英文生成上限内未正常停止.")
+    if failures != generation["functional_failures"]:
+        raise ValueError("生成检查状态与样本记录不一致.")
     values = (reference_ppl["perplexity"], ppl["perplexity"])
     if not all(math.isfinite(value) and value > 0 for value in values):
         raise ValueError("PPL 不是有效正数.")
@@ -77,7 +90,9 @@ def main():
         raise ValueError("统一性能计数、速度或原始日志无效.")
     summary = {
         "model": "minicpm5_2b", "run_id": ctx.run_id,
-        "status": result_status("board_verified"), "evaluation_scope": expected_scope,
+        "status": "generation_checks_failed" if failures else result_status("board_verified"),
+        "evaluation_scope": expected_scope,
+        "functional_checks": {"passed": not failures, "failures": failures},
         "full_benchmark_evaluated": not is_test(), "precision": manifest["precision"],
         "context": manifest["context"], "prefill": manifest["prefill"],
         "accuracy": {
@@ -107,6 +122,8 @@ def main():
     latest = ctx.root / "results" / ("summary_test.json" if is_test() else "summary.json")
     latest.write_text(text)
     print(f"[汇总完成] {latest}; 范围={expected_scope}; 峰值 RSS={max(peaks):.2f} MiB.", flush=True)
+    if failures:
+        raise SystemExit("[检查未通过] 精度指标已保存,生成检查问题见 summary.json.")
 
 
 if __name__ == "__main__":

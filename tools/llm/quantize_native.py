@@ -134,14 +134,19 @@ def verify_weight_precision(args, utils):
     print(f"[实际权重精度核对完成] {counts}", flush=True)
 
 
-def fix_native_shapes():
+def fix_native_shapes(folder=None, shapes=None):
     """导出两张静态图,显式转换不同 A16 尺度并传播 SDK 异常."""
 
-    parser = argparse.ArgumentParser(description="导出 Prefill/Decode 单分片静态图.")
-    parser.add_argument("folder", type=Path)
-    parser.add_argument("shapes", nargs=2)
-    parser.add_argument("-n", type=int, default=1)
-    args = parser.parse_args(sys.argv[2:])
+    if folder is None:
+        parser = argparse.ArgumentParser(description="导出 Prefill/Decode 单分片静态图.")
+        parser.add_argument("folder", type=Path)
+        parser.add_argument("shapes", nargs=2)
+        parser.add_argument("-n", type=int, default=1)
+        args = parser.parse_args(sys.argv[2:])
+    else:
+        args = argparse.Namespace(folder=Path(folder), shapes=list(shapes), n=1)
+    if len(args.shapes) != 2:
+        raise ValueError("必须同时指定 Prefill 和 Decode 两个形状.")
     if args.n != 1:
         raise ValueError("本项目每阶段只允许一个分片.")
     original = builder.ModelBuilder.import_subgraph
@@ -180,6 +185,7 @@ def fix_native_shapes():
         return original(self, model, mappings, subgraph_idx)
 
     builder.ModelBuilder.import_subgraph = import_with_requantize
+    original_temp_file = utils.temp_file
     utils.temp_file = strict_temp_file
     saved_argv = sys.argv
     try:
@@ -196,18 +202,15 @@ def fix_native_shapes():
     finally:
         sys.argv = saved_argv
         builder.ModelBuilder.import_subgraph = original
+        utils.temp_file = original_temp_file
 
 
-def main():
-    """执行固定 SDK 的进程内兼容逻辑,不修改安装文件或官方模型."""
-    if len(sys.argv) > 1 and sys.argv[1] == "shape":
-        fix_native_shapes()
-        return
-
+def quantize(arguments=None):
+    """直接调用 SDK 量化函数,仅在 SDK 命令行接口边界临时设置参数."""
     parser = ptq.get_argument_parser()
     parser.add_argument("--audit-only", action="store_true",
                         help="只核对已有量化图,不重新量化.")
-    args = parser.parse_args()
+    args = parser.parse_args(arguments)
     if args.audit_only:
         verify_weight_precision(args, utils)
         return
@@ -216,15 +219,31 @@ def main():
     if args.precision != ["asym4W_sym16A"] or args.tail_precision not in (
             None, "asym4W_sym16A"):
         raise ValueError("本项目仅允许全 W4A16,请排查误差来源而非提高权重位宽.")
-    utils.temp_file = strict_temp_file
     Path("quantization_adapter.json").write_text(json.dumps({
         "sdk_source_sha256": hashlib.sha256(source.encode()).hexdigest(),
         "adapter": "w4_only_strict_exceptions_weight_audit",
         "installed_sdk_modified": False,
     }, indent=2) + "\n")
-    print("[SDK 兼容入口] 使用独立进程,转换异常将使任务失败.", flush=True)
-    ptq.main()
-    verify_weight_precision(args, utils)
+    print("[SDK 量化] 当前进程直接调用 ptq.main(),转换异常将使任务失败.", flush=True)
+    saved_argv = sys.argv
+    original_temp_file = utils.temp_file
+    try:
+        if arguments is not None:
+            sys.argv = [saved_argv[0], *arguments]
+        utils.temp_file = strict_temp_file
+        ptq.main()
+        verify_weight_precision(args, utils)
+    finally:
+        sys.argv = saved_argv
+        utils.temp_file = original_temp_file
+
+
+def main():
+    """保留已有命令行接口,模型代码可直接导入转换函数."""
+    if len(sys.argv) > 1 and sys.argv[1] == "shape":
+        fix_native_shapes()
+    else:
+        quantize()
 
 
 if __name__ == "__main__":

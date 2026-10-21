@@ -1,4 +1,4 @@
-"""准备 MiniCPM5 官方 Token 和原生 GAI 校准输入,不修改原始资源."""
+"""准备 MiniCPM5 官方资源副本、校准输入和板端 Prompt."""
 
 import argparse
 import json
@@ -122,18 +122,15 @@ def prepare(source, output, context, calibration_train=None, mask_value=-100.0,
         training_source = {"revision": "b08601e04326c79dfdd32d625aee71d232d685c3",
                            "split": "train", "sha256": expected,
                            "text_tokens": 2048}
-    demos = []
     # Demo 与官方 FP32 参考使用相同 Prompt,校准输入保持独立且不变.
-    for name, question in (("zh_demo", "请用中文简单介绍你自己。"),
-                           ("en_demo", "Briefly introduce yourself in English.")):
-        text = tokenizer.apply_chat_template(
-            [{"role": "user", "content": question}],
-            tokenize=False, add_generation_prompt=True, enable_thinking=False)
-        tokens = tokenizer.encode(text, add_special_tokens=False)
-        (prompts / f"{name}.txt").write_text(text)
-        (prompts / f"{name}.tokens.txt").write_text(
-            " ".join(str(token) for token in tokens) + "\n")
-        demos.append({"id": name, "prompt": question, "input_ids": tokens})
+    question = "Briefly introduce yourself in English."
+    text = tokenizer.apply_chat_template(
+        [{"role": "user", "content": question}],
+        tokenize=False, add_generation_prompt=True, enable_thinking=False)
+    tokens = tokenizer.encode(text, add_special_tokens=False)
+    (prompts / "en_demo.txt").write_text(text)
+    (prompts / "en_demo.tokens.txt").write_text(" ".join(map(str, tokens)) + "\n")
+    demos = [{"id": "en_demo", "prompt": question, "input_ids": tokens}]
     (output / "calibration.jsonl").write_text(
         "".join(json.dumps(record) + "\n" for record in records))
     (output / "native_prepare.json").write_text(json.dumps({
