@@ -46,6 +46,6 @@ RUN python -m pip install nvidia-curand-cu11 nvidia-cufft-cu11 nvidia-cusolver-c
 COPY setup_container.sh verify_environment.py /opt/mtk-build/
 RUN bash /opt/mtk-build/setup_container.sh --build \
     && python -m pip freeze > /opt/mtk-build/installed-requirements.txt
-LABEL mtk.environment="ubuntu22.04-np8.0.11-py311-cu118"
+LABEL mtk.environment="ubuntu22.04-np8.0.11-py311-cu118" mtk.llm_sdk="2.7.5"
 WORKDIR /workspace/mtk_models
 CMD ["sleep", "infinity"]

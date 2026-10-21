@@ -9,10 +9,9 @@
 
 ## 创建与使用
 
-在仓库根目录构建镜像并创建容器:
+在仓库根目录创建容器,镜像缺失或尚未预装 LLM 依赖时会自动构建:
 
 ```bash
-bash docker/build_image.sh
 bash docker/create_container.sh
 ```
 

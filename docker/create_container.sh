@@ -23,7 +23,11 @@ for STORAGE_ROOT in "${MODEL_STORAGE_ROOT}" "${DATASET_ROOT}"; do
         *) echo "[ERROR] 模型和数据集目录必须位于已挂载的 NAS." >&2; exit 1 ;;
     esac
 done
-docker image inspect "${IMAGE_NAME}" >/dev/null
+# 缺少完整 LLM 镜像时先构建,依赖在镜像中预装.
+IMAGE_LLM_VERSION="$(docker image inspect --format '{{index .Config.Labels "mtk.llm_sdk"}}' "${IMAGE_NAME}" 2>/dev/null || true)"
+if [[ "${IMAGE_LLM_VERSION}" != "2.7.5" ]]; then
+    bash "${PROJECT_ROOT}/docker/build_image.sh"
+fi
 
 if docker container inspect "${CONTAINER_NAME}" >/dev/null 2>&1; then
     if [[ "$(docker inspect --format '{{.Image}}' "${CONTAINER_NAME}")" != "$(docker image inspect --format '{{.Id}}' "${IMAGE_NAME}")" ]]; then
@@ -99,7 +103,14 @@ else
         "${IMAGE_NAME}" >/dev/null
 fi
 
-echo "[4/4] 设置项目访问权限,不运行模型编译或测试."
+echo "[4/4] 固定终端环境并设置项目访问权限."
+# 创建时写入普通登录终端的环境,进入容器时无需重新读取配置.
+{
+    python3 "${PROJECT_ROOT}/tools/storage.py"
+    printf 'export MTK_MODELS_ROOT=%q\n' "${PROJECT_ROOT}"
+    printf 'export PYTHONPATH=%q\n' "${PROJECT_ROOT}"
+    printf 'export PATH=%q:$PATH\n' "${NCC_ROOT}/bin"
+} | docker exec -i "${CONTAINER_NAME}" sh -c 'cat > /etc/profile.d/mtk-models.sh'
 # GPU 透传可能附加宿主机组编号,补齐组名以消除交互终端的 groups 警告.
 docker exec "${CONTAINER_NAME}" sh -c '
     for GROUP_ID in $(id -G); do
