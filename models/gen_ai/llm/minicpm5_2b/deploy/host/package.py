@@ -117,25 +117,14 @@ def package(work, output, prefill, quantized_prefix=None):
                        sort_keys=False, allow_unicode=True))
     shutil.copyfile(model / "LICENSE", output / "LICENSE")
     (output / "README.md").write_text(
-        f"# MiniCPM5-2B\n\n"
-        f"Genio720 原生 {precision},Prefill {prefill},上下文 {context},Decode 1.\n"
-        "当前打包状态为 compiled_pending_board,板端结果需另行记录.\n\n"
-        "将整个目录复制到板端,执行 `bash run.sh` 全量或 `bash run.sh -test` 快速评价.\n"
-        "Demo 使用官方 tokenizer 的 Token 输入,Prompt 文本同时保留供核对.\n"
-        "生成和性能的实际命令在 board/infer.py 中直接构造并打印.\n\n"
-        "单步生成命令,在本部署目录执行:\n\n"
-        "```bash\n"
-        "llm_cmdline_tool scripts/config-yocto.yaml --read-tokens "
-        "-i scripts/prompts/en_demo.tokens.txt -m 511\n"
-        "llm_cmdline_tool scripts/config-yocto.yaml "
-        "-i scripts/prompts/en_demo.txt -m 511\n"
-        "llm_cmdline_tool scripts/config-yocto.yaml --read-tokens "
-        "-i scripts/prompts/performance_128.tokens.txt -m 127\n"
-        "```\n\n"
-        "-m 统计首 Token 后的调用次数,511/127 对应总生成上限 512/128.\n"
-        "生成上限与输入长度之和不得超过上下文;完整运行上限以 config.json 为准.\n"
-        "仅执行英文生成检查;手动命令不生成完整评价汇总.\n"
-        f"校准范围: {preparation['calibration_scope']},不代表正式质量基准.\n")
+        "# MiniCPM5-2B\n\n"
+        "Genio 720 全 W4A16 部署包,支持英文生成、性能和精度评价.\n"
+        "本部署包尚待板端评价.\n\n"
+        "在本部署目录运行:\n\n"
+        "```bash\nbash run.sh\n```\n\n"
+        "少量评价使用 `bash run.sh -test`.\n"
+        "配置见 config.json,结果见 results/summary.json 或 results/summary_test.json.\n"
+        "具体工具命令及参数由执行代码维护并打印.\n")
     files = []
     for path in sorted(output.rglob("*")):
         if path.is_file():
