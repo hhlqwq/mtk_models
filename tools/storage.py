@@ -143,6 +143,9 @@ def platform_environment():
         "MTK_BOARD_MODELZOO_ROOT": config["board_modelzoo_root"],
     }
     environment = {name: os.environ.get(name) or value for name, value in defaults.items()}
+    gai_sdk_root = os.environ.get("MTK_GAI_SDK_ROOT") or toolchain.get("gai_sdk_root")
+    if gai_sdk_root:
+        environment["MTK_GAI_SDK_ROOT"] = str(gai_sdk_root)
     missing = [name for name, value in environment.items() if not value]
     if missing:
         raise ValueError("请在本地平台配置或环境变量中填写: " + ", ".join(missing))

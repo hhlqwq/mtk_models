@@ -30,7 +30,9 @@ toolchain:
   cpp_toolchain_root: ""
   # 主机与容器使用公共目录中的交叉编译器.
   cross_cxx: ""
-  # 分别使用已准备的 SDK、旧版分片导出及 TensorFlow 环境.
+  # 镜像构建使用的本地 LLM SDK wheel 目录,不含模型权重.
+  gai_sdk_root: ""
+  # 保留旧版模型使用的独立导出及 TensorFlow 环境配置.
   gai_python: ""
   llm_python: ""
   yamnet_python: ""

@@ -22,6 +22,7 @@ RUN python -m pip install torch==2.0.0+cu118 torchvision==0.15.1+cu118 --index-u
     && python -m pip install -r /opt/mtk-build/requirements.txt -r /opt/mtk-build/yolov5-requirements.txt
 ARG MTK_SDK_ROOT=/opt/mtk/neuropilot-sdk
 ENV NCC_ROOT=${MTK_SDK_ROOT}/neuron_sdk/host
+ENV PATH="${NCC_ROOT}/bin:${PATH}"
 # sdk 是构建脚本传入的服务器本地 SDK, 无远程下载.
 COPY --from=sdk / ${MTK_SDK_ROOT}/
 RUN python -m pip install \
@@ -32,6 +33,9 @@ RUN python -m pip install \
     && test -n "${nvrtc_path}" \
     && ln -s "$(basename "${nvrtc_path}")" /usr/local/lib/python3.11/site-packages/torch/lib/libnvrtc.so \
     && ldconfig
+# GAI 使用已有本地 SDK,只复制 wheel,不复制模型资源.
+COPY --from=gai /mtk_llm_sdk-2.7.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl /opt/mtk-build/
+RUN python -m pip install /opt/mtk-build/mtk_llm_sdk-2.7.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 # 补齐 ONNX Runtime CUDA EP 需要的 cu11 库并统一挂到系统库路径.
 RUN python -m pip install nvidia-curand-cu11 nvidia-cufft-cu11 nvidia-cusolver-cu11 nvidia-cusparse-cu11 \
     && for lib in /usr/local/lib/python3.11/site-packages/torch/lib/*.so* \

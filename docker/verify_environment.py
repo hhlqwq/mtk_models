@@ -5,6 +5,9 @@ import sys
 
 import cv2
 import mtk_converter
+import mtk_llm_sdk
+import pyarrow
+import transformers
 import numpy as np
 import torch
 import onnxruntime as ort
@@ -15,6 +18,7 @@ def main():
     """构建时检查依赖, 启动时额外检查真实 CUDA 运算."""
     subprocess.run([sys.executable, "-m", "pip", "check"], check=True)
     print("[VERIFY]", sys.version, mtk_converter.__version__, cv2.__version__)
+    print("[LLM]", transformers.__version__, pyarrow.__version__)
     if "--build" in sys.argv:
         return
     assert torch.cuda.is_available(), "CUDA 不可用"

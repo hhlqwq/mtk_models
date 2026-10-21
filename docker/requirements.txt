@@ -10,3 +10,14 @@ pyyaml==6.0.2
 requests==2.32.5
 scipy==1.16.1
 tqdm==4.67.1
+
+# LLM 转换和评价使用镜像默认 Python,版本沿用现有 SDK 环境.
+transformers==4.44.2
+tokenizers==0.19.1
+safetensors==0.4.5
+sentencepiece==0.2.0
+pyarrow==17.0.0
+datasets==2.21.0
+evaluate==0.4.3
+fsspec==2024.6.1
+nvidia-ml-py3==7.352.0

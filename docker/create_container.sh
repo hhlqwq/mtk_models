@@ -68,6 +68,28 @@ else
         --shm-size 8g \
         --env NVIDIA_VISIBLE_DEVICES=all \
         --env NVIDIA_DRIVER_CAPABILITIES=compute,utility \
+        --env PYTHONDONTWRITEBYTECODE=1 \
+        --env MTK_MODELS_ROOT="${PROJECT_ROOT}" \
+        --env PYTHONPATH="${PROJECT_ROOT}" \
+        --env MTK_MODEL_STORAGE_ROOT \
+        --env MTK_DATASET_ROOT \
+        --env MTK_TOOLCHAIN_ROOT \
+        --env MTK_CONTAINER_NAME \
+        --env MTK_HOST_SDK_ROOT \
+        --env MTK_NP_ROOT \
+        --env NCC_ROOT \
+        --env MTK_NCC_BIN \
+        --env MTK_NCC_LIB \
+        --env MTK_NEURON_INCLUDE \
+        --env CROSS_CXX \
+        --env MTK_BOARD_HOST \
+        --env MTK_BOARD_ROOT \
+        --env MTK_BOARD_OPEN_MODELS_ROOT \
+        --env MTK_BOARD_DATASETS_ROOT \
+        --env MTK_BOARD_MODELZOO_ROOT \
+        --env MTK_GAI_PYTHON \
+        --env MTK_LLM_PYTHON \
+        --env MTK_YAMNET_PYTHON \
         --env MTK_G720_CPP_TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}" \
         --volume "${PROJECT_ROOT}:${PROJECT_ROOT}" \
         --volume "${DATASET_ROOT}:${DATASET_ROOT}:ro" \
