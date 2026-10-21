@@ -2,9 +2,7 @@
 
 import copy
 import json
-import os
 from pathlib import Path
-import re
 import shutil
 
 import yaml
@@ -162,13 +160,9 @@ def package(work, output, prefill, quantized_prefix=None):
     }, ensure_ascii=False, indent=2) + "\n")
 
 
-def main():
-    """按本次模式打包运行入口和同协议输入,拒绝复用旧目录."""
-    native = settings(arguments(__file__))
+def package_model(native):
+    """由上传步骤直接调用,构建本次模式的部署包和同协议输入."""
     mode = "test" if is_test() else "full"
-    run_id = os.environ["EVAL_RUN_ID"]
-    if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id):
-        raise ValueError("运行编号只允许字母、数字、下划线和连字符.")
     evaluation = native.work / "evaluation" / mode
     output = native.ctx.work / "package"
     if (output.is_symlink() or output.resolve().parent != native.ctx.work.resolve()
@@ -229,12 +223,9 @@ def main():
         shutil.rmtree(destination)
     output.rename(destination)
     output = destination
-    manifest_path = output / "manifest.json"
-    (native.work / "deployment_package.json").write_text(json.dumps({
-        "path": str(output), "mode": mode, "run_id": run_id,
-        "manifest_sha256": sha256(manifest_path)}, indent=2) + "\n")
     print(f"[打包完成] {output}; 待上传及真实板端验证.", flush=True)
+    return output
 
 
 if __name__ == "__main__":
-    main()
+    package_model(settings(arguments(__file__)))

@@ -20,19 +20,6 @@ def available_memory():
     return int(re.search(r"MemAvailable:\s+(\d+)", text).group(1)) / 1024
 
 
-def verify_package(root):
-    """生成前核对模型及运行配置,避免先使用损坏文件再由精度步骤发现."""
-    manifest = read_json(root / "manifest.json")
-    for index, row in enumerate(manifest["files"], 1):
-        path = root / row["name"]
-        if not path.resolve().is_relative_to(root.resolve()):
-            raise ValueError(f"部署清单路径越界: {row['name']}.")
-        if path.stat().st_size != row["bytes"] or sha256(path, progress=True) != row["sha256"]:
-            raise ValueError(f"部署文件与清单不一致: {row['name']}.")
-        print(f"[部署核对] {index}/{len(manifest['files'])} {row['name']}", flush=True)
-    return manifest
-
-
 def run_sample(ctx, manifest, language, token_mode, limit, input_path=None):
     """在此直接调用原生 CLI,打印完整命令并记录日志和内存."""
     if not isinstance(limit, int) or limit < 2:
@@ -124,7 +111,7 @@ def main():
     mode = "test" if is_test() else "full"
     if mode not in ctx.config["evaluation"]["prepared_modes"]:
         raise ValueError(f"部署包只准备了 {ctx.config['evaluation']['prepared_mode']} 评价数据,请上传 {mode} 包.")
-    manifest = verify_package(ctx.root)
+    manifest = read_json(ctx.root / "manifest.json")
     if ctx.config["conversion"]["context"] != manifest["context"]:
         raise ValueError("配置快照与实际部署模型的上下文不一致.")
     expected = ctx.root / "results" / ("latest_test" if is_test() else "latest")

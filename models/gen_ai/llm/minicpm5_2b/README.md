@@ -24,7 +24,7 @@ bash models/gen_ai/llm/minicpm5_2b/deploy/run.sh
 bash models/gen_ai/llm/minicpm5_2b/deploy/run.sh -test
 ```
 
-脚本先检查 NAS 数据集和模型路径,再依次执行准备、题集预检、转换、DLA 编译、FP32 参考评价、桥接库构建、打包和上传.每步显示进度和实际命令,执行错误立即停止.上传后核对文件完整性,不会自动在板端执行推理.
+脚本依次调用模型转换、DLA 编译、FP32 参考评价、桥接库构建和打包上传五个步骤.每步显示进度,外部工具的实际命令由对应实现打印,执行错误立即停止.入口不检查环境,不安排资源或数据预检,不会自动在板端执行推理.
 
 上传后,在开发板进入脚本输出的部署目录,执行:
 
@@ -50,22 +50,19 @@ bash run.sh -test
 
 默认完整部署包同时携带全量和快速参考,板端可直接选择 `run.sh` 或 `run.sh -test`.如果先在容器运行 `-test`,该部署包只携带快速评价输入;板端直接运行无参数入口会明确拒绝,需要先准备并上传全量包.快速结果不覆盖全量汇总.默认小子集数量可在 `evaluation` 配置中调整.
 
-正常生成但未在上限内停止,或文本/Token 输入结果不同,会记录为生成检查未通过,继续执行独立的精度评价.最终汇总保留全部已完成指标,状态为 `generation_checks_failed`,入口返回非零退出码.模型文件损坏、Runtime 失败或日志缺少必要计数时立即停止.全量与快速评价均不把失败标为成功.
+正常生成但未在上限内停止,或文本/Token 输入结果不同,会记录为生成检查未通过,继续执行独立的精度评价.最终汇总保留全部已完成指标,状态为 `generation_checks_failed`,入口返回非零退出码.Runtime 执行失败或日志缺少必要计数时立即停止.全量与快速评价均不把失败标为成功.
 
 ## 执行顺序与代码位置
 
-先读 `deploy/run.sh`,它按下面的顺序执行,没有隐藏的阶段调度器:
+先读 `deploy/run.sh`,写法与 YOLOv5s、ViT、MobileFaceNet 的入口一致:解析 `-test`、区分主机和板端,然后顺序调用实际步骤.入口不定义函数,不检查环境或数据:
 
 | 顺序 | 实际工作 | 实现位置 |
 |---|---|---|
-| 主机 1 | 官方资源与 Prompt 准备 | `deploy/host/prepare.py` |
-| 主机 2 | 数据集与题目长度预检 | `deploy/host/evaluate.py --prepare-only` |
-| 主机 3 | 校准、量化、静态图导出 | `deploy/host/convert.py` 的三个顺序函数 |
-| 主机 4 | Prefill/Decode 编译 | `deploy/run.sh` 的 `compile_dla()`,直接执行 `ncc-tflite` |
-| 主机 5 | FP32 参考与板端输入 | `deploy/host/evaluate.py` |
-| 主机 6 | 桥接库构建 | `make`,规则在 `deploy/board/Makefile` |
-| 主机 7 | 部署包和清单 | `deploy/host/package.py` |
-| 主机 8 | 上传与完整性核对 | `deploy/host/upload.py`,执行 `ssh`、`rsync` |
+| 主机 1 | 模型准备、校准、量化、静态图导出 | `deploy/host/convert.py` |
+| 主机 2 | Prefill/Decode 编译 | `deploy/host/compile.py`,调用 `ncc-tflite` 并打印完整命令 |
+| 主机 3 | FP32 参考与板端输入 | `deploy/host/evaluate.py` |
+| 主机 4 | 桥接库构建 | `make`,规则在 `deploy/board/Makefile` |
+| 主机 5 | 打包上传 | `deploy/host/upload.py`,直接调用 `package.py` 的打包函数,然后执行 `ssh`、`rsync` |
 | 板端 1 | 生成、输入一致性、定长性能 | `deploy/board/infer.py`,直接执行 `llm_cmdline_tool` |
 | 板端 2 | MMLU、WikiText2 | `deploy/board/evaluate.py`,直接调用公共评价函数 |
 | 板端 3 | 协议核对和结果汇总 | `deploy/board/summarize.py` |
@@ -74,18 +71,22 @@ bash run.sh -test
 
 ## 外部工具的具体命令
 
-以下用于理解或手动排查单个步骤.一键入口会打印替换为实际路径的完整命令,包括工作目录、输入文件和参数.手动执行不生成完整评价汇总,不要与同模型的一键任务并发执行.
+以下用于理解或手动排查单个步骤.编译和推理实现会打印替换为实际路径的完整命令,包括输入文件和参数;板端还会打印工作目录.手动执行不生成完整评价汇总,不要与同模型的一键任务并发执行.
 
 ### Docker 内编译 Prefill 和 Decode
 
-先完成 `convert.py` 的转换,在容器仓库根目录读取本次实际输入路径.路径来自本地 NAS 配置,不在代码中填写机器地址:
+先完成 `convert.py` 的转换,在容器仓库根目录可直接运行编译步骤.它读取模型配置,自动定位本次两张静态图,按下面的完整配方编译:
 
 ```bash
-MODEL_BUILD_DIR="$(python3 tools/storage.py --print-build-dir models/gen_ai/llm/minicpm5_2b/config.yaml)"
-source "${MODEL_BUILD_DIR}/native/compile.env"
+"${MTK_GAI_PYTHON}" models/gen_ai/llm/minicpm5_2b/deploy/host/compile.py
 ```
 
-`compile.env` 只有 `PREFILL_TFLITE` 和 `DECODE_TFLITE` 两个经过 Shell 转义的模型路径,由转换成功后生成.编译器位置 `NCC_ROOT` 由 `docker/enter_container.sh` 加载的本地平台配置提供.
+如果需要绕过 Python 直接调用编译器,先将转换日志中 `[Prefill 静态图]` 和 `[Decode 静态图]` 后面的完整路径分别填入以下变量.这是本次 NAS 转换产物的路径,不是仓库代码路径.编译器位置 `NCC_ROOT` 由 `docker/enter_container.sh` 加载的本地平台配置提供.
+
+```bash
+PREFILL_TFLITE='/替换为转换日志中的Prefill静态图绝对路径.tflite'
+DECODE_TFLITE='/替换为转换日志中的Decode静态图绝对路径.tflite'
+```
 
 Prefill 的实际编译命令:
 
@@ -150,10 +151,10 @@ llm_cmdline_tool scripts/config-yocto.yaml --read-tokens \
 
 1. 在仓库 `configs/storage.local.json` 配置 `models_root` 和 `dataset_root`,确认容器挂载及 SDK、GAI Python、交叉编译环境已经准备好.
 2. 官方模型及 `source_manifest.json` 放在外部资源目录 `models_root/gen_ai/llm/minicpm5_2b/original/`.具体文件、下载 URL、大小和 SHA256 见 [来源记录](models/source_url.txt) 与 [来源清单](models/source_manifest.json).入口离线运行,不自动下载.
-3. 数据集统一放在 NAS `dataset_root` 内,`config.yaml` 中的 `data.wikitext_test` 和 `data.mmlu_test` 按该根目录定位.默认使用 `wikitext/wikitext-2-raw-v1/` 和 `mmlu/all/`,禁止指向 `/tmp`.入口在读取权重前检查文件和版本,不会搜索临时目录或自动下载.
+3. 数据集统一放在 NAS `dataset_root` 内,`config.yaml` 中的 `data.wikitext_test` 和 `data.mmlu_test` 按该根目录定位.默认使用 `wikitext/wikitext-2-raw-v1/` 和 `mmlu/all/`.执行步骤直接读取配置路径,不提前扫描数据、不搜索临时目录或自动下载.
 4. WikiText2 使用 [Salesforce/wikitext](https://huggingface.co/datasets/Salesforce/wikitext) 的 `wikitext-2-raw-v1`;MMLU 使用 [cais/mmlu](https://huggingface.co/datasets/cais/mmlu) 的 test 集.校准只能使用训练数据或独立自编样例,测试集不参与校准.
 
-**完整 MMLU 与当前交付的 1024 Token 上下文不是同一个已验证范围.** 入口在校准、量化前检查所选题集的最长输入,将长度信息写入 `build/native/evaluation/full或test/mmlu/length_report.json`.如果超出 `conversion.context`,会报告所需长度并停止.应将上下文调整到足够大的 128 整数倍后重新转换和编译;不截断、不丢题、不把固定千题冒充全量.更大上下文的编译、内存和板端兼容性尚未验证.
+**完整 MMLU 与当前交付的 1024 Token 上下文不是同一个已验证范围.** 不再执行量化前的题集长度预检;评价步骤实际处理题目时会记录输入长度,超出上下文则报错,不截断或丢题.更大上下文需要重新转换和编译,其内存和板端兼容性尚未验证.
 
 默认量化配置为常规 W4A16、32 批校准、未启用旋转.已有交付模型使用旋转 seed=0、128 批校准及归档的 16 样本分阶段 Hessian 配方,直接运行默认配置不会复现同一模型.
 
@@ -168,11 +169,11 @@ minicpm5_2b/
 ├── deploy/
 │   ├── run.sh                主机/板端共用的一键入口
 │   ├── host/
-│   │   ├── prepare.py       官方资源和输入准备
-│   │   ├── convert.py       校准、量化和静态图导出
-│   │   ├── evaluate.py      数据预检和 FP32 参考评价
-│   │   ├── package.py       构建部署包
-│   │   └── upload.py        上传、占用检查和文件核对
+│   │   ├── convert.py       准备、校准、量化和静态图导出
+│   │   ├── compile.py       编译 Prefill 和 Decode,打印完整 NCC 命令
+│   │   ├── evaluate.py      FP32 参考评价和板端输入生成
+│   │   ├── package.py       上传使用的部署包构建函数
+│   │   └── upload.py        打包并上传
 │   └── board/
 │       ├── Makefile         构建共享桥接库
 │       ├── infer.py         直接调用 CLI 并采集生成和性能记录
@@ -185,7 +186,19 @@ minicpm5_2b/
 
 `tools/llm/` 只复用 SDK 转换适配及评价算法,模型的执行顺序和 CLI 生成逻辑分别在本目录的 `run.sh` 和 `board/infer.py`.公共 Neuron 桥接源码为 `common/cpp/neuron_bridge.cpp`,由 Makefile 直接构建.PPL/MMLU 通过桥接库调用真实 Neuron MDLA Runtime,不回退 CPU.板端需要 Python、NumPy 和匹配的 Runtime,不需要主机的 Torch、Transformers 或 Converter.
 
-`package.py` 只负责构建部署包;板端评价与汇总在 `deploy/board/` 中完成.校准、量化和静态图导出统一在 `convert.py`,编译命令统一在 `run.sh`,不保留单独的转发脚本.
+`host/` 只放可独立执行的步骤文件.模型准备函数与转换逻辑合并在 `convert.py` 中,打包由 `upload.py` 直接调用 `package.py` 的函数,不额外启动 Python 子进程.编译参数和执行在 `compile.py`,板端评价与汇总在 `deploy/board/`.`run.sh` 只顺序调用步骤,不定义辅助函数或编译函数,也不通过额外的环境文件传递模型路径.
+
+在 Docker 的仓库根目录可依次手动执行:
+
+```bash
+"${MTK_GAI_PYTHON}" models/gen_ai/llm/minicpm5_2b/deploy/host/convert.py
+"${MTK_GAI_PYTHON}" models/gen_ai/llm/minicpm5_2b/deploy/host/compile.py
+"${MTK_GAI_PYTHON}" models/gen_ai/llm/minicpm5_2b/deploy/host/evaluate.py
+make -C models/gen_ai/llm/minicpm5_2b/deploy/board
+"${MTK_GAI_PYTHON}" models/gen_ai/llm/minicpm5_2b/deploy/host/upload.py
+```
+
+`upload.py` 包含打包步骤.如果只生成部署包,最后一步改为执行 `host/package.py` 即可.手动快速评价在整组命令前设置 `export MTK_EVAL_TEST=1`,默认全量使用 `export MTK_EVAL_TEST=0`.
 
 ## 资源和部署目录
 
@@ -208,7 +221,7 @@ minicpm5_2b/
 └── results/                 最新全量和快速结果,分别位于 latest/ 和 latest_test/
 ```
 
-同一模型重复执行替换对应模式的上一次输出,运行编号保存在结果内容中.入口使用文件锁拒绝并发运行.上传在同一把板端锁内检查占用、同步文件及核对完整性,新包校验成功后清除上一部署包的评价输出,避免旧结果对应到新模型;发现进程占用部署目录时拒绝覆盖,不停止其他进程.生成前再次核对部署清单,配置快照保存实际转换参数,包括环境变量覆盖的上下文和量化参数.
+同一模型重复执行替换对应模式的上一次输出,运行编号保存在结果内容中.入口和传输使用同一板端文件锁拒绝并发操作.上传同步替换旧部署文件和结果,不扫描进程或逐文件复核哈希;生成前不执行整包扫描.配置快照保存实际转换参数,包括环境变量覆盖的上下文和量化参数.
 
 仓库和 NAS 不保存淘汰模型、旧部署包、历史诊断及逐次实验记录.只保留当前选定模型的来源、最新汇总和必要评价证据.已有包尚未重新打包上传,不能视为已经使用本次英文入口.新包统一使用根目录 `run.sh`;直接生成使用上面的英文 CLI 命令.
 
