@@ -3,6 +3,7 @@
 import argparse
 import gc
 import json
+import shutil
 from pathlib import Path
 import time
 
@@ -175,13 +176,17 @@ def evaluate_onnx(models, samples):
 def run(args):
     """准备 Token 化输入与两后端参考,严格检查导出 NLL 差异."""
     tokenizer = AutoTokenizer.from_pretrained(args.source, local_files_only=True)
+    shutil.copyfile(args.source / "tokenizer.json", args.models / "tokenizer.json")
     samples = prepare_samples(tokenizer, args.corpus, args.max_new_tokens)
     spec = json.loads((args.models / "export_manifest.json").read_text())
     for sample in samples["samples"]:
-        extra = len(sample["target_ids"]) or args.max_new_tokens
+        extra = len(sample["target_ids"]) or samples["max_new_tokens"]
         if len(sample["input_ids"]) + extra > spec["context"]:
             raise ValueError(f"样本超过固定上下文: {sample['id']}")
     (args.models / ("samples_test.json" if is_test() else "samples.json")).write_text(json.dumps(samples, ensure_ascii=False, indent=2))
+    if args.examples_only:
+        print("[示例输入] Token 与上下文检查完成,未计算参考指标.", flush=True)
+        return
     reference = {**scope_metadata(), "evaluation_scope": samples["evaluation_scope"],
                  "pytorch": evaluate_pytorch(args.source, samples),
                  "onnx": evaluate_onnx(args.models, samples)}
@@ -204,6 +209,7 @@ def parse_args():
     parser.add_argument("--models", type=Path, required=True)
     parser.add_argument("--corpus", type=Path)
     parser.add_argument("--max-new-tokens", type=int, default=512)
+    parser.add_argument("--examples-only", action="store_true", help="只准备示例 Token,不执行参考推理.")
     configure_parser(parser, __file__, {
         "source": lambda c: Path(c.config["model"]["source"]),
         "models": lambda c: c.output,

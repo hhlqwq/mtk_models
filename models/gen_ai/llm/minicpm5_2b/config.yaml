@@ -12,7 +12,6 @@ board:
   deploy_dir: minicpm5_2b
   dataset_dir: .
   results_dir: results
-  retain_latest: true
 conversion:
   # 全量题集超限时按入口报告增大上下文并重新转换,禁止截题或丢题.
   context: 1024

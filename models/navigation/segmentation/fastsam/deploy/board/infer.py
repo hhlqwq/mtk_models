@@ -1,6 +1,7 @@
 """在开发板执行 FastSAM 推理并保存逐图检查点,不分派评测或汇总任务."""
 
 import argparse
+from tools.board import paths as board_paths
 import json
 import os
 from pathlib import Path
@@ -106,7 +107,7 @@ def main() -> None:
     config = json.loads(args.config.read_text(encoding="utf-8"))
     root = Path(__file__).resolve().parents[1]
     dataset = Path(config["board"]["dataset_dir"])
-    result = root / config["board"]["results_dir"] / args.run_id
+    result = board_paths(root, args.config, args.run_id).result
     paths = {"root": root, "dataset": dataset, "result": result,
              "work": result / "work", "annotations": dataset / "annotations/instances_val2017.json"}
     protocol = json.loads((root / "board/accuracy_protocol.json").read_text(encoding="utf-8"))

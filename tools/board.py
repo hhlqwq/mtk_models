@@ -1,7 +1,7 @@
 """板端步骤读取 JSON 配置快照,不依赖主机或 PyYAML."""
 
 import argparse
-from datetime import datetime
+from datetime import date, datetime
 import json
 import math
 import os
@@ -15,7 +15,7 @@ from tools.process import run_command
 
 
 def context(entry):
-    """板端沿用原部署目录,快速结果仅追加运行编号的 _test 后缀."""
+    """读取板端配置,过程文件统一位于日期临时目录."""
     root = Path(entry).resolve().parent.parent
     parser = argparse.ArgumentParser(description="执行当前板端独立步骤.")
     parser.add_argument("--config", type=Path, default=root / "config.json")
@@ -25,24 +25,35 @@ def context(entry):
 
 
 def paths(root, config_path, run_id=None):
-    """从上传的 JSON 快照计算本次结果位置."""
+    """隔离当前过程目录,最终报告只写入部署目录的 results/summary.json."""
     run_id = run_id or datetime.now().strftime("%Y%m%d_%H%M%S")
-    if is_test() and not run_id.endswith("_test"):
-        run_id += "_test"
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id):
         raise ValueError("运行编号只允许字母、数字、下划线和连字符.")
     config = json.loads(Path(config_path).read_text(encoding="utf-8"))
-    result_name = "latest_test" if is_test() and config["board"].get(
-        "retain_latest", False) else run_id
-    result = root / config["board"].get("results_dir", "results") / result_name
+    stage = "compile" if is_test() else "evaluate"
+    temporary = Path("/tmp/hailongcodex") / date.today().isoformat()
+    result = Path(os.environ.get("MTK_RUN_DIR", temporary / f"{config['name']}_{stage}_{run_id}"))
+    if not result.resolve().is_relative_to(temporary.resolve()) or result.is_symlink():
+        raise ValueError("过程目录必须位于当天 /tmp/hailongcodex 日期目录.")
     return argparse.Namespace(root=root, config=config, run_id=run_id,
-        dataset=Path(config["board"]["dataset_dir"]), result=result, work=result / "work")
+        dataset=Path(config["board"]["dataset_dir"]), result=result, work=result / "work",
+        summary=root / "results/summary.json")
 
 
 def command(ctx, filename, *arguments, **kwargs):
     """执行板端程序或 Python 脚本,失败时保留原始错误."""
     path = ctx.root / "board" / filename
     prefix = [sys.executable] if path.suffix == ".py" else []
+    if is_test() and "stdout" not in kwargs:
+        logs = ctx.work / "logs"
+        logs.mkdir(parents=True, exist_ok=True)
+        log = logs / (Path(filename).stem + ".log")
+        print(f"[示例步骤] {filename}.", flush=True)
+        kwargs.pop("quiet", None)
+        with log.open("w", encoding="utf-8") as stream:
+            run_command([*prefix, path, *arguments], quiet=True, stdout=stream,
+                        stderr=subprocess.STDOUT, **kwargs)
+        return
     run_command([*prefix, path, *arguments], **kwargs)
 
 
@@ -103,7 +114,7 @@ def infer_images(ctx, program, images, metadata, input_shape, output_shape):
                 raise
             timing = json.loads((output / "timing.json").read_text(encoding="utf-8"))
             if (timing.get("backend") != "cpp_neuron_runtime_hw" or
-                    (is_test() and (not math.isfinite(timing["npu_ms"]) or timing["npu_ms"] <= 0))):
+                    (not is_test() and (not math.isfinite(timing["npu_ms"]) or timing["npu_ms"] <= 0))):
                 raise ValueError(f"无效的 C++ 推理记录: {output}.")
             record = dict(image=name, directory=str(output.relative_to(ctx.work)), **timing)
             records.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -123,9 +134,9 @@ def inference_records(work, expected):
                 not directory.parts or directory.parts[0] != "raw" or
                 row.get("backend") != "cpp_neuron_runtime_hw"):
             raise ValueError(f"无效或重复的推理记录: {name}.")
-        if is_test() and (not math.isfinite(row["npu_ms"]) or row["npu_ms"] <= 0
+        if not is_test() and (not math.isfinite(row["npu_ms"]) or row["npu_ms"] <= 0
                           or type(row["peak_rss_kib"]) is not int or row["peak_rss_kib"] <= 0):
-            raise ValueError(f"小批量性能记录无效: {name}.")
+            raise ValueError(f"评价性能记录无效: {name}.")
         records[name] = row
     if set(records) != set(expected):
         raise ValueError("推理记录与本次选定评测图片不一致.")

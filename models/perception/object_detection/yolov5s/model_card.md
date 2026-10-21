@@ -23,4 +23,4 @@ Ultralytics YOLOv5 使用 AGPL-3.0.使用和再分发模型、修改代码或服
 
 ## 模型产物
 
-流程生成 PyTorch 权重、ONNX、INT8 TFLite 和 DLA。生成位置由 `deploy/run.sh` 顶部的 `MODEL_OUTPUT_DIR` 和 `OUTPUT_DLA` 决定。模型文件默认不进入普通 Git 历史。
+流程生成 PyTorch 权重、ONNX、INT8 TFLite 和 DLA。生成位置由 `deploy/compile.sh` 顶部的 `MODEL_OUTPUT_DIR` 和 `OUTPUT_DLA` 决定。模型文件默认不进入普通 Git 历史。

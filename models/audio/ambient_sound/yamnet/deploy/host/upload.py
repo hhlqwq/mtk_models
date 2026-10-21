@@ -16,7 +16,7 @@ from tools.evaluation import audio_records, is_test, scope_metadata
 from tools.deploy import arguments, upload
 
 
-def prepare_reference(args, *, include_examples=True):
+def prepare_reference(args):
     """整理同范围浮点参考、哈希和固定示例,供当前上传步骤使用."""
     records = audio_records(load_records(args.dataset))
     labels = args.models_dir / "upstream/yamnet_class_map.csv"
@@ -41,31 +41,34 @@ def prepare_reference(args, *, include_examples=True):
     filename = "fp32_reference_test.json" if is_test() else "fp32_reference.json"
     (args.models_dir / filename).write_text(json.dumps(reference, indent=2))
     print(f"[参考] {args.models_dir / filename}", flush=True)
-    if not include_examples:
-        return
-    shutil.copy2(labels, args.models_dir / "yamnet_class_map.csv")
-    inputs = args.model_root / "examples/input"
+
+
+
+def prepare_examples(ctx):
+    """只复制固定展示音频和类别表,不计算任何精度参考."""
+    records = audio_records(load_records(ctx.dataset))
+    shutil.copy2(ctx.output / "upstream/yamnet_class_map.csv", ctx.output / "yamnet_class_map.csv")
+    inputs = ctx.model / "examples/input"
     inputs.mkdir(parents=True, exist_ok=True)
     samples = []
     for number, target in enumerate((0, 39, 42), 1):
         row = next(row for row in records if int(row["target"]) == target)
-        shutil.copy2(args.dataset / "audio" / row["filename"], inputs / f"sample_{number}.wav")
-        samples.append(row)
-    (inputs / "samples.json").write_text(json.dumps(samples, indent=2))
-    print(f"[参考] {args.models_dir / filename}", flush=True)
+        filename = f"sample_{number}.wav"
+        shutil.copy2(ctx.dataset / "audio" / row["filename"], inputs / filename)
+        samples.append(dict(row, file=filename))
+    (inputs / "samples.json").write_text(json.dumps({"samples": samples}, ensure_ascii=False, indent=2))
+
 
 
 def main():
     """上传模型、程序和 JSON 配置,保留全量与快速结果的统一部署位置."""
     ctx = arguments(__file__)
     precision = ctx.config["conversion"]["precision"]
-    prepare_reference(Namespace(model_root=ctx.model, models_dir=ctx.output,
-                                dataset=ctx.dataset, work=ctx.work))
+    prepare_examples(ctx)
     upload(ctx, [
         ctx.output / f"model_{precision}.dla",
         ctx.work / f"runtime_config_{precision}.csv",
         ctx.output / "yamnet_class_map.csv",
-        ctx.output / ("fp32_reference_test.json" if is_test() else "fp32_reference.json"),
 ], [
         ctx.work / "yamnet_eval",
     ])

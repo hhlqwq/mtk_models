@@ -7,7 +7,7 @@ from tools.board import command, context
 
 
 def main():
-    """执行当前运行,快速结果仅在 results 下追加 _test 后缀."""
+    """执行当前运行,将过程文件放入独立日期临时目录."""
     ctx = context(__file__)
     if ctx.result.exists():
         raise FileExistsError(f"结果目录已存在: {ctx.result}.")

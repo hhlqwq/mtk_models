@@ -22,11 +22,7 @@ def main():
     library = ctx.root / "board/libneuron_bridge.so"
     if not library.is_file():
         raise FileNotFoundError(f"缺少已部署的 AArch64 桥接库: {library}.")
-    if is_test():
-        if not ctx.result.is_dir():
-            raise ValueError("缺少本次小批量记录,请通过 run.sh 执行.")
-    else:
-        ctx.result.mkdir(parents=True, exist_ok=False)
+    ctx.result.mkdir(parents=True, exist_ok=True)
     evaluate_mmlu.evaluate(SimpleNamespace(
         backend="npu", data=data / "mmlu", package=ctx.root,
         library=library, output=ctx.result / "mmlu", diagnostic_questions=0))
@@ -34,11 +30,9 @@ def main():
     evaluate_board_quality.evaluate(SimpleNamespace(
         package=ctx.root, quality_data=data / "quality", library=library,
         output=ctx.result / "wikitext", diagnostic_blocks=0, decode_steps=0))
-    if is_test():
-        memory = {"peak_process_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
-                  "scope": "mmlu_and_wikitext_python_process"}
-        (ctx.result / "evaluation_memory.json").write_text(json.dumps(memory, indent=2) + "\n")
-        print(f"[评价进程峰值 RSS] {memory['peak_process_rss_mib']:.2f} MiB.", flush=True)
+    memory = {"peak_process_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
+              "scope": "mmlu_and_wikitext_python_process"}
+    (ctx.result / "evaluation_memory.json").write_text(json.dumps(memory, indent=2) + "\n")
     print(f"[板端评价完成] {ctx.result}", flush=True)
 
 

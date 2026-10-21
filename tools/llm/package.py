@@ -35,7 +35,8 @@ def graph_contract(path):
     return result
 
 
-def write_run_script(output):
+def write_compile_scripts(output):
     """复制共享原生 CLI 入口,保留原有 Token 计数与日志规则."""
-    shutil.copyfile(Path(__file__).with_name("run_native.sh"),
-                    output / "scripts/run.sh")
+    for source, destination in (("compile_native.sh", "compile.sh"),
+                                ("evaluate_native.sh", "evaluate.sh")):
+        shutil.copyfile(Path(__file__).with_name(source), output / destination)

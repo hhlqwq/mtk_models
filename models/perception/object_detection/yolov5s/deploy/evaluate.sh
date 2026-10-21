@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 独立全量精度: 只读取已有模型和评价资源,不量化、编译或部署.
+# 独立评价已有模型的精度、性能与峰值 RSS,不量化、编译或部署.
 set -euo pipefail
 export PYTHONDONTWRITEBYTECODE=1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,9 +9,7 @@ if (( $# != 0 )); then
 fi
 export MTK_EVAL_SCOPE=full
 export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
-if [[ "${EVAL_RUN_ID}" != *_full ]]; then
-    export EVAL_RUN_ID="${EVAL_RUN_ID}_full"
-fi
+export MTK_RUN_DIR="/tmp/hailongcodex/$(date +%F)/yolov5s_evaluate_${EVAL_RUN_ID}"
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     exec 9>"${SCRIPT_DIR}/.run.lock"
     flock -n 9 || { echo "[错误] 本模型已有运行任务." >&2; exit 2; }
@@ -20,8 +18,8 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     python3 "${SCRIPT_DIR}/board/infer.py" --config "${CONFIG}" --run-id "${EVAL_RUN_ID}"
     echo "[全量 2/3] 计算精度并核对样本覆盖."
     python3 "${SCRIPT_DIR}/board/full_accuracy_board.py" --config "${CONFIG}" --run-id "${EVAL_RUN_ID}"
-    echo "[全量 3/3] 保存精度汇总,保留预测和协议."
-    python3 "${SCRIPT_DIR}/board/accuracy_summary.py" --config "${CONFIG}" --run-id "${EVAL_RUN_ID}"
+    echo "[全量 3/3] 保存精度、性能与峰值 RSS 到唯一 summary.json."
+    python3 "${SCRIPT_DIR}/board/summary.py" --config "${CONFIG}" --run-id "${EVAL_RUN_ID}"
 else
     : "${MTK_MODELS_ROOT:?请先进入已有编译容器,仅对已有浮点模型准备评价参考}"
     CONFIG="${SCRIPT_DIR}/../config.yaml"

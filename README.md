@@ -21,16 +21,18 @@ bash docker/enter_container.sh
 在容器的仓库根目录执行所选模型入口,例如:
 
 ```bash
-bash models/perception/object_detection/yolov5s/deploy/run.sh
+bash models/perception/object_detection/yolov5s/deploy/compile.sh
 ```
 
 主机端完成转换、编译、参考评价和上传.登录开发板,进入入口打印的部署目录执行:
 
 ```bash
-bash run.sh
+bash compile.sh
 ```
 
-两端无参数默认固定小批量验证,不改变校准、量化或编译配方.全量精度从部署流程拆出: 容器运行对应模型的 `deploy/evaluate.sh`,只读取已有浮点模型生成全量参考及评价输入;资源单独放入现有板端部署包后,执行 `bash evaluate.sh`,只进行全量推理和精度计算.该入口不导出、量化、编译、构建或上传,也不运行性能专项.结果按运行编号保留预测和 `accuracy_summary.json`,不覆盖已归档指标.各模型支持范围及资源位置见对应 README 和[板端规范](docs/genio_720.md).
+`compile.sh` 只负责模型转换、量化、编译、部署和少量通路检查,打印关键进度并保存 README 所需的展示示例,不生成精度、性能或 RSS 报告.主机部署完成后自动调用板端同名入口生成示例.
+
+`evaluate.sh` 独立使用已有模型: 容器端生成浮点参考及必要评价输入,单独放入现有板端部署包后,板端执行 `bash evaluate.sh`,统一给出精度、性能和推理进程峰值 RSS,不重新量化或编译.每个模型的 `results/` 只保留一个 `summary.json`,示例位于 `examples/`,预测、日志及中间报告位于日期临时目录.后续新增模型遵循同一方式,详见[板端规范](docs/genio_720.md).
 
 新建编译环境时使用 `docker/build_image.sh` 和 `docker/create_container.sh`,具体资源要求见 Docker 文档.运行模型时不自动下载权重、数据集或安装依赖.
 
@@ -47,7 +49,7 @@ bash run.sh
 
 主机与容器使用相同绝对路径,模型资源读写挂载、数据集只读挂载.正式模型和数据集不得以临时目录为唯一存放位置,也不得依赖指向临时目录的链接.来源记录应包含官方地址、固定版本和文件信息,内部完整路径仅保存在本地配置及运行记录中.
 
-板端使用独立部署包,无需访问源码仓库.每次执行使用独立运行编号,结果保存在模型部署目录的 `results/`.淘汰实验只保留必要结论,不长期堆积完整模型副本.
+板端使用独立部署包,无需访问源码仓库.每次执行使用独立运行编号,仅最终评价报告保存在部署目录的 `results/summary.json`,过程文件位于日期临时目录.淘汰实验只保留必要结论,不长期堆积完整模型副本.
 
 ## 仓库结构
 

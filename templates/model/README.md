@@ -9,10 +9,10 @@
 进入编译容器后在本模型目录运行:
 
 ```bash
-bash deploy/run.sh
+bash deploy/compile.sh
 ```
 
-主机完成转换、小批量参考评价、C++ 构建和上传.板端 `bash run.sh` 默认固定小批量验证,不得改变校准或量化配置.全量独立使用 `deploy/evaluate.sh`: 容器只读取已有浮点模型生成参考和评价输入,不编译或上传;板端 `bash evaluate.sh` 只读取现有部署包推理并计算精度.模板中的实际模型业务需实现后才能运行,并按需要为 `tools/accuracy_summary.py` 接入指标和覆盖校验.
+compile.sh 负责转换、量化、编译、部署与少量通路检查,仅打印关键进度并保存 README 示例,不计算或发布指标.正式评价独立使用 evaluate.sh,只运行已有模型并统计精度、性能和进程峰值 RSS.每个模型 results/ 只保留 summary.json;预测、日志和中间指标放日期临时目录.新增模型需要实现示例渲染、正式指标和覆盖校验,复用 tools/board.py 与 tools/summary.py.
 
 ## 数据与评价
 

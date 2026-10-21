@@ -12,7 +12,7 @@ from whisper.tokenizer import get_tokenizer
 from tools.board import configure_parser
 
 from tools.evaluation import (
-    is_test, record_selection, result_status, scope_metadata,
+    record_selection, result_status, scope_metadata,
 )
 
 
@@ -282,6 +282,7 @@ def main() -> None:
         "failed_samples": len(failed),
         "missing_samples": len(missing),
         "accuracy": accuracy,
+        "performance": performance_summary(list(successful.values())),
         "truncated_samples": len(truncated_sample_ids),
         "truncated_sample_ids": truncated_sample_ids,
     }
@@ -315,9 +316,7 @@ def main() -> None:
             "token_exact_match_rate": (
                 token_exact_matches / len(shared) if shared else None),
         }
-    if is_test():
-        summary["performance"] = performance_summary(list(successful.values()))
-    if is_test() and args.preprocess_metrics:
+    if args.preprocess_metrics:
         summary["host_preprocessing"] = preprocessing_summary(
             read_jsonl(args.preprocess_metrics))
 
@@ -330,9 +329,9 @@ def main() -> None:
             "w", encoding="utf-8", newline="\n") as output:
         for item in worst[:100]:
             output.write(json.dumps(item, ensure_ascii=False) + "\n")
-    if accuracy and is_test():
+    if accuracy:
         write_markdown(args.output_dir / "report.md", args.dataset, summary)
-    print("[OK] WER 已计算,原始预测和精度报告已保留.", flush=True)
+    print("[OK] WER 已计算,准备汇总 NPU 耗时.", flush=True)
     if not complete and not args.allow_incomplete:
         raise SystemExit("评测不完整,请按同一输出文件断点续跑后重新汇总.")
 

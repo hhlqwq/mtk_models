@@ -49,7 +49,7 @@ def main():
     parser.add_argument("--run-id")
     configure_parser(parser, __file__, {
         "input_dir": lambda c: c.root / "examples/input",
-        "output_dir": lambda c: c.result / "examples/output",
+        "output_dir": lambda c: c.root / "examples/output",
         "work_dir": lambda c: c.work,
     })
     args = parser.parse_args()

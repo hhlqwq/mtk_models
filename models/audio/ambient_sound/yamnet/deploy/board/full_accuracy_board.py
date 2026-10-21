@@ -75,19 +75,6 @@ def summarize(args):
     matched = matching_reference(reference)
     baseline = reference["onnx"]["metrics"]["held_out"]["map"] if matched else None
     primary = actual["held_out"]["map"]
-    if not is_test():
-        summary = {
-            "status": result_status(), **scope_metadata(), "model": "yamnet", "run_id": args.run_id,
-            "precision": args.precision, "dataset": "ESC-50", "samples": len(records),
-            "evaluation_samples": actual["held_out"]["samples"], "evaluation_folds": [2, 3, 4, 5],
-            "metric": "ESC-50 projected macro AP, folds 2-5", "board_accuracy": primary,
-            "reference_accuracy": baseline, "reference_source": "同协议 ONNX FP32" if matched else None,
-            "metrics": actual,
-        }
-        args.output.mkdir(parents=True, exist_ok=True)
-        (args.output / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))
-        print(f"[全量精度] {args.output / 'summary.json'}", flush=True)
-        return
     with (args.work / "timings.csv").open() as stream:
         timing_rows = list(csv.DictReader(stream))
     expected = [(clip, patch) for clip, row in enumerate(audio)
@@ -142,20 +129,8 @@ def summarize(args):
     }
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))
-    with labels.open() as stream:
-        class_names = [row["display_name"] for row in csv.DictReader(stream)]
-    examples = args.output / "examples/output"
-    examples.mkdir(parents=True, exist_ok=True)
-    for number, target in enumerate((0, 39, 42), start=1):
-        index = next(index for index, row in enumerate(records) if int(row["target"]) == target)
-        order = np.argsort(-scores[index])[:5]
-        result = {"source_filename": records[index]["filename"],
-                  "esc50_category": records[index]["category"],
-                  "top5_yamnet": [{"class": class_names[int(category)],
-                                   "score": float(scores[index, category])} for category in order]}
-        (examples / f"sample_{number}_events.json").write_text(
-            json.dumps(result, ensure_ascii=False, indent=2))
-    print(f"[OK] {args.output / 'summary.json'}", flush=True)
+    print(f"[评价完成] 过程指标目录: {args.output}", flush=True)
+
 
 
 def main():

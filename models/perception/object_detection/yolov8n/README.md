@@ -5,11 +5,11 @@ MT8189 / MDLA 5.3.
 
 ## 执行范围
 
-`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: COCO 固定 100 张图片.评价范围不改变校准、量化或编译配方.
+先在已有编译容器执行 `bash deploy/compile.sh`,完成转换、量化、编译与部署,随后自动调用板端 `compile.sh` 做少量通路检查并保存 README 示例到 `examples/output/`.该阶段不计算或发布精度、性能和峰值 RSS 报告.
 
-全量精度使用独立入口: 容器执行 `bash deploy/evaluate.sh` 生成已有浮点模型的全量参考,单独放入现有部署包后,板端执行 `bash evaluate.sh`.该流程不量化、不编译、不上传,仅推理和计算精度,结果保存为本次运行的 `accuracy_summary.json`.详见[板端评价规范](../../../../docs/genio_720.md).
+正式评价使用独立的 `evaluate.sh`: 容器端只计算已有浮点模型的同协议参考及必要评价输入,资源单独放入已有部署包后,板端运行 `bash evaluate.sh`,统计精度、性能和推理进程峰值 RSS.正式结果只写入 `results/summary.json`,不重新量化或编译.预测、日志及内部指标位于当天日期临时目录.详见[板端规范](../../../../docs/genio_720.md).
 
-下文已归档指标保留原运行范围,不因默认入口变化而更新.
+下文已归档结果保留原始模型版本和评价范围,本次入口调整不代表重新实测.
 
 ## 官方来源
 
@@ -27,18 +27,18 @@ MT8189 / MDLA 5.3.
 通过 `bash docker/enter_container.sh` 进入编译容器,在项目根目录执行:
 
 ```bash
-bash models/perception/object_detection/yolov8n/deploy/run.sh
+bash models/perception/object_detection/yolov8n/deploy/compile.sh
 ```
 
-流程使用 NeuroPilot SDK 8.0.11、MTK Converter 8.16.0,选取 100 张固定排序的 COCO 图片校准,完成 ONNX 导出、INT8 转换、DLA 编译、浮点精度评测、C++ 交叉编译和上传.模型产物位于配置的外部资源目录,中间结果位于构建目录,仓库 `results/` 保留最终 [summary.json](results/summary.json).
+流程使用 NeuroPilot SDK 8.0.11、MTK Converter 8.16.0,选取 100 张固定排序的 COCO 图片校准,完成 ONNX 导出、INT8 转换、DLA 编译、C++ 交叉编译和上传,随后自动生成板端示例.模型产物位于配置的外部资源目录,中间结果位于构建目录,仓库 `results/` 保留最终 [summary.json](results/summary.json).
 
-上传完成后登录开发板,在配置的模型部署目录执行:
+上传后会自动完成板端通路检查与示例生成.正式评价时按[板端规范](../../../../docs/genio_720.md)准备参考及必要输入,再登录开发板的部署目录执行:
 
 ```bash
-bash run.sh
+bash evaluate.sh
 ```
 
-板端使用配置的 COCO val2017 数据集,默认执行 20 次预热和固定 100 张真实 NPU 推理,计算 mAP、平均 NPU 延迟、端到端延迟及进程峰值 RSS,保存检测效果.各次结果使用独立的 `results/<运行编号>/` 目录,不覆盖已有运行.
+compile.sh 使用固定 100 张真实 NPU 输入检查通路并生成检测示例,不计算正式指标.evaluate.sh 对 COCO val2017 全量 5000 张评价,排除 20 次预热,将精度、性能与峰值 RSS 统一发布至 `results/summary.json`.
 
 ## 适配与评测协议
 
@@ -97,7 +97,7 @@ Genio 5100 尚未执行,上述数字只对应 Genio 720.
 <板端部署目录>/results/20261008_yolov8n_full_v1/
 ```
 
-再次运行使用新的 `EVAL_RUN_ID` 或脚本生成的默认 ID,已有运行目录不会覆盖.
+以上目录属于历史实测现场.新流程将过程文件保存在日期临时目录,正式报告统一更新 `results/summary.json`.
 
 ## 真实板端效果
 

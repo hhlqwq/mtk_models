@@ -81,7 +81,7 @@ def main():
         from upload import prepare_reference
 
         prepare_reference(Namespace(model_root=ctx.model, models_dir=ctx.output,
-                                    dataset=ctx.dataset, work=ctx.work), include_examples=False)
+                                    dataset=ctx.dataset, work=ctx.work))
 
 
 if __name__ == "__main__":

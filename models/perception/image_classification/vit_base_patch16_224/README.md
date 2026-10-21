@@ -6,11 +6,11 @@ ImageNet-1K 图像分类，输入为 224×224 RGB 图像。正式上游为 PyTor
 
 ## 执行范围
 
-`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: ImageNet 固定 200 张图片.评价范围不改变校准、量化或编译配方.
+先在已有编译容器执行 `bash deploy/compile.sh`,完成转换、量化、编译与部署,随后自动调用板端 `compile.sh` 做少量通路检查并保存 README 示例到 `examples/output/`.该阶段不计算或发布精度、性能和峰值 RSS 报告.
 
-全量精度使用独立入口: 容器执行 `bash deploy/evaluate.sh` 生成已有浮点模型的全量参考,单独放入现有部署包后,板端执行 `bash evaluate.sh`.该流程不量化、不编译、不上传,仅推理和计算精度,结果保存为本次运行的 `accuracy_summary.json`.详见[板端评价规范](../../../../docs/genio_720.md).
+正式评价使用独立的 `evaluate.sh`: 容器端只计算已有浮点模型的同协议参考及必要评价输入,资源单独放入已有部署包后,板端运行 `bash evaluate.sh`,统计精度、性能和推理进程峰值 RSS.正式结果只写入 `results/summary.json`,不重新量化或编译.预测、日志及内部指标位于当天日期临时目录.详见[板端规范](../../../../docs/genio_720.md).
 
-下文已归档指标保留原运行范围,不因默认入口变化而更新.
+下文已归档结果保留原始模型版本和评价范围,本次入口调整不代表重新实测.
 
 ## 第一步: 编译并上传
 
@@ -21,18 +21,20 @@ ImageNet-1K 图像分类，输入为 224×224 RGB 图像。正式上游为 PyTor
 在编译主机的本模型目录运行:
 
 ```bash
-bash deploy/run.sh
+bash deploy/compile.sh
 ```
 
 入口在当前容器中完成量化、DLA 编译、ONNX 全量 Top-1 评价、C++ 构建和上传。Docker 需安装 ONNX Runtime、NumPy、OpenCV、PyTorch、torchvision 和 tqdm。
 
-## 第二步: 开发板测试
+## 第二步: 独立评价
 
-登录脚本中配置的 `BOARD_HOST`,执行第一步打印的板端命令。也可进入 `BOARD_DEPLOY_DIR` 对应的实际目录运行:
+编译入口已自动完成板端通路检查和示例生成.正式评价前,按[板端规范](../../../../docs/genio_720.md)准备同协议参考及必要输入,在已部署目录执行:
 
 ```bash
-bash run.sh
+bash evaluate.sh
 ```
+
+精度、性能和峰值 RSS 统一保存到 results/summary.json,过程数据位于日期临时目录,不重新量化或编译.
 
 ## 数据与精度评测
 
@@ -49,7 +51,7 @@ ViT 默认验证固定 200 张图片.完整数据仍按下列 ImageNet 50000 张
 
 板端通过 C++ 完成图片预处理和 NPU 推理,计算 Top-1、NPU 平均耗时、推理进程峰值 RSS 与相对 ONNX 的精度变化。板端需安装 Python 3、NumPy 和 OpenCV。
 
-结果写入 `BOARD_RESULTS_DIR/<运行编号>/summary.json`,默认位于部署目录的 `results/`。成功后保留汇总和少量效果示例; 失败时保留现场。将结果上传到本模型的 `results/summary.json` 后更新 README。
+评价结果只保存在部署目录的 `results/summary.json`.预测、日志和中间指标保留在 `/tmp/hailongcodex/<当天日期>/<模型>_evaluate_<运行编号>/`;展示示例保存在 `examples/output/`.取回唯一报告后据实更新 README.
 
 ## 当前测试结果
 
@@ -73,7 +75,7 @@ NPU 耗时为常驻模型对 50000 张图片的 `NeuronRuntime_inference` 平均
 
 输入已放在 `examples/input/`,选取 [ImageNet val2012](https://image-net.org/challenges/LSVRC/2012/) 的前三张图片: 海蛇、雪山和牧羊犬.来源与样本清单在编译时自动生成并随部署上传,不纳入 Git.
 
-全量测试自动复用选定样本的板端预测,生成少量效果文件到本次结果目录的 `examples/output/`.
+compile.sh 复用固定少量样本的板端预测,生成展示文件到部署目录的 `examples/output/`,不依赖全量评价.
 以下三张效果来自本次板端实际推理,复用全量测试样本的预测,未额外运行模型.
 
 ### 示例 1: 海蛇
@@ -94,19 +96,19 @@ NPU 耗时为常驻模型对 50000 张图片的 `NeuronRuntime_inference` 平均
 
 ```text
 部署目录/
-├── run.sh
-├── evaluate.sh          # 独立全量精度.
-├── board_paths.conf
+├── compile.sh
+├── evaluate.sh          # 独立精度、性能与 RSS 评价.
+├── config.json          # 不含连接地址的模型配置.
 ├── models/              # 模型与推理所需参数.
 ├── board/               # 板端程序、评测代码及必要依赖.
-├── examples/input/      # 少量示例输入及来源清单.
-└── results/             # 汇总及少量效果示例.
+├── examples/            # 少量输入、来源清单和展示输出.
+└── results/summary.json  # 唯一正式评价报告.
 ```
 
-全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后保留汇总和少量效果示例,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
+评价结果只保存在部署目录的 `results/summary.json`.预测、日志和中间指标保留在 `/tmp/hailongcodex/<当天日期>/<模型>_evaluate_<运行编号>/`;展示示例保存在 `examples/output/`.取回唯一报告后据实更新 README.
 ## 文件结构
 
-- `deploy/run.sh`: 部署和默认小批量验证入口;全量精度使用独立的 `deploy/evaluate.sh`.
+- `deploy/compile.sh`: 编译部署与展示示例入口;精度、性能和 RSS 使用独立的 `deploy/evaluate.sh`.
 - `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
 - `deploy/board/`: 板端程序源码、预处理和评测代码.
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.

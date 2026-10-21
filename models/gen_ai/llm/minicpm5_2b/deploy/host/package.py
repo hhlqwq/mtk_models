@@ -121,9 +121,9 @@ def package(work, output, prefill, quantized_prefix=None):
         "Genio 720 全 W4A16 部署包,支持英文生成、性能和精度评价.\n"
         "本部署包尚待板端评价.\n\n"
         "在本部署目录运行:\n\n"
-        "```bash\nbash run.sh\n```\n\n"
-        "无参数默认小批量验证;全量精度单独执行 `bash evaluate.sh`.\n"
-        "配置见 config.json,小批量结果见 results/summary_test.json,全量见独立运行目录的 accuracy_summary.json.\n"
+        "```bash\nbash compile.sh\n```\n\n"
+        "编译阶段仅检查通路和生成示例;正式评价执行 `bash evaluate.sh`.\n"
+        "配置见 config.json,示例见 examples/output,正式报告只有 results/summary.json.\n"
         "具体工具命令及参数由执行代码维护并打印.\n")
     files = []
     for path in sorted(output.rglob("*")):
@@ -152,8 +152,6 @@ def package(work, output, prefill, quantized_prefix=None):
 
 def package_model(native):
     """由上传步骤直接调用,构建本次模式的部署包和同协议输入."""
-    mode = "test" if is_test() else "full"
-    evaluation = native.work / "evaluation" / mode
     output = native.ctx.work / "package"
     if (output.is_symlink() or output.resolve().parent != native.ctx.work.resolve()
             or not output.resolve().is_relative_to(native.ctx.output.resolve())):
@@ -162,13 +160,13 @@ def package_model(native):
         print("[清理] 替换上一次临时部署包.", flush=True)
         shutil.rmtree(output)
     package(native.work, output, native.prefill, native.quantized)
-    shutil.copyfile(native.ctx.model / "deploy/run.sh", output / "run.sh")
+    shutil.copyfile(native.ctx.model / "deploy/compile.sh", output / "compile.sh")
     shutil.copyfile(native.ctx.model / "deploy/evaluate.sh", output / "evaluate.sh")
     board = output / "board"
     board.mkdir()
-    for name in ("infer.py", "evaluate.py", "summarize.py"):
+    for name in ("infer.py", "evaluate.py"):
         shutil.copyfile(native.ctx.model / "deploy/board" / name, board / name)
-    shutil.copyfile(REPO_ROOT / "tools/accuracy_summary.py", board / "accuracy_summary.py")
+    shutil.copyfile(REPO_ROOT / "tools/summary.py", board / "summary.py")
     library = native.ctx.work / "libneuron_bridge.so"
     with library.open("rb") as stream:
         header = stream.read(20)
@@ -180,16 +178,6 @@ def package_model(native):
     shared.mkdir()
     for name in ("__init__", "evaluate_board_quality", "evaluate_mmlu"):
         shutil.copyfile(REPO_ROOT / "tools/llm" / f"{name}.py", shared / f"{name}.py")
-    modes = [mode]
-    for prepared in modes:
-        shutil.copytree(evaluation.parent / prepared, output / "evaluation" / prepared,
-                        ignore=shutil.ignore_patterns("*.npy"))
-    quality = json.loads((evaluation / "quality/board_quality_protocol.json").read_text())
-    tokens = quality["input_ids"][:128]
-    if len(tokens) != 128:
-        raise ValueError("统一性能输入不足 128 Token.")
-    (output / "scripts/prompts/performance_128.tokens.txt").write_text(
-        " ".join(map(str, tokens)) + "\n")
     snapshot = copy.deepcopy(native.ctx.config)
     snapshot["model"]["source"] = str(native.source)
     snapshot["conversion"]["context"] = native.context
@@ -198,8 +186,6 @@ def package_model(native):
         rotate=bool(native.rotate), mask_value=native.mask,
         weight_optimization=native.optimization, weight_opt_config=native.extra,
         calibration_train=str(native.train))
-    snapshot["evaluation"] = dict(
-        snapshot["evaluation"], prepared_mode=mode, prepared_modes=modes)
     (output / "config.json").write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n")
     manifest_path = output / "manifest.json"
     manifest = json.loads(manifest_path.read_text())

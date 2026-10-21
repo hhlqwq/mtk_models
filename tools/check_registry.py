@@ -69,11 +69,18 @@ def check_model(entry: dict[str, Any]) -> list[str]:
     if model_yaml_path.exists():
         errors.append(f"{model_id}: 仅保留 model_card.md,不应存在 model.yaml")
 
-    # 所有模型使用同一个 Shell 入口.
-    deploy_files = ("deploy/run.sh",)
+    # 所有新增与已有模型统一使用编译和评价两个入口.
+    deploy_files = ("deploy/compile.sh", "deploy/evaluate.sh")
     for required_file in deploy_files:
         if not (model_root / required_file).is_file():
             errors.append(f"{model_id}: 缺少文件: {required_file}")
+    results = model_root / "results"
+    if results.is_dir():
+        for path in results.iterdir():
+            if path.name != "summary.json" or not path.is_file():
+                errors.append(f"{model_id}: results 只允许保留 summary.json: {path.name}")
+    if (model_root / "deploy/run.sh").exists():
+        errors.append(f"{model_id}: 旧 run.sh 应统一改为 compile.sh")
 
     # 模型来源记录统一保存在模型资源目录.
     source_record = "models/source_url.txt"

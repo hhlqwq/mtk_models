@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 : "${MTK_GAI_PYTHON:?请通过 docker/enter_container.sh 进入容器}"
 if (( $# > 1 )); then
-    echo "[错误] 用法: bash run_native.sh [prepare|calibrate|quantize|shape|compile|all]" >&2
+    echo "[错误] 用法: bash compile_native.sh [prepare|calibrate|quantize|shape|compile|all]" >&2
     exit 2
 fi
 STAGE="${1:-all}"

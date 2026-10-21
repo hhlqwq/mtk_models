@@ -75,7 +75,7 @@ def export_model(args):
 
 
 def main():
-    """直接导出模型,由 run.sh 选择已配置的 TensorFlow Python 环境."""
+    """直接导出模型,由 compile.sh 选择已配置的 TensorFlow Python 环境."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models-dir", type=Path, required=True)
     parser.add_argument("--dataset", type=Path, required=True)

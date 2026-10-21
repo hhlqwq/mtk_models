@@ -10,19 +10,11 @@
 
 编译在 Ubuntu Docker 容器执行,板端执行真实 NPU 推理.使用 `--arch=mdla5.3` 和 `--disallow-bridge`,整数原生 I/O 的转换参数须与实际张量契约一致.系统与模型所需 Runtime 不匹配时停止运行并核对版本,不覆盖系统库强行兼容.
 
-主机入口完成模型、板端程序、配置和必要公共模块的打包上传.在部署目录运行:
+主机入口 `deploy/compile.sh` 完成导出、量化、DLA 编译、板端程序构建和上传,随后自动在部署目录执行 `compile.sh`,用固定少量输入检查硬件推理并生成 README 示例.只打印步骤与成功/失败信息,不计算或生成精度、性能和 RSS 报告.不会进入全量评价.
 
-```bash
-bash run.sh
-```
+## 独立评价
 
-`bash run.sh` 无参数默认固定小批量评价,不改变校准或量化配方.小批量结果使用 `_test` 运行后缀,MiniCPM 沿用 `latest_test` 和 `summary_test.json`;这些是结果标识,不是命令参数.小批量不能覆盖正式全量指标.
-
-## 独立全量精度
-
-在已有编译容器内,从所选模型目录执行 `bash deploy/evaluate.sh`.该入口只对已有浮点模型计算全量参考、准备必要评价输入,不导出、校准、量化、编译、构建、打包或上传.缺少模型时停止,不自动重新部署.
-
-普通模型生成模型资源 `build/onnx_reference.json`,单独放入现有板端 `models/onnx_reference.json`;YAMNet 的参考为模型资源 `fp32_reference.json`,放入板端 `models/fp32_reference.json`.MiniCPM 生成模型资源 `build/native/evaluation/full/`,整体放入板端 `evaluation/full/`,必须与现有 DLA 的上下文、词表和输入契约匹配.这些操作只补充评价资源,不替换 DLA 或运行程序.
+在已有编译容器的模型目录执行 `bash deploy/evaluate.sh`,只读取已有浮点模型,生成同协议参考与必要输入.不导出、量化、编译或构建.普通参考为模型资源 `build/onnx_reference.json`,放入板端 `models/onnx_reference.json`;YAMNet 参考为模型资源 `fp32_reference.json`,放入板端 `models/fp32_reference.json`.MiniCPM 的模型资源 `build/native/evaluation/full/` 整体放入板端 `evaluation/full/`.这些是评价输入,不属于对外交付报告.
 
 在现有板端部署目录执行:
 
@@ -30,26 +22,27 @@ bash run.sh
 bash evaluate.sh
 ```
 
-板端全量入口只推理已有模型、计算精度,不调用 `run.sh`,不运行 Demo、效果渲染、模型大小统计或性能专项.自然产生的诊断耗时可保留在原始记录中.每次结果使用独立的 `<运行编号>_full` 目录,保存预测、原始指标及 `accuracy_summary.json`,不清理预测或覆盖小批量结果.有匹配参考时计算差值,否则注明参考不可用;YAMNet/LLM 缺必要协议输入时直接报错.
+评价入口使用已有 DLA 和程序,执行完整精度评价、必要预热和性能统计,采集推理进程峰值 RSS,最终只给出 `results/summary.json`.不调用 compile.sh,不重新量化或编译.重复评价成功后更新这一个报告,运行编号、数据集范围、版本和缺失项写在报告内部.
 
-MiniCPM 不依赖先运行生成 Demo;完整 MMLU 为 14042 题,WikiText2 使用完整 test 协议.若现有上下文容纳不了完整题目,报告阻塞,另行安排部署调整,禁止截题或在评价中重新编译.DeepSeek 当前只有生成样例,其全量入口明确报告正式协议尚未实现.
+中间预测、日志、逐任务指标和调试记录位于 `/tmp/hailongcodex/当天日期/<模型>_<阶段>_<运行编号>/`.失败时保留现场,不拿上次指标冒充本次结果,不为失败运行伪造成功报告.成功发布后 results 内只保留 summary.json.临时目录由使用者按需清理.
+
+MiniCPM 要求完整 MMLU 14042 题与 WikiText2 test.若已有上下文不足,明确报错,不截题或自动重编译.DeepSeek 的 FP16 分片及 W4A16 原生包当前仅有生成样例,评价报告须明确正式基准精度尚未实现,样例速度不能标为标准定长基准.DeepSeek FP16 示例文本解码需要板端已有 `tokenizers`,不会自动安装依赖.
 
 ## 目录
 
 ```text
-<board_root>/
-├── datasets/                   板端共享评价数据
-├── MTK_G720_DLA/               官方 Model Zoo
-└── open_models/<model>/        本仓库适配模型
-    ├── run.sh                  默认小批量验证
-    ├── evaluate.sh             独立全量精度
-    ├── config.json             配置快照
-    ├── models/                 模型及运行参数
-    ├── board/                  板端程序和必要依赖
-    └── results/<run_id>/        本次结果、日志与效果示例
+<board_root>/open_models/<model>/
+├── compile.sh                 少量通路检查和 README 示例
+├── evaluate.sh                正式评价,不重新编译
+├── config.json                配置快照
+├── models/                    DLA 和必要运行参数
+├── board/                     板端程序和公共模块
+├── examples/input/            少量展示输入
+├── examples/output/           README 使用的结果图或文本
+└── results/summary.json        唯一正式报告
 ```
 
-原生 LLM 的双 DLA、tokenizer 和入口布局由模型 README 定义.正式资源不散放在工作根目录或临时目录.每次评价使用独立运行编号,不覆盖已有结果;淘汰实验不长期保留完整模型副本.
+原生 LLM 双 DLA、tokenizer 与脚本布局按模型说明维护,同样遵守两个入口和唯一 summary.json.正式模型、数据集和评价输入存放在配置指定的资源位置,临时目录不作为正式模型的唯一存储.
 
 ## 评价口径
 

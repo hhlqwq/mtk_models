@@ -4,11 +4,13 @@
 
 ## 执行范围
 
-`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: 固定生成样例.评价范围不改变校准、量化或编译配方.
+先在已有编译容器执行 `bash deploy/compile.sh`,完成转换、量化、编译与部署,随后自动调用板端 `compile.sh` 做少量通路检查并保存 README 示例到 `examples/output/`.该阶段不计算或发布精度、性能和峰值 RSS 报告.
 
-`evaluate.sh` 当前明确报告尚未实现正式全量精度协议,不把生成样例当作完整基准.
+正式评价使用独立的 `evaluate.sh`: 容器端只计算已有浮点模型的同协议参考及必要评价输入,资源单独放入已有部署包后,板端运行 `bash evaluate.sh`,统计精度、性能和推理进程峰值 RSS.正式结果只写入 `results/summary.json`,不重新量化或编译.预测、日志及内部指标位于当天日期临时目录.详见[板端规范](../../../../docs/genio_720.md).
 
-下文已归档指标保留原运行范围,不因默认入口变化而更新.
+下文已归档结果保留原始模型版本和评价范围,本次入口调整不代表重新实测.
+
+DeepSeek 当前仅有固定生成样例,`evaluate.sh` 可报告样例性能与 RSS,正式全量精度仍标记未实现.下文唯一报告对应已有 W4A16 交付,不可当成 FP16 分片方案的新结果.
 
 ## 配置与运行
 
@@ -17,15 +19,15 @@
 在仓库根目录进入容器后执行 FP16 部署流程:
 
 ```bash
-bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/run.sh
+bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/compile.sh
 ```
 
-入口完成导出、参考检查、转换、编译、桥接库构建及上传.板端在部署目录执行 `bash run.sh`,结果见 [summary.json](results/summary.json).该入口的板端覆盖为固定生成样例,不是完整 MMLU/WikiText 基准.
+入口完成导出、示例 Token 准备、转换、编译、桥接库构建和上传,自动在板端运行少量生成示例,不发布报告.FP16 示例文本解码需要已有 tokenizers 依赖.正式指标只在 evaluate.sh 中计算.
 
 GAI 全 W4A16 转换使用独立入口:
 
 ```bash
-bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/run_native.sh
+bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/compile_native.sh
 ```
 
 它依次执行 prepare、calibrate、quantize、shape 和 compile,不自动打包、上传或完成正式板端精度评价.默认量化为 `none`,不启用 Hessian;全部 Attention、MLP 和 LM Head 均为 `asym4W_sym16A`.打包接口见 [package_native.py](deploy/host/package_native.py),需要独立空输出目录.
@@ -38,9 +40,8 @@ bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/run_native.sh
 
 ## 评价与状态
 
-已有 FP16 和 W4A16 均完成固定样例生成,不能据此认定正式质量合格.W4A16 的生成及性能证据见 [native_summary.json](results/native_summary.json),新配方的 NPU MMLU/WikiText 正式对比仍未完成.
+已有 FP16 和 W4A16 均完成固定样例生成,不能据此认定正式质量合格.W4A16 的生成及性能证据见 [统一报告](results/summary.json),新配方的 NPU MMLU/WikiText 正式对比仍未完成.
 
-[首轮参考](results/first_round_summary.json)采用 MMLU 0-shot 固定 1000 题和 WikiText2 test 前 128 行,FP32 MMLU 为 37.2%,PPL 为 118.71,NPU 指标尚缺失.这两项均为子集协议,不能标为全量基准.
 
 MMLU 使用同一题目 Token 和空格加 A/B/C/D 的单 Token logits 评分,不加 Chat Template、不截断或丢题.WikiText 以 128 Token 分块、每块重置上下文,评分 127 次下一 Token.当前全量入口尚未接入正式协议;扩展评价时若完整题目超出已有模型上下文,应停止并另行规划部署调整,不截题或在评价中重编译.
 

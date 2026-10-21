@@ -80,10 +80,12 @@ def compile_dla(ctx, source, target, extra=()):
 
 
 def upload(ctx, model_files, programs, extra_files=()):
-    """上传当前模型部署包,快速与全量共用原部署目录,参考报告分别保存."""
+    """上传当前模型部署包并生成板端示例,不准备正式评价参考."""
     snapshot = ctx.work / "config.json"
     snapshot.write_text(json.dumps(ctx.config, ensure_ascii=False, indent=2))
     samples = ctx.work / "samples.json"
+    if ctx.config["name"] == "yamnet":
+        samples = ctx.model / "examples/input/samples.json"
     if ctx.config["name"] not in ("yamnet", "deepseek_r1_distill_qwen_1_5b", "minicpm5_2b"):
         run_command([sys.executable, ctx.repo / "tools/prepare_examples.py",
                      "--model", ctx.config["name"], "--dataset-root", ctx.dataset,
@@ -91,16 +93,13 @@ def upload(ctx, model_files, programs, extra_files=()):
     board_source = ctx.model / "deploy/board"
     code = [path for path in board_source.iterdir()
             if path.is_file() and path.suffix in (".py", ".json")]
-    for name in ("render_examples.py", "summarize_board_result.py", "model_size.py"):
+    for name in ("render_examples.py",):
         if not (board_source / name).exists():
             code.append(ctx.repo / "tools" / name)
-    reference = reference_path(ctx)
-    if reference.is_file():
-        model_files = [*model_files, reference]
     groups = {
-        "": [ctx.model / "deploy/run.sh", ctx.model / "deploy/evaluate.sh", snapshot],
+        "": [ctx.model / "deploy/compile.sh", ctx.model / "deploy/evaluate.sh", snapshot],
         "models": model_files,
-        "board": [*code, *programs, ctx.repo / "tools/accuracy_summary.py"],
+        "board": [*code, *programs, ctx.repo / "tools/summary.py"],
         "board/tools": [ctx.repo / "tools" / name for name in
             ("__init__.py", "board.py", "evaluation.py", "files.py", "process.py", "coco.py")],
         "examples/input": [*sorted((ctx.model / "examples/input").glob("sample_*"))],
@@ -125,5 +124,6 @@ def upload(ctx, model_files, programs, extra_files=()):
     if programs:
         run_command(["ssh", *options, host, "chmod 755 " + " ".join(
             shlex.quote(str(Path(destination) / "board" / Path(path).name)) for path in programs)])
-    print(f"[下一步] 在开发板执行小批量验证: bash {destination}/run.sh", flush=True)
-    print(f"[独立全量精度] 资源准备完成后执行: bash {destination}/evaluate.sh", flush=True)
+    print("[部署] 生成板端展示示例,不计算正式指标.", flush=True)
+    run_command(["ssh", *options, host, "bash " + shlex.quote(destination + "/compile.sh")])
+    print(f"[评价入口] 资源准备完成后执行: bash {destination}/evaluate.sh", flush=True)

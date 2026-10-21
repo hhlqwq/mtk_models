@@ -212,7 +212,7 @@ int Run(int argc, char** argv) {
             const size_t size = patch.size() * bytes;
             if (!warmed) {
                 const auto warmup_start = Clock::now();
-                for (int repeat = 0; repeat < (mtk::IsTestEvaluation() ? 20 : 0); ++repeat)
+                for (int repeat = 0; repeat < (mtk::IsTestEvaluation() ? 0 : 20); ++repeat)
                     model.Infer(data, size);
                 warmup_ms = std::chrono::duration<double, std::milli>(
                                 Clock::now() - warmup_start)

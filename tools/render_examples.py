@@ -1,6 +1,7 @@
-"""从本次全量板端预测生成少量效果示例,不重新执行模型推理."""
+"""从本次少量板端预测生成展示示例,不依赖精度评价或重新推理."""
 
 import argparse
+import csv
 import json
 from pathlib import Path
 
@@ -180,20 +181,20 @@ def depth(args, manifest) -> None:
 
 
 def face(args, manifest) -> None:
-    """展示真实十折验证的余弦相似度与同人判定."""
-    wanted = {str(item["pair_id"]) for item in manifest["samples"]}
-    records = {str(row["pair_id"]): row for row in
-               read_jsonl(args.work_dir / "report/pair_results.jsonl")
-               if str(row["pair_id"]) in wanted}
+    """直接展示板端特征的余弦相似度,不依赖十折精度评价."""
+    indices = {row["image"]: row["directory"] for row in
+               read_jsonl(args.work_dir / "predictions.jsonl")}
     for position, item in enumerate(manifest["samples"], 1):
-        record = records[str(item["pair_id"])]
+        features = [np.fromfile(args.work_dir / indices[Path(item[field]).name] / "feature.bin",
+                                dtype=np.float32) for field in ("image_a", "image_b")]
+        if any(value.size != 128 or not np.isfinite(value).all() for value in features):
+            raise ValueError("人脸示例特征无效.")
+        similarity = float(np.dot(*features))
         images = [cv2.resize(load_image(args.input_dir / item[field]), (280, 280))
                   for field in ("file_a", "file_b")]
-        predicted = "same person" if record["predicted_same"] else "different people"
         truth = "same person" if item["is_same"] else "different people"
-        lines = [f"Board prediction: {predicted}", f"Ground truth: {truth}",
-                 f"Cosine similarity: {record['cosine_similarity']:.4f}",
-                 "Decision threshold: trained on the other 9 LFW folds"]
+        lines = [f"Ground truth: {truth}", f"Board cosine similarity: {similarity:.4f}",
+                 "Feature example; verification accuracy requires evaluate.sh"]
         save_image(args, position, "verification",
                    panel(np.concatenate(images, axis=1), lines))
 
@@ -221,12 +222,33 @@ def speech(args, manifest) -> None:
         "\n".join(lines), encoding="utf-8")
 
 
+def audio(args, manifest) -> None:
+    """直接展示音频窗口平均分数的前五类,不计算评价集精度."""
+    records = read_json(args.work_dir / "audio_manifest.json")
+    scores = np.fromfile(args.work_dir / "scores.bin", dtype="<f4")
+    if scores.size != len(records) * 521 or not np.isfinite(scores).all():
+        raise ValueError("声音示例输出无效.")
+    scores = scores.reshape(len(records), 521)
+    indices = {row["filename"]: index for index, row in enumerate(records)}
+    with (args.models_dir / "yamnet_class_map.csv").open() as stream:
+        labels = [row["display_name"] for row in csv.DictReader(stream)]
+    for number, sample in enumerate(manifest["samples"], 1):
+        values = scores[indices[sample["filename"]]]
+        top = np.argsort(-values)[:5]
+        output = {"source_filename": sample["filename"], "esc50_category": sample["category"],
+                  "top5_yamnet": [{"class": labels[int(index)], "score": float(values[index])}
+                                   for index in top]}
+        (args.output_dir / f"sample_{number}_events.json").write_text(
+            json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"[声音示例] {number}/{len(manifest['samples'])}.", flush=True)
+
+
 def main() -> None:
     """统一选择任务适配器,仅保存固定的少量示例产物."""
     adapters = {"vit_base_patch16_224": classification, "yolov5s": detections,
                 "rtmpose_body2d": pose,
                 "fastsam": segmentation, "depth_anything_v2_small": depth,
-                "mobilefacenet": face, "whisper_tiny": speech}
+                "mobilefacenet": face, "whisper_tiny": speech, "yamnet": audio}
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", choices=adapters, required=True)
     for name in ("input-dir", "output-dir", "work-dir", "dataset-root", "models-dir"):
@@ -235,14 +257,14 @@ def main() -> None:
     configure_parser(parser, __file__, {
         "model": lambda c: c.config["name"],
         "input_dir": lambda c: c.root / "examples/input",
-        "output_dir": lambda c: c.result / "examples/output",
+        "output_dir": lambda c: c.root / "examples/output",
         "work_dir": lambda c: c.work,
         "dataset_root": lambda c: c.dataset,
         "models_dir": lambda c: c.root / "models",
     })
     args = parser.parse_args()
     manifest = read_json(args.input_dir / "samples.json")
-    args.output_dir.mkdir(parents=True, exist_ok=False)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
     adapters[args.model](args, manifest)
     print(f"[OK] 板端效果示例: {args.output_dir}", flush=True)
 

@@ -6,30 +6,30 @@
 
 ## 执行范围
 
-`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: 配置指定的 MMLU 16 题和 WikiText2 4 块及功能示例.评价范围不改变校准、量化或编译配方.
+先在已有编译容器执行 `bash deploy/compile.sh`,完成转换、量化、编译与部署,随后自动调用板端 `compile.sh` 做少量通路检查并保存 README 示例到 `examples/output/`.该阶段不计算或发布精度、性能和峰值 RSS 报告.
 
-全量精度使用独立入口: 容器执行 `bash deploy/evaluate.sh` 生成已有浮点模型的全量参考,单独放入现有部署包后,板端执行 `bash evaluate.sh`.该流程不量化、不编译、不上传,仅推理和计算精度,结果保存为本次运行的 `accuracy_summary.json`.详见[板端评价规范](../../../../docs/genio_720.md).
+正式评价使用独立的 `evaluate.sh`: 容器端只计算已有浮点模型的同协议参考及必要评价输入,资源单独放入已有部署包后,板端运行 `bash evaluate.sh`,统计精度、性能和推理进程峰值 RSS.正式结果只写入 `results/summary.json`,不重新量化或编译.预测、日志及内部指标位于当天日期临时目录.详见[板端规范](../../../../docs/genio_720.md).
 
-下文已归档指标保留原运行范围,不因默认入口变化而更新.
+下文已归档结果保留原始模型版本和评价范围,本次入口调整不代表重新实测.
 
 ## 运行
 
 模型和数据路径、转换及评价参数统一在 [config.yaml](config.yaml) 配置.
 模型资源和数据集提前放在 NAS,运行时不自动下载.
 
-进入编译容器后,在本模型目录执行转换、编译、参考评价及上传:
+进入编译容器后,在本模型目录执行转换、编译及上传,自动生成板端示例:
 
 ```bash
-bash deploy/run.sh
+bash deploy/compile.sh
 ```
 
-在开发板部署目录执行生成、性能和精度评价:
+正式评价前按[板端规范](../../../../docs/genio_720.md)准备完整 MMLU/WikiText2 输入和参考,再在开发板部署目录执行:
 
 ```bash
-bash run.sh
+bash evaluate.sh
 ```
 
-两端无参数默认少量评价,工具命令和参数由执行代码维护并打印.
+compile.sh 仅生成少量示例,正式指标统一由 evaluate.sh 给出.
 
 ## 当前结果
 
@@ -44,4 +44,4 @@ bash run.sh
 | 推理进程峰值 RSS | — | 1152.42 MiB |
 
 以上成绩对应已归档的量化配方,不代表默认配置重新转换后的结果.
-完整结果及适配说明见 [summary.json](results/summary.json)、[evidence.json](results/evidence.json) 和 [ADAPTATION.md](ADAPTATION.md).
+结果及适配说明见 [summary.json](results/summary.json) 和 [ADAPTATION.md](ADAPTATION.md).

@@ -19,4 +19,4 @@
 
 ## 证据
 
-当前评价指标见 [README](README.md)和[统一汇总](results/summary.json),当前模型的评价与短生成证据见 [evidence.json](results/evidence.json).不保留历史诊断与逐次实验文件.
+当前模型的评价指标与短生成证据见 [README](README.md)和唯一的[统一汇总](results/summary.json).不保留历史诊断与逐次实验报告.

@@ -76,7 +76,7 @@ def evaluate(args: argparse.Namespace) -> None:
                     any(not isinstance(value, int) or
                         not 0 <= value < 1000 for value in predictions)):
                 raise ValueError(f"C++ 预测记录不匹配: {index}.")
-            timing = float(record["npu_ms"]) if is_test() else 0.0
+            timing = float(record["npu_ms"])
             if not math.isfinite(timing) or timing < 0:
                 raise ValueError(f"NPU 耗时非法: {index}.")
             timings.append(timing)
@@ -91,7 +91,7 @@ def evaluate(args: argparse.Namespace) -> None:
         raise ValueError(f"预测数量不完整: {len(timings)}/50000.")
     sorted_times = sorted(timings)
     memory_path = args.predictions.parent / "memory.json"
-    memory = json.loads(memory_path.read_text(encoding="utf-8")) if is_test() and memory_path.is_file() else {}
+    memory = json.loads(memory_path.read_text(encoding="utf-8")) if memory_path.is_file() else {}
     summary = {
         "peak_rss_kib": memory.get("peak_rss_kib"),
         "status": result_status(), **scope_metadata(),
@@ -108,9 +108,6 @@ def evaluate(args: argparse.Namespace) -> None:
         "npu_mean_ms": statistics.fmean(timings),
         "npu_p95_ms": sorted_times[math.ceil(0.95 * len(sorted_times)) - 1],
     }
-    if not is_test():
-        for key in ("peak_rss_kib", "timing_scope", "npu_mean_ms", "npu_p95_ms"):
-            summary.pop(key)
     args.report.mkdir(parents=True, exist_ok=True)
     (args.report / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",

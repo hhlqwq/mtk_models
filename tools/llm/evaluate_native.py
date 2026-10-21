@@ -1,8 +1,12 @@
 """运行原生双语样例,记录完整日志、停止 Token、速度和本次内存观测."""
 
 import argparse
+from datetime import date
+import os
+from types import SimpleNamespace
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import subprocess
@@ -85,6 +89,9 @@ def run_sample(root, folder, language, token_mode, limit, input_path=None,
             row["prefill_input_tokens"] / row["prefill_seconds"])
         row["native_reported_decode_tokens_per_second"] = float(re.search(
             r"Generative Mode:\s*([0-9.eE+-]+) tok/s", text).group(1))
+        if not all(math.isfinite(value) and value > 0 for value in (
+                row["prefill_seconds"], row["native_reported_decode_tokens_per_second"])):
+            raise ValueError("原生 Prefill 耗时或 Decode 速度无效.")
         if require_eos and not row["eos_reached"]:
             raise ValueError(f"样例未完成停止 Token: {name}")
     return row, response_body(text)
@@ -98,6 +105,7 @@ def main():
     parser.add_argument("--max-new-tokens", type=int, default=768)
     parser.add_argument("--performance-input", type=Path,
                         help="可选固定 128 Token 输入,单独记录统一性能指标.")
+    parser.add_argument("--publish", action="store_true", help="由 evaluate.sh 发布唯一正式报告.")
     args = parser.parse_args()
     if is_test():
         args.max_new_tokens = 32
@@ -105,7 +113,10 @@ def main():
             args.run_id = "test_" + args.run_id
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.run_id) or args.max_new_tokens < 2:
         parser.error("运行编号或生成上限无效.")
-    folder = args.root / "results" / args.run_id
+    temporary = Path("/tmp/hailongcodex") / date.today().isoformat()
+    folder = Path(os.environ.get("MTK_RUN_DIR", temporary / ("native_evaluate_" + args.run_id)))
+    if folder.is_symlink() or not folder.resolve().is_relative_to(temporary.resolve()):
+        parser.error("过程文件必须位于当天日期临时目录.")
     folder.mkdir(parents=True, exist_ok=False)
     report = {"run_id": args.run_id,
               "scope": "authored_bilingual_smoke_not_formal_accuracy",
@@ -133,6 +144,35 @@ def main():
     report.update(status=result_status(), **scope_metadata())
     (folder / "board_metrics.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+    if args.publish:
+        if is_test():
+            parser.error("编译示例阶段不允许发布正式报告.")
+        from tools.summary import publish
+
+        rows = report["samples"]
+        processes = [*rows, *report["text_input_checks"]]
+        if "performance" in report:
+            processes.append(report["performance"])
+        prefill_seconds = sum(row["prefill_seconds"] for row in rows)
+        if prefill_seconds <= 0 or any(
+                not math.isfinite(row["peak_process_rss_mib"]) or row["peak_process_rss_mib"] <= 0
+                for row in processes):
+            raise ValueError("原生性能或 RSS 无效.")
+        decode_tokens = sum(len(row["generated_tokens"]) for row in rows)
+        decode_seconds = sum(len(row["generated_tokens"]) /
+                             row["native_reported_decode_tokens_per_second"] for row in rows)
+        manifest = json.loads((args.root / "manifest.json").read_text())
+        summary = {"schema_version": 1, "run_id": args.run_id, "status": "partial",
+                   "model": manifest.get("model", args.root.name), "context": manifest["context"],
+                   "precision": manifest["precision"], "evaluation_scope": "authored_bilingual_generation",
+                   "accuracy": {"status": "not_implemented", "reason": "尚无正式全量基准精度,生成样例不代替精度."},
+                   "performance": {
+                       "prefill_tokens_per_second": sum(row["prefill_input_tokens"] for row in rows) / prefill_seconds,
+                       "decode_tokens_per_second": decode_tokens / decode_seconds,
+                       "scope": "中英文固定生成样例,按实际 Token 与原生 CLI 计数汇总",
+                       "peak_process_rss_mib": max(row["peak_process_rss_mib"] for row in processes),
+                       "memory_scope": "本次生成、文本输入核对及可选测速各进程峰值 RSS 的最大值"}}
+        publish(SimpleNamespace(root=args.root, result=folder), summary)
     print(f"[板端证据完成] {folder}", flush=True)
 
 

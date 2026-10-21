@@ -7,13 +7,15 @@ import re
 import shutil
 import subprocess
 import sys
+from types import SimpleNamespace
 
 from transformers import AutoTokenizer
 import yaml
 
 from tools.files import copy_public_tools, sha256, single_file
 from tools.storage import REPO_ROOT
-from tools.llm.package import graph_contract, write_run_script
+from tools.llm.package import graph_contract, write_compile_scripts
+from tools.summary import publish
 
 
 def package(work, output, prefill, quantized_prefix=None):
@@ -111,14 +113,15 @@ def package(work, output, prefill, quantized_prefix=None):
     (output / "scripts/config-yocto.yaml").write_text(
         yaml.safe_dump({"modelOptions": options, "runtimeOptions": runtime},
                        sort_keys=False, allow_unicode=True))
-    write_run_script(output)
-    copy_public_tools(output / "scripts/tools", ("files", "evaluation", "board", "process"))
+    write_compile_scripts(output)
+    copy_public_tools(output / "scripts/tools", ("files", "evaluation", "board", "process", "summary"))
     shutil.copyfile(model / "LICENSE", output / "LICENSE")
     (output / "README.md").write_text(
         f"# DeepSeek-R1-Distill-Qwen-1.5B\n\n"
         f"Genio720 原生 {precision},Prefill {prefill},上下文 {context},Decode 1.\n"
         "当前打包状态为 compiled_pending_board,板端结果需另行记录.\n\n"
-        "将整个目录复制到板端,执行 `bash scripts/run.sh`.\n"
+        "将整个目录复制到板端,执行 `bash compile.sh`.\n"
+        "此步骤只保存展示示例;正式指标由 `bash evaluate.sh` 写入唯一 results/summary.json.\n"
         "Demo 使用官方 tokenizer 的 Token 输入,Prompt 文本同时保留供核对.\n"
         "16 条自编双语校准输入仅验证部署流程,不代表正式质量基准.\n")
     files = []
@@ -128,6 +131,7 @@ def package(work, output, prefill, quantized_prefix=None):
             files.append({"name": path.relative_to(output).as_posix(),
                           "bytes": path.stat().st_size, "sha256": sha256(path)})
     (output / "manifest.json").write_text(json.dumps({
+        "model": "deepseek_r1_distill_qwen_1_5b",
         "status": "compiled_pending_board", "preparation": preparation,
         "precision": precision, "precision_settings": precision_settings,
         "quantization_adapter": adapter,
@@ -145,126 +149,20 @@ def package(work, output, prefill, quantized_prefix=None):
     }, ensure_ascii=False, indent=2) + "\n")
 
 
-def record_board_results(work, output, results):
-    """验证原始板端证据后更新交付状态,不把运行成功视为正式质量达标."""
-
-    manifest = json.loads((output / "manifest.json").read_text())
-    for entry in manifest["files"]:
-        path = output / entry["name"]
-        if path.stat().st_size != entry["bytes"] or sha256(path) != entry["sha256"]:
-            raise ValueError(f"交付文件已变化: {path}")
-    metrics = json.loads((results / "board_metrics.json").read_text())
-    if not re.fullmatch(r"[A-Za-z0-9_-]+", metrics["run_id"]):
-        raise ValueError("板端运行编号无效.")
-    if {row["id"] for row in metrics["samples"]} != {"zh_demo", "en_demo"}:
-        raise ValueError("需要中英文各一个原始板端结果.")
-    checks = metrics.get("text_input_checks", [])
-    if len(checks) != 2 or not all(
-            row["text_equals_token_input_response"] for row in checks):
-        raise ValueError("尚未通过原生文本输入一致性检查.")
-    eos = manifest["preparation"]["eos_token_id"]
-    tokenizer = AutoTokenizer.from_pretrained(
-        work / "DeepSeek-R1-Distill-Qwen-1.5B", local_files_only=True)
-    for row in metrics["samples"]:
-        if row["returncode"] != 0 or not row["eos_reached"] or row["generated_tokens"][-1] != eos:
-            raise ValueError(f"板端回答未完成: {row['id']}")
-        if sha256(results / f"{row['id']}.log") != row["log_sha256"]:
-            raise ValueError("原始板端日志哈希不符.")
-        row["generated_token_count"] = len(row["generated_tokens"])
-        prompt_path = output / "scripts/prompts" / f"{row['id']}.tokens.txt"
-        row["prefill_input_tokens"] = len(re.findall(r"\d+", prompt_path.read_text()))
-        if row["prefill_seconds"] <= 0 or row["prefill_input_tokens"] == 0:
-            raise ValueError("Prefill 输入数量或耗时无效.")
-        row["prefill_tokens_per_second"] = (
-            row["prefill_input_tokens"] / row["prefill_seconds"])
-        row["text"] = tokenizer.decode(
-            row["generated_tokens"], skip_special_tokens=False,
-            clean_up_tokenization_spaces=False)
-        final = row["text"].split("</think>", 1)
-        row["final_answer_present"] = len(final) == 2 and bool(
-            final[-1].replace(tokenizer.eos_token, "").strip())
-        if not row["final_answer_present"]:
-            raise ValueError(f"缺少最终回答: {row['id']}")
-    for check in checks:
-        name = check["id"].replace("_demo", "_text_input") + ".log"
-        if sha256(results / name) != check["log_sha256"]:
-            raise ValueError("原始文本输入检查日志哈希不符.")
-    destination = output / "results" / metrics["run_id"]
-    destination.mkdir(parents=True, exist_ok=False)
-    for path in results.iterdir():
-        if path.is_file() and path.suffix in (".log", ".json"):
-            shutil.copyfile(path, destination / path.name)
-    metrics.update(status="board_verified", precision=manifest["precision"],
-                   prefill=manifest["prefill"], context=manifest["context"],
-                   formal_accuracy_evaluated=False,
-                   qualitative_observations=["英文样例出现不自然的语法,正式量化质量尚未验收."],
-                   memory_scope="process_vm_hwm_and_sampled_system_memavailable")
-    # Prefill 使用总输入数与总耗时,Decode 对 CLI 速度做 Token 加权调和汇总.
-    input_tokens = sum(row["prefill_input_tokens"] for row in metrics["samples"])
-    prompt_seconds = sum(row["prefill_seconds"] for row in metrics["samples"])
-    generated = sum(len(row["generated_tokens"]) for row in metrics["samples"])
-    decode_weight = sum(len(row["generated_tokens"]) /
-                        row["native_reported_decode_tokens_per_second"]
-                        for row in metrics["samples"])
-    metrics["performance_summary"] = {
-        "unit": "token/s", "prefill_tokens_per_second": input_tokens / prompt_seconds,
-        "decode_tokens_per_second": generated / decode_weight,
-        "prefill_input_tokens": input_tokens, "prefill_seconds": prompt_seconds,
-        "decode_aggregation": "generated_token_weighted_harmonic_mean_of_cli_rates",
-        "scope": "fixed_demo_samples_not_full_benchmark",
-    }
-    performance = metrics.get("performance")
-    if performance is not None:
-        if performance["returncode"] != 0 or performance["prefill_input_tokens"] != 128 or \
-                len(performance["generated_tokens"]) < 2 or \
-                performance["native_reported_decode_tokens_per_second"] <= 0 or \
-                sha256(results / "performance_demo.log") != performance["log_sha256"]:
-            raise ValueError("统一性能结果或原始日志不符.")
-        metrics["performance_summary"] = {
-            "unit": "token/s", "scope": performance["scope"],
-            "prefill_tokens_per_second": performance["prefill_tokens_per_second"],
-            "decode_tokens_per_second": performance["native_reported_decode_tokens_per_second"],
-            "prefill_input_tokens": 128, "prefill_seconds": performance["prefill_seconds"],
-            "generated_token_count": len(performance["generated_tokens"]),
-            "decode_aggregation": "native_cli_fixed_prompt",
-        }
-    # 只统计交付目录中的文件,不执行模型或重复质量评测.
-    metrics["model_size"] = json.loads(subprocess.check_output(
-        [sys.executable, str(REPO_ROOT /
-                              "tools/model_size.py"),
-         "--models-dir", str(output), "--include", "1024c/*.dla",
-         "--include", "tokenizer/embedding*.bin",
-         "--source", "package_file_stat"], text=True))
-    (output / "results/summary.json").write_text(
-        json.dumps(metrics, ensure_ascii=False, indent=2) + "\n")
-    write_run_script(output)
-    copy_public_tools(output / "scripts/tools", ("files", "evaluation", "board", "process"))
-    readme = (output / "README.md").read_text().replace(
-        "当前打包状态为 compiled_pending_board,板端结果需另行记录.",
-        "当前状态为 board_verified,仅表示板端推理与双语样例完成,正式质量待评测.")
-    readme += "\n默认总生成上限 768 Token.执行 `INPUT_MODE=text bash scripts/run.sh` 可使用原生文本分词.\n"
-    readme += "两个固定样例的文本输入结果与官方 Token 输入结果一致.\n\n"
-    performance = metrics["performance_summary"]
-    readme += "| Prefill token/s | Decode token/s |\n| ---: | ---: |\n"
-    readme += (f"| {performance['prefill_tokens_per_second']:.4f} | "
-               f"{performance['decode_tokens_per_second']:.4f} |\n")
-    if metrics.get("performance") is not None:
-        readme += "固定 128 Token 输入,最多生成 128 Token; Decode 使用原生 CLI 计数,不按语言分组.\n"
-    else:
-        readme += "Prefill 按总输入 Token/总 Prompt 耗时汇总; Decode 为 CLI 速度的生成 Token 加权调和平均.\n"
-    readme += "\n英文样例存在不自然的语法,原始日志与 Token 均保留,不能将本次结果视为正式精度达标.\n"
-    readme += "Prefill 时间不包含加载和模型切换,不作为 TTFT; Runtime 速度按原生 CLI 的 Decode 计数.\n"
-    (output / "README.md").write_text(readme)
-    manifest.update(status="board_verified", board_validation={
-        "run_id": metrics["run_id"], "summary": "results/summary.json",
-        "scope": metrics["scope"], "formal_accuracy_evaluated": False})
-    manifest["files"] = [{"name": path.relative_to(output).as_posix(),
-                          "bytes": path.stat().st_size, "sha256": sha256(path)}
-                         for path in sorted(output.rglob("*"))
-                         if path.is_file() and path != output / "manifest.json"]
-    (output / "manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
-    print(f"[板端证据已归档] {output}", flush=True)
+def record_board_results(work, output, board_results):
+    """只归档 evaluate.sh 已生成的唯一报告,不复制日志或自行拼接指标."""
+    report_path = board_results / "summary.json"
+    if not report_path.is_file():
+        raise FileNotFoundError("请提供 evaluate.sh 生成的 results/summary.json.")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+    if report.get("precision") != manifest["precision"]:
+        raise ValueError("评价报告精度与当前交付模型不一致.")
+    if report.get("context") != manifest["context"]:
+        raise ValueError("评价报告上下文与当前交付模型不一致.")
+    if report.get("status") not in ("complete", "partial") or not report.get("run_id"):
+        raise ValueError("评价报告未完成或缺少运行编号.")
+    publish(SimpleNamespace(root=output, result=board_results), report)
 
 
 def main():

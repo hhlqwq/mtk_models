@@ -10,7 +10,7 @@ import numpy as np
 from tools.board import configure_parser, inference_records
 
 from tools.evaluation import (
-    is_test, result_status, scope_metadata, select_samples,
+    result_status, scope_metadata, select_samples,
 )
 
 
@@ -119,19 +119,18 @@ def evaluate(args: argparse.Namespace) -> None:
         raise ValueError("实际评测点对数不符.")
     for item in scenes.values():
         item["pairwise_accuracy"] = item["correct_pairs"] / item["total_pairs"]
-    times = [row["npu_ms"] for row in records.values()] if is_test() else []
+    times = [row["npu_ms"] for row in records.values()]
     report = {
         "status": result_status(), **scope_metadata(),
         "model": "depth_anything_v2_small", "run_id": args.run_id, "dataset": "DA-2K",
         "metric_protocol": "fixed_518_square_bilinear_restore_point1_closer",
         "images": len(records), "correct_pairs": correct_pairs, "total_pairs": total_pairs,
         "pairwise_accuracy": correct_pairs / total_pairs, "scenes": scenes,
-        "backend": "cpp_neuron_runtime_hw",
+        "backend": "cpp_neuron_runtime_hw", "npu_mean_ms": float(np.mean(times)),
+        "npu_p95_ms": float(np.percentile(times, 95)),
+        "peak_rss_kib": max(row["peak_rss_kib"] for row in records.values()),
+        "timing_scope": "逐图加载模型,单独统计 NeuronRuntime_inference 调用",
     }
-    if is_test():
-        report.update(npu_mean_ms=float(np.mean(times)), npu_p95_ms=float(np.percentile(times, 95)),
-                      peak_rss_kib=max(row["peak_rss_kib"] for row in records.values()),
-                      timing_scope="逐图加载模型,单独统计 NeuronRuntime_inference 调用")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"[评测] DA-2K 点对准确率: {report['pairwise_accuracy']:.6f}; {args.output}", flush=True)

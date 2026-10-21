@@ -157,17 +157,17 @@ class CommonTest(unittest.TestCase):
         """共享原生入口保持 Token 数换算,契约拒绝非 INT16 与非法尺度."""
         from tools.llm import package
         (self.work / "scripts").mkdir()
-        package.write_run_script(self.work)
-        self.assertIn('MAX_TOKENS - 1', (self.work / "scripts/run.sh").read_text())
+        package.write_compile_scripts(self.work)
+        self.assertIn('MAX_TOKENS - 1', (self.work / "compile.sh").read_text())
         fake_bin = self.work / "bin"
         fake_bin.mkdir()
         executable = fake_bin / "llm_cmdline_tool"
-        executable.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$ARG_LOG"\n')
+        executable.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$ARG_LOG"\nprintf "[Full Response]\\nexample\\nGenerated Tokens: {1}\\n"\n')
         executable.chmod(0o755)
         environment = {**os.environ, "PATH": str(fake_bin) + ":" + os.environ["PATH"],
                        "ARG_LOG": str(self.work / "args.log"), "MAX_NEW_TOKENS": "8",
                        "EVAL_RUN_ID": "test", "INPUT_MODE": "tokens"}
-        subprocess.run(["bash", str(self.work / "scripts/run.sh")], env=environment,
+        subprocess.run(["bash", str(self.work / "compile.sh")], env=environment,
                        check=True, capture_output=True)
         calls = (self.work / "args.log").read_text().splitlines()
         self.assertEqual(len(calls), 2)

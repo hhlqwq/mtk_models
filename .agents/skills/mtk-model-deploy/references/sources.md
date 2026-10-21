@@ -12,6 +12,6 @@
 
 MediaTek 工具、系统发布和算子支持资料优先沿仓库 `docs/environment.md`、`docs/genio_720.md` 与 `docs_study/` 中官方入口查询.页面要求 MOL/NDA 登录时标为需授权,不把搜索摘要当作完整支持列表.
 
-项目事实以当前 `AGENTS.md`、配置、`models/README.md`、注册表及各模型源码/来源/结果为准.公共复用点为 `tools/deploy.py`、`tools/board.py`、`tools/evaluation.py`、`tools/accuracy_summary.py`、`common/cpp/evaluation.h`.
+项目事实以当前 AGENTS.md、配置、模型总览、注册表及模型源码/来源/结果为准.公共复用点为 tools/deploy.py、tools/board.py、tools/evaluation.py、tools/summary.py、tools/render_examples.py 与 common/cpp/evaluation.h.采用外部 skill 的分阶段思路时必须遵守本项目 compile.sh/evaluate.sh 双入口和单一 summary.json 约定.
 
 README 数字和注册状态仅用于定位已有证据,不能证明当前设备状态或新运行成功.正式移植来源不明确时保持 pending,Qualcomm 等交付参考不能替代官方模型源.

@@ -41,7 +41,6 @@
     "generated_tokens": 128,
     "scope": "fixed_128_input_max_128_generated"
   },
-  "evidence": "evidence.json#first_round_summary",
   "model_size": {
     "unit": "MB",
     "compiled_dla": 2292.52,
@@ -77,8 +76,7 @@
     "eos_reached": 4,
     "text_token_parity": 4,
     "exact_token_match_fp32": 3,
-    "strict_answer_only_format_passed": 3,
-    "evidence": "evidence.json#native_smoke"
+    "strict_answer_only_format_passed": 3
   },
   "error_diagnosis": {
     "date": "2026-10-16",
@@ -93,7 +91,7 @@
   },
   "memory_summary": {
     "peak_process_rss_mib": 1152.421875,
-    "scope": "native_cli_fixed_128_input_max_128_generated",
-    "evidence": "evidence.json#native_summary.performance.peak_process_rss_mib"
-  }
+    "scope": "native_cli_fixed_128_input_max_128_generated"
+  },
+  "record_origin": "重构前已归档的固定子集评价,指标未重新测量,不是全量结果."
 }

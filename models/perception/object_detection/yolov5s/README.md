@@ -6,11 +6,11 @@ COCO 80 类目标检测。模型来源和许可证见[模型卡](model_card.md)�
 
 ## 执行范围
 
-`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: COCO 固定 100 张图片.评价范围不改变校准、量化或编译配方.
+先在已有编译容器执行 `bash deploy/compile.sh`,完成转换、量化、编译与部署,随后自动调用板端 `compile.sh` 做少量通路检查并保存 README 示例到 `examples/output/`.该阶段不计算或发布精度、性能和峰值 RSS 报告.
 
-全量精度使用独立入口: 容器执行 `bash deploy/evaluate.sh` 生成已有浮点模型的全量参考,单独放入现有部署包后,板端执行 `bash evaluate.sh`.该流程不量化、不编译、不上传,仅推理和计算精度,结果保存为本次运行的 `accuracy_summary.json`.详见[板端评价规范](../../../../docs/genio_720.md).
+正式评价使用独立的 `evaluate.sh`: 容器端只计算已有浮点模型的同协议参考及必要评价输入,资源单独放入已有部署包后,板端运行 `bash evaluate.sh`,统计精度、性能和推理进程峰值 RSS.正式结果只写入 `results/summary.json`,不重新量化或编译.预测、日志及内部指标位于当天日期临时目录.详见[板端规范](../../../../docs/genio_720.md).
 
-下文已归档指标保留原运行范围,不因默认入口变化而更新.
+下文已归档结果保留原始模型版本和评价范围,本次入口调整不代表重新实测.
 
 ## 第一步: 编译并上传
 
@@ -19,30 +19,26 @@ COCO 80 类目标检测。模型来源和许可证见[模型卡](model_card.md)�
 在编译主机的本模型目录运行:
 
 ```bash
-bash deploy/run.sh
+bash deploy/compile.sh
 ```
 
-入口在当前容器完成转换、DLA 编译、ONNX FP32 评价、C++ 构建和上传.配置的数据目录须包含与板端相同的 COCO val2017 图片及标注。校准仅使用其中 100 张图片,与全量精度评测分开。
+入口在当前容器完成转换、DLA 编译、C++ 构建和上传,随后生成板端示例.配置的数据目录须包含与板端相同的 COCO val2017 图片及标注。校准仅使用其中 100 张图片,与全量精度评测分开。
 
 浮点模型只记录 mAP@0.5:0.95,不测试 PyTorch 精度,不统计编译主机耗时或内存。Docker 需安装 ONNX Runtime、pycocotools、OpenCV、PyTorch、torchvision 和 tqdm; PyTorch 仅用于解码和 NMS。模型产物写入配置指定的 NAS 资源目录。脚本不下载模型或数据。
 
-## 第二步: 开发板测试
+## 第二步: 独立评价
 
-登录平台配置指定的开发板,进入上传入口打印的部署目录。
-
-板端使用 C++ 完成 JPEG 预处理、Neuron Runtime 推理、YOLO 解码和 NMS,直接生成 COCO 预测与耗时记录,无需回传 5000 张图片的原始 NPU 输出。
-
-进入实际配置的部署目录后运行:
+编译入口已自动完成板端通路检查和示例生成.正式评价前,按[板端规范](../../../../docs/genio_720.md)准备同协议参考及必要输入,在已部署目录执行:
 
 ```bash
-bash run.sh
+bash evaluate.sh
 ```
 
-默认执行固定 100 张图片的小批量验证;全量 5000 张使用独立的 `evaluate.sh`.
+精度、性能和峰值 RSS 统一保存到 results/summary.json,过程数据位于日期临时目录,不重新量化或编译.
 
 ## 数据与精度评测
 
-结果写入 `BOARD_RESULTS_DIR`，默认位于 `BOARD_DEPLOY_DIR/results`。测试要求 `BOARD_DATASET_DIR/images/` 中有 5000 张 COCO val2017 图片、`BOARD_DATASET_DIR/annotations/instances_val2017.json`，板端还需 `pycocotools`、NumPy 和 OpenCV。
+正式报告写入部署目录的 `results/summary.json`。测试要求 `BOARD_DATASET_DIR/images/` 中有 5000 张 COCO val2017 图片、`BOARD_DATASET_DIR/annotations/instances_val2017.json`，板端还需 `pycocotools`、NumPy 和 OpenCV。
 
 ## 当前测试结果
 
@@ -60,13 +56,13 @@ ONNX FP32 与板端精度均来自本次同协议 COCO val2017 全量实测。mA
 
 NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不含图片读取、前后处理和 COCOeval。峰值内存为板端 C++ 推理进程峰值 RSS,包含运行库与前后处理,不代表 NPU 专用内存。
 
-全量测试成功后保留 `summary.json` 和少量效果示例,中间预测和日志自动删除; 失败时保留现场。测试完成后将汇总文件上传到本地 `results/summary.json`,据此更新当前结果。
+评价结果只保存在部署目录的 `results/summary.json`.预测、日志和中间指标保留在 `/tmp/hailongcodex/<当天日期>/<模型>_evaluate_<运行编号>/`;展示示例保存在 `examples/output/`.取回唯一报告后据实更新 README.
 
 ## 效果示例
 
 选取 COCO val2017 中的室内、熊和滑雪三张图片,直接复用全量评测的板端预测生成检测效果,无需单独测试或额外推理.
 
-输入见 `examples/input/`,样本清单在编译时自动生成并随部署上传,不纳入 Git.新效果图保存在本次结果目录的 `examples/output/`,取回本模型同名目录后更新展示.
+输入见 `examples/input/`,样本清单在编译时自动生成并随部署上传,不纳入 Git.新效果图保存在部署目录的 `examples/output/`,取回本模型同名目录后更新展示.
 
 ### 示例 1: 室内场景
 
@@ -88,19 +84,19 @@ NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不
 
 ```text
 部署目录/
-├── run.sh
-├── evaluate.sh          # 独立全量精度.
-├── board_paths.conf
+├── compile.sh
+├── evaluate.sh          # 独立精度、性能与 RSS 评价.
+├── config.json          # 不含连接地址的模型配置.
 ├── models/              # 模型与推理所需参数.
 ├── board/               # 板端程序、评测代码及必要依赖.
-├── examples/input/      # 少量示例输入及来源清单.
-└── results/             # 汇总及少量效果示例.
+├── examples/            # 少量输入、来源清单和展示输出.
+└── results/summary.json  # 唯一正式评价报告.
 ```
 
-全量测试结果保存在 `BOARD_RESULTS_DIR/<运行编号>/summary.json`.成功后保留汇总和少量效果示例,失败时保留本次工作目录.将汇总上传为本模型的 `results/summary.json` 后更新 README.
+评价结果只保存在部署目录的 `results/summary.json`.预测、日志和中间指标保留在 `/tmp/hailongcodex/<当天日期>/<模型>_evaluate_<运行编号>/`;展示示例保存在 `examples/output/`.取回唯一报告后据实更新 README.
 ## 文件结构
 
-- `deploy/run.sh`: 部署和默认小批量验证入口;全量精度使用独立的 `deploy/evaluate.sh`.
+- `deploy/compile.sh`: 编译部署与展示示例入口;精度、性能和 RSS 使用独立的 `deploy/evaluate.sh`.
 - `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
 - `deploy/board/`: 板端程序源码、预处理和评测代码.
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.

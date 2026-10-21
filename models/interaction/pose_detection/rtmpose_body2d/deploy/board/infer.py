@@ -16,7 +16,7 @@ def main():
             "--output", ctx.work / "person_detections.tsv")
     command(ctx, "rtmpose_board_eval", "--model", ctx.root / "models/model_int8.dla",
             "--images", ctx.dataset / "images", "--manifest", ctx.work / "person_detections.tsv",
-            "--output-dir", ctx.work, "--warmup", "20" if is_test() else "0", "--progress-interval", "500")
+            "--output-dir", ctx.work, "--warmup", "0" if is_test() else "20", "--progress-interval", "500")
 
 
 

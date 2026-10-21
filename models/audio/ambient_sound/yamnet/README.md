@@ -6,11 +6,11 @@ Google YAMNet 环境声音分类模型,输出 AudioSet 521 类分数.默认使�
 
 ## 执行范围
 
-`deploy/run.sh` 和板端 `run.sh` 无参数默认小批量验证: ESC-50 每类每折一条,共 250 条音频.评价范围不改变校准、量化或编译配方.
+先在已有编译容器执行 `bash deploy/compile.sh`,完成转换、量化、编译与部署,随后自动调用板端 `compile.sh` 做少量通路检查并保存 README 示例到 `examples/output/`.该阶段不计算或发布精度、性能和峰值 RSS 报告.
 
-全量精度使用独立入口: 容器执行 `bash deploy/evaluate.sh` 生成已有浮点模型的全量参考,单独放入现有部署包后,板端执行 `bash evaluate.sh`.该流程不量化、不编译、不上传,仅推理和计算精度,结果保存为本次运行的 `accuracy_summary.json`.详见[板端评价规范](../../../../docs/genio_720.md).
+正式评价使用独立的 `evaluate.sh`: 容器端只计算已有浮点模型的同协议参考及必要评价输入,资源单独放入已有部署包后,板端运行 `bash evaluate.sh`,统计精度、性能和推理进程峰值 RSS.正式结果只写入 `results/summary.json`,不重新量化或编译.预测、日志及内部指标位于当天日期临时目录.详见[板端规范](../../../../docs/genio_720.md).
 
-下文已归档指标保留原运行范围,不因默认入口变化而更新.
+下文已归档结果保留原始模型版本和评价范围,本次入口调整不代表重新实测.
 
 ## 配置与运行
 
@@ -19,16 +19,16 @@ Google YAMNet 环境声音分类模型,输出 AudioSet 521 类分数.默认使�
 在仓库根目录进入容器后,执行:
 
 ```bash
-bash models/audio/ambient_sound/yamnet/deploy/run.sh
+bash models/audio/ambient_sound/yamnet/deploy/compile.sh
 ```
 
-入口完成导出、PTQ、DLA 编译、浮点参考评价、C++ 构建及上传.在板端部署目录执行:
+入口完成导出、PTQ、DLA 编译、C++ 构建及上传,自动生成板端示例.正式评价前按[板端规范](../../../../docs/genio_720.md)准备同协议参考,再在板端部署目录执行:
 
 ```bash
-bash run.sh
+bash evaluate.sh
 ```
 
-两端无参数默认使用固定小子集.默认 `conversion.precision=w8a16`,可选 `int8_tail16` 为后段局部 INT16 激活方案.精度由配置选择,不同方案的运行参数和结果分别记录.
+compile.sh 使用固定小子集检查通路并保存示例,不生成指标报告.默认 `conversion.precision=w8a16`,可选 `int8_tail16` 为后段局部 INT16 激活方案.精度由配置选择,不同方案的运行参数和结果分别记录.
 
 ## 评价协议
 

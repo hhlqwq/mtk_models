@@ -13,7 +13,7 @@ def main():
     ctx.result.mkdir(parents=True)
     arguments = ["--model", ctx.root / "models/model_int8.dla",
                  "--images", ctx.dataset / "images", "--output-dir", ctx.work,
-                 "--warmup", "20" if is_test() else "0", "--confidence", "0.001", "--iou", "0.6", "--max-det", "300"]
+                 "--warmup", "0" if is_test() else "20", "--confidence", "0.001", "--iou", "0.6", "--max-det", "300"]
     arguments += ["--config", ctx.root / "models/runtime_config.csv"]
     command(ctx, "yolov8n_board_eval", *arguments)
 

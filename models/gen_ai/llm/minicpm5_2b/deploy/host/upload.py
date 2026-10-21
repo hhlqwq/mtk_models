@@ -20,14 +20,17 @@ def main():
     run_command(["ssh", "-o", "BatchMode=yes", host,
                  "mkdir -p -- " + shlex.quote(target)])
     run_command([
-        "rsync", "-a", "--delete", "--exclude=.run.lock",
+        "rsync", "-a", "--delete", "--exclude=.run.lock", "--exclude=results/", "--exclude=examples/output/",
         "--rsync-path", f"flock -n {shlex.quote(target + '/.run.lock')} rsync",
         "--info=progress2", "-e", "ssh -o BatchMode=yes",
         str(package) + "/", f"{host}:{shlex.quote(target)}/",
     ])
     print(f"[上传完成] 当前转换资源保留在 {native.work}.", flush=True)
-    print(f"[下一步] 在板端执行小批量验证: cd {shlex.quote(target)} && bash run.sh", flush=True)
-    print("[独立全量精度] 准备全量评价资源后在部署目录执行 bash evaluate.sh.", flush=True)
+    print("[部署] 生成板端展示示例,不计算正式指标.", flush=True)
+    run_command(["ssh", "-o", "BatchMode=yes", host,
+                 "bash " + shlex.quote(target + "/compile.sh")])
+    print("[评价入口] 准备全量资源后在部署目录执行 bash evaluate.sh.", flush=True)
+
 
 
 if __name__ == "__main__":

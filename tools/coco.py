@@ -69,7 +69,7 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
         raise ValueError("COCO mAP 无效,无法汇总精度.")
 
     npu_mean = peak_rss = None
-    if is_test():
+    if not is_test():
         timings = json.loads(args.timings.read_text(encoding="utf-8"))
         if timings["processed_images"] != len(expected_ids):
             raise ValueError("耗时报告与精度报告的图片数不一致.")
@@ -95,7 +95,7 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
     summary_lines = [
         f"板端 mAP@0.5:0.95: {board_map:.6f}",
     ]
-    if is_test():
+    if not is_test():
         summary_lines.append(f"板端 NPU 平均推理耗时: {npu_mean:.3f} ms")
         summary_lines.append("推理进程峰值 RSS: 未记录." if peak_rss_mib is None else
                              f"推理进程峰值 RSS: {peak_rss_mib:.3f} MiB")

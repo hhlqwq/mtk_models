@@ -218,7 +218,7 @@ def evaluate(args):
     args.output.mkdir(parents=True, exist_ok=False)
     samples = json.loads(args.samples.read_text())
     if is_test():
-        samples["samples"] = samples["samples"][:4]
+        samples["samples"] = [row for row in samples["samples"] if not row.get("target_ids")][:2]
         samples["max_new_tokens"] = 32
         for sample in samples["samples"]:
             sample["target_ids"] = sample.get("target_ids", [])[:32]
@@ -280,6 +280,17 @@ def evaluate(args):
                                 "end_to_end_ms": (time.perf_counter() - start) * 1000})
             (args.output / "predictions.json").write_text(
                 json.dumps(predictions, ensure_ascii=False, indent=2))
+        if is_test():
+            from tokenizers import Tokenizer
+
+            tokenizer = Tokenizer.from_file(str(args.models / "tokenizer.json"))
+            output = args.models.parent / "examples/output"
+            output.mkdir(parents=True, exist_ok=True)
+            for number, row in enumerate(predictions, 1):
+                (output / f"sample_{number}.txt").write_text(
+                    tokenizer.decode(row["tokens"], skip_special_tokens=True) + "\n", encoding="utf-8")
+            print("[示例完成] 模型通路和生成输出有效,未计算正式指标.", flush=True)
+            return
         summary = {"run_id": args.run_id, "backend": "Neuron MDLA hardware",
                    "system": platform.platform(), "python": platform.python_version(),
                    "numpy": np.__version__,

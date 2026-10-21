@@ -10,7 +10,7 @@ def main():
     suffix = "_test" if is_test() else ""
     files = [*ctx.output.glob("*.dla"), ctx.output / "embedding_fp16.bin",
              ctx.output / "export_manifest.json", ctx.work / "artifact_manifest.json",
-             ctx.output / "source_manifest.json"]
+             ctx.output / "source_manifest.json", ctx.output / "tokenizer.json"]
     sample = ctx.output / f"samples{suffix}.json"
     snapshot = ctx.work / "samples.json"
     snapshot.write_bytes(sample.read_bytes())

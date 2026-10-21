@@ -59,8 +59,7 @@ def run_sample(ctx, manifest, language, token_mode, limit, input_path=None):
                     pass
                 now = time.monotonic()
                 if now >= next_progress:
-                    print(f"[运行中] {name}: {now - started:.0f}s; 峰值 RSS={peak:.2f} MiB.",
-                          flush=True)
+                    print(f"[运行中] {name}: {now - started:.0f}s.", flush=True)
                     next_progress = now + 10
                 time.sleep(0.1)
     if process.returncode != 0:
@@ -71,6 +70,9 @@ def run_sample(ctx, manifest, language, token_mode, limit, input_path=None):
         text, re.DOTALL)
     if answer is None:
         raise ValueError(f"CLI 日志缺少完整回答: {log}.")
+    if is_test():
+        print(f"[示例完成] {name}.", flush=True)
+        return {"id": name}, answer.group(1).strip()
     if peak <= 0:
         raise ValueError(f"未采集到推理进程峰值 RSS: {log}.")
     row = {
@@ -108,22 +110,22 @@ def run_sample(ctx, manifest, language, token_mode, limit, input_path=None):
 def main():
     """快速模式限制生成长度,固定性能协议保持 128 输入与 128 输出上限."""
     ctx = context(__file__)
-    mode = "test" if is_test() else "full"
-    if mode not in ctx.config["evaluation"]["prepared_modes"]:
-        raise ValueError(f"部署包只准备了 {ctx.config['evaluation']['prepared_mode']} 评价数据,请上传 {mode} 包.")
     manifest = read_json(ctx.root / "manifest.json")
     if ctx.config["conversion"]["context"] != manifest["context"]:
-        raise ValueError("配置快照与实际部署模型的上下文不一致.")
-    expected = ctx.root / "results" / ("latest_test" if is_test() else "latest")
-    if (ctx.result.is_symlink() or ctx.result.resolve() != expected.resolve()
-            or not ctx.result.resolve().is_relative_to(ctx.root.resolve())):
-        raise ValueError("MiniCPM 结果只能写入当前部署目录的 results/latest 或 latest_test.")
-    if ctx.result.exists():
-        print(f"[清理] 替换上一次 {mode} 运行输出.", flush=True)
-        shutil.rmtree(ctx.result)
-    (ctx.root / "results" / ("summary_test.json" if is_test() else "summary.json")).unlink(
-        missing_ok=True)
+        raise ValueError("配置与已有 DLA 上下文不一致.")
     ctx.result.mkdir(parents=True, exist_ok=False)
+    if is_test():
+        unused, text = run_sample(ctx, manifest, "en", True, 32)
+        output = ctx.root / "examples/output"
+        output.mkdir(parents=True, exist_ok=True)
+        (output / "sample_1.txt").write_text(text + "\n", encoding="utf-8")
+        return
+    quality = read_json(ctx.root / "evaluation/full/quality/board_quality_protocol.json")
+    tokens = quality["input_ids"][:128]
+    if len(tokens) != 128:
+        raise ValueError("定长性能输入不足 128 Token.")
+    performance_input = ctx.result / "performance_128.tokens.txt"
+    performance_input.write_text(" ".join(map(str, tokens)) + "\n")
     limit = 32 if is_test() else ctx.config["conversion"]["max_new_tokens"]
     report = {"run_id": ctx.run_id, "scope": "generation_smoke_and_fixed_performance",
               "samples": [], "text_input_checks": [], "functional_failures": []}
@@ -138,7 +140,7 @@ def main():
     report["text_input_checks"].append(check)
     performance, unused_text = run_sample(
         ctx, manifest, "performance", True, 128,
-        ctx.root / "scripts/prompts/performance_128.tokens.txt")
+        performance_input)
     if performance["prefill_input_tokens"] != 128:
         raise ValueError("统一性能输入必须恰好包含 128 个 Token.")
     performance["scope"] = "fixed_128_input_max_128_generated_performance"

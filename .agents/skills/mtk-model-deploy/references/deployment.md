@@ -16,7 +16,7 @@
 
 ```bash
 bash docker/enter_container.sh
-bash models/perception/object_detection/yolov5s/deploy/run.sh
+bash models/perception/object_detection/yolov5s/deploy/compile.sh
 ```
 
 入口只编排独立步骤:主机实现放 `deploy/host/`,板端放 `deploy/board/`.复用 `tools/deploy.py`、`tools/board.py`、`tools/evaluation.py` 与 `common/cpp/`.
@@ -29,7 +29,7 @@ ncc-tflite --arch=mdla5.3 --suppress-output --disallow-bridge input.tflite -o mo
 
 此配方不是全部 MTK 芯片或模型的通用命令.浮点、多输入、多输出及 LLM 按模型编译实现处理.核对编译后真实 dtype、layout、stride、scale/zero point 和缓冲区字节数,不能直接用 ONNX 逻辑 shape 解释原生输出.
 
-板端部署包包括 `run.sh`、`evaluate.sh`、配置快照、DLA、必要参数、AArch64 程序和公共模块.在部署目录执行 `bash run.sh`,默认小批量推理、精度验证及少量真实效果示例.校准和量化配方不随评价范围变化.
+板端部署包包括 compile.sh、evaluate.sh、配置快照、DLA、必要参数、AArch64 程序和公共模块.主机部署后自动调用板端 compile.sh,少量推理只检查通路并保存 README 示例,不计算或发布精度、性能及 RSS.校准与量化配方不随评价范围变化.
 
 ## 原生 LLM
 
@@ -39,8 +39,9 @@ ncc-tflite --arch=mdla5.3 --suppress-output --disallow-bridge input.tflite -o mo
 - tokenizer、chat template、BOS/EOS 和停止 Token 与官方参考一致.文本/Token 输入一致性须有实测记录.
 - 双 DLA、外置 embedding、tokenizer、配置及匹配桥接库共同构成交付,不能只统计单 DLA.
 - W4A16 与 INT16 原生 I/O 按实际图记录,重新量化后不能复用旧契约.
-- 默认部署仅准备小子集参考.全量 MMLU/PPL 资源在独立评价阶段准备,不隐式运行.
-- Prefill/Decode 测速属于部署验证或专项任务,不纳入全量精度入口.
+- 编译阶段仅准备生成示例所需 Token 与运行参数,不加载浮点模型计算基准.完整 MMLU/PPL 参考和评价输入在 evaluate.sh 阶段准备.
+- Prefill/Decode 测速及 RSS 采集只属于 evaluate.sh,输入长度、生成计数及内存范围统一写入 summary.json.
+- 生成文本放 examples/output,日志和中间指标放临时目录,results 只留一份报告.
 
 ## 故障定位
 
