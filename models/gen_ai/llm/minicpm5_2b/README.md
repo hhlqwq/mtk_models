@@ -6,10 +6,10 @@
 
 参数统一放在本模型的 `config.yaml`,工具链环境由仓库 `docker/enter_container.sh` 加载.正常执行不传阶段参数,只提供 `-test` 少量评价选项.
 
-主机 Python 步骤使用配置的 `MTK_GAI_PYTHON`,它对应安装 MTK Converter 和 LLM SDK 的解释器.手动运行时也使用这个解释器,终端的 `python` 不一定指向同一个环境.在本模型目录中执行转换:
+主机步骤统一使用当前终端的 `python`,校准子进程沿用启动脚本的解释器.在本模型目录中执行转换:
 
 ```bash
-"${MTK_GAI_PYTHON}" deploy/host/convert.py
+python deploy/host/convert.py
 ```
 
 默认 `native.calibration_train` 为空,使用自编校准样例,转换代码不导入 `pyarrow`.配置 Parquet 训练集后才加载 `pyarrow`;MMLU/WikiText2 评价也需要它来读取数据.
@@ -75,7 +75,7 @@ bash run.sh -test
 | 板端 2 | MMLU、WikiText2 | `deploy/board/evaluate.py`,直接调用公共评价函数 |
 | 板端 3 | 协议核对和结果汇总 | `deploy/board/summarize.py` |
 
-`convert.py` 直接导入 `tools/llm/quantize_native.py` 的 `quantize()` 和 `fix_native_shapes()`,后者保留 SDK 异常传播、W4A16 核对及 A16 接口适配.量化和导出不再启动仓库内的另一个 Python 脚本.校准沿用现有 SDK 命令入口,直接执行 `MTK_GAI_PYTHON` 同目录的 `mtk_make_llm_ptq_calib_dataset`,完整命令在终端打印.SDK 的 `main()` 会自行解析参数,参数转换只保留在 SDK 接口处.
+`convert.py` 直接导入 `tools/llm/quantize_native.py` 的 `quantize()` 和 `fix_native_shapes()`,后者保留 SDK 异常传播、W4A16 核对及 A16 接口适配.量化和导出不再启动仓库内的另一个 Python 脚本.校准沿用现有 SDK 命令入口,直接执行 当前 Python 解释器同目录的 `mtk_make_llm_ptq_calib_dataset`,完整命令在终端打印.SDK 的 `main()` 会自行解析参数,参数转换只保留在 SDK 接口处.
 
 ## 外部工具的具体命令
 
@@ -86,7 +86,7 @@ bash run.sh -test
 先完成 `convert.py` 的转换,在容器仓库根目录可直接运行编译步骤.它读取模型配置,自动定位本次两张静态图,按下面的完整配方编译:
 
 ```bash
-"${MTK_GAI_PYTHON}" models/gen_ai/llm/minicpm5_2b/deploy/host/compile.py
+python models/gen_ai/llm/minicpm5_2b/deploy/host/compile.py
 ```
 
 如果需要绕过 Python 直接调用编译器,先将转换日志中 `[Prefill 静态图]` 和 `[Decode 静态图]` 后面的完整路径分别填入以下变量.这是本次 NAS 转换产物的路径,不是仓库代码路径.编译器位置 `NCC_ROOT` 由 `docker/enter_container.sh` 加载的本地平台配置提供.
@@ -199,11 +199,11 @@ minicpm5_2b/
 在 Docker 的仓库根目录可依次手动执行:
 
 ```bash
-"${MTK_GAI_PYTHON}" models/gen_ai/llm/minicpm5_2b/deploy/host/convert.py
-"${MTK_GAI_PYTHON}" models/gen_ai/llm/minicpm5_2b/deploy/host/compile.py
-"${MTK_GAI_PYTHON}" models/gen_ai/llm/minicpm5_2b/deploy/host/evaluate.py
+python models/gen_ai/llm/minicpm5_2b/deploy/host/convert.py
+python models/gen_ai/llm/minicpm5_2b/deploy/host/compile.py
+python models/gen_ai/llm/minicpm5_2b/deploy/host/evaluate.py
 make -C models/gen_ai/llm/minicpm5_2b/deploy/board
-"${MTK_GAI_PYTHON}" models/gen_ai/llm/minicpm5_2b/deploy/host/upload.py
+python models/gen_ai/llm/minicpm5_2b/deploy/host/upload.py
 ```
 
 `upload.py` 包含打包步骤.如果只生成部署包,最后一步改为执行 `host/package.py` 即可.手动快速评价在整组命令前设置 `export MTK_EVAL_TEST=1`,默认全量使用 `export MTK_EVAL_TEST=0`.

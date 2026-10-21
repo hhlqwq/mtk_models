@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -53,7 +54,7 @@ def main():
     ctx = context(__file__, options.config)
     datasets = (ctx.dataset / ctx.config["data"]["mmlu_test"],
                 ctx.dataset / ctx.config["data"]["wikitext_test"])
-    native = settings(ctx)
+    native = settings(ctx, python_executable=sys.executable)
     original_mode = os.environ.get("MTK_EVAL_TEST", "0")
     modes = ("test",) if is_test() else ("full", "test")
     try:

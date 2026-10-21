@@ -4,6 +4,7 @@ import copy
 import json
 from pathlib import Path
 import shutil
+import sys
 
 import yaml
 
@@ -228,4 +229,4 @@ def package_model(native):
 
 
 if __name__ == "__main__":
-    package_model(settings(arguments(__file__)))
+    package_model(settings(arguments(__file__), python_executable=sys.executable))

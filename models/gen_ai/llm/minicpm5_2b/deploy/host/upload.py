@@ -2,6 +2,7 @@
 
 import os
 import shlex
+import sys
 
 from package import package_model
 
@@ -13,7 +14,7 @@ from tools.process import run_command
 
 def main():
     """直接打包并传输当前模型,由命令退出码报告执行失败."""
-    native = settings(arguments(__file__))
+    native = settings(arguments(__file__), python_executable=sys.executable)
     package = package_model(native)
     host = os.environ["MTK_BOARD_HOST"]
     target = native.ctx.config["board"]["deploy_dir"]

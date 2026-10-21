@@ -25,18 +25,18 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     echo '[板端 3/3] 汇总同协议指标及部署文件大小.'
     python3 "${SCRIPT_DIR}/board/summarize.py"
 else
-    MODEL_BUILD_DIR="$(python3 "${MTK_MODELS_ROOT}/tools/storage.py" --print-build-dir "${SCRIPT_DIR}/../config.yaml")"
+    MODEL_BUILD_DIR="$(python "${MTK_MODELS_ROOT}/tools/storage.py" --print-build-dir "${SCRIPT_DIR}/../config.yaml")"
     mkdir -p "${MODEL_BUILD_DIR}"
     exec 9>"${MODEL_BUILD_DIR}/.run.lock"
     flock -n 9 || { echo '[错误] 本模型已有转换任务.' >&2; exit 2; }
     echo '[容器 1/5] 准备模型、校准、量化并导出双静态图.'
-    "${MTK_GAI_PYTHON}" "${SCRIPT_DIR}/host/convert.py"
+    python "${SCRIPT_DIR}/host/convert.py"
     echo '[容器 2/5] 编译 Prefill 和 Decode 双 DLA.'
-    "${MTK_GAI_PYTHON}" "${SCRIPT_DIR}/host/compile.py"
+    python "${SCRIPT_DIR}/host/compile.py"
     echo '[容器 3/5] FP32 参考评价及板端输入准备.'
-    "${MTK_GAI_PYTHON}" "${SCRIPT_DIR}/host/evaluate.py"
+    python "${SCRIPT_DIR}/host/evaluate.py"
     echo '[容器 4/5] 交叉编译板端桥接库.'
     make -C "${SCRIPT_DIR}/board" BUILD_DIR="${MODEL_BUILD_DIR}"
     echo '[容器 5/5] 打包并上传开发板.'
-    "${MTK_GAI_PYTHON}" "${SCRIPT_DIR}/host/upload.py"
+    python "${SCRIPT_DIR}/host/upload.py"
 fi

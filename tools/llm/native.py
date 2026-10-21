@@ -8,8 +8,8 @@ from tools.deploy import arguments
 from tools.process import run_command
 
 
-def settings(ctx):
-    """优先保留显式实验环境覆盖,默认读取模型 YAML."""
+def settings(ctx, *, python_executable=None):
+    """读取模型配置,可显式使用调用脚本的 Python 解释器."""
     config = ctx.config["native"]
     name = "MiniCPM5-2B" if ctx.config["name"] == "minicpm5_2b" else "DeepSeek-R1-Distill-Qwen-1.5B"
     work = Path(os.environ.get("NATIVE_WORK", ctx.output / config["work_dir"]))
@@ -38,7 +38,7 @@ def settings(ctx):
     work.mkdir(parents=True, exist_ok=True)
     return argparse.Namespace(ctx=ctx, work=work, model=work / name,
         source=Path(os.environ.get("MODEL_SOURCE", ctx.config["model"]["source"])),
-        python=Path(os.environ["MTK_GAI_PYTHON"]), context=context, prefill=prefill,
+        python=Path(python_executable or os.environ["MTK_GAI_PYTHON"]), context=context, prefill=prefill,
         batches=batches, rotate=rotate,
         mask=float(os.environ.get("MASK_VALUE", config["mask_value"])),
         optimization=optimization, extra=extra, prefix=prefix,

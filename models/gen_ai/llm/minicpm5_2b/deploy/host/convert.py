@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import sys
 
 from transformers import AutoTokenizer
 
@@ -226,7 +227,7 @@ def export_shapes(native):
 
 def main():
     """在固定工作目录执行转换函数,不再启动仓库内的 Python 子脚本."""
-    native = settings(arguments(__file__))
+    native = settings(arguments(__file__), python_executable=sys.executable)
     print("[转换 1/4] 准备模型副本和输入.", flush=True)
     prepare_model(native)
     previous = os.getcwd()

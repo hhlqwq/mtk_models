@@ -1,6 +1,7 @@
 """读取本次转换配置,调用 NCC 编译 MiniCPM5 的 Prefill 和 Decode 模型."""
 
 import os
+import sys
 from pathlib import Path
 
 from tools.deploy import arguments
@@ -38,7 +39,7 @@ def compile_dla(native, phase, tokens):
 
 def main():
     """核对本次配置,按顺序编译两个阶段,不执行转换或上传."""
-    native = settings(arguments(__file__))
+    native = settings(arguments(__file__), python_executable=sys.executable)
     preparation = read_json(native.work / "native_prepare.json")
     quantization = read_json(native.work / "quantization_settings.json")
     if (preparation["context"] != native.context
