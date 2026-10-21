@@ -6,6 +6,14 @@
 
 参数统一放在本模型的 `config.yaml`,工具链环境由仓库 `docker/enter_container.sh` 加载.正常执行不传阶段参数,只提供 `-test` 少量评价选项.
 
+主机 Python 步骤使用配置的 `MTK_GAI_PYTHON`,它对应安装 MTK Converter 和 LLM SDK 的解释器.手动运行时也使用这个解释器,终端的 `python` 不一定指向同一个环境.在本模型目录中执行转换:
+
+```bash
+"${MTK_GAI_PYTHON}" deploy/host/convert.py
+```
+
+默认 `native.calibration_train` 为空,使用自编校准样例,转换代码不导入 `pyarrow`.配置 Parquet 训练集后才加载 `pyarrow`;MMLU/WikiText2 评价也需要它来读取数据.
+
 在编译主机的仓库根目录进入 Docker:
 
 ```bash

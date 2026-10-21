@@ -5,7 +5,6 @@ import os
 from pathlib import Path
 import shutil
 
-import pyarrow.parquet as parquet
 from transformers import AutoTokenizer
 
 from tools.deploy import arguments
@@ -105,6 +104,7 @@ def prepare(source, output, context, calibration_train=None, mask_value=-100.0,
     training_source = None
     if calibration_train is not None:
         # 训练集参与校准,测试集只用于独立 PPL 对比.
+        import pyarrow.parquet as parquet
 
         table = parquet.read_table(calibration_train)
         train_tokens = tokenizer.encode(
