@@ -59,15 +59,11 @@ def load_protocol(dataset_root: Path) -> dict[str, list[dict]]:
 
 
 def load_output(path: Path) -> np.ndarray:
-    """读取 C++ 已恢复到原图尺寸的 FP32 深度,不再量化转换或缩放."""
-    timing = json.loads((path.parent / "timing.json").read_text(encoding="utf-8"))
-    height, width = timing["height"], timing["width"]
-    if type(height) is not int or type(width) is not int or min(height, width) <= 0:
-        raise ValueError(f"原图尺寸无效: {path}.")
-    values = np.fromfile(path, dtype=np.float32)
-    if values.size != height * width or not np.isfinite(values).all() or values.std() <= 0:
-        raise ValueError(f"C++ 深度输出无效: {path}.")
-    return values.reshape(height, width)
+    """读取带原图尺寸的 FP32 深度,不再保存单独的尺寸文件."""
+    values = np.load(path, allow_pickle=False)
+    if values.ndim != 2 or min(values.shape) <= 0 or not np.isfinite(values).all() or values.std() <= 0:
+        raise ValueError(f"深度输出无效: {path}.")
+    return values
 
 
 def score_pairs(image: Path, depth: np.ndarray,
@@ -79,7 +75,7 @@ def score_pairs(image: Path, depth: np.ndarray,
     height, width = original.shape[:2]
     if restored:
         if depth.shape != (height, width):
-            raise ValueError(f"C++ 深度图尺寸与原图不一致: {image}.")
+            raise ValueError(f"Python 深度图尺寸与原图不一致: {image}.")
         values = depth
     else:
         # ONNX 评测复用此指标函数,仍需把模型原始输出恢复到原图尺寸.
@@ -97,14 +93,14 @@ def score_pairs(image: Path, depth: np.ndarray,
 
 
 def evaluate(args: argparse.Namespace) -> None:
-    """只读取本次 C++ 预测并计算 DA-2K 指标,不启动硬件推理."""
+    """只读取本次 Python 预测并计算 DA-2K 指标,不启动硬件推理."""
     annotations = load_protocol(args.dataset_root)
     records = inference_records(args.work_dir, annotations)
     correct_pairs = total_pairs = 0
     scenes = {}
     for index, relative in enumerate(sorted(annotations), 1):
         row = records[relative]
-        depth = load_output(args.work_dir / row["directory"] / "depth.bin")
+        depth = load_output(args.work_dir / row["directory"] / "depth.npy")
         correct, total = score_pairs(args.dataset_root / relative, depth,
                                      annotations[relative], restored=True)
         correct_pairs += correct
@@ -127,10 +123,10 @@ def evaluate(args: argparse.Namespace) -> None:
         "metric_protocol": "fixed_518_square_bilinear_restore_point1_closer",
         "images": len(records), "correct_pairs": correct_pairs, "total_pairs": total_pairs,
         "pairwise_accuracy": correct_pairs / total_pairs, "scenes": scenes,
-        "backend": "cpp_neuron_runtime_hw", "npu_mean_ms": float(np.mean(times)),
+        "backend": "python_neuron_runtime_hw", "npu_mean_ms": float(np.mean(times)),
         "npu_p95_ms": float(np.percentile(times, 95)),
         "peak_rss_kib": max(row["peak_rss_kib"] for row in records.values()),
-        "timing_scope": "逐图加载模型,单独统计 NeuronRuntime_inference 调用",
+        "timing_scope": "常驻 Python 模型,单独统计 NeuronRuntime_inference 调用",
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

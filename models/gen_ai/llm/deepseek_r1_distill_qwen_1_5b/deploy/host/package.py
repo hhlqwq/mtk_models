@@ -6,12 +6,11 @@ from pathlib import Path
 import shutil
 import sys
 
-import yaml
 
 from tools.deploy import arguments
 from tools.files import copy_public_tools, read_json, sha256, single_file
 from tools.llm.native import settings
-from tools.llm.package import graph_contract
+from tools.llm.package import generation_resources, graph_contract
 from tools.storage import REPO_ROOT
 
 
@@ -47,57 +46,17 @@ def package_model(native):
     if embedding.stat().st_size != config["hidden_size"] * config["vocab_size"] * 2:
         raise ValueError("INT16 embedding 大小与词表、hidden size 不一致.")
     shutil.copyfile(embedding, output / "tokenizer/embedding_int16.bin")
-    tokenizer = read_json(native.model / "tokenizer.json")
-    with (output / "tokenizer/vocab.txt").open("w", encoding="utf-8") as stream:
-        for token, index in tokenizer["model"]["vocab"].items():
-            stream.write(f"{token}\n{index}\n")
-    merges = [" ".join(item) if isinstance(item, list) else item
-              for item in tokenizer["model"]["merges"]]
-    (output / "tokenizer/merges.txt").write_text(
-        "#version\n" + "\n".join(merges) + "\n", encoding="utf-8")
-    (output / "tokenizer/added_tokens.yaml").write_text(yaml.safe_dump(
-        {item["id"]: item["content"] for item in tokenizer["added_tokens"]},
-        allow_unicode=True), encoding="utf-8")
     for prompt in (native.work / "prompts").glob("*.txt"):
         shutil.copyfile(prompt, output / "scripts/prompts" / prompt.name)
     # 保留既有 DeepSeek 原生配置,KV 实际维度以导出图接口为准.
-    options = {
-        "promptTokenBatchSize": native.prefill, "genTokenBatchSize": 1,
-        "cacheSize": native.context, "hiddenSize": config["hidden_size"],
-        "numHead": config["num_attention_heads"],
-        "numLayer": config["num_hidden_layers"], "maxTokenLength": native.context,
-        "rotEmbBase": config["rope_theta"],
-        "headDim": config["hidden_size"] // config["num_attention_heads"],
-        "rotEmbNumInputs": 1, "splitMask": False,
-        "modelInputType": "INT16", "modelOutputType": "INT16",
-        "cacheType": "INT16", "maskType": "INT16", "rotEmbType": "INT16",
-    }
-    runtime = {
-        "specialTokens": {"bosId": preparation["bos_token_id"],
-                          "eosId": preparation["eos_token_id"], "addBos": False,
-                          "stopToken": preparation["stop_token_ids"]},
-        "tokenizerPath": [f"./tokenizer/{name}" for name in
-                          ("merges.txt", "vocab.txt", "added_tokens.yaml")],
-        "tokenEmbPath": "./tokenizer/embedding_int16.bin",
-        "dlaPromptPaths": [f"./{native.context}c/prompt.dla"],
-        "dlaGenPaths": [f"./{native.context}c/decode.dla"],
-    }
-    (output / "scripts/config-yocto.yaml").write_text(yaml.safe_dump(
-        {"modelOptions": options, "runtimeOptions": runtime},
-        sort_keys=False, allow_unicode=True), encoding="utf-8")
+    generation_resources(native.model, output, contracts)
     for name in ("compile.sh", "evaluate.sh"):
         shutil.copyfile(native.ctx.model / "deploy" / name, output / name)
     for name in ("infer.py", "evaluate.py"):
         shutil.copyfile(native.ctx.model / "deploy/board" / name, output / "board" / name)
     shutil.copyfile(REPO_ROOT / "tools/summary.py", output / "board/summary.py")
-    library = native.ctx.work / "libneuron_bridge.so"
-    with library.open("rb") as stream:
-        header = stream.read(20)
-    if header[:6] != b"\x7fELF\x02\x01" or int.from_bytes(header[18:20], "little") != 183:
-        raise ValueError("桥接库必须为 AArch64 ELF.")
-    shutil.copyfile(library, output / "board" / library.name)
-    copy_public_tools(output / "board/tools", ("files", "evaluation", "board", "process"))
-    for name in ("__init__", "evaluate_board_quality", "evaluate_mmlu"):
+    copy_public_tools(output / "board/tools", ("files", "evaluation", "board", "runtime"))
+    for name in ("__init__", "evaluate_board_quality", "evaluate_mmlu", "generate"):
         shutil.copyfile(REPO_ROOT / "tools/llm" / f"{name}.py",
                         output / "board/tools/llm" / f"{name}.py")
     snapshot = copy.deepcopy(native.ctx.config)

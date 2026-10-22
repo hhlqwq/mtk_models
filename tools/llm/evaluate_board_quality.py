@@ -1,7 +1,6 @@
 """使用真实 Neuron MDLA 硬件执行统一 WikiText2 子集 PPL."""
 
 import argparse
-import ctypes
 import json
 from pathlib import Path
 import time
@@ -13,12 +12,6 @@ from tools.files import sha256
 from tools.evaluation import (
     is_test, record_selection, result_status, scope_metadata,
 )
-
-
-def check(code):
-    """遇到硬件 Runtime 错误直接停止,不回退到 CPU."""
-    if code != 0:
-        raise RuntimeError(f"Neuron 硬件 Runtime 错误: {code}")
 
 
 def transfer_cache(source_contract, source_outputs, target_contract, target_inputs,
@@ -50,73 +43,38 @@ def transfer_cache(source_contract, source_outputs, target_contract, target_inpu
 
 
 class HardwareModel:
-    """绑定实际 INT16 缓冲区,使用既有 Neuron C++ 桥接接口."""
+    """通过 Python 直接绑定实际 INT16 缓冲区和 SDK Runtime."""
 
-    def __init__(self, library_path, model_path, contract):
-        """声明 AArch64 接口类型并核对每个实际缓冲区大小."""
-        self.library = ctypes.CDLL(str(library_path.resolve()))
-        pointer, size = ctypes.c_void_p, ctypes.c_size_t
-        self.library.CreateModel.argtypes = [ctypes.c_char_p, ctypes.POINTER(pointer)]
-        self.library.ModelCounts.argtypes = [pointer, ctypes.POINTER(size),
-                                            ctypes.POINTER(size)]
-        self.library.ModelSize.argtypes = [pointer, size, ctypes.c_int, ctypes.POINTER(size)]
-        self.library.RunModel.argtypes = [pointer, ctypes.POINTER(pointer),
-                                         ctypes.POINTER(size), size,
-                                         ctypes.POINTER(pointer), ctypes.POINTER(size), size]
-        self.library.ReleaseModel.argtypes = [pointer]
-        self.library.ReleaseModel.restype = None
-        self.runtime = pointer()
-        check(self.library.CreateModel(str(model_path.resolve()).encode(),
-                                        ctypes.byref(self.runtime)))
-        self.inputs = [np.full(item["shape"], item["zero_point"], dtype="<i2")
-                       for item in contract["inputs"]]
-        self.input_storage = list(self.inputs)
-        self.outputs = [np.zeros(item["shape"], dtype="<i2") for item in contract["outputs"]]
-        input_count, output_count = size(), size()
+    def __init__(self, model_path, contract):
+        """按图契约分配缓冲区,仅允许 Decode mask 的已知末尾补齐."""
+        from tools.runtime import Runtime
+
+        self.runtime = Runtime(model_path)
+        self.inputs, self.input_storage, self.outputs, self.output_storage = [], [], [], []
+        self.last_npu_ms = None
         try:
-            check(self.library.ModelCounts(self.runtime, ctypes.byref(input_count),
-                                            ctypes.byref(output_count)))
-            if (input_count.value, output_count.value) != (len(self.inputs), len(self.outputs)):
-                raise ValueError("DLA I/O 数量与实际 TFLite 契约不符.")
-            for output, buffers in enumerate((self.inputs, self.outputs)):
-                for index, buffer in enumerate(buffers):
-                    actual = size()
-                    check(self.library.ModelSize(self.runtime, index, output, ctypes.byref(actual)))
-                    if actual.value != buffer.nbytes:
-                        item = contract["inputs"][index] if output == 0 else None
-                        # 已实测 Decode 单行 mask 的末尾按 16 字节填充,其余布局仍严格检查.
-                        if item is None or item["name"] != "mask" or \
-                                np.prod(buffer.shape[:-1]) != 1 or \
-                                actual.value != (buffer.nbytes + 15) // 16 * 16:
-                            raise ValueError(f"DLA 缓冲区大小不符: output={output},index={index},"
-                                             f"logical={buffer.nbytes},actual={actual.value}")
-                        storage = np.full(actual.value // 2, -32768, dtype="<i2")
-                        view = storage[:buffer.size].reshape(buffer.shape)
-                        np.copyto(view, buffer)
-                        self.input_storage[index] = storage
-                        self.inputs[index] = view
-                        print(f"[Runtime mask padding] {buffer.nbytes} -> {actual.value} 字节",
-                              flush=True)
+            for output, kind in enumerate(("inputs", "outputs")):
+                if len(contract[kind]) != len(self.runtime.sizes[output]):
+                    raise ValueError("DLA I/O 数量与实际 TFLite 契约不符.")
+                for index, item in enumerate(contract[kind]):
+                    padding = kind == "inputs" and item["name"] == "mask" and np.prod(item["shape"][:-1]) == 1
+                    storage, view = self.runtime.tensor(index, item["shape"], "<i2",
+                        output=bool(output), fill=-32768 if padding else item["zero_point"], padded=padding)
+                    view.fill(item["zero_point"])
+                    (self.inputs if output == 0 else self.outputs).append(view)
+                    (self.input_storage if output == 0 else self.output_storage).append(storage)
         except Exception:
             self.close()
             raise
 
     def run(self):
-        """同步执行一次真实硬件推理并返回原始输出."""
-        pointer, size = ctypes.c_void_p, ctypes.c_size_t
-        inputs = (pointer * len(self.input_storage))(*(b.ctypes.data for b in self.input_storage))
-        outputs = (pointer * len(self.outputs))(*(b.ctypes.data for b in self.outputs))
-        input_sizes = (size * len(self.input_storage))(*(b.nbytes for b in self.input_storage))
-        output_sizes = (size * len(self.outputs))(*(b.nbytes for b in self.outputs))
-        check(self.library.RunModel(self.runtime, inputs, input_sizes, len(self.inputs),
-                                    outputs, output_sizes, len(self.outputs)))
+        """重新登记固定缓冲区并同步执行真实硬件推理."""
+        self.last_npu_ms = self.runtime.infer(self.input_storage, self.output_storage)
         return self.outputs
 
     def close(self):
-        """释放本次模型 Runtime,保留其他进程和系统库."""
-        if self.runtime:
-            self.library.ReleaseModel(self.runtime)
-            self.runtime = ctypes.c_void_p()
+        """释放当前 Runtime,不修改其他进程或系统资源."""
+        self.runtime.close()
 
 
 def evaluate(args):
@@ -158,7 +116,7 @@ def evaluate(args):
     if is_test():
         record_selection(f"{index}:{row.tolist()}" for index, row in enumerate(token_blocks))
     args.output.mkdir(parents=True, exist_ok=True)
-    model = HardwareModel(args.library, model_path, contract)
+    model = HardwareModel(model_path, contract)
     sdk_inputs = np.load(inputs_path)
     for index, item in enumerate(contract["inputs"]):
         if item["name"] in ("mask", "pos_emb"):
@@ -183,7 +141,7 @@ def evaluate(args):
             sequences = report["decode_input_ids"][:len(token_blocks)]
             if any(len(sequence) != 128 + args.decode_steps for sequence in sequences):
                 raise ValueError("Decode 真实 Token 长度不符.")
-            decode_model = HardwareModel(args.library, decode_path, decode_contract)
+            decode_model = HardwareModel(decode_path, decode_contract)
         for index, tokens in enumerate(token_blocks):
             np.copyto(model.inputs[0], embedding[tokens][None, :, :])
             tick = time.perf_counter()
@@ -222,7 +180,8 @@ def evaluate(args):
                                        decode_model.inputs, append=True)
                 np.save(args.output / f"npu_decode_logits_{index:03d}.npy", np.stack(decode_logits))
                 rows[-1]["decode_inference_seconds"] = time.perf_counter() - decode_tick
-            print(f"[MDLA PPL] {index + 1}/{len(token_blocks)}", flush=True)
+            if (index + 1) % 10 == 0 or index + 1 == len(token_blocks):
+                print(f"[MDLA PPL] {index + 1}/{len(token_blocks)}", flush=True)
     finally:
         if decode_model is not None:
             decode_model.close()
@@ -235,7 +194,7 @@ def evaluate(args):
                   perplexity=float(np.exp(np.mean(nll_values))), nll=nll_values,
                   elapsed_seconds=time.perf_counter() - started, block_timings=rows,
                   dla_sha256=sha256(model_path), embedding_sha256=sha256(embedding_path),
-                  bridge_sha256=sha256(args.library), cpu_fallback=False)
+                  runtime_interface="python_ctypes_sdk_c_abi", cpu_fallback=False)
     if report["protocol"] == "full_test_block128_v1":
         result.update(scope="wikitext2_full_test_block128_reset_context",
                       full_test_requested=True, text_rows=report["text_rows"])
@@ -257,11 +216,10 @@ def evaluate(args):
 
 
 def main():
-    """解析已验证交付包、SDK 输入契约和既有硬件桥接库."""
+    """解析已验证交付包、SDK 输入契约与 SDK Runtime."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--package", type=Path, required=True)
     parser.add_argument("--quality-data", type=Path, required=True)
-    parser.add_argument("--library", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--diagnostic-blocks", type=int, default=0,
                         help="仅执行前 N 个块并保存逐位置硬件 logits.")

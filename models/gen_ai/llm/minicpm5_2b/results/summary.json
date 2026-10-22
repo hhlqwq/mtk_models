@@ -2,7 +2,7 @@
   "model": "minicpm5_2b",
   "run_id": "20261014_minicpm5_w4_light_hessian_v8",
   "scope": "first_round_subset_not_full_benchmark",
-  "status": "board_verified",
+  "status": "python_pending_board_validation",
   "precision": "asym4W_sym16A",
   "prefill": 128,
   "context": 1024,
@@ -93,5 +93,7 @@
     "peak_process_rss_mib": 1152.421875,
     "scope": "native_cli_fixed_128_input_max_128_generated"
   },
-  "record_origin": "重构前已归档的固定子集评价,指标未重新测量,不是全量结果."
+  "record_origin": "重构前已归档的固定子集评价,指标未重新测量,不是全量结果.",
+  "metrics_scope": "迁移前 C++/原生 CLI 的历史记录,当前 Python 推理尚未验证",
+  "target_backend": "python_neuron_runtime_hw"
 }

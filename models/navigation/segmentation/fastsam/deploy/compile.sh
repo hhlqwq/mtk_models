@@ -16,15 +16,13 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     echo "[编译完成] 通路和示例已准备,未生成精度、性能或 RSS 报告."
 else
     # 编译容器: 各 Python 文件读取 YAML 并直接执行当前步骤.
-    echo "[容器 1/5] 导出 FP32 ONNX."
+    echo "[容器 1/4] 导出 FP32 ONNX."
     python "${SCRIPT_DIR}/host/export_model.py"
-    echo "[容器 2/5] INT8 校准与量化."
+    echo "[容器 2/4] INT8 校准与量化."
     python "${SCRIPT_DIR}/host/convert_int8.py"
-    echo "[容器 3/5] 编译 DLA."
+    echo "[容器 3/4] 编译 DLA."
     python "${SCRIPT_DIR}/host/compile_model.py"
-    echo "[容器 4/5] 交叉编译板端 C++ 程序."
-    make -C "${SCRIPT_DIR}/board"
-    echo "[容器 5/5] 上传到开发板."
+    echo "[容器 4/4] 上传到开发板."
     python "${SCRIPT_DIR}/host/upload.py"
     echo "[编译完成] 模型已部署并生成展示示例"
 fi

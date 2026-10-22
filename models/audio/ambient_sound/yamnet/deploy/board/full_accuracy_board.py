@@ -6,7 +6,6 @@ import csv
 import hashlib
 import json
 from pathlib import Path
-import resource
 import time
 
 import numpy as np
@@ -35,16 +34,15 @@ def prepare(args):
             elapsed = (time.perf_counter() - start) * 1000
             features.write(patches.astype("<f4").tobytes())
             counts.write(f"{len(patches)}\n")
-            rows.append({"filename": row["filename"], "patches": len(patches),
-                         "audio_seconds": len(waveform) / 16000,
-                         "preprocess_ms": elapsed,
-                         "sha256": hashlib.sha256(
-                             (args.dataset / "audio" / row["filename"]).read_bytes()).hexdigest()})
+            record = {"backend": "python_neuron_runtime_hw", "filename": row["filename"],
+                      "patches": len(patches)}
+            if not is_test():
+                record.update(audio_seconds=len(waveform) / 16000, preprocess_ms=elapsed,
+                              sha256=hashlib.sha256((args.dataset / "audio" / row["filename"]).read_bytes()).hexdigest())
+            rows.append(record)
             if (index + 1) % 50 == 0:
                 print(f"[AUDIO] {index + 1}/{len(records)} 音频.", flush=True)
     (args.work / "audio_manifest.json").write_text(json.dumps(rows, indent=2))
-    (args.work / "frontend_peak_rss_kib.txt").write_text(
-        str(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
     print("[OK] 板端真实音频窗口缓存完成.", flush=True)
 
 
@@ -58,6 +56,8 @@ def summarize(args):
         raise ValueError("板端分数覆盖不足或含非有限数.")
     scores = scores.reshape(len(records), 521)
     audio = json.loads((args.work / "audio_manifest.json").read_text())
+    if any(row.get("backend") != "python_neuron_runtime_hw" for row in audio):
+        raise ValueError("必须使用本次 Python 推理的音频记录.")
     if [row["filename"] for row in audio] != [row["filename"] for row in records]:
         raise ValueError("音频顺序不一致.")
     reference_path = args.models_dir / ("fp32_reference_test.json" if is_test() else "fp32_reference.json")
@@ -98,7 +98,7 @@ def summarize(args):
         config_name = "runtime_config.csv"
     summary = {
         "status": result_status(), **scope_metadata(), "model": "yamnet", "run_id": args.run_id,
-        "precision": args.precision,
+        "precision": args.precision, "backend": "python_neuron_runtime_hw",
         "dataset": "ESC-50", "samples": len(records), "patches": len(npu),
         "metric": "ESC-50 projected macro AP, folds 2-5",
         "evaluation_samples": actual["held_out"]["samples"],
@@ -119,14 +119,13 @@ def summarize(args):
                                              (sum(row["audio_seconds"] for row in audio) * 1000)),
         "processing_scope": "分阶段前处理与推理处理时间之和,含 ffmpeg 解码及特征缓存读取,排除 20 次预热;非实时麦克风端到端延迟",
         "peak_rss_mib": int((args.work / "peak_rss_kib.txt").read_text()) / 1024,
-        "frontend_peak_rss_mib": int((args.work / "frontend_peak_rss_kib.txt").read_text()) / 1024,
-        "memory_scope": "NPU C++ 进程和 Python 前处理进程峰值分别记录,不包含 ffmpeg 子进程",
+        "memory_scope": "同一 Python 前处理与 NPU 推理进程峰值,不包含 ffmpeg 子进程",
         "annotations_sha256": annotation_hash,
         "artifacts_sha256": {
             name: hashlib.sha256((args.models_dir / name).read_bytes()).hexdigest()
             for name in (f"model_{args.precision}.dla", config_name, "yamnet_class_map.csv")},
         "runtime_program_sha256": hashlib.sha256(
-            (args.models_dir.parent / "board/yamnet_eval").read_bytes()).hexdigest(),
+            (args.models_dir.parent / "board/infer.py").read_bytes()).hexdigest(),
     }
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))

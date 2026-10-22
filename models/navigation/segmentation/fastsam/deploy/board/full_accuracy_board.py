@@ -22,9 +22,6 @@ def parse_args() -> argparse.Namespace:
     """解析板端全量分割精度参数."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-id")
-    parser.add_argument("--mode", choices=("encode-one", "evaluate"),
-                        default="evaluate")
-    parser.add_argument("--image", type=Path)
     parser.add_argument("--images", type=Path, required=True)
     parser.add_argument("--annotations", type=Path, required=True)
     parser.add_argument("--work-dir", type=Path, required=True)
@@ -64,54 +61,8 @@ def save_checkpoint(path: Path, record: dict) -> None:
     temporary.replace(path)
 
 
-def encode_one(args: argparse.Namespace) -> None:
-    """将单张 C++ 推理输出编码为 COCO RLE 指标输入."""
-    if args.image is None:
-        raise ValueError("encode-one 需要 --image.")
-    image_id = int(args.image.stem)
-    image_dir = args.work_dir / "raw" / args.image.stem
-    checkpoint_dir = args.work_dir / "predictions_by_image"
-    checkpoint_dir.mkdir(parents=True, exist_ok=True)
-    checkpoint = checkpoint_dir / f"{args.image.stem}.json"
-    if checkpoint.exists():
-        raise FileExistsError(f"检查点已存在: {checkpoint}.")
-    result = json.loads((image_dir / "results.json").read_text(
-        encoding="utf-8"))
-    if result.get("backend") != "cpp_neuron_runtime_hw":
-        raise ValueError(f"不是硬件推理结果: {args.image.name}.")
-    protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
-    for field, expected in (("confidence", protocol["confidence"]),
-                            ("nms_iou", protocol["nms_iou"]),
-                            ("max_detections", protocol["max_detections"])):
-        if result.get(field) != expected:
-            raise ValueError(f"板端 {field} 与固定评测协议不一致: {args.image.name}.")
-    image_predictions = []
-    for detection in result["detections"]:
-        mask_path = image_dir / detection["mask"]
-        mask = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
-        if mask is None:
-            raise ValueError(f"缺少预测掩码: {mask_path}.")
-        encoded = mask_utils.encode(
-            np.asfortranarray((mask > 0).astype(np.uint8)))
-        encoded["counts"] = encoded["counts"].decode("ascii")
-        image_predictions.append({
-            "image_id": image_id,
-            "category_id": 1,
-            "segmentation": encoded,
-            "score": float(detection["score"]),
-        })
-    save_checkpoint(checkpoint, {
-        "image_id": image_id,
-        "protocol": protocol,
-        "npu_ms": float(result["npu_ms"]),
-        "peak_rss_kib": result.get("peak_rss_kib"),
-        "end_to_end_ms": float(result["end_to_end_ms"]),
-        "predictions": image_predictions,
-    })
-
-
 def evaluate(args: argparse.Namespace) -> None:
-    """核对完整 C++ 预测并计算 COCO segm AP."""
+    """核对完整 Python 预测并计算 COCO segm AP."""
     protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
     images = sorted(args.images.glob("*.jpg"))
     if len(images) != protocol["images"]:
@@ -134,13 +85,15 @@ def evaluate(args: argparse.Namespace) -> None:
     prediction_count = 0
 
     if not checkpoint_dir.is_dir():
-        raise ValueError("缺少 C++ 全量推理检查点目录.")
+        raise ValueError("缺少 Python 全量推理检查点目录.")
     with (prediction_path.open("w", encoding="utf-8") as predictions,
           completed_path.open("w", encoding="utf-8") as completed):
         predictions.write("[")
         for image in images:
             record = json.loads((checkpoint_dir / f"{image.stem}.json").read_text(
                 encoding="utf-8"))
+            if record.get("backend") != "python_neuron_runtime_hw":
+                raise ValueError("必须使用本次 Python 推理检查点.")
             if record["image_id"] != int(image.stem):
                 raise ValueError(f"检查点图片 ID 不一致: {image.stem}")
             if record.get("protocol") != protocol:
@@ -170,7 +123,7 @@ def evaluate(args: argparse.Namespace) -> None:
     summary = {
         "status": result_status(),
         **scope_metadata(),
-        "model": "fastsam",
+        "model": "fastsam", "backend": "python_neuron_runtime_hw",
         "run_id": args.run_id,
         "dataset": "coco_val2017_instances",
         "metric_protocol": "class_agnostic_segm_ap_all_gt_categories_merged",
@@ -186,7 +139,7 @@ def evaluate(args: argparse.Namespace) -> None:
         "peak_rss_kib": max(peak_rss_values) if len(peak_rss_values) == len(images) else None,
         "npu_p95_ms": float(np.percentile(npu_times, 95)),
         "end_to_end_mean_ms": statistics.fmean(end_to_end_times),
-        "timing_scope": "C++ per-image model reload; NPU time reported separately",
+        "timing_scope": "persistent Python Runtime; NPU inference call reported separately",
     }
     (report_dir / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
@@ -196,8 +149,4 @@ def evaluate(args: argparse.Namespace) -> None:
 
 if __name__ == "__main__":
     os.environ.setdefault("MTK_EVAL_SCOPE", "full")
-    arguments = parse_args()
-    if arguments.mode == "encode-one":
-        encode_one(arguments)
-    else:
-        evaluate(arguments)
+    evaluate(parse_args())

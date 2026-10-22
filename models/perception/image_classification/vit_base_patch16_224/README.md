@@ -1,5 +1,7 @@
 # ViT-Base Patch16 224
 
+> Python 推理代码已迁移,尚未做板端验证.下文报告和示例属于迁移前的 C++/原生 CLI 实现,不能作为当前 Python 实现的精度、性能或 RSS.
+
 ImageNet-1K 图像分类，输入为 224×224 RGB 图像。正式上游为 PyTorch Vision v0.15.1，来源见[模型卡](model_card.md)。
 
 量化方式: INT8 训练后量化 (PTQ),采用逐输出通道权重量化。
@@ -24,7 +26,7 @@ ImageNet-1K 图像分类，输入为 224×224 RGB 图像。正式上游为 PyTor
 bash deploy/compile.sh
 ```
 
-入口在当前容器中完成量化、DLA 编译、ONNX 全量 Top-1 评价、C++ 构建和上传。Docker 需安装 ONNX Runtime、NumPy、OpenCV、PyTorch、torchvision 和 tqdm。
+入口在当前容器中完成量化、DLA 编译、ONNX 全量 Top-1 评价和上传。Docker 需安装 ONNX Runtime、NumPy、OpenCV、PyTorch、torchvision 和 tqdm。
 
 ## 第二步: 独立评价
 
@@ -49,7 +51,7 @@ ViT 默认验证固定 200 张图片.完整数据仍按下列 ImageNet 50000 张
 └── val_labels_0based.txt
 ```
 
-板端通过 C++ 完成图片预处理和 NPU 推理,计算 Top-1、NPU 平均耗时、推理进程峰值 RSS 与相对 ONNX 的精度变化。板端需安装 Python 3、NumPy 和 OpenCV。
+板端通过 Python 完成图片预处理和 NPU 推理,计算 Top-1、NPU 平均耗时、推理进程峰值 RSS 与相对 ONNX 的精度变化。板端需安装 Python 3、NumPy 和 OpenCV。
 
 评价结果只保存在部署目录的 `results/summary.json`.预测、日志和中间指标保留在 `/tmp/hailongcodex/<当天日期>/<模型>_evaluate_<运行编号>/`;展示示例保存在 `examples/output/`.取回唯一报告后据实更新 README.
 

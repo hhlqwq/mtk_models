@@ -19,7 +19,7 @@ from tools.evaluation import (
 
 
 def load_processed_ids(path: Path) -> set[int]:
-    """读取 C++ 评测程序写出的已完成图片集合."""
+    """读取 Python 评测程序写出的已完成图片集合."""
     return {
         int(line)
         for line in path.read_text(encoding="utf-8").splitlines()
@@ -71,6 +71,8 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
     npu_mean = peak_rss = None
     if not is_test():
         timings = json.loads(args.timings.read_text(encoding="utf-8"))
+        if timings.get("backend") != "python_neuron_runtime_hw":
+            raise ValueError("必须使用本次 Python 推理的性能记录.")
         if timings["processed_images"] != len(expected_ids):
             raise ValueError("耗时报告与精度报告的图片数不一致.")
         npu_mean = float(timings["npu_ms"]["mean"])
@@ -111,14 +113,14 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
     metrics = {
         "status": result_status("complete" if fp32_map is not None else status_without_reference),
         **scope_metadata(),
-        "model": model,
+        "model": model, "backend": "python_neuron_runtime_hw",
         "run_id": args.run_id or args.metrics.parent.name,
         "dataset": "coco_val2017",
         "samples": len(expected_ids),
         "metric": "mAP@0.5:0.95",
         "npu_mean_ms": npu_mean,
         "peak_rss_mib": peak_rss_mib,
-        "memory_scope": "板端 C++ 推理进程峰值 RSS",
+        "memory_scope": "板端 Python 推理进程峰值 RSS",
         "board_accuracy": board_map,
         "reference_accuracy": fp32_map,
         "timing_scope": "常驻模型,所选图片的 NeuronRuntime_inference 调用",

@@ -140,6 +140,8 @@ def vision_performance(ctx, report):
     model = ctx.config["name"]
     if model == "rtmpose_body2d":
         report = read_json(ctx.work / "timing_summary.json")
+    if report.get("backend") != "python_neuron_runtime_hw":
+        raise ValueError("性能数据必须来自当前 Python 推理实现.")
     if model == "whisper_tiny":
         overall = report["performance"]["overall"]
         mean = overall["npu_total_ms"]["mean"]
@@ -171,7 +173,7 @@ def vision_performance(ctx, report):
         timing = read_json(ctx.work / "timing_summary_current_run.json")
         result["npu_p95_ms"] = timing["npu_ms"].get("p95")
         result["end_to_end_ms"] = timing["e2e_ms"]
-        result["end_to_end_scope"] = "常驻 C++ 程序的逐图预处理、推理和后处理"
+        result["end_to_end_scope"] = "常驻 Python 进程的逐图预处理、推理和后处理"
     if result["npu_p95_ms"] is None:
         result["unavailable_metrics"] = ["npu_p95_ms: 当前运行器未记录"]
     return result
@@ -183,20 +185,34 @@ def llm_performance(ctx):
     if generation["run_id"] != ctx.run_id:
         raise ValueError("LLM 性能记录不属于本次评价.")
     speed = generation["performance"]
+    required = ("prefill_tokens_per_second", "prefill_npu_ms", "elapsed_seconds")
+    if any(not isinstance(speed.get(key), (int, float)) or not math.isfinite(speed[key])
+           or speed[key] <= 0 for key in required):
+        raise ValueError("Python Prefill 性能记录无效.")
+    if speed["decode_calls"] and (not isinstance(speed["decode_tokens_per_second"], (int, float))
+            or not math.isfinite(speed["decode_tokens_per_second"]) or speed["decode_tokens_per_second"] <= 0
+            or not math.isfinite(speed["decode_npu_ms"]) or speed["decode_npu_ms"] <= 0):
+        raise ValueError("Python Decode 性能记录无效.")
     memory = read_json(ctx.result / "evaluation_memory.json")
-    cli = [speed, *generation["samples"], *generation["text_input_checks"]]
-    values = [row["peak_process_rss_mib"] for row in cli] + [memory["peak_process_rss_mib"]]
+    if generation.get("backend") != "python_neuron_runtime_hw":
+        raise ValueError("性能记录必须来自当前 Python 推理实现.")
+    runs = [speed, *generation["samples"], *generation["text_input_checks"]]
+    values = [row["peak_process_rss_mib"] for row in runs] + [memory["peak_process_rss_mib"]]
     if not all(math.isfinite(value) and value > 0 for value in values):
         raise ValueError("LLM 进程 RSS 记录无效.")
     return {"prefill_tokens_per_second": speed["prefill_tokens_per_second"],
-            "decode_tokens_per_second": speed["native_reported_decode_tokens_per_second"],
+            "decode_tokens_per_second": speed["decode_tokens_per_second"],
             "scope": speed["scope"], "input_tokens": speed["prefill_input_tokens"],
             "generated_tokens": len(speed["generated_tokens"]),
             "peak_process_rss_mib": max(values),
             "memory_scope": "本次生成、定长测速和精度评价各进程峰值的最大值",
-            "timing_scope": "原生 CLI 报告的 Prefill 与 Decode 阶段,不是纯 NPU 算子耗时",
-            "unavailable_metrics": ["纯 NPU Prefill/Decode 分项耗时: 原生 CLI 未提供",
-                                    "端到端生成速度: 未采用独立的统一计时协议"],
+            "timing_scope": "常驻 Python 生成流程的 Prefill/Decode 阶段,含各阶段输入和 KV 处理",
+            "prefill_npu_ms": speed["prefill_npu_ms"],
+            "decode_npu_ms": speed["decode_npu_ms"],
+            "decode_calls": speed["decode_calls"],
+            "generation_elapsed_seconds": speed["elapsed_seconds"],
+            "unavailable_metrics": (["decode_tokens_per_second: 首 Token 即停止,未执行 Decode"]
+                                    if speed["decode_tokens_per_second"] is None else []),
             "unavailable_checks": generation.get("unavailable_checks", []),
             "warmup_runs": generation.get("warmup_runs", 0),
             "measured_runs": generation.get("measured_runs", 1),
@@ -255,7 +271,7 @@ def main():
         result = vision_accuracy(ctx)
     summary = {"schema_version": 1, "model": model, "run_id": ctx.run_id,
                "status": "complete", "evaluation_scope": "full", **result,
-               "runtime": {"machine": platform.machine(), "kernel": platform.release()}}
+               "runtime": {"backend": "python_neuron_runtime_hw", "machine": platform.machine(), "kernel": platform.release()}}
     artifacts = [*ctx.root.glob("models/*.dla"), *ctx.root.glob("*c/*.dla"),
                  *ctx.root.glob("models/embedding*.bin"), *ctx.root.glob("tokenizer/embedding*.bin")]
     summary["model_files"] = [{"file": str(path.relative_to(ctx.root)), "bytes": path.stat().st_size}

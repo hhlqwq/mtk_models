@@ -1,5 +1,5 @@
 {
-  "status": "complete",
+  "status": "python_pending_board_validation",
   "model": "vit_base_patch16_224",
   "run_id": "20261008_094211_126146",
   "dataset": "imagenet_val2012",
@@ -33,5 +33,7 @@
     "directory": "<board_root>/open_models/vit_base_patch16_224/models",
     "collected_on": "2026-10-12",
     "scope": "current_deployment_files_not_reverified_original_run"
-  }
+  },
+  "metrics_scope": "迁移前 C++/原生 CLI 的历史记录,当前 Python 推理尚未验证",
+  "target_backend": "python_neuron_runtime_hw"
 }

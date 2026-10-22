@@ -303,7 +303,7 @@ def export_assets(output_dir: Path) -> None:
     )) + "\n"
     (output_dir / "decode_config.txt").write_text(
         config, encoding="utf-8")
-    print(f"[OK] C++ Whisper 静态资源: {output_dir}.")
+    print(f"[OK] Whisper 静态资源: {output_dir}.")
 
 
 def export_vendor(output_dir: Path) -> None:

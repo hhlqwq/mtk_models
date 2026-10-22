@@ -128,7 +128,7 @@ class CommonTest(unittest.TestCase):
         prediction.write_text('[{"image_id": 0}]')
         timing = self.work / "timing.json"
         timing.write_text(json.dumps({"processed_images": 5000, "npu_ms": {"mean": 10},
-                                      "peak_rss_kb": 2048}))
+                                      "peak_rss_kb": 2048, "backend": "python_neuron_runtime_hw"}))
         annotation = mock.Mock()
         annotation.getImgIds.return_value = sorted(ids)
         evaluator = mock.Mock()
@@ -156,7 +156,8 @@ class CommonTest(unittest.TestCase):
     def test_llm_contract(self):
         """原生张量契约拒绝非 INT16 与非法尺度."""
         from tools.llm import package
-        quant = SimpleNamespace(ScaleLength=lambda: 1, Scale=lambda index: 0.5)
+        quant = SimpleNamespace(ScaleLength=lambda: 1, Scale=lambda index: 0.5,
+                                ZeroPointLength=lambda: 1, ZeroPoint=lambda index: 0)
         tensor = SimpleNamespace(Quantization=lambda: quant, Type=lambda: package.TensorType.INT16,
                                  Name=lambda: b"input", ShapeAsNumpy=lambda: np.array([1, 128]))
         graph = SimpleNamespace(TensorsLength=lambda: 1, Tensors=lambda index: tensor,

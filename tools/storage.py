@@ -134,8 +134,6 @@ def platform_environment():
         "MTK_NCC_BIN": ncc / "bin",
         "MTK_NCC_LIB": ncc / "lib",
         "MTK_NEURON_INCLUDE": ncc / "include",
-        "MTK_G720_CPP_TOOLCHAIN_ROOT": toolchain["cpp_toolchain_root"],
-        "CROSS_CXX": toolchain["cross_cxx"],
         "MTK_BOARD_HOST": config["board_host"],
         "MTK_BOARD_ROOT": config["board_root"],
         "MTK_BOARD_OPEN_MODELS_ROOT": config["board_open_models_root"],

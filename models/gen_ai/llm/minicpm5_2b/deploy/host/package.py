@@ -6,13 +6,12 @@ from pathlib import Path
 import shutil
 import sys
 
-import yaml
 
 from tools.deploy import arguments
 from tools.evaluation import is_test
 from tools.files import copy_public_tools, sha256, single_file
 from tools.llm.native import settings
-from tools.llm.package import graph_contract
+from tools.llm.package import generation_resources, graph_contract
 from tools.storage import REPO_ROOT
 
 
@@ -57,8 +56,8 @@ def package(work, output, prefill, quantized_prefix=None):
             raise ValueError("统一权重精度核对的分片数量不符.")
     prompt = single_file(Path(f"{base}_{prefill}t{context}c"), "*.dla")
     decode = single_file(Path(f"{base}_1t{context}c"), "*.dla")
-    contracts = {"prompt": graph_contract(prompt.with_suffix(".tflite")),
-                 "decode": graph_contract(decode.with_suffix(".tflite"))}
+    contracts = {"prompt": dict(graph_contract(prompt.with_suffix(".tflite")), tflite_sha256=sha256(prompt.with_suffix(".tflite"))),
+                 "decode": dict(graph_contract(decode.with_suffix(".tflite")), tflite_sha256=sha256(decode.with_suffix(".tflite")))}
     embedding = single_file(base, "embedding_int16.bin")
     expected_bytes = config["hidden_size"] * config["vocab_size"] * 2
     if embedding.stat().st_size != expected_bytes:
@@ -72,49 +71,9 @@ def package(work, output, prefill, quantized_prefix=None):
                      (embedding, "tokenizer/embedding_int16.bin")):
         print(f"[打包] {dst}", flush=True)
         shutil.copyfile(src, output / dst)
-    tokenizer = json.loads((model / "tokenizer.json").read_text())
-    with (output / "tokenizer/vocab.txt").open("wb") as stream:
-        for text, index in tokenizer["model"]["vocab"].items():
-            stream.write(text.encode("utf-8") + f"\n{index}\n".encode())
-    merges = [" ".join(item) if isinstance(item, list) else item
-              for item in tokenizer["model"]["merges"]]
-    (output / "tokenizer/merges.txt").write_text("#version\n" + "\n".join(merges) + "\n")
-    added = {item["id"]: item["content"] for item in tokenizer["added_tokens"]}
-    (output / "tokenizer/added_tokens.yaml").write_text(
-        yaml.safe_dump(added, allow_unicode=True))
     for path in (work / "prompts").glob("*.txt"):
         shutil.copyfile(path, output / "scripts/prompts" / path.name)
-    options = {
-        "promptTokenBatchSize": prefill, "genTokenBatchSize": 1,
-        "cacheSize": context, "hiddenSize": config["hidden_size"],
-        "numHead": config["num_attention_heads"],
-        "numLayer": config["num_hidden_layers"], "maxTokenLength": context,
-        "rotEmbBase": config["rope_theta"],
-        "headDim": config["hidden_size"] // config["num_attention_heads"],
-        "rotEmbNumInputs": 1, "splitMask": False,
-        "modelInputType": "INT16", "modelOutputType": "INT16",
-        "cacheType": "INT16", "maskType": "INT16", "rotEmbType": "INT16",
-    }
-    runtime = {
-        "specialTokens": {"bosId": preparation["bos_token_id"],
-                          "eosId": preparation["eos_token_id"], "addBos": False,
-                          "stopToken": preparation["stop_token_ids"]},
-        "tokenizerPath": [f"./tokenizer/{name}" for name in
-                          ("merges.txt", "vocab.txt", "added_tokens.yaml")],
-        "tokenEmbPath": "./tokenizer/embedding_int16.bin",
-        "dlaPromptPaths": [f"./{context}c/prompt.dla"],
-        "dlaGenPaths": [f"./{context}c/decode.dla"],
-    }
-    # 原生 RE2 默认按单个数字切分,改为官方最多三位数字规则.
-    # RE2 不支持官方 whitespace lookahead,通用输入优先使用官方 Token.
-    runtime["tokenizerRegex"] = (
-        r"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|"
-        r"\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|"
-        r"\s+(?:$|[^\S])|\s+)"
-    )
-    (output / "scripts/config-yocto.yaml").write_text(
-        yaml.safe_dump({"modelOptions": options, "runtimeOptions": runtime},
-                       sort_keys=False, allow_unicode=True))
+    generation_resources(model, output, contracts)
     shutil.copyfile(model / "LICENSE", output / "LICENSE")
     (output / "README.md").write_text(
         "# MiniCPM5-2B\n\n"
@@ -167,16 +126,10 @@ def package_model(native):
     for name in ("infer.py", "evaluate.py"):
         shutil.copyfile(native.ctx.model / "deploy/board" / name, board / name)
     shutil.copyfile(REPO_ROOT / "tools/summary.py", board / "summary.py")
-    library = native.ctx.work / "libneuron_bridge.so"
-    with library.open("rb") as stream:
-        header = stream.read(20)
-    if header[:6] != b"\x7fELF\x02\x01" or int.from_bytes(header[18:20], "little") != 183:
-        raise ValueError("板端桥接库必须为 AArch64 ELF.")
-    shutil.copyfile(library, board / library.name)
-    copy_public_tools(board / "tools", ("files", "evaluation", "board", "process"))
+    copy_public_tools(board / "tools", ("files", "evaluation", "board", "runtime"))
     shared = board / "tools/llm"
     shared.mkdir()
-    for name in ("__init__", "evaluate_board_quality", "evaluate_mmlu"):
+    for name in ("__init__", "evaluate_board_quality", "evaluate_mmlu", "generate"):
         shutil.copyfile(REPO_ROOT / "tools/llm" / f"{name}.py", shared / f"{name}.py")
     snapshot = copy.deepcopy(native.ctx.config)
     snapshot["model"]["source"] = str(native.source)

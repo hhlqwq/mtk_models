@@ -169,7 +169,7 @@ def depth(args, manifest) -> None:
     rows = read_jsonl(args.work_dir / "predictions.jsonl")
     indices = {row["image"]: row["directory"] for row in rows}
     for position, item in enumerate(manifest["samples"], 1):
-        values = load_output(args.work_dir / indices[item["image"]] / "depth.bin")
+        values = load_output(args.work_dir / indices[item["image"]] / "depth.npy")
         normalized = (values - values.min()) / (values.max() - values.min())
         colored = cv2.applyColorMap((normalized * 255).astype(np.uint8),
                                     cv2.COLORMAP_TURBO)

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "model": "deepseek_r1_distill_qwen_1_5b",
   "run_id": "20261022_deepseek_w4a16_subset",
-  "status": "partial",
+  "status": "python_pending_board_validation",
   "quality_status": "accuracy_degraded",
   "evaluation_scope": "subset",
   "full_benchmark_evaluated": false,
@@ -130,5 +130,7 @@
     "SDK 浮点与官方 FP32 单独对齐",
     "标准性能与进程峰值 RSS",
     "原生文本分词与官方 tokenizer 一致性"
-  ]
+  ],
+  "metrics_scope": "迁移前 C++/原生 CLI 的历史记录,当前 Python 推理尚未验证",
+  "target_backend": "python_neuron_runtime_hw"
 }

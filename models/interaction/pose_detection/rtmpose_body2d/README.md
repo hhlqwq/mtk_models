@@ -1,5 +1,7 @@
 # RTMPose Body2d
 
+> Python 推理代码已迁移,尚未做板端验证.下文报告和示例属于迁移前的 C++/原生 CLI 实现,不能作为当前 Python 实现的精度、性能或 RSS.
+
 人体 WholeBody 姿态估计，输入为 256×192 RGB 人体裁剪图，输出 133 个关节点。正式上游为 OpenMMLab MMPose v1.3.2；来源见[模型卡](model_card.md)。
 
 量化方式: INT8 训练后量化 (PTQ),采用逐输出通道权重量化.
@@ -22,7 +24,7 @@
 bash deploy/compile.sh
 ```
 
-入口在当前容器完成量化、DLA 编译、C++ 构建和上传。
+入口在当前容器完成量化、DLA 编译和上传。
 
 ## 第二步: 独立评价
 
@@ -40,7 +42,7 @@ bash evaluate.sh
 
 数据目录要求: COCO WholeBody: images/、annotations/coco_wholebody_val_v1.0.json 和 person_detection_results/COCO_val2017_detections_AP_H_56_person.json.
 
-人体检测文件使用官方标准 JSON 数组.板端 C++ 清单工具在内存中包装后读取,无需修改数据文件或增加依赖; 检测框编号和排序保持不变.
+人体检测文件使用官方标准 JSON 数组.板端 Python 直接读取,无需修改数据文件; 检测框编号和排序保持不变.
 
 精度变化以百分点表示,正数为改善,负数为下降.
 

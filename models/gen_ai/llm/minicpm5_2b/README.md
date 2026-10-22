@@ -1,5 +1,7 @@
 # MiniCPM5-2B
 
+> Python 推理代码已迁移,尚未做板端验证.下文报告和示例属于迁移前的 C++/原生 CLI 实现,不能作为当前 Python 实现的精度、性能或 RSS.
+
 面向 Genio 720 的大语言模型适配,采用全 W4A16 量化,支持英文生成、性能统计及精度评价.
 使用官方 [openbmb/MiniCPM5-2B](https://huggingface.co/openbmb/MiniCPM5-2B),许可证 Apache-2.0.
 来源记录见 [source_url.txt](models/source_url.txt).
@@ -31,7 +33,7 @@ bash evaluate.sh
 
 compile.sh 仅生成少量示例,正式指标统一由 evaluate.sh 给出.
 
-## 当前结果
+## 迁移前结果
 
 以下为已有交付模型的固定子集成绩,不是全量基准.
 

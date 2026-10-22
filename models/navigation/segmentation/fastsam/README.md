@@ -1,5 +1,7 @@
 # FastSAM-s
 
+> Python 推理代码已迁移,尚未做板端验证.下文报告和示例属于迁移前的 C++/原生 CLI 实现,不能作为当前 Python 实现的精度、性能或 RSS.
+
 类别无关实例分割模型,输入为 640×640 RGB 图像.采用 INT8 训练后量化 (PTQ),使用逐输出通道权重量化,部署目标为 Genio 720.
 
 模型来源见[模型卡](model_card.md),权重与依赖来源见 [source_url.txt](models/source_url.txt).
@@ -38,7 +40,7 @@ bash evaluate.sh
 
 两个入口均无需参数.需要逐步执行时,查看 [deploy/compile.sh](deploy/compile.sh).
 
-C++ 前后处理与芯片推理实现分开,当前仅提供 G720 实现.进入编译容器后可在 `deploy/board/` 执行 `make` 单独构建,程序输出到外部模型资源的 `build/fastsam_board`.G5100 尚无对应 SDK 与开发板验证,当前不支持构建,不能直接复用 G720 的 DLA 或运行库.
+板端预处理、NPU 调用和掩码后处理统一使用 Python,不再单独构建 C++ 程序.G5100 尚无对应 SDK 与开发板验证,不能直接复用 G720 的 DLA 或运行库.
 
 ## 数据与评测
 

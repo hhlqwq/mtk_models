@@ -69,8 +69,6 @@ def main():
         ctx.output / f"model_{precision}.dla",
         ctx.work / f"runtime_config_{precision}.csv",
         ctx.output / "yamnet_class_map.csv",
-], [
-        ctx.work / "yamnet_eval",
     ])
 
 

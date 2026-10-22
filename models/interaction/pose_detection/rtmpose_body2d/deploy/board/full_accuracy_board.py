@@ -45,6 +45,8 @@ def load_predictions(path: Path) -> dict[int, list[dict]]:
             if not line.strip():
                 continue
             item = json.loads(line)
+            if item.get("backend") != "python_neuron_runtime_hw":
+                raise ValueError("必须使用本次 Python 姿态推理记录.")
             detection_id = int(item["detection_id"])
             keypoints = np.asarray(item["keypoints"], dtype=np.float32)
             if keypoints.shape != (133 * 3,):

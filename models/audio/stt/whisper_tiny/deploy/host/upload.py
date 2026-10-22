@@ -1,25 +1,21 @@
-"""读取模型配置并上传到原有板端部署目录."""
+"""上传 Whisper 双 DLA、Python 推理代码和原版文本组件."""
 
-import os
+from pathlib import Path
 
 from tools.deploy import arguments, upload
-from tools.process import run_command
 
 
 def main():
-    """上传模型、程序和 JSON 配置,保留全量与快速结果的统一部署位置."""
+    """在运行板端示例前一并上传 tokenizer 与规范化资源."""
     ctx = arguments(__file__)
-    upload(ctx, [
-        ctx.output / "encoder_fp32.dla",
-        ctx.output / "decoder_step_fp32.dla",
-        ctx.work / "mel_filters_f32.bin",
-        ctx.work / "decode_config.txt",
-], [
-        ctx.work / "prepare_board_audio",
-        ctx.work / "whisper_board_eval",
-    ])
-    run_command(["scp", "-r", ctx.work / "whisper_eval_vendor/whisper",
-                 f"{os.environ['MTK_BOARD_HOST']}:{ctx.config['board']['deploy_dir']}/board/"])
+    vendor = ctx.work / "whisper_eval_vendor"
+    files = [(str(Path("board") / path.relative_to(vendor).parent), path)
+             for path in sorted((vendor / "whisper").rglob("*")) if path.is_file()]
+    if not files:
+        raise FileNotFoundError("缺少导出步骤准备的 Whisper 文本组件.")
+    upload(ctx, [ctx.output / "encoder_fp32.dla", ctx.output / "decoder_step_fp32.dla",
+                 ctx.work / "mel_filters_f32.bin", ctx.work / "decode_config.txt"],
+           extra_files=files)
 
 
 if __name__ == "__main__":

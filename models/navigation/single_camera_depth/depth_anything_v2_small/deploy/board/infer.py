@@ -1,18 +1,33 @@
-"""调度模型 C++ 程序完成预处理、SDK 推理和后处理,不计算精度."""
+"""使用 Python 完成图片预处理、NPU 推理与模型后处理."""
 
 import json
 
+import cv2
+import numpy as np
+
 from full_accuracy_board import load_protocol
+from depth_utils import preprocess
 from tools.board import context, infer_images
 
 
+def postprocess(values, image, output):
+    """保存评分和展示所需的连续 FP32 模型结果."""
+    depth = values.reshape(518, 518)
+    if not np.isfinite(depth).all() or depth.std() <= 0:
+        raise ValueError("深度图无效或恒定.")
+    height, width = image.shape[:2]
+    restored = cv2.resize(depth, (width, height), interpolation=cv2.INTER_LINEAR)
+    np.save(output / "depth.npy", restored.astype("<f4"))
+
+
 def main():
-    """使用统一 JSON 配置,快速与全量结果保存到同一模型的 results 下."""
+    """读取本模型配置并使用常驻 SDK Runtime 推理选定图片."""
     ctx = context(__file__, new_run=True)
     names = sorted(load_protocol(ctx.dataset))
     images = [(name, ctx.dataset / name) for name in names]
     metadata = json.loads((ctx.root / "models/model_int8.json").read_text(encoding="utf-8"))
-    infer_images(ctx, "depth_anything_board", images, metadata, [1, 3, 518, 518], [1, 518, 518])
+    infer_images(ctx, images, metadata, [1, 3, 518, 518], [1, 518, 518],
+                 preprocess, postprocess)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 # YOLOv8n / Genio 720
 
+> Python 推理代码已迁移,尚未做板端验证.下文报告和示例属于迁移前的 C++/原生 CLI 实现,不能作为当前 Python 实现的精度、性能或 RSS.
+
 COCO 80 类目标检测,固定输入 `1x3x640x640` RGB,INT8 PTQ,目标为
 MT8189 / MDLA 5.3.
 
@@ -30,7 +32,7 @@ MT8189 / MDLA 5.3.
 bash models/perception/object_detection/yolov8n/deploy/compile.sh
 ```
 
-流程使用 NeuroPilot SDK 8.0.11、MTK Converter 8.16.0,选取 100 张固定排序的 COCO 图片校准,完成 ONNX 导出、INT8 转换、DLA 编译、C++ 交叉编译和上传,随后自动生成板端示例.模型产物位于配置的外部资源目录,中间结果位于构建目录,仓库 `results/` 保留最终 [summary.json](results/summary.json).
+流程使用 NeuroPilot SDK 8.0.11、MTK Converter 8.16.0,选取 100 张固定排序的 COCO 图片校准,完成 ONNX 导出、INT8 转换、DLA 编译和上传,随后自动生成板端示例.模型产物位于配置的外部资源目录,中间结果位于构建目录,仓库 `results/` 保留最终 [summary.json](results/summary.json).
 
 上传后会自动完成板端通路检查与示例生成.正式评价时按[板端规范](../../../../docs/genio_720.md)准备参考及必要输入,再登录开发板的部署目录执行:
 
@@ -53,7 +55,7 @@ PyTorch、ONNX 和板端使用相同 letterbox、单最佳类别、`conf=0.001`,
 不直接等同于 Ultralytics 官方公开指标的复现协议.
 公开示例取自已有 COCO 数据,原图地址和许可证在编译时从 COCO 标注自动读取,随部署清单上传.展示阈值为 0.25.
 
-## 当前结果
+## 迁移前结果
 
 运行 ID: `20261008_yolov8n_full_v1`,三个后端均使用 COCO val2017 全量
 5000 张图片,主机与板端标注 SHA256 相同.

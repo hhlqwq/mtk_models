@@ -1,3 +1,4 @@
+# 已迁移模型的 Python 推理待板端验证,latest_run 保留迁移前的运行记录.
 schema_version: 1
 models:
   - id: minicpm5_2b
@@ -10,7 +11,7 @@ models:
     source: openbmb/MiniCPM5-2B
     delivery_reference: D-Robotics/rdk_model_zoo/rdk_s/samples/llm/minicpm5-2b
     platforms:
-      genio_720: board_verified
+      genio_720: converted
       genio_5100: not_started
   - id: deepseek_r1_distill_qwen_1_5b
     latest_run: 20261022_deepseek_w4a16_subset
@@ -22,7 +23,7 @@ models:
     source: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
     delivery_reference: D-Robotics/rdk_model_zoo_s
     platforms:
-      genio_720: board_verified
+      genio_720: converted
       genio_5100: not_started
   - id: yamnet
     batch: first_batch
@@ -33,7 +34,7 @@ models:
     source: tensorflow/models
     delivery_reference: qualcomm/YamNet
     platforms:
-      genio_720: complete
+      genio_720: converted
       genio_5100: not_started
   - id: yolov8n
     batch: first_batch
@@ -43,7 +44,7 @@ models:
     path: models/perception/object_detection/yolov8n
     source: ultralytics/ultralytics
     platforms:
-      genio_720: complete
+      genio_720: converted
       genio_5100: not_started
   - id: depth_anything_v2_small
     batch: first_batch
@@ -53,7 +54,7 @@ models:
     path: models/navigation/single_camera_depth/depth_anything_v2_small
     source: DepthAnything/Depth-Anything-V2
     platforms:
-      genio_720: board_verified
+      genio_720: converted
       genio_5100: not_started
   - id: fastsam
     batch: first_batch
@@ -63,7 +64,7 @@ models:
     path: models/navigation/segmentation/fastsam
     source: CASIA-LMC-Lab/FastSAM
     platforms:
-      genio_720: board_verified
+      genio_720: converted
       genio_5100: not_started
   - id: yolov5s
     batch: first_batch
@@ -74,7 +75,7 @@ models:
     source: ultralytics/yolov5
     delivery_reference: qualcomm/Yolo-v5
     platforms:
-      genio_720: complete
+      genio_720: converted
       genio_5100: not_started
   - id: vit_base_patch16_224
     batch: first_batch
@@ -86,7 +87,7 @@ models:
     legacy_source: qualcomm/VIT
     delivery_reference: qualcomm/VIT
     platforms:
-      genio_720: complete
+      genio_720: converted
       genio_5100: not_started
   - id: rtmpose_body2d
     batch: first_batch
@@ -98,7 +99,7 @@ models:
     legacy_source: qualcomm/RTMPose-Body2d
     delivery_reference: qualcomm/RTMPose-Body2d
     platforms:
-      genio_720: complete
+      genio_720: converted
       genio_5100: not_started
   - id: mobilefacenet
     batch: first_batch
@@ -108,7 +109,7 @@ models:
     path: models/interaction/face_recognition/mobilefacenet
     source: foamliu/MobileFaceNet
     platforms:
-      genio_720: board_verified
+      genio_720: converted
       genio_5100: not_started
   - id: whisper_tiny
     batch: first_batch
@@ -119,5 +120,5 @@ models:
     source: openai/whisper
     delivery_reference: qualcomm/Whisper-Tiny
     platforms:
-      genio_720: board_verified
+      genio_720: converted
       genio_5100: not_started

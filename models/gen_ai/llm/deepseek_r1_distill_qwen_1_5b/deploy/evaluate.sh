@@ -3,10 +3,6 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export MTK_EVAL_SCOPE=full
-if (( $# != 0 )); then
-    echo '[错误] 用法: bash evaluate.sh.' >&2
-    exit 2
-fi
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
     export PYTHONDONTWRITEBYTECODE=1

@@ -1,6 +1,8 @@
 # YAMNet / Genio 720
 
-Google YAMNet 环境声音分类模型,输出 AudioSet 521 类分数.默认使用全 W8A16:权重 INT8、激活及原生 I/O 为 INT16.输入为 16 kHz 单声道音频生成的 `1×1×96×64` Log-Mel 窗口,CPU 处理音频,C++ Neuron Runtime 执行 MDLA 推理.
+> Python 推理代码已迁移,尚未做板端验证.下文报告和示例属于迁移前的 C++/原生 CLI 实现,不能作为当前 Python 实现的精度、性能或 RSS.
+
+Google YAMNet 环境声音分类模型,输出 AudioSet 521 类分数.默认使用全 W8A16:权重 INT8、激活及原生 I/O 为 INT16.输入为 16 kHz 单声道音频生成的 `1×1×96×64` Log-Mel 窗口,Python 处理音频并直接调用 Neuron Runtime 执行 MDLA 推理.
 
 来源和许可证见 [模型卡](model_card.md)与[资源记录](models/source_url.txt).官方权重、源码和 ESC-50 数据集须提前放在 NAS,不在运行时下载.
 
@@ -22,7 +24,7 @@ Google YAMNet 环境声音分类模型,输出 AudioSet 521 类分数.默认使�
 bash models/audio/ambient_sound/yamnet/deploy/compile.sh
 ```
 
-入口完成导出、PTQ、DLA 编译、C++ 构建及上传,自动生成板端示例.正式评价前按[板端规范](../../../../docs/genio_720.md)准备同协议参考,再在板端部署目录执行:
+入口完成导出、PTQ、DLA 编译及上传,自动生成板端示例.正式评价前按[板端规范](../../../../docs/genio_720.md)准备同协议参考,再在板端部署目录执行:
 
 ```bash
 bash evaluate.sh

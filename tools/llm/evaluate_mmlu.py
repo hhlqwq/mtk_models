@@ -257,7 +257,7 @@ def evaluate(args):
         bank = np.load(args.data / "mmlu_inputs.npz")
         embedding = np.memmap(embeddings, dtype="<i2", mode="r").reshape(
             -1, contract["inputs"][0]["shape"][-1])
-        hardware = (HardwareModel(args.library, graph, contract)
+        hardware = (HardwareModel(graph, contract)
                     if args.backend == "npu" else QuantizedExecutor(graph, contract))
 
         def score(tokens):
@@ -342,7 +342,6 @@ def main():
                         help="仅用于覆盖不同长度的多块执行诊断,不代替千题成绩.")
     parser.add_argument("--data", type=Path)
     parser.add_argument("--package", type=Path)
-    parser.add_argument("--library", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if is_test():

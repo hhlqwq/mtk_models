@@ -1,4 +1,4 @@
-"""仅从板端 C++ 预测计算 ImageNet val 全量 Top-1/Top-5 指标."""
+"""仅从板端 Python 预测计算 ImageNet val 全量 Top-1/Top-5 指标."""
 
 import os
 import argparse
@@ -52,7 +52,7 @@ def read_labels(path: Path) -> list[int]:
 
 
 def evaluate(args: argparse.Namespace) -> None:
-    """校验全部 C++ 输出并汇总精度与纯 NPU 耗时."""
+    """校验全部 Python 输出并汇总精度与纯 NPU 耗时."""
     labels = read_labels(args.labels)
     labels = select_samples(list(enumerate(labels)), "vit_base_patch16_224", key=lambda row: row[0])
     labels = [row[1] for row in labels]
@@ -69,14 +69,15 @@ def evaluate(args: argparse.Namespace) -> None:
             record = json.loads(line)
             expected_image = f"ILSVRC2012_val_{index + 1:08d}.JPEG"
             predictions = record.get("top5")
-            if (record.get("index") != index or
+            if (record.get("backend") != "python_neuron_runtime_hw" or
+                    record.get("index") != index or
                     record.get("image") != expected_image or
                     not isinstance(predictions, list) or
                     len(predictions) != 5 or
                     len(set(predictions)) != 5 or
                     any(not isinstance(value, int) or
                         not 0 <= value < 1000 for value in predictions)):
-                raise ValueError(f"C++ 预测记录不匹配: {index}.")
+                raise ValueError(f"Python 预测记录不匹配: {index}.")
             timing = float(record["npu_ms"])
             if not math.isfinite(timing) or timing < 0:
                 raise ValueError(f"NPU 耗时非法: {index}.")
@@ -96,7 +97,7 @@ def evaluate(args: argparse.Namespace) -> None:
     summary = {
         "peak_rss_kib": memory.get("peak_rss_kib"),
         "status": result_status(), **scope_metadata(),
-        "model": "vit_base_patch16_224",
+        "model": "vit_base_patch16_224", "backend": "python_neuron_runtime_hw",
         "run_id": args.run_id,
         "dataset": "imagenet_val2012",
         "samples": expected,
@@ -105,7 +106,7 @@ def evaluate(args: argparse.Namespace) -> None:
         "npu_top5": top5 / expected,
         "holdout_top1": holdout_top1 / holdout_count,
         "holdout_top5": holdout_top5 / holdout_count,
-        "timing_scope": "persistent C++ Neuron Runtime inference call only",
+        "timing_scope": "persistent Python Neuron Runtime inference call only",
         "npu_mean_ms": statistics.fmean(timings),
         "npu_p95_ms": sorted_times[math.ceil(0.95 * len(sorted_times)) - 1],
     }

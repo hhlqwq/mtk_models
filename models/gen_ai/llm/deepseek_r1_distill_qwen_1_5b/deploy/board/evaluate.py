@@ -43,8 +43,6 @@ def check_resources(root):
         contract = read_json(data / folder / "board_input_contract.json")
         if contract["tflite_sha256"] != manifest["graph_contracts"]["prompt"]["tflite_sha256"]:
             raise ValueError("评价张量契约来自其他转换图,不能混用.")
-    if not (root / "board/libneuron_bridge.so").is_file():
-        raise FileNotFoundError("缺少已部署的 AArch64 桥接库.")
     return data
 
 
@@ -53,12 +51,11 @@ def main():
     ctx = context(__file__)
     data = check_resources(ctx.root)
     ctx.result.mkdir(parents=True, exist_ok=True)
-    library = ctx.root / "board/libneuron_bridge.so"
     evaluate_mmlu.evaluate(SimpleNamespace(
         backend="npu", data=data / "mmlu", package=ctx.root,
-        library=library, output=ctx.result / "mmlu", diagnostic_questions=0))
+        output=ctx.result / "mmlu", diagnostic_questions=0))
     evaluate_board_quality.evaluate(SimpleNamespace(
-        package=ctx.root, quality_data=data / "quality", library=library,
+        package=ctx.root, quality_data=data / "quality",
         output=ctx.result / "wikitext", diagnostic_blocks=0, decode_steps=0))
     (ctx.result / "evaluation_memory.json").write_text(json.dumps({
         "peak_process_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,

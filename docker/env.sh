@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# 从统一平台配置加载当前容器的 SDK、编译器和板端环境.
+# 从统一平台配置加载当前容器的 SDK 与板端环境.
 export MTK_MODELS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${MTK_MODELS_ROOT}/tools/storage.sh" "$@" || return 1
 export PYTHONPATH="${MTK_MODELS_ROOT}${PYTHONPATH:+:${PYTHONPATH}}"
@@ -25,5 +25,4 @@ fi
 
 echo "[MTK] 项目目录: ${MTK_MODELS_ROOT}"
 echo "[MTK] NeuroPilot SDK: ${MTK_NP_ROOT}"
-echo "[MTK] 交叉编译器: ${CROSS_CXX}"
 echo "[MTK] 目标开发板: ${MTK_BOARD_HOST}"

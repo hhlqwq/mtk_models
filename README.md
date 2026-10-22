@@ -56,8 +56,7 @@ bash models/perception/object_detection/yolov5s/deploy/compile.sh
 ```text
 configs/             平台、工具链及本地存储配置模板
 models/              按场景和任务组织的模型适配
-common/cpp/          共享 C++ Runtime、后处理和构建规则
-tools/               公共配置、转换、评价及文件工具
+tools/               公共配置、转换、Python Runtime、评价及文件工具
 docker/              编译镜像与容器入口
 registry/            模型范围、来源索引与状态
 reports/             平台报告入口
@@ -67,10 +66,12 @@ templates/model/     新模型交付模板
 tests/               公共代码回归测试
 ```
 
-模型入口只编排独立步骤:主机实现在 `deploy/host/`,板端代码在 `deploy/board/`.公共配置和工具集中维护,不在模型脚本重复设置 SDK、Docker 和交叉编译环境.
+模型入口只编排独立步骤:主机实现在 `deploy/host/`,板端代码在 `deploy/board/`.公共配置和工具集中维护,不在模型脚本重复设置 SDK 或 Docker 环境.板端推理、前后处理与评价统一使用 Python,直接调用 MTK SDK 动态库,不构建自有 C++ 推理程序.
 
 ## 模型与结果
 
 [模型总览](models/README.md)是指标的统一索引.各模型 README 说明使用方式、当前结果和必要的协议限制;`results/summary.json` 保存机器可读汇总.不在首页重复模型指标、实验经过或逐次运行日志.
 
 精度比较须使用同一模型、输入和评价协议.全量、固定子集和功能示例分别标识,运行成功不等于精度合格.性能注明纯 NPU 或端到端范围,RSS 不等同于全部驱动内存.更换权重、量化配方或设备环境后须重新评价才能更新结论.
+
+当前 11 个已适配模型的 Python 推理代码已迁移,尚未进行板端验证.模型文档中的历史精度、性能、RSS 和示例不能作为新实现的验证结果.

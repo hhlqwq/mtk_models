@@ -8,7 +8,7 @@
 | model_fp32.onnx | 唯一一份 FP32 ONNX,opset 13,静态 640,10 个原始输出 |
 | build/model_int8.tflite | MTK INT8 校准产物 |
 | build/model_int8.json | 量化参数、输出索引语义映射、校准图片清单 |
-| build/runtime_config.csv | C++ 板端程序使用的输入输出张量契约 |
+| build/runtime_config.csv | Python 板端代码使用的输入输出张量契约 |
 | model_int8.dla | MDLA 5.3 无桥接编译产物 |
 | build/pytorch_reference.npz | 当前导出检查图片的 FP32 输入及原始输出 |
 | build/export_manifest.json | 导出实现、图片、检查结果与最终 ONNX 路径及 SHA-256 |

@@ -60,11 +60,11 @@ def load_pairs(dataset_root: Path) -> list[dict[str, str]]:
 
 
 def load_feature(path: Path) -> np.ndarray:
-    """读取 C++ 已反量化并单位化的 128 维特征,不重复执行后处理."""
+    """读取 Python 已反量化并单位化的 128 维特征,不重复执行后处理."""
     feature = np.fromfile(path, dtype=np.float32)
     if (feature.size != 128 or not np.isfinite(feature).all() or
             not np.isclose(np.linalg.norm(feature), 1.0, atol=1e-5)):
-        raise ValueError(f"C++ 人脸特征无效: {path}.")
+        raise ValueError(f"Python 人脸特征无效: {path}.")
     return feature
 
 
@@ -133,7 +133,7 @@ def evaluate_pairs(rows: list[dict[str, str]],
 
 
 def evaluate(args: argparse.Namespace) -> None:
-    """仅计算 C++ 预测的十折人脸验证指标,不执行模型推理."""
+    """仅计算 Python 预测的十折人脸验证指标,不执行模型推理."""
     rows = load_pairs(args.dataset_root)
     names = {row[field] for row in rows for field in ("image_a", "image_b")}
     records = inference_records(args.work_dir, names)
@@ -150,10 +150,10 @@ def evaluate(args: argparse.Namespace) -> None:
         "dataset": "LFW_upstream_MTCNN_5_point_aligned",
         "input_protocol": "RGB_ImageNet_normalize_aligned_112x112",
         "distinct_images": len(names), **verification,
-        "backend": "cpp_neuron_runtime_hw", "npu_mean_ms": float(np.mean(times)),
+        "backend": "python_neuron_runtime_hw", "npu_mean_ms": float(np.mean(times)),
         "npu_p95_ms": float(np.percentile(times, 95)),
         "peak_rss_kib": max(row["peak_rss_kib"] for row in records.values()),
-        "timing_scope": "逐图加载模型,单独统计 NeuronRuntime_inference 调用",
+        "timing_scope": "常驻 Python 模型,单独统计 NeuronRuntime_inference 调用",
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

@@ -85,7 +85,6 @@ else
         --env MTK_NCC_BIN \
         --env MTK_NCC_LIB \
         --env MTK_NEURON_INCLUDE \
-        --env CROSS_CXX \
         --env MTK_BOARD_HOST \
         --env MTK_BOARD_ROOT \
         --env MTK_BOARD_OPEN_MODELS_ROOT \
@@ -94,7 +93,6 @@ else
         --env MTK_GAI_PYTHON \
         --env MTK_LLM_PYTHON \
         --env MTK_YAMNET_PYTHON \
-        --env MTK_G720_CPP_TOOLCHAIN_ROOT="${MTK_G720_CPP_TOOLCHAIN_ROOT}" \
         --volume "${PROJECT_ROOT}:${PROJECT_ROOT}" \
         --volume "${DATASET_ROOT}:${DATASET_ROOT}:ro" \
         --volume "${MODEL_STORAGE_ROOT}:${MODEL_STORAGE_ROOT}" \

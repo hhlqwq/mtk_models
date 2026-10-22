@@ -6,7 +6,7 @@
 - 输入: `1x1x96x64` Log-Mel,默认原生 INT16,局部INT16方案使用INT8输入.
 - 输出: `1x521` Sigmoid 类别分数,窗口均值用于音频级评测.
 - 前处理: 16 kHz 单声道,25 ms 周期 Hann,10 ms 帧移,96 帧窗,48 帧步长.
-- 部署: Genio 720 / MT8189 / MDLA 5.3,CPU 音频前处理,C++ Neuron Runtime.
+- 部署: Genio 720 / MT8189 / MDLA 5.3,CPU 音频前处理,Python Neuron Runtime.
 - 评测: ESC-50 固定 47 类投影,第二至第五折主评测,同步报告全量指标.
 - 默认交付: `w8a16`,全网络INT8权重、INT16激活,原生INT16输入与INT16输出.
 - 可选部署: `int8_tail16`,第12层pointwise输出至分类头使用INT16激活,

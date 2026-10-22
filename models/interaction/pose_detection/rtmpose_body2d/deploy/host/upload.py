@@ -1,20 +1,13 @@
-"""读取模型配置并上传到原有板端部署目录."""
-
-import os
+"""上传模型资源与 Python 板端代码,不构建 C++ 程序."""
 
 from tools.deploy import arguments, upload
-from tools.evaluation import is_test
-from tools.process import run_command
 
 
 def main():
-    """上传模型、程序和 JSON 配置,保留全量与快速结果的统一部署位置."""
+    """打包必要资源,由板端 compile.sh 生成少量展示示例."""
     ctx = arguments(__file__)
     upload(ctx, [
         ctx.output / "model_int8.dla",
-], [
-        ctx.work / "rtmpose_board_eval",
-        ctx.work / "prepare_eval_manifest",
     ])
 
 

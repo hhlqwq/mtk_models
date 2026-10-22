@@ -1,5 +1,7 @@
 # YOLOv5s · Genio 720
 
+> Python 推理代码已迁移,尚未做板端验证.下文报告和示例属于迁移前的 C++/原生 CLI 实现,不能作为当前 Python 实现的精度、性能或 RSS.
+
 COCO 80 类目标检测。模型来源和许可证见[模型卡](model_card.md)。
 
 量化方式: INT8 训练后量化 (PTQ),使用 100 张图片校准.
@@ -22,7 +24,7 @@ COCO 80 类目标检测。模型来源和许可证见[模型卡](model_card.md)�
 bash deploy/compile.sh
 ```
 
-入口在当前容器完成转换、DLA 编译、C++ 构建和上传,随后生成板端示例.配置的数据目录须包含与板端相同的 COCO val2017 图片及标注。校准仅使用其中 100 张图片,与全量精度评测分开。
+入口在当前容器完成转换、DLA 编译和上传,随后生成板端示例.配置的数据目录须包含与板端相同的 COCO val2017 图片及标注。校准仅使用其中 100 张图片,与全量精度评测分开。
 
 浮点模型只记录 mAP@0.5:0.95,不测试 PyTorch 精度,不统计编译主机耗时或内存。Docker 需安装 ONNX Runtime、pycocotools、OpenCV、PyTorch、torchvision 和 tqdm; PyTorch 仅用于解码和 NMS。模型产物写入配置指定的 NAS 资源目录。脚本不下载模型或数据。
 

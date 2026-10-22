@@ -1,8 +1,10 @@
 # DeepSeek-R1-Distill-Qwen-1.5B
 
+> Python 推理代码已迁移,尚未做板端验证.下文报告和示例属于迁移前的 C++/原生 CLI 实现,不能作为当前 Python 实现的精度、性能或 RSS.
+
 使用 [DeepSeek 官方权重](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B),面向 Genio 720 部署全 W4A16 模型.来源与许可见[模型卡](model_card.md)和[资源记录](models/source_url.txt).
 
-## 当前结果
+## 迁移前结果
 
 已完成全 W4A16 量化、双 DLA 编译、AArch64 桥接库构建及真实板端双语生成.少量同协议精度如下,不是全量基准:
 
@@ -17,7 +19,7 @@
 
 ## 编译与部署
 
-模型与数据提前放在 NAS,连接信息和工具链路径由本地配置提供.板端生成使用已有 `llm_cmdline_tool`,正式评价另需 Python3、NumPy 和匹配的 Neuron Runtime.参数统一在 [config.yaml](config.yaml): Prefill=128、Decode=1、上下文默认 1024、校准批次 32、权重优化默认关闭.
+模型与数据提前放在 NAS,连接信息和工具链路径由本地配置提供.板端生成与评价使用 Python3、NumPy、tokenizers 和匹配的 Neuron Runtime,不再使用原生 CLI 或自编桥接库.参数统一在 [config.yaml](config.yaml): Prefill=128、Decode=1、上下文默认 1024、校准批次 32、权重优化默认关闭.
 
 进入已有编译容器,在本模型目录执行:
 
@@ -25,7 +27,7 @@
 bash deploy/compile.sh
 ```
 
-依次完成模型适配、校准、W4A16 量化、双静态图导出、双 DLA 编译、桥接库构建、打包和上传,自动调用板端 `compile.sh`.少量双语输入各生成最多 32 Token 的片段,只检查执行通路并保存 `examples/output/zh_demo.txt` 和 `en_demo.txt`,同时取回模型代码目录供 README 展示,不评分、不测速、不采集 RSS.
+依次完成模型适配、校准、W4A16 量化、双静态图导出、双 DLA 编译、打包和上传,自动调用板端 `compile.sh`.少量双语输入各生成最多 32 Token 的片段,只检查执行通路并保存 `examples/output/zh_demo.txt` 和 `en_demo.txt`,同时取回模型代码目录供 README 展示,不评分、不测速、不采集 RSS.
 
 ## 独立评价
 
@@ -47,10 +49,10 @@ bash deploy/evaluate.sh
 bash evaluate.sh
 ```
 
-板端核对部署模型与参考输入后,采集生成样例、128 Token 输入/最多 128 Token 输出的原生 CLI Prefill/Decode 速度及进程 RSS,再执行完整 MMLU/WikiText2.最终只发布 `results/summary.json`.速度按实际生成数量记录,CLI 阶段速度与纯 NPU 算子耗时分开标注,未采集分项明确列出.预测与解析所需日志保存在日期临时目录.
+板端核对部署模型与参考输入后,采集生成样例、128 Token 输入/最多 128 Token 输出的Python Prefill/Decode 阶段速度及进程 RSS,再执行完整 MMLU/WikiText2.最终只发布 `results/summary.json`.速度按实际生成数量记录,Python 阶段速度与纯 NPU 调用耗时分开标注,未采集分项明确列出.预测与内部指标保存在日期临时目录.
 
 ## 模型约定
 
-使用官方 tokenizer 的 Token 输入,保留聊天模板、BOS/EOS 和停止列表.GQA 为 Q/KV Head=12/2,RoPE=10000;输入、KV Cache、mask、RoPE 与输出使用图中实际 INT16 接口.外置 embedding、tokenizer、Prefill/Decode DLA 和配置必须成套使用.普通文本的原生分词一致性未在本流程中验证.
+使用官方 tokenizer 的 Token 输入,保留聊天模板、BOS/EOS 和停止列表.GQA 为 Q/KV Head=12/2,RoPE=10000;输入、KV Cache、mask、RoPE 与输出使用图中实际 INT16 接口.外置 embedding、tokenizer、Prefill/Decode DLA 和配置必须成套使用.Python 使用随包的官方 tokenizer.json 解码,生成输入继续使用已准备的官方 Token.
 
 校准默认使用 16 条自编双语输入;可通过 `native.calibration_train` 指定 NAS 中的 WikiText2 raw train 文件,混合 8 段 256 Token 训练文本和 8 条双语输入.测试集不参与校准.该配方的质量需由实际评价确认.

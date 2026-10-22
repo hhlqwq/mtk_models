@@ -1,13 +1,15 @@
-"""部署已有 FastSAM 模型并生成展示示例,不依赖精度参考."""
+"""上传模型资源与 Python 板端代码,不构建 C++ 程序."""
 
 from tools.deploy import arguments, upload
 
 
 def main():
-    """复用公共打包入口,由板端 compile.sh 完成少量通路检查."""
+    """打包必要资源,由板端 compile.sh 生成少量展示示例."""
     ctx = arguments(__file__)
-    upload(ctx, [ctx.output / "model_int8.dla", ctx.work / "runtime_config.csv"],
-           [ctx.work / "fastsam_board"])
+    upload(ctx, [
+        ctx.output / "model_int8.dla",
+        ctx.work / "runtime_config.csv",
+    ])
 
 
 if __name__ == "__main__":

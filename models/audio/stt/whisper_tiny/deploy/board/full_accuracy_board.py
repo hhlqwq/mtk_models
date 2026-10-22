@@ -202,10 +202,10 @@ def performance_summary(records: list[dict]) -> dict:
 
 
 def preprocessing_summary(records: list[dict]) -> dict:
-    """汇总编译主机音频读取、Log-Mel 和缓存写入耗时."""
+    """汇总板端 Python 音频读取与 Log-Mel 耗时,Mel 直接在内存中使用."""
     metric_keys = ("audio_decode_ms", "log_mel_ms", "mel_write_ms")
     return {
-        "host": "compile_host",
+        "host": "target_board_python", "mel_cache": "in_memory",
         "cache_hits": sum(bool(item["cache_hit"]) for item in records),
         "metrics": {
             key: statistics([float(item[key]) for item in records])
@@ -258,6 +258,8 @@ def main() -> None:
     sources = {item["sample_id"]: item
                for item in read_jsonl(args.source_manifest)}
     board_records = read_jsonl(args.board_predictions)
+    if any(row.get("backend") != "python_neuron_runtime_hw" for row in board_records):
+        raise ValueError("必须使用本次 Python 推理记录.")
     decode_board_texts(args.dataset, board_records)
     successful = {item["sample_id"]: item for item in board_records
                   if item.get("status") == "ok"}
@@ -277,7 +279,7 @@ def main() -> None:
     record_selection(sources)
     summary = {
         "status": result_status("complete" if complete else "incomplete"), **scope_metadata(),
-        "dataset": args.dataset,
+        "dataset": args.dataset, "backend": "python_neuron_runtime_hw",
         "expected_samples": len(sources),
         "successful_samples": len(successful),
         "failed_samples": len(failed),

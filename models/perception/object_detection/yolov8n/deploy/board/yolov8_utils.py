@@ -58,7 +58,7 @@ def decode_heads(outputs):
 
 
 def postprocess(outputs, geometry, confidence=0.001, iou=0.6, max_det=300):
-    """采用单最佳类别和类别内 NMS,与本项目 C++ 评测协议保持一致."""
+    """采用单最佳类别和类别内 NMS,与本项目 Python 评测协议保持一致."""
     boxes, probabilities = decode_heads(outputs)
     classes = probabilities.argmax(axis=1)
     scores = probabilities[np.arange(len(classes)), classes]

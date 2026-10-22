@@ -79,7 +79,7 @@ def compile_dla(ctx, source, target, extra=()):
     print(f"[DLA] 最终模型: {Path(target).resolve()}", flush=True)
 
 
-def upload(ctx, model_files, programs, extra_files=()):
+def upload(ctx, model_files, extra_files=()):
     """上传当前模型部署包并生成板端示例,不准备正式评价参考."""
     snapshot = ctx.work / "config.json"
     snapshot.write_text(json.dumps(ctx.config, ensure_ascii=False, indent=2))
@@ -99,18 +99,22 @@ def upload(ctx, model_files, programs, extra_files=()):
     groups = {
         "": [ctx.model / "deploy/compile.sh", ctx.model / "deploy/evaluate.sh", snapshot],
         "models": model_files,
-        "board": [*code, *programs, ctx.repo / "tools/summary.py"],
+        "board": [*code, ctx.repo / "tools/summary.py"],
         "board/tools": [ctx.repo / "tools" / name for name in
-            ("__init__.py", "board.py", "evaluation.py", "files.py", "process.py", "coco.py")],
+            ("__init__.py", "board.py", "evaluation.py", "files.py", "coco.py", "runtime.py")],
         "examples/input": [*sorted((ctx.model / "examples/input").glob("sample_*"))],
     }
+    if ctx.config["name"] in ("yolov5s", "yolov8n", "fastsam"):
+        groups["board/tools"].append(ctx.repo / "tools/boxes.py")
+    if ctx.config["name"] in ("yolov5s", "yolov8n"):
+        groups["board/tools"].append(ctx.repo / "tools/detection.py")
     if samples.is_file():
         groups["examples/input"].append(samples)
     for folder, path in extra_files:
         groups.setdefault(folder, []).append(path)
     for files in groups.values():
         for path in files:
-            if not Path(path).is_file() or not Path(path).stat().st_size:
+            if not Path(path).is_file() or (not Path(path).stat().st_size and Path(path).name != "__init__.py"):
                 raise FileNotFoundError(f"上传文件缺失或为空: {path}.")
     host = os.environ["MTK_BOARD_HOST"]
     destination = ctx.config["board"]["deploy_dir"]
@@ -121,9 +125,6 @@ def upload(ctx, model_files, programs, extra_files=()):
     for folder, files in groups.items():
         if files:
             run_command(["scp", *options, *files, f"{host}:{destination}/{folder}/"])
-    if programs:
-        run_command(["ssh", *options, host, "chmod 755 " + " ".join(
-            shlex.quote(str(Path(destination) / "board" / Path(path).name)) for path in programs)])
     print("[部署] 生成板端展示示例,不计算正式指标.", flush=True)
     run_command(["ssh", *options, host, "bash " + shlex.quote(destination + "/compile.sh")])
     print(f"[评价入口] 资源准备完成后执行: bash {destination}/evaluate.sh", flush=True)

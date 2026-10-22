@@ -4,13 +4,13 @@
 
 板端连接、资源目录及工具链参数以 [genio_720.yaml](../configs/platforms/genio_720.yaml) 为准.目标为 Genio 720 EVK,MT8189 / MT8391,MDLA 5.3.系统和 Runtime 版本随每次评价记录,不能由历史文档推断当前设备状态.
 
-运行前确认 Neuron Runtime、APUSYS 设备节点和所需动态库可用.LLM 生成使用系统 `llm_cmdline_tool`,NPU 评价使用匹配的 AArch64 桥接库.组件存在或版本查询成功不代表模型已通过推理和精度验证.
+运行前确认 Neuron Runtime、APUSYS 设备节点和所需动态库可用.推理、前后处理和评价统一由 Python 直接调用 SDK Runtime,不依赖自编 C++ 程序或桥接库.组件存在或版本查询成功不代表模型已通过推理和精度验证.
 
 ## 编译与部署
 
 编译在 Ubuntu Docker 容器执行,板端执行真实 NPU 推理.使用 `--arch=mdla5.3` 和 `--disallow-bridge`,整数原生 I/O 的转换参数须与实际张量契约一致.系统与模型所需 Runtime 不匹配时停止运行并核对版本,不覆盖系统库强行兼容.
 
-主机入口 `deploy/compile.sh` 完成导出、量化、DLA 编译、板端程序构建和上传,随后自动在部署目录执行 `compile.sh`,用固定少量输入检查硬件推理并生成 README 示例.只打印步骤与成功/失败信息,不计算或生成精度、性能和 RSS 报告.不会进入全量评价.
+主机入口 `deploy/compile.sh` 完成导出、量化、DLA 编译及 Python 部署包上传,随后自动在部署目录执行 `compile.sh`,用固定少量输入检查硬件推理并生成 README 示例.只打印步骤与成功/失败信息,不计算或生成精度、性能和 RSS 报告.不会进入全量评价.
 
 入口直接顺序调用命令,输出和错误直接显示在终端,只补充必要阶段提示,不默认保存编译日志.Docker 公共环境由创建容器入口统一设置,板端路径复用公共工具.只保存运行、评分和排错必需的数据.
 
@@ -24,11 +24,11 @@
 bash evaluate.sh
 ```
 
-评价入口使用已有 DLA 和程序,执行完整精度评价、必要预热和性能统计,采集推理进程峰值 RSS,最终只给出 `results/summary.json`.不调用 compile.sh,不重新量化或编译.重复评价成功后更新这一个报告,运行编号、数据集范围、版本和缺失项写在报告内部.
+评价入口使用已有 DLA 和 Python 脚本,执行完整精度评价、必要预热和性能统计,采集推理进程峰值 RSS,最终只给出 `results/summary.json`.不调用 compile.sh,不重新量化或编译.重复评价成功后更新这一个报告,运行编号、数据集范围、版本和缺失项写在报告内部.
 
 中间预测、日志、逐任务指标和调试记录位于 `/tmp/hailongcodex/当天日期/<模型>_<阶段>_<运行编号>/`.失败时保留现场,不拿上次指标冒充本次结果,不为失败运行伪造成功报告.成功发布后 results 内只保留 summary.json.临时目录由使用者按需清理.
 
-MiniCPM 和 DeepSeek 要求完整 MMLU 14042 题与 WikiText2 test.若已有上下文不足,明确报错,不截题或自动重编译.原生生成使用官方 Token 输入,样例速度不能标为标准定长基准.新接入评价代码不代表已完成全量实测,成绩以对应版本的实际报告为准.
+MiniCPM 和 DeepSeek 要求完整 MMLU 14042 题与 WikiText2 test.若已有上下文不足,明确报错,不截题或自动重编译.Python 生成使用官方 Token 输入,样例速度不能标为标准定长基准.新接入评价代码不代表已完成全量实测,成绩以对应版本的实际报告为准.
 
 ## 目录
 
@@ -38,7 +38,7 @@ MiniCPM 和 DeepSeek 要求完整 MMLU 14042 题与 WikiText2 test.若已有上�
 ├── evaluate.sh                正式评价,不重新编译
 ├── config.json                配置快照
 ├── models/                    DLA 和必要运行参数
-├── board/                     板端程序和公共模块
+├── board/                     Python 脚本和公共模块
 ├── examples/input/            少量展示输入
 ├── examples/output/           README 使用的结果图或文本
 └── results/summary.json        唯一正式报告

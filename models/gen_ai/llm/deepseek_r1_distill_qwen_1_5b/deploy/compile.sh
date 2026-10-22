@@ -3,10 +3,6 @@
 set -euo pipefail
 export MTK_EVAL_SCOPE=subset
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if (( $# != 0 )); then
-    echo '[错误] 用法: bash compile.sh.' >&2
-    exit 2
-fi
 
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
@@ -22,13 +18,11 @@ else
     mkdir -p "${MODEL_BUILD_DIR}"
     exec 9>"${MODEL_BUILD_DIR}/.run.lock"
     flock -n 9 || { echo '[错误] 本模型已有转换任务.' >&2; exit 2; }
-    echo '[容器 1/4] 准备模型、校准、量化并导出双静态图.'
+    echo '[容器 1/3] 准备模型、校准、量化并导出双静态图.'
     python "${SCRIPT_DIR}/host/convert.py"
-    echo '[容器 2/4] 编译 Prefill 和 Decode 双 DLA.'
+    echo '[容器 2/3] 编译 Prefill 和 Decode 双 DLA.'
     python "${SCRIPT_DIR}/host/compile.py"
-    echo '[容器 3/4] 交叉编译板端桥接库.'
-    make -C "${SCRIPT_DIR}/board"
-    echo '[容器 4/4] 打包并上传开发板.'
+    echo '[容器 3/3] 打包并上传开发板.'
     python "${SCRIPT_DIR}/host/upload.py"
     echo "[编译完成] 模型已部署并生成展示示例"
 fi

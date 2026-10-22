@@ -12,7 +12,6 @@ kernel: 6.6.137-mtk+ga246e0c68c39-g429091ed5965
 npu: MDLA 5.3
 neuron_runtime: 8.2.16
 onnx_runtime: 1.20.2
-llm_cmdline_tool: /usr/sbin/llm_cmdline_tool
 
 # G720 对应的一套编译工具链,环境配置统一从此处读取.
 toolchain:
@@ -26,10 +25,6 @@ toolchain:
   neuron_compiler: 8.2.31
   # 主机与容器共用相同 SDK 目录.
   sdk_root: ""
-  # 主机已有的 C++ 资源,在容器中按相同绝对路径挂载或准备.
-  cpp_toolchain_root: ""
-  # 主机与容器使用公共目录中的交叉编译器.
-  cross_cxx: ""
   # 镜像构建使用的本地 LLM SDK wheel 目录,不含模型权重.
   gai_sdk_root: ""
   # 保留旧版模型使用的独立导出及 TensorFlow 环境配置.

@@ -1,21 +1,65 @@
-"""读取板端配置并调度 C++ 推理,不计算精度指标."""
+"""使用 Python 执行 ViT 预处理与 NPU 推理,评分由独立步骤完成."""
 
-from tools.board import command, context
+import json
+
+import cv2
+import numpy as np
+
+from tools.board import context
+from tools.evaluation import is_test, select_samples
+from tools.runtime import Runtime, peak_rss_kib, quantize
+
+
+def preprocess(path, scale, zero_point):
+    """沿用短边 256、双三次缩放、中心裁剪及 RGB NCHW 协议."""
+    image = cv2.imread(str(path))
+    if image is None:
+        raise ValueError(f"无法读取图片: {path}.")
+    height, width = image.shape[:2]
+    ratio = 256 / min(height, width)
+    width, height = round(width * ratio), round(height * ratio)
+    image = cv2.resize(image, (width, height), interpolation=cv2.INTER_CUBIC)
+    left, top = (width - 224) // 2, (height - 224) // 2
+    values = image[top:top + 224, left:left + 224, ::-1].transpose(2, 0, 1)
+    return quantize(values.astype(np.float64)[None] / 255, scale, zero_point)
 
 
 def main():
-    """执行当前运行,快速结果仅在 results 下追加 _test 后缀."""
+    """常驻加载模型,保存 Top-5 预测并仅在评价阶段采集性能."""
     ctx = context(__file__, new_run=True)
     if ctx.result.exists():
-        raise FileExistsError(f"结果目录已存在: {ctx.result}.")
-    print(f"[板端] 结果目录: {ctx.result}", flush=True)
+        raise FileExistsError(ctx.result)
     images = ctx.dataset / "val"
     if not images.is_dir():
         images = ctx.dataset / "ILSVRC2012_img_val"
-    (ctx.work / "report").mkdir(parents=True)
-    command(ctx, "vit_board_eval", "--model", ctx.root / "models/model_int8.dla",
-            "--images", images, "--quantization", ctx.root / "models/quantization.json",
-            "--predictions", ctx.work / "predictions.jsonl")
+    paths = sorted(images.glob("*.JPEG"))
+    if len(paths) != 50000 or any(
+            path.name != f"ILSVRC2012_val_{index + 1:08d}.JPEG"
+            for index, path in enumerate(paths)):
+        raise ValueError("ImageNet val 必须包含连续编号的 50000 张图片.")
+    paths = select_samples(paths, "vit_base_patch16_224", key=lambda path: path.name)
+    metadata = json.loads((ctx.root / "models/quantization.json").read_text())
+    scale, zero = metadata["input_scale"], metadata["input_zero_point"]
+    ctx.work.mkdir(parents=True)
+    with Runtime(ctx.root / "models/model_int8.dla") as model:
+        if tuple(map(len, model.sizes)) != (1, 1):
+            raise ValueError("ViT 要求单输入单输出.")
+        inputs, view = model.tensor(0, (1, 3, 224, 224), np.int8, fill=zero)
+        outputs, logits = model.tensor(0, (1, 1000), np.int8, output=True)
+        with (ctx.work / "predictions.jsonl").open("w", encoding="utf-8") as stream:
+            for index, path in enumerate(paths):
+                np.copyto(view, preprocess(path, scale, zero))
+                milliseconds = model.infer([inputs], [outputs])
+                order = np.argsort(-logits[0].astype(np.int16), kind="stable")[:5]
+                record = {"backend": "python_neuron_runtime_hw", "index": index, "image": path.name, "top5": order.tolist()}
+                if not is_test():
+                    record["npu_ms"] = milliseconds
+                stream.write(json.dumps(record) + "\n")
+                if (index + 1) % 500 == 0 or index + 1 == len(paths):
+                    print(f"[推理] ViT {index + 1}/{len(paths)}", flush=True)
+    if not is_test():
+        (ctx.work / "memory.json").write_text(json.dumps({
+            "peak_rss_kib": peak_rss_kib(), "backend": "python_neuron_runtime_hw"}))
 
 
 

@@ -1,5 +1,5 @@
 {
-  "status": "complete",
+  "status": "python_pending_board_validation",
   "model": "depth_anything_v2_small",
   "run_id": "20261009_093158_653085",
   "dataset": "DA-2K",
@@ -33,5 +33,7 @@
     "directory": "<board_root>/open_models/depth_anything_v2_small/models",
     "collected_on": "2026-10-12",
     "scope": "current_deployment_files_not_reverified_original_run"
-  }
+  },
+  "metrics_scope": "迁移前 C++/原生 CLI 的历史记录,当前 Python 推理尚未验证",
+  "target_backend": "python_neuron_runtime_hw"
 }
