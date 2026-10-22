@@ -80,7 +80,7 @@ def compile_dla(ctx, source, target, extra=()):
 
 
 def upload(ctx, model_files, extra_files=()):
-    """上传当前模型部署包并生成板端示例,不准备正式评价参考."""
+    """上传当前模型部署包并提示板端入口,不执行推理或准备正式评价参考."""
     snapshot = ctx.work / "config.json"
     snapshot.write_text(json.dumps(ctx.config, ensure_ascii=False, indent=2))
     samples = ctx.work / "samples.json"
@@ -125,6 +125,8 @@ def upload(ctx, model_files, extra_files=()):
     for folder, files in groups.items():
         if files:
             run_command(["scp", *options, *files, f"{host}:{destination}/{folder}/"])
-    print("[部署] 生成板端展示示例,不计算正式指标.", flush=True)
-    run_command(["ssh", *options, host, "bash " + shlex.quote(destination + "/compile.sh")])
-    print(f"[评价入口] 资源准备完成后执行: bash {destination}/evaluate.sh", flush=True)
+    print("[待板端检查] 上传完成,尚未执行板端推理或生成展示示例.", flush=True)
+    print(f"[板端入口] 请登录开发板后执行: cd -- {shlex.quote(destination)} && bash compile.sh",
+          flush=True)
+    print("[评价入口] 准备同协议参考和必要输入后,在板端部署目录执行 bash evaluate.sh.",
+          flush=True)

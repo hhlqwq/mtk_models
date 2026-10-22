@@ -27,7 +27,7 @@
 bash deploy/compile.sh
 ```
 
-依次完成模型适配、校准、W4A16 量化、双静态图导出、双 DLA 编译、打包和上传,自动调用板端 `compile.sh`.少量双语输入各生成最多 32 Token 的片段,只检查执行通路并保存 `examples/output/zh_demo.txt` 和 `en_demo.txt`,同时取回模型代码目录供 README 展示,不评分、不测速、不采集 RSS.
+依次完成模型适配、校准、W4A16 量化、双静态图导出、双 DLA 编译、打包和上传后结束,提示板端部署目录及命令.用户登录开发板后,在部署目录执行 `bash compile.sh`,实时显示双语输入和生成文本.每条最多生成 32 Token 的片段,只检查执行通路并保存板端 `examples/output/zh_demo.txt` 和 `en_demo.txt`,不评分、不测速、不采集 RSS.示例不再由编译服务器自动取回.
 
 ## 独立评价
 

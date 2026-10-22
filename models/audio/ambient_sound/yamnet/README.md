@@ -8,7 +8,7 @@ Google YAMNet 环境声音分类模型,输出 AudioSet 521 类分数.默认使�
 
 ## 执行范围
 
-先在已有编译容器执行 `bash deploy/compile.sh`,完成转换、量化、编译与部署,随后自动调用板端 `compile.sh` 做少量通路检查并保存 README 示例到 `examples/output/`.该阶段不计算或发布精度、性能和峰值 RSS 报告.
+先在已有编译容器执行 `bash deploy/compile.sh`,完成转换、量化、编译与上传后结束.随后登录开发板,在部署目录执行 `bash compile.sh`,做少量通路检查并保存 README 示例到 `examples/output/`.该阶段不计算或发布精度、性能和峰值 RSS 报告.
 
 正式评价使用独立的 `evaluate.sh`: 容器端只计算已有浮点模型的同协议参考及必要评价输入,资源单独放入已有部署包后,板端运行 `bash evaluate.sh`,统计精度、性能和推理进程峰值 RSS.正式结果只写入 `results/summary.json`,不重新量化或编译.预测、日志及内部指标位于当天日期临时目录.详见[板端规范](../../../../docs/genio_720.md).
 
@@ -24,7 +24,7 @@ Google YAMNet 环境声音分类模型,输出 AudioSet 521 类分数.默认使�
 bash models/audio/ambient_sound/yamnet/deploy/compile.sh
 ```
 
-入口完成导出、PTQ、DLA 编译及上传,自动生成板端示例.正式评价前按[板端规范](../../../../docs/genio_720.md)准备同协议参考,再在板端部署目录执行:
+入口完成导出、PTQ、DLA 编译及上传后结束.请登录开发板,在部署目录执行 `bash compile.sh` 生成板端示例.正式评价前按[板端规范](../../../../docs/genio_720.md)准备同协议参考,再在板端部署目录执行:
 
 ```bash
 bash evaluate.sh
