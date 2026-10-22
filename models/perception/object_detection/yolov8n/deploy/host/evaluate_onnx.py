@@ -1,5 +1,6 @@
 """使用统一协议评测原始 PyTorch 或自导出 ONNX 的 COCO 精度."""
 
+import os
 import argparse
 import json
 import sys
@@ -108,4 +109,5 @@ def main():
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     main()

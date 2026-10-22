@@ -5,7 +5,6 @@ from tools.board import paths as board_paths
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import sys
@@ -95,19 +94,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path,
                         default=Path(__file__).resolve().parents[1] / "config.json")
-    parser.add_argument("--run-id", required=True, help="本次运行的独立编号.")
+    parser.add_argument("--run-id", default=os.environ.get("EVAL_RUN_ID"))
     parser.add_argument("--resume", action="store_true", default=os.environ.get("EVAL_RESUME", "0") == "1",
                         help="续跑已有全量推理检查点.")
     parser.add_argument("--image", help="只推理指定图片,相对路径以板端数据集为基准.")
     args = parser.parse_args()
-    if not re.fullmatch(r"[A-Za-z0-9_-]+", args.run_id):
-        parser.error("运行编号只能包含字母、数字、下划线和连字符.")
     if args.image and args.resume:
         parser.error("单图推理不使用 --resume,重新执行请更换运行编号.")
-    config = json.loads(args.config.read_text(encoding="utf-8"))
     root = Path(__file__).resolve().parents[1]
-    dataset = Path(config["board"]["dataset_dir"])
-    result = board_paths(root, args.config, args.run_id).result
+    ctx = board_paths(root, args.config, args.run_id, new_run=not args.resume)
+    args.run_id = ctx.run_id
+    dataset, result = ctx.dataset, ctx.result
     paths = {"root": root, "dataset": dataset, "result": result,
              "work": result / "work", "annotations": dataset / "annotations/instances_val2017.json"}
     protocol = json.loads((root / "board/accuracy_protocol.json").read_text(encoding="utf-8"))

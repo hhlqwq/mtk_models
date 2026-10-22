@@ -8,7 +8,7 @@ from tools.board import command, context
 
 def main():
     """执行当前运行,将过程文件放入独立日期临时目录."""
-    ctx = context(__file__)
+    ctx = context(__file__, new_run=True)
     if ctx.result.exists():
         raise FileExistsError(f"结果目录已存在: {ctx.result}.")
     print(f"[板端] 结果目录: {ctx.result}", flush=True)

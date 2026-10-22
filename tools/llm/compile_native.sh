@@ -2,10 +2,6 @@
 # 原生部署包的通路检查只保存少量文本示例,不生成评价报告.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if (( $# != 0 )); then
-    echo "[错误] 用法: bash compile.sh,不接受参数." >&2
-    exit 2
-fi
 cd "${ROOT}"
 exec 9>"${ROOT}/.run.lock"
 flock -n 9 || { echo "[错误] 本模型已有运行任务." >&2; exit 2; }
@@ -29,6 +25,5 @@ if answer is None:
     raise ValueError("原生输出没有完整回答.")
 Path(sys.argv[2]).write_text(answer.group(1).strip() + "\n", encoding="utf-8")
 PY
-    echo "[示例完成] ${language}."
 done
 echo "[通路完成] 示例已保存,正式精度、性能与 RSS 请执行 evaluate.sh."

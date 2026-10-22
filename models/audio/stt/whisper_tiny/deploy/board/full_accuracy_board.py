@@ -1,5 +1,6 @@
 """汇总 Whisper-Tiny 正式 WER/CER、框架一致性和板端性能."""
 
+import os
 import argparse
 import json
 import math
@@ -337,4 +338,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     main()

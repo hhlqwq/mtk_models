@@ -1,5 +1,6 @@
 """准备双语固定样例,比较官方 PyTorch 与自行导出的 ONNX 分片."""
 
+import os
 import argparse
 import gc
 import json
@@ -219,4 +220,5 @@ def parse_args():
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     run(parse_args())

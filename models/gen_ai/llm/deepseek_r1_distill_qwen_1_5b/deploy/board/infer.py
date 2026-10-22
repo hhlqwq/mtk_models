@@ -334,7 +334,7 @@ def parse_args():
         "library": lambda c: c.root / "board/libneuron_bridge.so",
         "samples": lambda c: c.root / "models/samples.json",
         "output": lambda c: c.result, "run_id": lambda c: c.run_id,
-    })
+    }, new_run=True)
     return parser.parse_args()
 
 

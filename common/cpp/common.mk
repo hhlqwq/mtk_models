@@ -9,7 +9,7 @@ endif
 ifndef MTK_MODELS_ROOT
 $(error 缺少项目根目录环境)
 endif
-BUILD_DIR ?= $(shell python3 "$(MTK_MODELS_ROOT)/tools/storage.py" --print-build-dir "$(MODEL_DIR)/config.yaml")
+BUILD_DIR ?= $(shell python "$(MTK_MODELS_ROOT)/tools/storage.py" --print-build-dir "$(MODEL_DIR)/config.yaml")
 OPENCV_SOURCE := $(MTK_G720_CPP_TOOLCHAIN_ROOT)/opencv-4.9.0/opencv-4.9.0
 OPENCV_BUILD := $(MTK_G720_CPP_TOOLCHAIN_ROOT)/opencv-4.9.0/build-aarch64-headers
 LIB_DIR := $(MTK_G720_CPP_TOOLCHAIN_ROOT)/genio720-libs

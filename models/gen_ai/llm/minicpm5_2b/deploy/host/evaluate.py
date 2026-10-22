@@ -1,5 +1,6 @@
 """直接读取评价数据,生成 FP32 参考和板端输入."""
 
+import os
 import argparse
 import sys
 from pathlib import Path
@@ -61,4 +62,5 @@ def main():
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     main()

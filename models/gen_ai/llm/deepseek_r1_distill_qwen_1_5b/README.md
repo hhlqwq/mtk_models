@@ -30,7 +30,7 @@ GAI 全 W4A16 转换使用独立入口:
 bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/compile_native.sh
 ```
 
-它依次执行 prepare、calibrate、quantize、shape 和 compile,不自动打包、上传或完成正式板端精度评价.默认量化为 `none`,不启用 Hessian;全部 Attention、MLP 和 LM Head 均为 `asym4W_sym16A`.打包接口见 [package_native.py](deploy/host/package_native.py),需要独立空输出目录.
+它依次执行 prepare、calibrate、quantize、shape 和 compile,不自动打包、上传或完成正式板端精度评价.默认量化为 `none`,不启用 Hessian;全部 Attention、MLP 和 LM Head 均为 `asym4W_sym16A`.打包运行 `python deploy/host/package_native.py`,默认输出到模型资源的 `models/`,该目录须为空.
 
 ## 输入与推理
 

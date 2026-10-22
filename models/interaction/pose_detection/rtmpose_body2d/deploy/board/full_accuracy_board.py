@@ -1,5 +1,6 @@
 """按 MMPose 协议计算 COCO-WholeBody 整体 AP."""
 
+import os
 import argparse
 import contextlib
 import json
@@ -197,4 +198,5 @@ def parse_args() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     evaluate(parse_args())

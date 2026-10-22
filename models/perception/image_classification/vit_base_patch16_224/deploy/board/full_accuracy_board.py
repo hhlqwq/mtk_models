@@ -1,5 +1,6 @@
 """仅从板端 C++ 预测计算 ImageNet val 全量 Top-1/Top-5 指标."""
 
+import os
 import argparse
 import json
 import math
@@ -116,4 +117,5 @@ def evaluate(args: argparse.Namespace) -> None:
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     evaluate(parse_args())

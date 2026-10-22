@@ -1,5 +1,6 @@
 """按上传的同协议输入执行 MMLU 与 WikiText2 真实 MDLA 评价."""
 
+import os
 import json
 import resource
 from types import SimpleNamespace
@@ -37,4 +38,5 @@ def main():
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     main()

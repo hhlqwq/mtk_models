@@ -8,7 +8,7 @@ from tools.board import context, infer_images
 
 def main():
     """使用统一 JSON 配置,快速与全量结果保存到同一模型的 results 下."""
-    ctx = context(__file__)
+    ctx = context(__file__, new_run=True)
     names = sorted(load_protocol(ctx.dataset))
     images = [(name, ctx.dataset / name) for name in names]
     metadata = json.loads((ctx.root / "models/model_int8.json").read_text(encoding="utf-8"))

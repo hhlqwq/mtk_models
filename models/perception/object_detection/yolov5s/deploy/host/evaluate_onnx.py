@@ -1,5 +1,6 @@
 """读取模型配置并直接执行 YOLOv5 ONNX 精度评测."""
 
+import os
 from argparse import Namespace
 
 from tools.accuracy.yolov5s_val_coco import evaluate_onnx_accuracy
@@ -16,4 +17,5 @@ def main():
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     main()

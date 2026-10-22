@@ -1,5 +1,6 @@
 """使用公共 COCO 检测评测,保留 yolov8n 的结果状态规则."""
 
+import os
 from tools.coco import evaluate_coco, parse_args
 
 
@@ -10,4 +11,5 @@ def main():
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     main()

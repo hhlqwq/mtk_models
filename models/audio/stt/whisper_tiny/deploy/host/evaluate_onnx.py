@@ -1,5 +1,6 @@
 """读取模型配置,直接调用公共 ONNX 精度评测函数."""
 
+import os
 from tools.accuracy.evaluate_onnx import evaluate_model
 from tools.deploy import arguments, reference_path
 
@@ -13,4 +14,5 @@ def main():
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     main()

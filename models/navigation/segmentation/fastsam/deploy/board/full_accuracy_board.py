@@ -1,7 +1,7 @@
 """在板端评测 FastSAM-s 的 COCO val2017 类别无关实例分割 AP."""
 
 import argparse
-from tools.board import paths as board_paths
+from tools.board import configure_parser
 import contextlib
 import io
 import json
@@ -20,31 +20,21 @@ from tools.evaluation import coco_ids, result_status, scope_metadata
 
 def parse_args() -> argparse.Namespace:
     """解析板端全量分割精度参数."""
-    bootstrap = argparse.ArgumentParser(add_help=False)
-    bootstrap.add_argument("--config", type=Path)
-    bootstrap.add_argument("--run-id")
-    options, _ = bootstrap.parse_known_args()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, help="读取板端配置快照,自动确定数据与工作目录.")
-    parser.add_argument("--run-id", required=True)
-    defaults = {}
-    if options.config:
-        if not options.run_id:
-            parser.error("读取板端配置时需要 --run-id.")
-        config = json.loads(options.config.read_text(encoding="utf-8"))
-        root = Path(__file__).resolve().parents[1]
-        dataset = Path(config["board"]["dataset_dir"])
-        defaults = {"images": dataset / "images",
-                    "annotations": dataset / "annotations/instances_val2017.json",
-                    "work": board_paths(root, options.config, options.run_id).work}
+    parser.add_argument("--run-id")
     parser.add_argument("--mode", choices=("encode-one", "evaluate"),
-                        required=True)
+                        default="evaluate")
     parser.add_argument("--image", type=Path)
-    parser.add_argument("--images", type=Path, required=not defaults, default=defaults.get("images"))
-    parser.add_argument("--annotations", type=Path, required=not defaults, default=defaults.get("annotations"))
-    parser.add_argument("--work-dir", type=Path, required=not defaults, default=defaults.get("work"))
+    parser.add_argument("--images", type=Path, required=True)
+    parser.add_argument("--annotations", type=Path, required=True)
+    parser.add_argument("--work-dir", type=Path, required=True)
     parser.add_argument("--protocol", type=Path,
                         default=Path(__file__).with_name("accuracy_protocol.json"))
+    configure_parser(parser, __file__, {
+        "images": lambda c: c.dataset / "images",
+        "annotations": lambda c: c.dataset / "annotations/instances_val2017.json",
+        "work_dir": lambda c: c.work,
+    })
     return parser.parse_args()
 
 
@@ -205,6 +195,7 @@ def evaluate(args: argparse.Namespace) -> None:
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     arguments = parse_args()
     if arguments.mode == "encode-one":
         encode_one(arguments)

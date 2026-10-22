@@ -1,5 +1,6 @@
 """在 Genio 720 上评测 DA-2K 全量相对深度点对准确率。"""
 
+import os
 import argparse
 import json
 from pathlib import Path
@@ -137,4 +138,5 @@ def evaluate(args: argparse.Namespace) -> None:
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     evaluate(parse_args())

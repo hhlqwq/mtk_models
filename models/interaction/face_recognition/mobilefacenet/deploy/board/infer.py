@@ -8,7 +8,7 @@ from tools.board import context, infer_images
 
 def main():
     """使用统一 JSON 配置,快速与全量结果保存到同一模型的 results 下."""
-    ctx = context(__file__)
+    ctx = context(__file__, new_run=True)
     rows = load_pairs(ctx.dataset)
     names = sorted({row[field] for row in rows for field in ("image_a", "image_b")})
     images = [(name, ctx.dataset / "images" / name) for name in names]

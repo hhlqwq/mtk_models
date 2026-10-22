@@ -21,6 +21,10 @@ bash models/perception/object_detection/yolov5s/deploy/compile.sh
 
 入口只编排独立步骤:主机实现放 `deploy/host/`,板端放 `deploy/board/`.复用 `tools/deploy.py`、`tools/board.py`、`tools/evaluation.py` 与 `common/cpp/`.
 
+Shell 入口直接调用 Python 和 make,只补充必要阶段提示,工具输出与错误直接显示在终端,不默认增加日志文件或包装函数.公共环境复用 Docker 配置,板端临时路径由 tools.board.paths 计算;只保存后续步骤必需的产物.
+
+主流程 Python 文件无参数时读取所属模型配置.普通容器步骤用 python,专用解释器沿用本地配置,板端用 python3.已有参数仅用于覆盖默认值,不在入口重复传递.
+
 G720 已适配的普通 DLA 配方:
 
 ```bash

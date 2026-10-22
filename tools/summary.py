@@ -1,13 +1,12 @@
 """评价完成后统一发布精度、性能与峰值 RSS,results 仅保留 summary.json."""
 
-import argparse
 import json
 import math
+import os
 import platform
 import shutil
-from pathlib import Path
 
-from tools.board import paths
+from tools.board import context
 from tools.evaluation import is_test
 from tools.files import read_json
 
@@ -248,13 +247,10 @@ def publish(ctx, report):
 
 def main():
     """只由 evaluate.sh 发布一个包含实际覆盖、精度、性能和 RSS 的报告."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument("--run-id", required=True)
-    args = parser.parse_args()
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     if is_test():
-        parser.error("compile.sh 只生成示例,不允许发布正式评价报告.")
-    ctx = paths(args.config.resolve().parent, args.config, args.run_id)
+        raise ValueError("compile.sh 只生成示例,不允许发布正式评价报告.")
+    ctx = context(__file__)
     model = ctx.config["name"]
     print(f"[评价汇总] 核对同次精度、性能与峰值 RSS: {ctx.run_id}.", flush=True)
     if model == "minicpm5_2b":

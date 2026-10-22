@@ -1,5 +1,6 @@
 """在 Genio 720 上完成 LFW 全量十折人脸验证。"""
 
+import os
 import argparse
 import csv
 import json
@@ -163,4 +164,5 @@ def evaluate(args: argparse.Namespace) -> None:
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     evaluate(parse_args())

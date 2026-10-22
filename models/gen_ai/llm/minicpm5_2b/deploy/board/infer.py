@@ -39,7 +39,8 @@ def run_sample(ctx, manifest, language, token_mode, limit, input_path=None):
             raise ValueError(f"输入与生成上限超过上下文容量: {name}.")
     log = ctx.result / f"{name}.log"
     print(f"[板端] {name}; 日志: {log}", flush=True)
-    print(f"[执行] cd {shlex.quote(str(ctx.root))} && {shlex.join(command)}", flush=True)
+    if not is_test():
+        print(f"[执行] cd {shlex.quote(str(ctx.root))} && {shlex.join(command)}", flush=True)
     before = available_memory()
     lowest = before
     peak = 0.0
@@ -109,7 +110,7 @@ def run_sample(ctx, manifest, language, token_mode, limit, input_path=None):
 
 def main():
     """快速模式限制生成长度,固定性能协议保持 128 输入与 128 输出上限."""
-    ctx = context(__file__)
+    ctx = context(__file__, new_run=True)
     manifest = read_json(ctx.root / "manifest.json")
     if ctx.config["conversion"]["context"] != manifest["context"]:
         raise ValueError("配置与已有 DLA 上下文不一致.")

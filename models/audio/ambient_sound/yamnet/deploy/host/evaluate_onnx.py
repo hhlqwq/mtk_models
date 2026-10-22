@@ -1,5 +1,6 @@
 """按同协议直接计算 TensorFlow 或 ONNX 浮点精度."""
 
+import os
 import argparse
 from argparse import Namespace
 import json
@@ -85,4 +86,5 @@ def main():
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     main()

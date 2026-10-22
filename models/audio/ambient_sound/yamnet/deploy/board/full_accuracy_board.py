@@ -1,5 +1,6 @@
 """板端音频前处理、严格全量校验、精度汇总和实际声音示例."""
 
+import os
 import argparse
 import csv
 import hashlib
@@ -159,4 +160,5 @@ def main():
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     main()

@@ -1,7 +1,7 @@
 """运行原生双语样例,记录完整日志、停止 Token、速度和本次内存观测."""
 
 import argparse
-from datetime import date
+from datetime import date, datetime
 import os
 from types import SimpleNamespace
 import hashlib
@@ -13,7 +13,7 @@ import subprocess
 import time
 
 from tools.evaluation import (
-    is_test, record_selection, result_status, scope_metadata,
+    is_test, result_status, scope_metadata,
 )
 
 
@@ -100,17 +100,15 @@ def run_sample(root, folder, language, token_mode, limit, input_path=None,
 def main():
     """执行两种输入模式的双语核对,输出原始板端证据."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, required=True)
-    parser.add_argument("--run-id", required=True)
+    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent)
+    parser.add_argument("--run-id", default=os.environ.get("EVAL_RUN_ID") or
+                        datetime.now().strftime("%Y%m%d_%H%M%S_%f"))
     parser.add_argument("--max-new-tokens", type=int, default=768)
     parser.add_argument("--performance-input", type=Path,
                         help="可选固定 128 Token 输入,单独记录统一性能指标.")
-    parser.add_argument("--publish", action="store_true", help="由 evaluate.sh 发布唯一正式报告.")
     args = parser.parse_args()
     if is_test():
-        args.max_new_tokens = 32
-        if not args.run_id.startswith("test_"):
-            args.run_id = "test_" + args.run_id
+        parser.error("编译示例阶段不允许发布正式报告.")
     if not re.fullmatch(r"[A-Za-z0-9_-]+", args.run_id) or args.max_new_tokens < 2:
         parser.error("运行编号或生成上限无效.")
     temporary = Path("/tmp/hailongcodex") / date.today().isoformat()
@@ -123,10 +121,10 @@ def main():
               "samples": [], "text_input_checks": []}
     for language in ("zh", "en"):
         row, token_text = run_sample(args.root, folder, language, True,
-                                     args.max_new_tokens, require_eos=not is_test())
+                                     args.max_new_tokens)
         report["samples"].append(row)
         check, text = run_sample(args.root, folder, language, False,
-                                  args.max_new_tokens, require_eos=not is_test())
+                                  args.max_new_tokens)
         check["text_equals_token_input_response"] = text == token_text
         report["text_input_checks"].append(check)
         if text != token_text:
@@ -139,42 +137,38 @@ def main():
         row.update(unit="token/s", scope="fixed_128_input_max_128_generated_performance",
                    generated_token_count=len(row["generated_tokens"]))
         report["performance"] = row
-    if is_test():
-        record_selection(("zh", "en"))
     report.update(status=result_status(), **scope_metadata())
     (folder / "board_metrics.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n")
-    if args.publish:
-        if is_test():
-            parser.error("编译示例阶段不允许发布正式报告.")
-        from tools.summary import publish
+    from tools.summary import publish
 
-        rows = report["samples"]
-        processes = [*rows, *report["text_input_checks"]]
-        if "performance" in report:
-            processes.append(report["performance"])
-        prefill_seconds = sum(row["prefill_seconds"] for row in rows)
-        if prefill_seconds <= 0 or any(
-                not math.isfinite(row["peak_process_rss_mib"]) or row["peak_process_rss_mib"] <= 0
-                for row in processes):
-            raise ValueError("原生性能或 RSS 无效.")
-        decode_tokens = sum(len(row["generated_tokens"]) for row in rows)
-        decode_seconds = sum(len(row["generated_tokens"]) /
-                             row["native_reported_decode_tokens_per_second"] for row in rows)
-        manifest = json.loads((args.root / "manifest.json").read_text())
-        summary = {"schema_version": 1, "run_id": args.run_id, "status": "partial",
-                   "model": manifest.get("model", args.root.name), "context": manifest["context"],
-                   "precision": manifest["precision"], "evaluation_scope": "authored_bilingual_generation",
-                   "accuracy": {"status": "not_implemented", "reason": "尚无正式全量基准精度,生成样例不代替精度."},
-                   "performance": {
-                       "prefill_tokens_per_second": sum(row["prefill_input_tokens"] for row in rows) / prefill_seconds,
-                       "decode_tokens_per_second": decode_tokens / decode_seconds,
-                       "scope": "中英文固定生成样例,按实际 Token 与原生 CLI 计数汇总",
-                       "peak_process_rss_mib": max(row["peak_process_rss_mib"] for row in processes),
-                       "memory_scope": "本次生成、文本输入核对及可选测速各进程峰值 RSS 的最大值"}}
-        publish(SimpleNamespace(root=args.root, result=folder), summary)
+    rows = report["samples"]
+    processes = [*rows, *report["text_input_checks"]]
+    if "performance" in report:
+        processes.append(report["performance"])
+    prefill_seconds = sum(row["prefill_seconds"] for row in rows)
+    if prefill_seconds <= 0 or any(
+            not math.isfinite(row["peak_process_rss_mib"]) or row["peak_process_rss_mib"] <= 0
+            for row in processes):
+        raise ValueError("原生性能或 RSS 无效.")
+    decode_tokens = sum(len(row["generated_tokens"]) for row in rows)
+    decode_seconds = sum(len(row["generated_tokens"]) /
+                         row["native_reported_decode_tokens_per_second"] for row in rows)
+    manifest = json.loads((args.root / "manifest.json").read_text())
+    summary = {"schema_version": 1, "run_id": args.run_id, "status": "partial",
+               "model": manifest.get("model", args.root.name), "context": manifest["context"],
+               "precision": manifest["precision"], "evaluation_scope": "authored_bilingual_generation",
+               "accuracy": {"status": "not_implemented", "reason": "尚无正式全量基准精度,生成样例不代替精度."},
+               "performance": {
+                   "prefill_tokens_per_second": sum(row["prefill_input_tokens"] for row in rows) / prefill_seconds,
+                   "decode_tokens_per_second": decode_tokens / decode_seconds,
+                   "scope": "中英文固定生成样例,按实际 Token 与原生 CLI 计数汇总",
+                   "peak_process_rss_mib": max(row["peak_process_rss_mib"] for row in processes),
+                   "memory_scope": "本次生成、文本输入核对及可选测速各进程峰值 RSS 的最大值"}}
+    publish(SimpleNamespace(root=args.root, result=folder), summary)
     print(f"[板端证据完成] {folder}", flush=True)
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     main()

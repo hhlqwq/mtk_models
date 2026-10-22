@@ -6,7 +6,7 @@ from tools.evaluation import is_test
 
 def main():
     """执行当前运行,快速结果仅在 results 下追加 _test 后缀."""
-    ctx = context(__file__)
+    ctx = context(__file__, new_run=True)
     if ctx.result.exists():
         raise FileExistsError(f"结果目录已存在: {ctx.result}.")
     print(f"[板端] 结果目录: {ctx.result}", flush=True)

@@ -12,6 +12,8 @@
 
 主机入口 `deploy/compile.sh` 完成导出、量化、DLA 编译、板端程序构建和上传,随后自动在部署目录执行 `compile.sh`,用固定少量输入检查硬件推理并生成 README 示例.只打印步骤与成功/失败信息,不计算或生成精度、性能和 RSS 报告.不会进入全量评价.
 
+入口直接顺序调用命令,输出和错误直接显示在终端,只补充必要阶段提示,不默认保存编译日志.Docker 公共环境由创建容器入口统一设置,板端路径复用公共工具.只保存运行、评分和排错必需的数据.
+
 ## 独立评价
 
 在已有编译容器的模型目录执行 `bash deploy/evaluate.sh`,只读取已有浮点模型,生成同协议参考与必要输入.不导出、量化、编译或构建.普通参考为模型资源 `build/onnx_reference.json`,放入板端 `models/onnx_reference.json`;YAMNet 参考为模型资源 `fp32_reference.json`,放入板端 `models/fp32_reference.json`.MiniCPM 的模型资源 `build/native/evaluation/full/` 整体放入板端 `evaluation/full/`.这些是评价输入,不属于对外交付报告.

@@ -24,13 +24,13 @@ bash docker/enter_container.sh
 bash models/perception/object_detection/yolov5s/deploy/compile.sh
 ```
 
-主机端完成转换、编译、参考评价和上传.登录开发板,进入入口打印的部署目录执行:
-
-```bash
-bash compile.sh
-```
+主机端完成转换、编译和上传,随后自动执行板端少量通路检查并生成展示示例.
 
 `compile.sh` 只负责模型转换、量化、编译、部署和少量通路检查,打印关键进度并保存 README 所需的展示示例,不生成精度、性能或 RSS 报告.主机部署完成后自动调用板端同名入口生成示例.
+
+入口直接按顺序调用命令,只补充必要阶段提示,工具输出和错误直接显示在终端,不默认保存编译日志.公共环境在创建 Docker 时统一设置,板端路径使用公共工具.
+
+也可以在模型目录单独执行主流程文件,例如 YOLOv5s 在容器中执行 `python deploy/host/compile_model.py`,无需传配置路径.板端使用 `python3 board/infer.py` 做默认小批量推理,`python3 board/render_examples.py` 读取当天同模型、同范围的最近一次结果.独立评价文件默认全量,需要已有全量推理结果;缺少前一步产物时直接报错,不会补跑.完整评价仍运行 `bash evaluate.sh`.
 
 `evaluate.sh` 独立使用已有模型: 容器端生成浮点参考及必要评价输入,单独放入现有板端部署包后,板端执行 `bash evaluate.sh`,统一给出精度、性能和推理进程峰值 RSS,不重新量化或编译.每个模型的 `results/` 只保留一个 `summary.json`,示例位于 `examples/`,预测、日志及中间报告位于日期临时目录.后续新增模型遵循同一方式,详见[板端规范](docs/genio_720.md).
 

@@ -13,6 +13,7 @@ from transformers import AutoTokenizer
 import yaml
 
 from tools.files import copy_public_tools, sha256, single_file
+from tools.deploy import configure_parser
 from tools.storage import REPO_ROOT
 from tools.llm.package import graph_contract, write_compile_scripts
 from tools.summary import publish
@@ -173,6 +174,11 @@ def main():
     parser.add_argument("--prefill", type=int, default=128)
     parser.add_argument("--quantized-prefix", type=Path)
     parser.add_argument("--board-results", type=Path)
+    configure_parser(parser, __file__, {
+        "work": lambda c: c.output / c.config["native"]["work_dir"],
+        "output": lambda c: c.output / "models",
+        "prefill": lambda c: c.config["native"]["prefill"],
+    })
     args = parser.parse_args()
     if args.board_results:
         record_board_results(args.work, args.output, args.board_results)
