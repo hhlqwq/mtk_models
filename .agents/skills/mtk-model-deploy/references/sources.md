@@ -12,6 +12,18 @@
 
 MediaTek 工具、系统发布和算子支持资料优先沿仓库 `docs/environment.md`、`docs/genio_720.md` 与 `docs_study/` 中官方入口查询.页面要求 MOL/NDA 登录时标为需授权,不把搜索摘要当作完整支持列表.
 
+新增模型选型与评测协议参考以下官方入口,使用时继续查看具体型号的模型卡、精度表和评价代码,目录或演示支持列表本身不证明评测协议:
+
+| 厂商 | 官方入口 |
+| --- | --- |
+| 高通 | [Qualcomm AI Hub 模型目录](https://aihub.qualcomm.com/models) |
+| 地瓜 | [RDK Model Zoo](https://d-robotics.github.io/rdk_model_zoo/) |
+| 地平线 | [Open Explorer 模型性能基准](https://developer.d-robotics.cc/api/v1/fileData/horizon_j5_open_explorer_en_doc/oe_mapper/source/appendix/model_benchmark.html),注意文档与工具链版本 |
+| 英伟达 | [TAO 模型入口](https://developer.nvidia.com/transfer-learning-toolkit),查看具体模型的评测说明 |
+| 英特尔 | [OpenVINO Open Model Zoo](https://docs.openvino.ai/2023.3/omz_models_group_public.html),注意文档与模型版本 |
+
+核对的是已有权重的精度评测集及其划分,不是为本仓库规划训练.页面只写了数据集名称、支持 COCO 格式或给出训练信息时,不能据此认定具体精度使用了 COCO val2017;未公开的评测细节保持未核实.厂商精度用于选型参考,MTK 指标仍需本仓库同协议实测.
+
 项目事实以当前 AGENTS.md、配置、模型总览、注册表及模型源码/来源/结果为准.公共复用点为 tools/deploy.py、tools/board.py、tools/evaluation.py、tools/summary.py、tools/render_examples.py 与 common/cpp/evaluation.h.采用外部 skill 的分阶段思路时必须遵守本项目 compile.sh/evaluate.sh 双入口和单一 summary.json 约定.
 
-README 数字和注册状态仅用于定位已有证据,不能证明当前设备状态或新运行成功.正式移植来源不明确时保持 pending,Qualcomm 等交付参考不能替代官方模型源.
+README 数字和注册状态仅用于定位已有证据,不能证明当前设备状态或新运行成功.正式移植来源不明确时保持 pending,厂商选型、评测协议及交付参考不能替代官方模型源.
