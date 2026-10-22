@@ -1,0 +1,69 @@
+# DeepSeek-R1-Distill-Qwen-1.5B 适配说明
+
+## 转换约定
+
+使用固定 revision 的官方权重与 tokenizer,不修改 `original/`.转换副本保留 Q/KV Head=12/2、RoPE=10000、RMSNorm epsilon=1e-6,特殊 Token 以官方 tokenizer 和 generation_config 为准.聊天生成使用官方模板;MMLU 与 WikiText2 评分不套聊天模板.
+
+全部 Attention、MLP 和 lm_head 投影均为 W4A16,外置 embedding、KV、mask、RoPE 和图输出采用实际 INT16 契约.分片连接的 A16 尺度不同时显式 Requantize.生成 Prefill=128、Decode=1 两张静态图,面向 MDLA 5.3 编译并禁止 CPU 桥接.
+
+## 已确认的精度问题
+
+`mask_value=-100` 会使 SDK 浮点模型偏离官方实现.对相同的 4 个 WikiText2 文本块,每块 128 Token、独立重置上下文,共评分 508 个下一 Token,只改变浮点输入的 mask:
+
+| 浮点实现 | mask | PPL | 与官方 logits 的 Top-1 一致率 |
+| --- | ---: | ---: | ---: |
+| 官方 Transformers FP32 | 框架默认因果掩码 | 93.38109 | 参考 |
+| SDK FP32 | -100 | 112.87955 | 77.76% |
+| SDK FP32 | -1000 | 92.11169 | 94.88% |
+| SDK FP32 | -10000 | 93.38106 | 100.00% |
+
+`-10000` 下 logits 最大绝对误差为 0.000134,平均绝对误差约 0.000004.将空 KV Cache 从 1024 缩短为 1,保留 `-100`,误差不消失.本组对照说明问题来自掩码强度,并非仅由静态图的空缓存长度引起.`-1000` 的 PPL 虽然略低,但 logits 仍偏离参考,不能据此选择它.
+
+因果 mask 在 Softmax 前加到注意力分数上,有限负值必须足以压低被屏蔽位置.本模型不能沿用 `-100` 的假设.这是量化之前即可复现的问题,不能将这部分损失归因于 INT4 或 NPU.
+
+修复使用 `native.mask_value: -10000`.必须重新生成校准数据、量化 TFLite、双静态图、DLA 和 I/O 契约,整体替换部署包.旧图的 mask 量化范围不能表示新值时,仅修改运行配置或裁剪到 INT16 下限不会生效.
+
+重建数据的 mask 实测范围为 `[-10000,0]`,量化分片的 mask scale 为 `0.30517578125`,INT16 的 `-32768` 对应 `-10000`,没有把新负值裁剪回旧范围.
+
+## 量化与硬件误差的判断
+
+修复前的同一 16 道 MMLU 题中,官方 FP32 为 12/16,量化 TFLite 为 6/16,NPU 为 4/16.TFLite 与 NPU 有 14/16 道选择一致,说明较大的退化已在硬件执行前出现,同时硬件数值差异也会改变边界接近的选择.这些是定位用小样本,不代表全量成绩,也不足以确定剩余量化误差来自哪个权重或激活.
+
+修复 mask 后已重新校准、量化、编译双 DLA 并部署,Python 直接调用 SDK 完成双语各 32 Token 的生成检查.相同小样本回归:
+
+| 指标 | 官方 FP32 | W4A16 TFLite | W4A16 NPU |
+| --- | ---: | ---: | ---: |
+| MMLU,16 题 | 12/16 (75.00%) | 5/16 (31.25%) | 5/16 (31.25%) |
+| WikiText2 PPL,4 块、508 次评分 | 93.38109 | 131.80235 | 135.65187 |
+
+NPU PPL 从 247.771996 降到 135.651866,但仍高于官方参考,不能宣布质量恢复.两个量化后端虽然总分相同,仅 8/16 道题选择一致,候选 logits 最大绝对差为 1.259073,必须继续区分量化误差与编译/硬件执行差异.本次未执行全量评价或标准性能/RSS 测量.
+
+在同一第一个 128 Token 文本块上读取 28 层实际量化输出,与已对齐的 SDK FP32 比较:第 0 层平均绝对误差为 0.1236,第 27 层为 4.5046,最后一层余弦相似度为 0.9036.误差自前层出现,后几层继续放大,不能只归咎于 lm_head.此块的输入 embedding 及 28 层间残差输出均未超出各自 A16 范围;这不覆盖 Attention/MLP 内部张量,也未独立分离 INT4 权重近似与内部 A16 舍入/截断的贡献.
+
+检查顺序为官方 FP32 → SDK FP32 → 量化 TFLite → NPU.先固定模型、Token、位置、mask 和 KV 语义,再检查误差首次出现的阶段;不能用一次最终 Accuracy 或单层误差替代整条链路对齐.
+
+## 可调整参数
+
+| 参数或步骤 | 调整目的与验证要求 |
+| --- | --- |
+| `mask_value` | 已确认需要 -10000.同时检查 INT16 表示范围及量化后注意力数值,浮点对齐不等于量化质量已恢复. |
+| `calibration_train`、校准输入 | 增加真实训练文本和任务相关输入的覆盖,测试集不参与校准.当前 32 个批次覆盖全部 16 条自编输入,每条包含 Prefill 和 Decode,并非只覆盖第一条. |
+| `calibration_batches` | 增加有效样本覆盖;重复短文本或只增加批次数不保证改善.核对实际落盘样本和激活范围. |
+| `weight_optimization` | SDK 支持 hessian、gradient.在全 W4A16 下尝试减小权重近似误差,先检查逐层误差,再做同样小样本回归;尚未证明本模型收益. |
+| `rotate` | 尝试减弱离群值对量化的影响.旋转后权重、embedding、校准数据及两阶段图必须成套重建;尚未验证本模型收益. |
+| 激活范围 | 检查代表性输入是否越过 A16 范围.扩大范围会降低分辨率,不能只凭截断数量减少就判断质量改善.SDK 另提供实验项 `--act_clip_range`,当前模型入口未开放,不能把裁剪当作通用修复. |
+| 静态图与板端 | 核对分片 Requantize、多块 Prefill、KV 转移、缓冲区补齐和实际 scale/zero point.保持同一 TFLite/DLA,单独判断编译与运行差异. |
+
+每次只改变一项可解释因素,比较相同输入;不能通过提高权重位宽或缩短题目掩盖问题.全量 MMLU、WikiText2 和正式性能/RSS 由独立评价完成.
+
+后续优先在正确 mask 下检查内部激活及单层局部误差,再对照代表性训练文本校准和 hessian 权重优化.旋转、范围裁剪及编译参数须独立验证,本次没有把尚未证明收益的方案设为默认值.
+
+## 资源保留
+
+NAS 只保留官方 `original/`、当前 `build/native/` 转换产物和唯一 `models/` 部署包.板端只保留 `deepseek_r1_distill_qwen_1_5b/`,不保留 `_native` 等历史版本.定位原因与修复依据集中在本文件,过程张量和评分使用日期临时目录;正式评价仍只更新 `results/summary.json`.
+
+## 板端 Python 依赖
+
+Python 3.12.13、NumPy 1.26.4,使用现有 Neuron Runtime.文本解码补充安装 `tokenizers==0.21.4`,从[官方 PyPI](https://pypi.org/project/tokenizers/0.21.4/)下载 [AArch64 ABI3 wheel](https://files.pythonhosted.org/packages/aa/8f/24f39d7b5c726b7b0be95dca04f344df278a3fe3a4deb15a975d194cbb32/tokenizers-0.21.4-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl),大小 3,012,624 Bytes.该 ABI3 wheel 支持本次板端 Python.
+
+wheel 保存在 NAS 本模型 `runtime/`,安装使用 `python3 -m pip install --user --no-deps --no-cache-dir <wheel文件>`.实际安装位置为当前用户的 `~/.local/lib/python3.12/site-packages/tokenizers/`,已验证导入和版本.推理只从部署包的本地 `tokenizer.json` 解码,不调用模型下载接口.未升级 Python、NumPy、NPU 驱动或 Runtime.

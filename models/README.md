@@ -44,7 +44,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | DINOv2 ViT-S/14（dinov2_vits14） | 导航 / 视觉基础模型 | — | — | — | — | — | — | — |
 | CLIP ViT-B/16 | 生成式AI / 视觉语言 | — | — | — | — | — | — | — |
 | [MiniCPM5-2B](gen_ai/llm/minicpm5_2b/README.md) | 生成式AI / 大语言模型 | Token + KV Cache<br>上下文 1024 Token<br>Prefill 每批 128 Token<br>逐 Token 解码<br>约 2520 M | 原始: 5033.56 MB | MMLU test,57 学科固定 1000 题,0-shot<br>Accuracy,FP32: 55.90%<br>WikiText2 test 前 128 行/7366 Token<br>PPL,FP32: 40.04 (均为子集) | **W4A16 (INT4/INT16)**<br>DLA: 2292.52 MB<br>embedding: 534.77 MB<br>部署合计: 2827.29 MB<br>Prefill: 288.67 Token/s<br>Decode: 8.15 Token/s<br>RSS: 1152.42 MiB | MMLU: 41.30%,下降 14.60 个百分点<br>WikiText2 PPL: 48.38,上升 8.34<br>固定子集<br>[报告](gen_ai/llm/minicpm5_2b/results/summary.json) | — | — |
-| [DeepSeek-R1-Distill-Qwen-1.5B（W4A16）](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md) | 生成式AI / 大语言模型 | Token + KV Cache<br>上下文 1024 Token<br>Prefill 每批 128 Token<br>逐 Token 解码<br>1777.09 M | 原始: 3554.21 MB | MMLU 固定 16 题,FP32: 75.00%<br>WikiText2 固定 4 块,PPL: 93.3811<br>少量诊断,非全量 | **W4A16 (INT4/INT16)**<br>DLA: 1579.20 MB<br>embedding: 466.75 MB<br>部署合计: 2045.94 MB<br>标准性能/RSS 未测 | MMLU: 25.00%,下降 50.00 个百分点<br>WikiText2 PPL: 247.7720,上升 154.3909<br>精度明显退化<br>[报告](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/results/summary.json) | — | — |
+| [DeepSeek-R1-Distill-Qwen-1.5B（W4A16）](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/README.md) | 生成式AI / 大语言模型 | Token + KV Cache<br>上下文 1024 Token<br>Prefill 每批 128 Token<br>逐 Token 解码<br>1777.09 M | 原始: 3554.21 MB | MMLU 固定 16 题,FP32: 75.00%<br>WikiText2 固定 4 块,PPL: 93.3811<br>少量诊断,非全量 | **W4A16 (INT4/INT16)**<br>DLA: 1579.20 MB<br>embedding: 466.75 MB<br>部署合计: 2045.94 MB<br>标准性能/RSS 未测 | MMLU: 31.25%,下降 43.75 个百分点<br>WikiText2 PPL: 135.6519,上升 42.2708<br>精度明显退化<br>[报告](gen_ai/llm/deepseek_r1_distill_qwen_1_5b/results/summary.json) | — | — |
 | DeepSeek-R1-Distill-Qwen-7B | 生成式AI / 大语言模型 | — | — | — | — | — | — | — |
 | InternVL3-1B | 生成式AI / VLM | — | — | — | — | — | — | — |
 | InternVL3-8B | 生成式AI / VLM | — | — | — | — | — | — | — |
@@ -72,7 +72,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 - `WnAm` 表示权重 n 位、激活 m 位.浮点必须同时标明 FP16/FP32,不可与同位宽整数定点量化混淆;W8A8 为 INT8 PTQ,主要权重采用逐输出通道量化,不表示偏置、全部算子或文件 I/O 都是 8 位.本表不统计仅有浮点部署结果的版本.
 - 精度仅比较同模型、同数据集与同评测协议的参考基线.表中直接写“上升/下降”,准确率/AP/AR 越高越好,WER/PPL 越低越好;PPL 差值不是百分点.差值按报告原始数值计算,不由展示后舍入值相减.MiniCPM5 使用原框架 FP32 参考,不是 ONNX 基线.
 - NPU 耗时按一次模型推理统计.图像模型 batch=1;RTMPose 一次输入为一个裁剪好的人体,YAMNet 一次输入为 96 帧 Log-Mel 特征,不等同于整段音频处理耗时.
-- MiniCPM 的 Prefill 是输入处理阶段,Decode 是逐 Token 生成阶段.表中速度来自 128 Token 输入、最多生成 128 Token 的测速协议;当前 RSS 来自该次生成性能进程,不是设备总内存.DeepSeek 的速度和 RSS 来自中英文生成样例,与 MiniCPM 的定长测速协议不同.
+- MiniCPM 的 Prefill 是输入处理阶段,Decode 是逐 Token 生成阶段.表中速度来自 128 Token 输入、最多生成 128 Token 的测速协议;当前 RSS 来自该次生成性能进程,不是设备总内存.
 - 指标来源为各模型结果报告.不同任务的加载、计时和内存范围不同,不作为统一性能排名.
 
 

@@ -19,7 +19,7 @@ native:
   work_dir: build/native
   prefill: 128
   calibration_batches: 32
-  mask_value: -100
+  mask_value: -10000
   rotate: false
   # 只支持全 W4A16,不通过提高权重位宽替代误差排查.
   attention_precision: asym4W_sym16A

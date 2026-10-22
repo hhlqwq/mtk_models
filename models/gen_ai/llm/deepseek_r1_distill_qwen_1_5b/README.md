@@ -1,19 +1,10 @@
 # DeepSeek-R1-Distill-Qwen-1.5B
 
-> Python 推理代码已迁移,尚未做板端验证.下文报告和示例属于迁移前的 C++/原生 CLI 实现,不能作为当前 Python 实现的精度、性能或 RSS.
+> 当前 Python 实现已完成板端生成检查和固定小样本回归,全量精度、标准性能及 RSS 尚未评价.
 
 使用 [DeepSeek 官方权重](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B),面向 Genio 720 部署全 W4A16 模型.来源与许可见[模型卡](model_card.md)和[资源记录](models/source_url.txt).
 
-## 迁移前结果
-
-已完成全 W4A16 量化、双 DLA 编译、AArch64 桥接库构建及真实板端双语生成.少量同协议精度如下,不是全量基准:
-
-| 指标 | 官方 FP32 | 量化 TFLite | 板端 NPU |
-| --- | ---: | ---: | ---: |
-| MMLU,固定 16 题、13 学科 | 75.00% (12/16) | 37.50% (6/16) | 25.00% (4/16) |
-| WikiText2 PPL,4 块、508 次下一 Token 评分 | 93.3811 | — | 247.7720 |
-
-当前配方精度明显退化.同一 16 题中 TFLite/NPU 有 14 题选择一致,候选 logits 最大绝对差为 1.0437;尚未单独对齐 SDK 浮点转换,不能把全部退化归因于 INT4 权重.本轮未做标准性能、RSS 或全量评价.完整记录见[唯一报告](results/summary.json).
+适配约定、精度问题及修复依据见 [ADAPTATION.md](ADAPTATION.md).评价范围与指标见[唯一报告](results/summary.json).
 
 [中文生成片段](examples/output/zh_demo.txt)和[英文生成片段](examples/output/en_demo.txt)均来自当前板端模型,每条最多 32 Token,不代表完整回答或正式精度.
 

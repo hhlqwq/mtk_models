@@ -16,7 +16,7 @@ from tools.process import run_command
 from tools.storage import model_storage, storage_roots
 
 
-def prepare(source, output, context, calibration_train=None, mask_value=-100.0,
+def prepare(source, output, context, calibration_train=None, mask_value=-10000.0,
             rotate=False):
     """读取官方文件并生成独立配置、双语校准输入和板端 Prompt."""
     manifest = json.loads((source / "source_manifest.json").read_text())

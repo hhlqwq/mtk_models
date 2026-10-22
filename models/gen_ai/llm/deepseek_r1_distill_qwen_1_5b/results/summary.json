@@ -2,7 +2,7 @@
   "schema_version": 1,
   "model": "deepseek_r1_distill_qwen_1_5b",
   "run_id": "20261022_deepseek_w4a16_subset",
-  "status": "python_pending_board_validation",
+  "status": "partial",
   "quality_status": "accuracy_degraded",
   "evaluation_scope": "subset",
   "full_benchmark_evaluated": false,
@@ -19,26 +19,26 @@
     "calibration_scope": "authored_bilingual",
     "weight_optimization": "none",
     "rotate": false,
-    "mask_value": -100,
+    "mask_value": -10000,
     "native_io": "INT16"
   },
   "execution": {
     "quantization": "completed",
     "dual_dla_compilation": "completed",
-    "aarch64_bridge": "completed",
     "board_generation": "completed",
     "generation_samples": 2,
-    "generation_limit_tokens": 32
+    "generation_limit_tokens": 32,
+    "implementation": "python_neuron_runtime_hw"
   },
   "accuracy": {
     "mmlu": {
       "questions": 16,
       "seed": 17,
       "fp32_correct": 12,
-      "npu_correct": 4,
+      "npu_correct": 5,
       "fp32_accuracy": 0.75,
-      "npu_accuracy": 0.25,
-      "difference_percentage_points": -50.0,
+      "npu_accuracy": 0.3125,
+      "difference_percentage_points": -43.75,
       "dataset": "cais/mmlu",
       "split": "test",
       "shots": 0,
@@ -64,33 +64,24 @@
       ],
       "scoring": "argmax_single_token_continuation_space_ABCD",
       "chat_template": false,
-      "tflite_correct": 6,
-      "tflite_accuracy": 0.375
+      "tflite_correct": 5,
+      "tflite_accuracy": 0.3125
     },
     "wikitext": {
       "blocks": 4,
       "scored_tokens": 508,
       "fp32_ppl": 93.38108825683594,
-      "npu_ppl": 247.77199619300418,
-      "difference": 154.39090793616825,
+      "npu_ppl": 135.6518655454918,
+      "difference": 42.270777288655864,
       "dataset": "Salesforce/wikitext",
       "config": "wikitext-2-raw-v1",
       "split": "test",
       "block_tokens": 128,
       "reset_context_each_block": true,
       "chat_template": false,
-      "selection": "first_four_blocks_of_raw_test_text"
+      "selection": "first_four_blocks_of_raw_test_text",
+      "tflite_ppl": 131.80234866235455
     }
-  },
-  "diagnostics": {
-    "tflite_npu_questions": 16,
-    "prediction_agreement_count": 14,
-    "changed_case_ids": [
-      1,
-      6
-    ],
-    "maximum_choice_logit_error": 1.0437192916870117,
-    "conclusion": "精度下降在量化 TFLite 阶段已出现,NPU 执行差异另改变两题选择;尚未单独区分 SDK 浮点转换与量化误差."
   },
   "performance": {
     "status": "not_measured"
@@ -127,10 +118,8 @@
   },
   "missing_items": [
     "完整 MMLU 和 WikiText2 精度",
-    "SDK 浮点与官方 FP32 单独对齐",
-    "标准性能与进程峰值 RSS",
-    "原生文本分词与官方 tokenizer 一致性"
+    "标准性能与进程峰值 RSS"
   ],
-  "metrics_scope": "迁移前 C++/原生 CLI 的历史记录,当前 Python 推理尚未验证",
+  "metrics_scope": "当前 Python 实现的固定 16 题和 4 文本块回归,不代表全量精度",
   "target_backend": "python_neuron_runtime_hw"
 }
