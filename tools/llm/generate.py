@@ -12,6 +12,19 @@ from tools.llm.evaluate_board_quality import HardwareModel, transfer_cache
 from tools.runtime import peak_rss_kib
 
 
+def stream_text(tokenizer, tokens, printed, *, final=False):
+    """增量打印完整词或中文字符,避免输出未完成的 UTF-8 字符."""
+    text = tokenizer.decode(tokens, skip_special_tokens=True)
+    if not final:
+        text = text.rstrip("\ufffd")
+        if text and not (text.endswith("\n") or "\u4e00" <= text[-1] <= "\u9fff"):
+            text = text[:max(len(printed), text.rfind(" ") + 1)]
+    if not text.startswith(printed):
+        raise ValueError("分词器解码修改了已显示文本,无法继续增量输出.")
+    print(text[len(printed):], end="", flush=True)
+    return text
+
+
 def requantize(values, source, target):
     """按源和目标量化参数转换 INT16 张量,保留原始形状."""
     if source["scale"] == target["scale"] and source["zero_point"] == target["zero_point"]:
@@ -81,8 +94,8 @@ class Generator:
             length = min(target.shape[2], combined.shape[2])
             target[:, :, -length:, :] = combined[:, :, -length:, :]
 
-    def generate(self, tokens, limit):
-        """执行实际长度 Prefill 后逐 Token 生成,仅评价阶段输出性能数据."""
+    def generate(self, tokens, limit, *, stream=False):
+        """执行 Prefill 和逐 Token 生成,展示可流式输出,测速默认关闭打印."""
         if (not tokens or limit < 1 or len(tokens) + limit > self.manifest["context"]
                 or min(tokens) < 0 or max(tokens) >= len(self.embedding)):
             raise ValueError("生成预算、Token ID 或上下文长度无效.")
@@ -92,6 +105,8 @@ class Generator:
         prompt_contract = self.contracts["prompt"]
         decode_contract = self.contracts["decode"]
         batch = prompt_contract["inputs"][0]["shape"][1]
+        if stream:
+            print(f"[Prefill] 正在处理 {len(tokens)} 个输入 Token.", flush=True)
         started, prefill_npu_ms = time.perf_counter(), 0.0
         for offset in range(0, len(tokens), batch):
             chunk = tokens[offset:offset + batch]
@@ -104,9 +119,14 @@ class Generator:
         next_token = int(np.argmax(outputs[0][0, len(chunk) - 1]))
         self.seed_decode(len(chunk))
         generated, decode_npu_ms, decode_calls = [], 0.0, 0
+        printed = ""
+        if stream:
+            print("[输出]", flush=True)
         decode_started = time.perf_counter()
         for step in range(limit):
             generated.append(next_token)
+            if stream:
+                printed = stream_text(self.tokenizer, generated, printed)
             if next_token in self.manifest["preparation"]["stop_token_ids"] or step + 1 == limit:
                 break
             self.feed(self.decode, decode_contract, "decode", len(tokens) + step, [next_token])
@@ -115,12 +135,14 @@ class Generator:
             decode_calls += 1
             next_token = int(np.argmax(outputs[0][0, 0]))
             transfer_cache(decode_contract, outputs, decode_contract, self.decode.inputs, append=True)
-            if decode_calls % 32 == 0:
-                print(f"[生成] {len(generated)}/{limit} Token", flush=True)
         decode_seconds = time.perf_counter() - decode_started
         row = {"generated_tokens": generated, "sampling": "greedy_argmax",
                "eos_reached": generated[-1] in self.manifest["preparation"]["stop_token_ids"]}
         row["stop_reason"] = "eos" if row["eos_reached"] else "generation_limit"
+        if stream:
+            stream_text(self.tokenizer, generated, printed, final=True)
+            reason = "遇到停止 Token" if row["eos_reached"] else "达到生成上限"
+            print(f"\n[生成结束] {reason},共 {len(generated)} Token.", flush=True)
         if not is_test():
             row.update(prefill_input_tokens=len(tokens), prefill_seconds=prefill_seconds,
                 prefill_tokens_per_second=len(tokens) / prefill_seconds,
@@ -157,14 +179,19 @@ def run(entry):
         for language in languages:
             path = ctx.root / f"scripts/prompts/{language}_demo.tokens.txt"
             tokens = [int(value) for value in path.read_text().split()]
-            print(f"[生成] {language}", flush=True)
-            row, text = model.generate(tokens, 32 if is_test() else ctx.config["conversion"]["max_new_tokens"])
+            prompt = ctx.root / f"scripts/prompts/{language}_demo.txt"
+            print(f"[示例] {language}_demo\n[输入,含聊天模板]\n"
+                  f"{prompt.read_text(encoding='utf-8')}", flush=True)
+            row, text = model.generate(
+                tokens, 32 if is_test() else ctx.config["conversion"]["max_new_tokens"],
+                stream=True)
             row["id"] = f"{language}_demo"
             if is_test():
                 output = ctx.root / "examples/output"
                 output.mkdir(parents=True, exist_ok=True)
                 name = "sample_1.txt" if ctx.config["name"] == "minicpm5_2b" else f"{language}_demo.txt"
                 (output / name).write_text(text + "\n", encoding="utf-8")
+                print(f"[示例保存] examples/output/{name}", flush=True)
             else:
                 samples.append(row)
         if is_test():
@@ -173,8 +200,11 @@ def run(entry):
         tokens = quality["input_ids"][:128]
         if len(tokens) != 128:
             raise ValueError("定长性能输入不足 128 Token.")
+        print("[性能] 开始独立预热,关闭文本流式输出.", flush=True)
         model.generate(tokens, 2)
+        print("[性能] 开始定长测量,最多生成 128 Token.", flush=True)
         performance, _ = model.generate(tokens, 128)
+        print("[性能] 定长测量完成.", flush=True)
         performance["scope"] = "fixed_128_input_max_128_generated_performance"
         (ctx.result / "board_metrics.json").write_text(json.dumps({
             "run_id": ctx.run_id, "samples": samples, "performance": performance,

@@ -26,9 +26,9 @@ def main():
         str(package) + "/", f"{host}:{shlex.quote(target)}/",
     ])
     print(f"[上传完成] 当前转换资源保留在 {native.work}.", flush=True)
-    print("[部署] 生成板端展示示例,不计算正式指标.", flush=True)
-    run_command(["ssh", "-o", "BatchMode=yes", host,
-                 "bash " + shlex.quote(target + "/compile.sh")])
+    print("[待板端检查] 上传完成,尚未执行板端推理或生成展示示例.", flush=True)
+    print(f"[板端入口] 请登录开发板后执行: cd -- {shlex.quote(target)} && bash compile.sh",
+          flush=True)
     print("[评价入口] 准备全量资源后在部署目录执行 bash evaluate.sh.", flush=True)
 
 

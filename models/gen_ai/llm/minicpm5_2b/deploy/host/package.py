@@ -79,9 +79,11 @@ def package(work, output, prefill, quantized_prefix=None):
         "# MiniCPM5-2B\n\n"
         "Genio 720 全 W4A16 部署包,支持英文生成、性能和精度评价.\n"
         "本部署包尚待板端评价.\n\n"
-        "在本部署目录运行:\n\n"
+        "编译服务器仅编译和上传,不会自动执行板端推理.\n"
+        "请登录开发板,在本部署目录运行:\n\n"
         "```bash\nbash compile.sh\n```\n\n"
-        "编译阶段仅检查通路和生成示例;正式评价执行 `bash evaluate.sh`.\n"
+        "板端 compile.sh 仅检查通路和生成示例,实时显示输入及生成文本.\n"
+        "示例最多生成 32 Token,可能只是回答片段;正式评价执行 `bash evaluate.sh`.\n"
         "配置见 config.json,示例见 examples/output,正式报告只有 results/summary.json.\n"
         "具体工具命令及参数由执行代码维护并打印.\n")
     files = []

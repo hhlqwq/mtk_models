@@ -24,5 +24,5 @@ else
     python "${SCRIPT_DIR}/host/compile.py"
     echo '[容器 3/3] 打包并上传开发板.'
     python "${SCRIPT_DIR}/host/upload.py"
-    echo "[编译完成] 模型已部署并生成展示示例"
+    echo "[编译完成] 模型已上传,请在开发板执行 compile.sh 检查通路并生成展示示例."
 fi
