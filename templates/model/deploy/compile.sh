@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # 新模型入口骨架: 主机部署,板端默认固定小批量验证.
+# 仅 LLM: 主机上传后结束,用户登录开发板执行本入口;实现细节见模板 README.
 set -euo pipefail
 export MTK_EVAL_SCOPE=subset
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
     export PYTHONDONTWRITEBYTECODE=1
+    # 仅 LLM: infer.py 实时显示输入输出并保存文本,移除 render_examples.py 的检查和调用.
     for step in infer.py render_examples.py; do
         [[ -f "${SCRIPT_DIR}/board/${step}" ]] || {
             echo "[未实现] 请先实现板端 ${step}." >&2
@@ -18,6 +20,7 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     python3 "${SCRIPT_DIR}/board/render_examples.py"
 else
     # 直接调用主机命令,输出和错误显示在终端,只补充必要阶段提示.
+    # 仅 LLM: 上传后提示板端命令,不通过 SSH 自动执行板端推理、示例或评价.
     echo "[未实现] 请实现当前模型的主机导出、量化、编译、打包上传和少量示例检查." >&2
     exit 2
 fi

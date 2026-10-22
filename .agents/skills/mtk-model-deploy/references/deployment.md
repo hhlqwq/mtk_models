@@ -39,6 +39,9 @@ ncc-tflite --arch=mdla5.3 --suppress-output --disallow-bridge input.tflite -o mo
 
 先读模型 `ADAPTATION.md`、配置和转换实现,再选环境及分片方式:
 
+- 编译服务器的 deploy/compile.sh 只完成转换、量化、编译、打包和上传,随后结束并提示板端部署目录及命令.不通过 SSH 自动执行板端推理、示例生成或评价.用户登录开发板后,在部署目录执行 bash compile.sh 检查真实 NPU 通路并保存少量文本示例;正式评价仍由板端 evaluate.sh 执行.上传成功只能标为待板端检查,不能宣称示例已生成或板端已验证.此边界仅适用于 LLM,普通视觉和音频沿用前述自动调用方式.
+- 板端生成示例先显示输入文本及实际聊天模板,给出 Prefill 提示,随后增量解码并立即刷新生成文本.按完整词或完整字符输出,避免未完成的 UTF-8 字符和特殊 Token 造成乱码;结束时显示停止原因、生成 Token 数和示例保存位置.生成上限由模型示例配置确定,短片段如实说明,不统一扩大为完整回答.
+- 复用 tools/llm/generate.py 的流式生成逻辑,保留各模型的 Token 与停止条件.正式评价中的展示输入同样可流式输出,独立预热和性能测量关闭文本打印,仅保留测量外的阶段提示.不将流式展示耗时标为独立性能测量,不逐题打印 MMLU/WikiText2 全量评分文本.
 - 明确上下文、Prefill 批长、Decode 单 Token、KV Cache、mask 和 RoPE 规则.
 - tokenizer、chat template、BOS/EOS 和停止 Token 与官方参考一致.文本/Token 输入一致性须有实测记录.
 - 双 DLA、外置 embedding、tokenizer、配置及 Python 推理代码共同构成交付,依赖匹配的 SDK 动态库,不能只统计单 DLA.生成循环、KV 转移及采样均使用 Python.
