@@ -24,6 +24,6 @@ MediaTek 工具、系统发布和算子支持资料优先沿仓库 `docs/environ
 
 核对的是已有权重的精度评测集及其划分,不是为本仓库规划训练.页面只写了数据集名称、支持 COCO 格式或给出训练信息时,不能据此认定具体精度使用了 COCO val2017;未公开的评测细节保持未核实.厂商精度用于选型参考,MTK 指标仍需本仓库同协议实测.
 
-项目事实以当前 AGENTS.md、配置、模型总览、注册表及模型源码/来源/结果为准.公共复用点为 tools/deploy.py、tools/board.py、tools/evaluation.py、tools/summary.py、tools/render_examples.py 与 common/cpp/evaluation.h.采用外部 skill 的分阶段思路时必须遵守本项目 compile.sh/evaluate.sh 双入口和单一 summary.json 约定.
+项目事实以当前 AGENTS.md、配置、模型总览、注册表及模型源码/来源/结果为准.公共 Python 复用点为 tools/deploy.py、tools/board.py、tools/evaluation.py、tools/summary.py 与 tools/render_examples.py.现有 C++ 实现待迁移,不作为新模型的推荐实现.采用外部 skill 的分阶段思路时必须遵守本项目 Python 推理、compile.sh/evaluate.sh 双入口和单一 summary.json 约定.
 
 README 数字和注册状态仅用于定位已有证据,不能证明当前设备状态或新运行成功.正式移植来源不明确时保持 pending,厂商选型、评测协议及交付参考不能替代官方模型源.
