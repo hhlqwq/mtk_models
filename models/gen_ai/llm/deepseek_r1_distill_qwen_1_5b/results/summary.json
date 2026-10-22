@@ -1,75 +1,134 @@
 {
   "schema_version": 1,
   "model": "deepseek_r1_distill_qwen_1_5b",
-  "run_id": "20261010_deepseek_w4a16_v2",
+  "run_id": "20261022_deepseek_w4a16_subset",
   "status": "partial",
+  "quality_status": "accuracy_degraded",
+  "evaluation_scope": "subset",
+  "full_benchmark_evaluated": false,
   "precision": "asym4W_sym16A",
   "context": 1024,
   "prefill": 128,
-  "evaluation_scope": "authored_bilingual_smoke_not_formal_accuracy",
-  "formal_accuracy_evaluated": false,
+  "source": {
+    "repo": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+    "revision": "ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562"
+  },
+  "quantization": {
+    "calibration_batches": 32,
+    "calibration_samples": 16,
+    "calibration_scope": "authored_bilingual",
+    "weight_optimization": "none",
+    "rotate": false,
+    "mask_value": -100,
+    "native_io": "INT16"
+  },
+  "execution": {
+    "quantization": "completed",
+    "dual_dla_compilation": "completed",
+    "aarch64_bridge": "completed",
+    "board_generation": "completed",
+    "generation_samples": 2,
+    "generation_limit_tokens": 32
+  },
   "accuracy": {
-    "status": "not_evaluated",
-    "reason": "当前 W4A16 仅有固定中英文生成样例,尚无同协议正式精度."
+    "mmlu": {
+      "questions": 16,
+      "seed": 17,
+      "fp32_correct": 12,
+      "npu_correct": 4,
+      "fp32_accuracy": 0.75,
+      "npu_accuracy": 0.25,
+      "difference_percentage_points": -50.0,
+      "dataset": "cais/mmlu",
+      "split": "test",
+      "shots": 0,
+      "subjects": 13,
+      "maximum_prompt_tokens": 344,
+      "selected_source_question_ids": [
+        441,
+        1804,
+        2862,
+        4078,
+        4559,
+        4745,
+        4971,
+        5990,
+        6785,
+        8552,
+        8850,
+        10836,
+        11537,
+        11553,
+        12551,
+        13216
+      ],
+      "scoring": "argmax_single_token_continuation_space_ABCD",
+      "chat_template": false,
+      "tflite_correct": 6,
+      "tflite_accuracy": 0.375
+    },
+    "wikitext": {
+      "blocks": 4,
+      "scored_tokens": 508,
+      "fp32_ppl": 93.38108825683594,
+      "npu_ppl": 247.77199619300418,
+      "difference": 154.39090793616825,
+      "dataset": "Salesforce/wikitext",
+      "config": "wikitext-2-raw-v1",
+      "split": "test",
+      "block_tokens": 128,
+      "reset_context_each_block": true,
+      "chat_template": false,
+      "selection": "first_four_blocks_of_raw_test_text"
+    }
   },
-  "performance_summary": {
-    "decode_tokens_per_second": 16.7537,
-    "scope": "已有中英文生成样例的原生 CLI 速度,不是固定 128 Token 测速协议",
-    "samples": [
-      {
-        "id": "zh_demo",
-        "origin_run_id": "20261010_deepseek_w4a16_v1",
-        "prefill_seconds": 0.325992,
-        "native_reported_decode_tokens_per_second": 16.7537,
-        "generated_token_count": 273,
-        "peak_rss_mib": 813.57421875
-      },
-      {
-        "id": "en_demo",
-        "origin_run_id": "20261010_deepseek_w4a16_v2",
-        "prefill_seconds": 0.325769,
-        "native_reported_decode_tokens_per_second": 16.7537,
-        "generated_token_count": 636,
-        "peak_rss_mib": 816.73046875
-      }
-    ]
+  "diagnostics": {
+    "tflite_npu_questions": 16,
+    "prediction_agreement_count": 14,
+    "changed_case_ids": [
+      1,
+      6
+    ],
+    "maximum_choice_logit_error": 1.0437192916870117,
+    "conclusion": "精度下降在量化 TFLite 阶段已出现,NPU 执行差异另改变两题选择;尚未单独区分 SDK 浮点转换与量化误差."
   },
-  "memory_summary": {
-    "peak_process_rss_mib": 816.73046875,
-    "scope": "process_vm_hwm_and_sampled_system_memavailable"
+  "performance": {
+    "status": "not_measured"
+  },
+  "memory": {
+    "status": "not_measured"
   },
   "model_size": {
     "unit": "MB",
-    "source_weights": null,
-    "fp32_onnx": null,
-    "quantized_tflite": null,
-    "compiled_dla": 1570.21,
-    "auxiliary_weights": 466.75,
-    "deployment_total": 2036.96,
+    "compiled_dla": 1579.195298,
+    "auxiliary_weights": 466.747392,
+    "deployment_total": 2045.94269,
     "files": [
       {
-        "file": "1024c/decode.dla",
-        "size_mb": 784.52,
-        "role": "compiled_dla"
+        "file": "1024c/prompt.dla",
+        "size_mb": 790.24778
       },
       {
-        "file": "1024c/prompt.dla",
-        "size_mb": 785.7,
-        "role": "compiled_dla"
+        "file": "1024c/decode.dla",
+        "size_mb": 788.947518
       },
       {
         "file": "tokenizer/embedding_int16.bin",
-        "size_mb": 466.75,
-        "role": "auxiliary_weights"
+        "size_mb": 466.747392
       }
-    ],
-    "source": "board_file_stat",
-    "directory": "<board_root>/open_models/deepseek_r1_distill_qwen_1_5b_native",
-    "collected_on": "2026-10-12",
-    "scope": "current_deployment_files_not_reverified_original_run"
+    ]
   },
-  "qualitative_observations": [
-    "英文样例出现不自然的语法,正式量化质量尚未验收."
-  ],
-  "record_origin": "重构前已归档 W4A16 板端记录,本次未重新评价."
+  "runtime": {
+    "soc": "MT8189",
+    "machine": "aarch64",
+    "kernel": "6.6.137-mtk+ga246e0c68c39-g429091ed5965",
+    "reference_device": "cpu",
+    "reference_precision": "FP32"
+  },
+  "missing_items": [
+    "完整 MMLU 和 WikiText2 精度",
+    "SDK 浮点与官方 FP32 单独对齐",
+    "标准性能与进程峰值 RSS",
+    "原生文本分词与官方 tokenizer 一致性"
+  ]
 }

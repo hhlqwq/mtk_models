@@ -1,48 +1,56 @@
 # DeepSeek-R1-Distill-Qwen-1.5B
 
-使用 [DeepSeek 官方模型](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B).28 层、hidden=1536、Q/KV Head=12/2、RoPE=10000.详细版本、来源和许可见[模型卡](model_card.md)及[资源记录](models/source_url.txt).
+使用 [DeepSeek 官方权重](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B),面向 Genio 720 部署全 W4A16 模型.来源与许可见[模型卡](model_card.md)和[资源记录](models/source_url.txt).
 
-## 执行范围
+## 当前结果
 
-先在已有编译容器执行 `bash deploy/compile.sh`,完成转换、量化、编译与部署,随后自动调用板端 `compile.sh` 做少量通路检查并保存 README 示例到 `examples/output/`.该阶段不计算或发布精度、性能和峰值 RSS 报告.
+已完成全 W4A16 量化、双 DLA 编译、AArch64 桥接库构建及真实板端双语生成.少量同协议精度如下,不是全量基准:
 
-正式评价使用独立的 `evaluate.sh`: 容器端只计算已有浮点模型的同协议参考及必要评价输入,资源单独放入已有部署包后,板端运行 `bash evaluate.sh`,统计精度、性能和推理进程峰值 RSS.正式结果只写入 `results/summary.json`,不重新量化或编译.预测、日志及内部指标位于当天日期临时目录.详见[板端规范](../../../../docs/genio_720.md).
+| 指标 | 官方 FP32 | 量化 TFLite | 板端 NPU |
+| --- | ---: | ---: | ---: |
+| MMLU,固定 16 题、13 学科 | 75.00% (12/16) | 37.50% (6/16) | 25.00% (4/16) |
+| WikiText2 PPL,4 块、508 次下一 Token 评分 | 93.3811 | — | 247.7720 |
 
-下文已归档结果保留原始模型版本和评价范围,本次入口调整不代表重新实测.
+当前配方精度明显退化.同一 16 题中 TFLite/NPU 有 14 题选择一致,候选 logits 最大绝对差为 1.0437;尚未单独对齐 SDK 浮点转换,不能把全部退化归因于 INT4 权重.本轮未做标准性能、RSS 或全量评价.完整记录见[唯一报告](results/summary.json).
 
-DeepSeek 当前仅有固定生成样例,`evaluate.sh` 可报告样例性能与 RSS,正式全量精度仍标记未实现.下文唯一报告对应已有 W4A16 交付,不可当成 FP16 分片方案的新结果.
+[中文生成片段](examples/output/zh_demo.txt)和[英文生成片段](examples/output/en_demo.txt)均来自当前板端模型,每条最多 32 Token,不代表完整回答或正式精度.
 
-## 配置与运行
+## 编译与部署
 
-官方模型放在 NAS 对应模型资源目录的 `original/`,本模型配置见 [config.yaml](config.yaml).公共 Python、SDK、交叉编译器和开发板地址由编译容器加载.
+模型与数据提前放在 NAS,连接信息和工具链路径由本地配置提供.板端生成使用已有 `llm_cmdline_tool`,正式评价另需 Python3、NumPy 和匹配的 Neuron Runtime.参数统一在 [config.yaml](config.yaml): Prefill=128、Decode=1、上下文默认 1024、校准批次 32、权重优化默认关闭.
 
-在仓库根目录进入容器后执行 FP16 部署流程:
-
-```bash
-bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/compile.sh
-```
-
-入口完成导出、示例 Token 准备、转换、编译、桥接库构建和上传,自动在板端运行少量生成示例,不发布报告.FP16 示例文本解码需要已有 tokenizers 依赖.正式指标只在 evaluate.sh 中计算.
-
-GAI 全 W4A16 转换使用独立入口:
+进入已有编译容器,在本模型目录执行:
 
 ```bash
-bash models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b/deploy/compile_native.sh
+bash deploy/compile.sh
 ```
 
-它依次执行 prepare、calibrate、quantize、shape 和 compile,不自动打包、上传或完成正式板端精度评价.默认量化为 `none`,不启用 Hessian;全部 Attention、MLP 和 LM Head 均为 `asym4W_sym16A`.打包运行 `python deploy/host/package_native.py`,默认输出到模型资源的 `models/`,该目录须为空.
+依次完成模型适配、校准、W4A16 量化、双静态图导出、双 DLA 编译、桥接库构建、打包和上传,自动调用板端 `compile.sh`.少量双语输入各生成最多 32 Token 的片段,只检查执行通路并保存 `examples/output/zh_demo.txt` 和 `en_demo.txt`,同时取回模型代码目录供 README 展示,不评分、不测速、不采集 RSS.
 
-## 输入与推理
+## 独立评价
 
-上下文由 `conversion.context` 指定,生成上限由 `conversion.max_new_tokens` 指定.FP16 分片方案使用自有 Neuron Runtime 桥接库;GAI 方案使用 Prefill/Decode 双 DLA 和 `llm_cmdline_tool`.两套模型、embedding、tokenizer 及配置不能混用.
+编译后在同一模型目录执行:
 
-校准使用训练集或自编对话,正式测试集不参与校准.如扩展训练校准样本,使用 `tools/llm/prepare_calibration.py`,固定采样位置和旋转基,并重新生成校准数据.
+```bash
+bash deploy/evaluate.sh
+```
 
-## 评价与状态
+此步骤只用已有浮点工作副本和静态图准备完整参考,不会重新量化、编译或部署.默认使用 CUDA FP32;需要 CPU 时修改 `evaluation.reference_device`.
 
-已有 FP16 和 W4A16 均完成固定样例生成,不能据此认定正式质量合格.W4A16 的生成及性能证据见 [统一报告](results/summary.json),新配方的 NPU MMLU/WikiText 正式对比仍未完成.
+- MMLU: test 全部 14042 题、57 学科、0-shot.两端共用题目 Token,按空格加 A/B/C/D 的单 Token logits 评分,不套聊天模板.
+- WikiText2: raw test 全部文本,按 128 Token 分块并重置每块上下文,每块评分 127 次下一 Token,记录不足一块的尾部数量.
+- 完整题目超过已有上下文时,在浮点评分前停止并输出 `mmlu/length_report.json`.按报告要求调整上下文后另行编译部署;评价入口不截题、不丢题、不自动重编译.默认 1024 不保证容纳完整题集.
 
+将模型资源目录 `build/native/evaluation/full/` 的内容单独放入已有板端部署包 `evaluation/full/`,然后在板端部署目录运行:
 
-MMLU 使用同一题目 Token 和空格加 A/B/C/D 的单 Token logits 评分,不加 Chat Template、不截断或丢题.WikiText 以 128 Token 分块、每块重置上下文,评分 127 次下一 Token.当前全量入口尚未接入正式协议;扩展评价时若完整题目超出已有模型上下文,应停止并另行规划部署调整,不截题或在评价中重编译.
+```bash
+bash evaluate.sh
+```
 
-精度检查依次比较原框架 FP32、SDK 浮点、量化 TFLite 和真实 MDLA 输出,分别定位结构转换、量化及板端执行误差.质量状态以实际评价结果为准,不通过提高权重位宽掩盖 W4A16 退化.
+板端核对部署模型与参考输入后,采集生成样例、128 Token 输入/最多 128 Token 输出的原生 CLI Prefill/Decode 速度及进程 RSS,再执行完整 MMLU/WikiText2.最终只发布 `results/summary.json`.速度按实际生成数量记录,CLI 阶段速度与纯 NPU 算子耗时分开标注,未采集分项明确列出.预测与解析所需日志保存在日期临时目录.
+
+## 模型约定
+
+使用官方 tokenizer 的 Token 输入,保留聊天模板、BOS/EOS 和停止列表.GQA 为 Q/KV Head=12/2,RoPE=10000;输入、KV Cache、mask、RoPE 与输出使用图中实际 INT16 接口.外置 embedding、tokenizer、Prefill/Decode DLA 和配置必须成套使用.普通文本的原生分词一致性未在本流程中验证.
+
+校准默认使用 16 条自编双语输入;可通过 `native.calibration_train` 指定 NAS 中的 WikiText2 raw train 文件,混合 8 段 256 Token 训练文本和 8 条双语输入.测试集不参与校准.该配方的质量需由实际评价确认.

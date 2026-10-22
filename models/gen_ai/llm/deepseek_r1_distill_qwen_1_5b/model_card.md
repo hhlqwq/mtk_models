@@ -1,52 +1,40 @@
 # DeepSeek-R1-Distill-Qwen-1.5B 模型卡
 
-## 开源上游
+## 来源与许可
 
-- 作者与官方权重: [deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B).
-- 固定权重仓库 revision: `ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562`.
+- 官方权重: [deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B).
+- 固定 revision: `ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562`.
 - 官方项目: [deepseek-ai/DeepSeek-R1](https://github.com/deepseek-ai/DeepSeek-R1).
-- 基础模型: `Qwen/Qwen2.5-Math-1.5B`.
-- 本模型代码与权重许可: MIT; Qwen 基础模型许可: Apache-2.0.
-- 权重格式: BF16 Safetensors.已下载固定版本,实际大小为 3554214621 bytes.
-  每个资源的 SHA-256 见 [资源清单](models/source_manifest.json).
-- 原始实现: Hugging Face Transformers 的 `Qwen2ForCausalLM`.
-  本次隔离环境使用 Transformers `4.44.2`,官方配置中的版本字段仅为保存元数据.
+- 基础模型: Qwen/Qwen2.5-Math-1.5B.模型代码与权重许可为 MIT,基础模型许可为 Apache-2.0.
+- 原始实现: Transformers `Qwen2ForCausalLM`,BF16 Safetensors.具体文件下载地址见 [source_url.txt](models/source_url.txt),文件记录见 [source_manifest.json](models/source_manifest.json).
 
-## 模型规格
-
-根据官方 `config.json`:
+## 规格与部署接口
 
 | 属性 | 值 |
 | --- | --- |
-| 规模标识 / 实际参数量 | 名称为 1.5B; 官方 Safetensors Tensor 形状合计 1,777,088,000 |
-| 类型 | 纯文本 Causal LM,`model_type=qwen2` |
+| 参数量 | 1777088000 |
 | 层数 / Hidden Size | 28 / 1536 |
 | Attention Heads / KV Heads | 12 / 2,GQA |
+| Head Dimension | 128 |
 | Intermediate Size | 8960 |
 | Vocab Size | 151936 |
 | RoPE Theta | 10000 |
-| Max Position Embeddings | 131072,不代表板端上下文容量 |
-| Embedding / LM Head | `tie_word_embeddings=false` |
-| 本次实际配置 | batch=1,上下文 1024; FP16 基线与 W4A16 原生包均已运行 |
+| 官方 Max Position Embeddings | 131072,不代表板端上下文容量 |
+| Embedding / LM Head | 不共享权重 |
+| 量化 | Attention、MLP、LM Head 为 W4A16,非对称 INT4 权重与对称 INT16 激活 |
+| 部署 | Prefill 128 Token / Decode 1 Token,上下文由转换配置固定 |
+| 辅助资源 | 外置 INT16 embedding、官方词表和 merges、特殊 Token、运行配置 |
 
-原始框架输入为 Token IDs、Attention Mask; 增量解码需 KV Cache.
-输出为词表 Logits 与更新后的 KV Cache,最终由 Tokenizer 解码为文本.
-FP16 基线静态 Decoder 输入依次为 hidden `[1,1,1536]`、past_key / past_value
-`[1,2,1023,128]`、cosine / sine `[1,1,1,128]`、mask `[1,1,1,1024]`.
-输出为 hidden_out `[1,1,1536]` 与当前 key / value `[1,2,1,128]`.
-词表投影分为 10 片,前 9 片各 16384 行,最后一片 4480 行.
-ONNX 为 FP32,板端 DLA 原生输入输出为 FP16,Runtime 加载时校验数量与字节大小.
+两个 DLA 输入包含 embedding、mask、RoPE 和历史 KV,输出包含词表 logits 和当前 KV.实际张量数量、顺序、形状及量化尺度从静态图读取,板端核对 Runtime 缓冲区大小;不把 Q Head 数当作 KV Head 数.
 
-## 预处理与解码
+分片连接时若 INT16 尺度不同,使用显式 Requantize.板端 KV 转移同样按实际尺度处理.禁止 CPU 桥接,编译目标为 MDLA 5.3.
 
-使用固定 revision 的 `tokenizer.json`、`tokenizer_config.json` 和
-`generation_config.json`,保留官方 Chat Template 与特殊 Token.
-上游建议采样 temperature=0.6,将任务要求写入 user 消息.
-评测时固定随机种子与采样配置,记录停止条件、Token 数、截断情况及最终回答完成率.
-中英文能力需要用本次固定样例与正式语料分别验证.
+## 输入与评价
+
+生成使用官方 Chat Template 和预先编码的 Token,运行停止列表来自官方 generation 配置.生成样例采用固定解码路径,不用于宣称正式准确率.
+
+MMLU 与 WikiText2 使用独立的原始文本协议,不加聊天模板,两端 Token 与评分规则一致.完整题目超上下文时停止.部署与正式评价分别使用 `compile.sh` 和 `evaluate.sh`,详见 [README](README.md).
 
 ## 交付参考
 
-地瓜 [RDK S 系列 Model Zoo](https://github.com/D-Robotics/rdk_model_zoo_s) 与
-[S100 LLM 工具链](https://developer.d-robotics.cc/rdk_s_doc/Advanced_development/toolchain_development/LLM_Toolchain/s100_LLM_Toolchain)
-仅作为模型选型、量化和指标展示参考.不使用厂商预编译 `.hbm` 作为 MTK 转换输入.
+[D-Robotics Model Zoo](https://github.com/D-Robotics/rdk_model_zoo_s) 仅作为模型选型与展示参考,不使用其预编译模型作为 MTK 转换输入.

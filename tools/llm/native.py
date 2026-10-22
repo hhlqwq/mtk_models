@@ -4,9 +4,6 @@ import argparse
 import os
 from pathlib import Path
 
-from tools.deploy import arguments
-from tools.process import run_command
-
 
 def settings(ctx, *, python_executable=None):
     """读取模型配置,可显式使用调用脚本的 Python 解释器."""
@@ -44,11 +41,3 @@ def settings(ctx, *, python_executable=None):
         optimization=optimization, extra=extra, prefix=prefix,
         quantized=work / "tflite" / prefix,
         train=os.environ.get("CALIBRATION_TRAIN", config["calibration_train"]))
-
-
-def python(native, *arguments):
-    """使用进入容器时加载的专用 Python 环境,保留离线执行规则."""
-    environment = os.environ.copy()
-    environment.update(PYTHONUNBUFFERED="1", PYTHONDONTWRITEBYTECODE="1",
-                       HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1")
-    run_command([native.python, *arguments], cwd=native.work, env=environment)

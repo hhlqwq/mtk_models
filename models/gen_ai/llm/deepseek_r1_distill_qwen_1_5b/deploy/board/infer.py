@@ -1,342 +1,129 @@
-"""在开发板使用常驻 Neuron 硬件 Runtime 执行分片 LLM 与评测."""
+"""使用官方 Token 输入生成双语示例,正式评价时采集定长性能与 CLI RSS."""
 
-import argparse
-import ctypes
-import hashlib
 import json
-from pathlib import Path
-import platform
-import resource
+import math
+import os
+import re
+import subprocess
 import time
 
-import numpy as np
-
-from tools.board import configure_parser
-
-from tools.evaluation import (
-    is_test, record_selection, scope_metadata,
-)
+from tools.board import context
+from tools.evaluation import is_test
+from tools.files import read_json
 
 
-def available_memory_mib():
-    """读取系统可用内存,补充 RSS 未覆盖的驱动分配内存证据."""
-    for line in Path("/proc/meminfo").read_text().splitlines():
-        if line.startswith("MemAvailable:"):
-            return int(line.split()[1]) / 1024
-    raise RuntimeError("无法读取 MemAvailable.")
+def run_sample(ctx, manifest, name, prompt, limit):
+    """调用原生 CLI 并显示工具输出,仅正式评价采集性能与进程高水位."""
+    count = len(prompt.read_text(encoding="utf-8").split())
+    if count < 1 or count + limit > manifest["context"] or limit < 2:
+        raise ValueError(f"输入与生成预算超过已编译上下文: {name}.")
+    # 原生 CLI 的 -m 不含第一个生成 Token,总预算需减 1.
+    command = ["llm_cmdline_tool", "scripts/config-yocto.yaml", "--read-tokens",
+               "-i", str(prompt.resolve()), "-m", str(limit - 1)]
+    log = ctx.result / f"{name}.log"
+    peak = 0.0
+    started = time.monotonic()
+    next_progress = started + 10
+    print(f"[生成] {name}", flush=True)
+    # 日志用于解析原生 CLI 的回答和 Token 计数,同时将输出显示到终端.
+    with log.open("w", encoding="utf-8") as stream:
+        with subprocess.Popen(command, cwd=ctx.root, stdout=stream,
+                              stderr=subprocess.STDOUT) as process:
+            with log.open(encoding="utf-8", errors="replace") as reader:
+                while True:
+                    if is_test():
+                        finished = process.poll() is not None
+                    else:
+                        # wait4 返回本次 CLI 退出时的真实高水位,不以定时采样代替峰值.
+                        pid, status, usage = os.wait4(process.pid, os.WNOHANG)
+                        finished = pid != 0
+                        if finished:
+                            process.returncode = os.waitstatus_to_exitcode(status)
+                            peak = usage.ru_maxrss / 1024
+                    chunk = reader.read()
+                    if chunk:
+                        print(chunk, end="", flush=True)
+                    if finished:
+                        break
+                    if time.monotonic() >= next_progress:
+                        print(f"[运行中] {name}", flush=True)
+                        next_progress = time.monotonic() + 10
+                    time.sleep(0.1)
+    if process.returncode != 0:
+        raise RuntimeError(f"原生推理失败,退出码={process.returncode}; 日志: {log}.")
+    text = log.read_text(encoding="utf-8", errors="replace")
+    answer = re.search(
+        r"\[Full\s*Response\]\s*\n(.*?)\n(?:Generated Tokens:|\[Latency\])", text, re.DOTALL)
+    token_match = re.search(r"Generated Tokens:\s*\{([^}]+)\}", text)
+    if answer is None or token_match is None:
+        raise ValueError(f"原生 CLI 缺少回答或 Token 输出: {log}.")
+    tokens = [int(value.strip()) for value in token_match.group(1).split(",")]
+    if not tokens or len(tokens) > limit:
+        raise ValueError("原生 CLI 生成数量与预算不一致.")
+    row = {"id": name, "generated_tokens": tokens,
+           "eos_reached": tokens[-1] in manifest["preparation"]["stop_token_ids"]}
+    row["stop_reason"] = "eos" if row["eos_reached"] else "generation_limit"
+    if not is_test():
+        prefill = re.search(r"Done analyzing prompt in ([0-9.eE+-]+)s", text)
+        decode = re.search(r"Generative Mode:\s*([0-9.eE+-]+) tok/s", text)
+        if prefill is None or decode is None:
+            raise ValueError("原生 CLI 缺少 Prefill/Decode 性能计数.")
+        seconds, speed = float(prefill.group(1)), float(decode.group(1))
+        if not all(math.isfinite(value) and value > 0 for value in (seconds, speed, peak)):
+            raise ValueError("原生 CLI 性能或进程峰值 RSS 无效.")
+        row.update(prefill_seconds=seconds, prefill_input_tokens=count,
+                   prefill_tokens_per_second=count / seconds,
+                   native_reported_decode_tokens_per_second=speed,
+                   peak_process_rss_mib=peak,
+                   elapsed_seconds=time.monotonic() - started)
+    return row, answer.group(1).strip()
 
 
-def verify_artifacts(models):
-    """加载前核对板端实际文件,防止上传不完整或混用旧分片."""
-    manifest = json.loads((models / "artifact_manifest.json").read_text())
-    for entry in manifest["files"]:
-        print(f"[产物校验] {entry['name']}", flush=True)
-        path = models / entry["name"]
-        digest = hashlib.sha256()
-        with path.open("rb") as stream:
-            for block in iter(lambda: stream.read(8 * 1024 * 1024), b""):
-                digest.update(block)
-        if path.stat().st_size != entry["bytes"] or digest.hexdigest() != entry["sha256"]:
-            raise ValueError(f"部署文件校验失败: {path}")
+def main():
+    """编译阶段只保存双语示例,评价阶段运行统一 128 Token 性能协议."""
+    ctx = context(__file__, new_run=True)
+    manifest = read_json(ctx.root / "manifest.json")
+    if (manifest.get("model") != ctx.config["name"]
+            or manifest["context"] != ctx.config["conversion"]["context"]):
+        raise ValueError("部署清单与模型配置不一致.")
+    if not is_test():
+        from evaluate import check_resources
 
-
-class NeuronGraph:
-    """绑定一个 DLA,严格校验原生 FP16 缓冲区契约."""
-
-    def __init__(self, library, path, input_shapes, output_shapes):
-        """加载 DLA 并核对全部 I/O 数量、大小."""
-        self.library = library
-        self.runtime = ctypes.c_void_p()
-        self.check(library.CreateModel(str(path).encode(),
-                                       ctypes.byref(self.runtime)))
-        self.inputs = [np.zeros(shape, dtype=np.float16)
-                       for shape in input_shapes]
-        self.outputs = [np.zeros(shape, dtype=np.float16)
-                        for shape in output_shapes]
-        try:
-            inputs = ctypes.c_size_t()
-            outputs = ctypes.c_size_t()
-            self.check(library.ModelCounts(self.runtime, ctypes.byref(inputs),
-                                           ctypes.byref(outputs)))
-            if (inputs.value, outputs.value) != (len(self.inputs),
-                                                 len(self.outputs)):
-                raise ValueError(f"DLA I/O 数量不匹配: {path}")
-            for output, buffers in enumerate((self.inputs, self.outputs)):
-                for index, buffer in enumerate(buffers):
-                    size = ctypes.c_size_t()
-                    self.check(library.ModelSize(self.runtime, index, output,
-                                                 ctypes.byref(size)))
-                    if size.value != buffer.nbytes:
-                        raise ValueError(f"DLA 原生布局不匹配: {path},"
-                                         f"output={output},index={index},"
-                                         f"实际={size.value},预期={buffer.nbytes}")
-        except Exception:
-            self.close()
-            raise
-
-    @staticmethod
-    def check(code):
-        """将 Runtime 返回码转换为明确的失败,不回退 CPU."""
-        if code != 0:
-            raise RuntimeError(f"Neuron 硬件推理失败,code={code}")
-
-    def run(self, inputs):
-        """复制输入并执行一次 NPU 调用,返回输出与纯调用耗时."""
-        for target, source in zip(self.inputs, inputs, strict=True):
-            np.copyto(target, source, casting="unsafe")
-        input_pointers = (ctypes.c_void_p * len(self.inputs))(
-            *[buffer.ctypes.data for buffer in self.inputs])
-        output_pointers = (ctypes.c_void_p * len(self.outputs))(
-            *[buffer.ctypes.data for buffer in self.outputs])
-        input_bytes = (ctypes.c_size_t * len(self.inputs))(
-            *[buffer.nbytes for buffer in self.inputs])
-        output_bytes = (ctypes.c_size_t * len(self.outputs))(
-            *[buffer.nbytes for buffer in self.outputs])
-        start = time.perf_counter()
-        self.check(self.library.RunModel(
-            self.runtime, input_pointers, input_bytes, len(self.inputs),
-            output_pointers, output_bytes, len(self.outputs)))
-        return self.outputs, (time.perf_counter() - start) * 1000
-
-    def close(self):
-        """显式释放 Runtime,包括异常后的资源清理."""
-        if self.runtime.value:
-            self.library.ReleaseModel(self.runtime)
-            self.runtime = ctypes.c_void_p()
-
-
-def load_library(path):
-    """声明桥接函数类型,防止 AArch64 指针被隐式截断."""
-    library = ctypes.CDLL(str(path))
-    pointer = ctypes.c_void_p
-    size = ctypes.c_size_t
-    library.CreateModel.argtypes = [ctypes.c_char_p, ctypes.POINTER(pointer)]
-    library.ModelCounts.argtypes = [pointer, ctypes.POINTER(size),
-                                   ctypes.POINTER(size)]
-    library.ModelSize.argtypes = [pointer, size, ctypes.c_int,
-                                 ctypes.POINTER(size)]
-    library.RunModel.argtypes = [pointer, ctypes.POINTER(pointer),
-                                ctypes.POINTER(size), size,
-                                ctypes.POINTER(pointer), ctypes.POINTER(size), size]
-    library.ReleaseModel.argtypes = [pointer]
-    library.ReleaseModel.restype = None
-    return library
-
-
-class Decoder:
-    """常驻分片模型,在 CPU 管理 Token/KV,在 NPU 执行模型算子."""
-
-    def __init__(self, models, library):
-        """加载元数据、Embedding 与全部 DLA."""
-        self.spec = json.loads((models / "export_manifest.json").read_text())
-        if self.spec["probe_only"]:
-            raise ValueError("算子探测模型不能用于正式评测.")
-        spec = self.spec
-        self.embedding = np.memmap(models / "embedding_fp16.bin", mode="r",
-                                   dtype="<f2", shape=(spec["vocab"], spec["hidden"]))
-        hidden = (1, 1, spec["hidden"])
-        cache = (1, spec["kv_heads"], spec["context"] - 1, spec["head_dim"])
-        angle = (1, 1, 1, spec["head_dim"])
-        self.layers = []
-        self.heads = []
-        try:
-            for graph in spec["graphs"]:
-                print(f"[加载] {graph['name']}", flush=True)
-                if graph["kind"] == "decoder":
-                    module = NeuronGraph(
-                        library, models / f"{graph['name']}.dla",
-                        [hidden, cache, cache, angle, angle,
-                         (1, 1, 1, spec["context"])],
-                        [hidden, (1, spec["kv_heads"], 1, spec["head_dim"]),
-                         (1, spec["kv_heads"], 1, spec["head_dim"])])
-                    self.layers.append(module)
-                else:
-                    module = NeuronGraph(library, models / f"{graph['name']}.dla",
-                                         [hidden], [(1, 1, graph["count"])])
-                    self.heads.append((graph, module))
-        except Exception:
-            self.close()
-            raise
-        self.reset()
-        self.minimum_available_mib = available_memory_mib()
-
-    def reset(self):
-        """清零样本间 KV Cache,防止上下文串扰."""
-        spec = self.spec
-        self.cache = [np.zeros((2, 1, spec["kv_heads"], spec["context"] - 1,
-                               spec["head_dim"]), dtype=np.float16)
-                      for _ in self.layers]
-        self.position = 0
-
-    def step(self, token):
-        """执行一个 Token,拒绝超出固定上下文容量的输入."""
-        spec = self.spec
-        if self.position >= spec["context"] or not 0 <= token < spec["vocab"]:
-            raise ValueError("Token 或上下文越界.")
-        hidden = self.embedding[token].reshape(1, 1, -1)
-        frequencies = spec["rope_theta"] ** (
-            -np.arange(0, spec["head_dim"], 2, dtype=np.float32) / spec["head_dim"])
-        angles = np.tile(frequencies * self.position, 2).reshape(1, 1, 1, -1)
-        mask = np.full((1, 1, 1, spec["context"]), -10000, dtype=np.float16)
-        mask[..., spec["context"] - 1 - self.position:] = 0
-        npu_ms = 0.0
-        for layer_index, (graph, cache) in enumerate(
-                zip(self.layers, self.cache, strict=True)):
-            outputs, duration = graph.run(
-                [hidden, cache[0], cache[1], np.cos(angles), np.sin(angles), mask])
-            hidden = outputs[0]
-            if any(not np.isfinite(output).all() for output in outputs):
-                raise RuntimeError(f"第 {layer_index} 层在位置 {self.position}"
-                                   "产生非有限输出.")
-            for index in (0, 1):
-                cache[index, :, :, :-1, :] = cache[index, :, :, 1:, :].copy()
-                cache[index, :, :, -1:, :] = outputs[index + 1]
-            npu_ms += duration
-        logits = np.empty(spec["vocab"], dtype=np.float32)
-        for info, graph in self.heads:
-            outputs, duration = graph.run([hidden])
-            start = info["start"]
-            logits[start:start + info["count"]] = outputs[0].reshape(-1)
-            npu_ms += duration
-        if not np.isfinite(logits).all():
-            raise RuntimeError("模型产生非有限 Logits.")
-        self.position += 1
-        self.minimum_available_mib = min(self.minimum_available_mib,
-                                         available_memory_mib())
-        return logits, npu_ms
-
-    def close(self):
-        """释放全部已加载分片."""
-        for graph in self.layers:
-            graph.close()
-        for _, graph in self.heads:
-            graph.close()
-
-
-def evaluate(args):
-    """运行固定样例并保存真实输出、教师强制 NLL 和性能证据."""
-    args.output.mkdir(parents=True, exist_ok=False)
-    samples = json.loads(args.samples.read_text())
-    if is_test():
-        samples["samples"] = [row for row in samples["samples"] if not row.get("target_ids")][:2]
-        samples["max_new_tokens"] = 32
-        for sample in samples["samples"]:
-            sample["target_ids"] = sample.get("target_ids", [])[:32]
-        record_selection(row["id"] for row in samples["samples"])
-    start = time.perf_counter()
-    decoder = None
-    predictions = []
-    baseline_available_mib = available_memory_mib()
-    try:
-        verify_artifacts(args.models)
-        verification_ms = (time.perf_counter() - start) * 1000
-        start = time.perf_counter()
-        decoder = Decoder(args.models, load_library(args.library))
-        load_ms = (time.perf_counter() - start) * 1000
-        loaded_available_mib = available_memory_mib()
-        for index, sample in enumerate(samples["samples"], 1):
-            print(f"[板端 {index}/{len(samples['samples'])}] {sample['id']}", flush=True)
-            decoder.reset()
-            start = time.perf_counter()
-            npu_ms = 0.0
-            for token in sample["input_ids"]:
-                logits, duration = decoder.step(token)
-                npu_ms += duration
-            first_ms = (time.perf_counter() - start) * 1000
-            prefill_npu_ms = npu_ms
-            tokens = []
-            nll = []
-            argmax = []
-            decode_start = time.perf_counter()
-            targets = sample.get("target_ids", [])
-            limit = len(targets) if targets else samples["max_new_tokens"]
-            reached_eos = False
-            for offset in range(limit):
-                prediction = int(np.argmax(logits))
-                argmax.append(prediction)
-                if targets:
-                    token = targets[offset]
-                    maximum = float(logits.max())
-                    nll.append(float(np.log(np.exp(logits.astype(np.float64) - maximum).sum())
-                                     + maximum - logits[token]))
-                else:
-                    token = prediction
-                tokens.append(token)
-                if not targets and token in samples["eos_ids"]:
-                    reached_eos = True
-                    break
-                if offset + 1 < limit:
-                    logits, duration = decoder.step(token)
-                    npu_ms += duration
-                if (offset + 1) % 16 == 0:
-                    print(f"[Token] {sample['id']}: {offset + 1}/{limit}", flush=True)
-            decode_ms = (time.perf_counter() - decode_start) * 1000
-            predictions.append({"id": sample["id"], "tokens": tokens,
-                                "argmax": argmax, "nll": nll, "reached_eos": reached_eos,
-                                "ttft_ms": first_ms, "decode_ms": decode_ms,
-                                "prefill_tokens": len(sample["input_ids"]),
-                                "prefill_npu_ms": prefill_npu_ms,
-                                "npu_ms": npu_ms,
-                                "end_to_end_ms": (time.perf_counter() - start) * 1000})
-            (args.output / "predictions.json").write_text(
-                json.dumps(predictions, ensure_ascii=False, indent=2))
+        check_resources(ctx.root)
+    ctx.result.mkdir(parents=True, exist_ok=False)
+    samples = []
+    for language in ("zh", "en"):
+        prompt = ctx.root / f"scripts/prompts/{language}_demo.tokens.txt"
+        limit = 32 if is_test() else ctx.config["conversion"]["max_new_tokens"]
+        row, text = run_sample(ctx, manifest, f"{language}_demo", prompt, limit)
         if is_test():
-            from tokenizers import Tokenizer
-
-            tokenizer = Tokenizer.from_file(str(args.models / "tokenizer.json"))
-            output = args.models.parent / "examples/output"
+            output = ctx.root / "examples/output"
             output.mkdir(parents=True, exist_ok=True)
-            for number, row in enumerate(predictions, 1):
-                (output / f"sample_{number}.txt").write_text(
-                    tokenizer.decode(row["tokens"], skip_special_tokens=True) + "\n", encoding="utf-8")
-            print("[示例完成] 模型通路和生成输出有效,未计算正式指标.", flush=True)
-            return
-        summary = {"run_id": args.run_id, "backend": "Neuron MDLA hardware",
-                   "system": platform.platform(), "python": platform.python_version(),
-                   "numpy": np.__version__,
-                   "precision": "FP16 DLA", "load_ms": load_ms,
-                   "artifact_integrity_verified": True,
-                   "artifact_verification_ms": verification_ms,
-                   "peak_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
-                   "baseline_system_available_mib": baseline_available_mib,
-                   "loaded_system_available_mib": loaded_available_mib,
-                   "minimum_system_available_mib": decoder.minimum_available_mib,
-                   "system_available_decrease_mib": baseline_available_mib - decoder.minimum_available_mib,
-                   "sample_count": len(predictions),
-                   "status": "smoke_test" if is_test() else "board_inference_executed",
-                   "evaluation_scope": samples["evaluation_scope"],
-                   **(scope_metadata() if is_test() else {})}
-        (args.output / "board_summary.json").write_text(
-            json.dumps(summary, ensure_ascii=False, indent=2))
-    except Exception as error:
-        (args.output / "failure.json").write_text(
-            json.dumps({"run_id": args.run_id, "status": "failed",
-                        "error": str(error), "completed_samples": len(predictions)},
-                       ensure_ascii=False, indent=2))
-        raise
-    finally:
-        if decoder is not None:
-            decoder.close()
-
-
-def parse_args():
-    """解析部署路径、固定测试输入及独立运行编号."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--models", type=Path, required=True)
-    parser.add_argument("--library", type=Path, required=True)
-    parser.add_argument("--samples", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--run-id", required=True)
-    parser.add_argument("--config", type=Path,
-                        default=Path(__file__).resolve().parent.parent / "config.json")
-    configure_parser(parser, __file__, {
-        "models": lambda c: c.root / "models",
-        "library": lambda c: c.root / "board/libneuron_bridge.so",
-        "samples": lambda c: c.root / "models/samples.json",
-        "output": lambda c: c.result, "run_id": lambda c: c.run_id,
-    }, new_run=True)
-    return parser.parse_args()
+            (output / f"{language}_demo.txt").write_text(text + "\n", encoding="utf-8")
+        else:
+            samples.append(row)
+    if is_test():
+        print("[通路检查完成] 双语生成片段已保存,未生成正式指标.", flush=True)
+        return
+    quality = read_json(ctx.root / "evaluation/full/quality/board_quality_protocol.json")
+    tokens = quality["input_ids"][:128]
+    if len(tokens) != 128:
+        raise ValueError("定长性能输入不足 128 Token.")
+    prompt = ctx.result / "performance_128.tokens.txt"
+    prompt.write_text(" ".join(map(str, tokens)) + "\n", encoding="utf-8")
+    # 独立进程预热不计入正式计数;正式速度使用随后一次 CLI 的内部计时.
+    run_sample(ctx, manifest, "warmup", prompt, 2)
+    performance, unused_text = run_sample(ctx, manifest, "performance", prompt, 128)
+    performance["scope"] = "fixed_128_input_max_128_generated_performance"
+    (ctx.result / "board_metrics.json").write_text(json.dumps({
+        "run_id": ctx.run_id, "samples": samples, "performance": performance,
+        "text_input_checks": [], "functional_failures": [],
+        "input_mode": "official_tokenizer_token_ids",
+        "unavailable_checks": ["原生文本分词与官方 tokenizer 一致性未验证"],
+        "warmup_runs": 1, "measured_runs": 1,
+    }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print("[性能采集完成] 正式指标待精度评价完成后统一发布.", flush=True)
 
 
 if __name__ == "__main__":
-    evaluate(parse_args())
+    main()

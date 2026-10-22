@@ -5,6 +5,8 @@ model:
   output_dir: .
 data:
   dataset_dir: .
+  mmlu_test: mmlu/all/test-00000-of-00001.parquet
+  wikitext_test: wikitext/wikitext-2-raw-v1/test-00000-of-00001.parquet
 board:
   deploy_dir: deepseek_r1_distill_qwen_1_5b
   dataset_dir: .
@@ -13,7 +15,7 @@ conversion:
   context: 1024
   max_new_tokens: 512
 native:
-  # 原生转换中间文件集中到 build,保留 prepare/calibrate/quantize/shape/compile 阶段.
+  # W4A16 校准、量化和双静态图集中到 build/native.
   work_dir: build/native
   prefill: 128
   calibration_batches: 32
@@ -26,3 +28,5 @@ native:
   weight_optimization: none
   weight_opt_config: ''
   calibration_train: ''
+evaluation:
+  reference_device: cuda

@@ -1,8 +1,6 @@
-"""LLM 原生部署包的公共张量契约与入口文件准备."""
+"""读取 LLM 原生部署包使用的公共张量契约."""
 
 import math
-from pathlib import Path
-import shutil
 
 from mtk_converter.python.converters.tflite.schema.tflite.Model import Model
 from mtk_converter.python.converters.tflite.schema.tflite.TensorType import TensorType
@@ -33,10 +31,3 @@ def graph_contract(path):
             result[kind].append({"name": tensor.Name().decode(), "dtype": "INT16",
                                  "shape": tensor.ShapeAsNumpy().tolist()})
     return result
-
-
-def write_compile_scripts(output):
-    """复制共享原生 CLI 入口,保留原有 Token 计数与日志规则."""
-    for source, destination in (("compile_native.sh", "compile.sh"),
-                                ("evaluate_native.sh", "evaluate.sh")):
-        shutil.copyfile(Path(__file__).with_name(source), output / destination)

@@ -3,6 +3,10 @@
 set -euo pipefail
 export MTK_EVAL_SCOPE=subset
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if (( $# != 0 )); then
+    echo '[错误] 用法: bash compile.sh.' >&2
+    exit 2
+fi
 
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
@@ -14,18 +18,17 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     echo "[板端 2/2] 生成文本示例已保存至 examples/output/."
     echo "[编译完成] 通路和示例已准备,未生成精度、性能或 RSS 报告."
 else
-    : "${MTK_LLM_PYTHON:?请通过 docker/enter_container.sh 进入容器}"
-    echo "[容器 1/6] 导出浮点模型."
-    "${MTK_LLM_PYTHON}" "${SCRIPT_DIR}/host/export_model.py"
-    echo "[容器 2/6] 准备少量示例输入."
-    "${MTK_LLM_PYTHON}" "${SCRIPT_DIR}/host/evaluate_reference.py" --examples-only
-    echo "[容器 3/6] 校准与转换."
-    "${MTK_LLM_PYTHON}" "${SCRIPT_DIR}/host/convert_model.py"
-    echo "[容器 4/6] 编译 DLA."
-    "${MTK_LLM_PYTHON}" "${SCRIPT_DIR}/host/compile_model.py"
-    echo "[容器 5/6] 交叉编译板端桥接库."
+    MODEL_BUILD_DIR="$(python "${MTK_MODELS_ROOT}/tools/storage.py" --print-build-dir "${SCRIPT_DIR}/../config.yaml")"
+    mkdir -p "${MODEL_BUILD_DIR}"
+    exec 9>"${MODEL_BUILD_DIR}/.run.lock"
+    flock -n 9 || { echo '[错误] 本模型已有转换任务.' >&2; exit 2; }
+    echo '[容器 1/4] 准备模型、校准、量化并导出双静态图.'
+    python "${SCRIPT_DIR}/host/convert.py"
+    echo '[容器 2/4] 编译 Prefill 和 Decode 双 DLA.'
+    python "${SCRIPT_DIR}/host/compile.py"
+    echo '[容器 3/4] 交叉编译板端桥接库.'
     make -C "${SCRIPT_DIR}/board"
-    echo "[容器 6/6] 上传并生成板端示例."
+    echo '[容器 4/4] 打包并上传开发板.'
     python "${SCRIPT_DIR}/host/upload.py"
     echo "[编译完成] 模型已部署并生成展示示例"
 fi

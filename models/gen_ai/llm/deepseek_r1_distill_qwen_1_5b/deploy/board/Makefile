@@ -1,4 +1,4 @@
-# 在已加载公共工具链的容器中直接 make.
+# 复用公共 Neuron 桥接源码,不依赖其他模型目录.
 MODEL_DIR := $(abspath ../..)
 include $(MTK_MODELS_ROOT)/common/cpp/common.mk
 

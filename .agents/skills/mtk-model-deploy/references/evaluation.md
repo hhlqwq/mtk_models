@@ -24,7 +24,7 @@
 └── results/summary.json      唯一正式评价报告
 ```
 
-正式模型、tokenizer、张量契约及必要评价输入仍存配置指定的资源位置.普通浮点参考进入板端 models/onnx_reference.json,YAMNet 使用 models/fp32_reference.json,MiniCPM 使用 evaluation/full/.这些是评价输入,不在 results 内复制报告.
+正式模型、tokenizer、张量契约及必要评价输入仍存配置指定的资源位置.普通浮点参考进入板端 models/onnx_reference.json,YAMNet 使用 models/fp32_reference.json,MiniCPM 和 DeepSeek 使用 evaluation/full/.这些是评价输入,不在 results 内复制报告.
 
 预测、日志、缓存和逐任务内部指标放 /tmp/hailongcodex/当天日期/模型_阶段_运行编号/,Windows 使用 D:/tmp/hailongcodex/当天日期/.失败现场保留在那里.不在 results 创建 test/full/latest/运行编号目录,不增加 accuracy_summary.json、summary_test.json 或报告格式副本.清理仅针对当前部署包 results,验证路径边界并拒绝链接越界,不能删除其他任务数据.
 
@@ -37,7 +37,7 @@
 - 参考与 NPU 必须属于同一模型版本和协议,同为 full 不足以证明可比.无匹配参考时记录绝对精度,差值留空并说明原因.
 - AP/AR/准确率/WER 的变化用原始值算百分点,PPL 用绝对差或相对变化,不称百分点.
 - 缺数据、上下文不足或程序错误时停止,不能截题、丢样本、修改阈值或自动重编译后继续宣称原模型成绩.
-- DeepSeek 当前只有固定生成样例,正式完整精度标为未实现;可按实际样例报告性能与 RSS,不伪装成完整基准.
+- 原生 LLM 使用完整 MMLU 与 WikiText2 协议,核对部署图、配置和输入契约对应同一次转换.接入评价代码不代表已经实测,旧生成样例不能代替新模型的正式成绩.
 
 ## 性能与内存
 

@@ -153,25 +153,9 @@ class CommonTest(unittest.TestCase):
              contextlib.redirect_stdout(io.StringIO()), self.assertRaises(RuntimeError):
             coco.evaluate_coco(args, model="yolov8n", status_without_reference="board_verified")
 
-    def test_llm_launcher_and_contract(self):
-        """共享原生入口保持 Token 数换算,契约拒绝非 INT16 与非法尺度."""
+    def test_llm_contract(self):
+        """原生张量契约拒绝非 INT16 与非法尺度."""
         from tools.llm import package
-        (self.work / "scripts").mkdir()
-        package.write_compile_scripts(self.work)
-        self.assertIn('MAX_TOKENS - 1', (self.work / "compile.sh").read_text())
-        fake_bin = self.work / "bin"
-        fake_bin.mkdir()
-        executable = fake_bin / "llm_cmdline_tool"
-        executable.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$ARG_LOG"\nprintf "[Full Response]\\nexample\\nGenerated Tokens: {1}\\n"\n')
-        executable.chmod(0o755)
-        environment = {**os.environ, "PATH": str(fake_bin) + ":" + os.environ["PATH"],
-                       "ARG_LOG": str(self.work / "args.log"), "MAX_NEW_TOKENS": "8",
-                       "EVAL_RUN_ID": "test", "INPUT_MODE": "tokens"}
-        subprocess.run(["bash", str(self.work / "compile.sh")], env=environment,
-                       check=True, capture_output=True)
-        calls = (self.work / "args.log").read_text().splitlines()
-        self.assertEqual(len(calls), 2)
-        self.assertTrue(all("--read-tokens" in line and "-m 7" in line for line in calls))
         quant = SimpleNamespace(ScaleLength=lambda: 1, Scale=lambda index: 0.5)
         tensor = SimpleNamespace(Quantization=lambda: quant, Type=lambda: package.TensorType.INT16,
                                  Name=lambda: b"input", ShapeAsNumpy=lambda: np.array([1, 128]))

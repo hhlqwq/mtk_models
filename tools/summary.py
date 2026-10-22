@@ -194,27 +194,13 @@ def llm_performance(ctx):
             "generated_tokens": len(speed["generated_tokens"]),
             "peak_process_rss_mib": max(values),
             "memory_scope": "本次生成、定长测速和精度评价各进程峰值的最大值",
+            "timing_scope": "原生 CLI 报告的 Prefill 与 Decode 阶段,不是纯 NPU 算子耗时",
+            "unavailable_metrics": ["纯 NPU Prefill/Decode 分项耗时: 原生 CLI 未提供",
+                                    "端到端生成速度: 未采用独立的统一计时协议"],
+            "unavailable_checks": generation.get("unavailable_checks", []),
+            "warmup_runs": generation.get("warmup_runs", 0),
+            "measured_runs": generation.get("measured_runs", 1),
             "functional_failures": generation["functional_failures"]}
-
-
-def deepseek_result(ctx):
-    """汇总现有 FP16 生成样例的实际性能,正式基准精度仍标为未实现."""
-    raw = read_json(ctx.result / "board_summary.json")
-    predictions = read_json(ctx.result / "predictions.json")
-    rows = [row for row in predictions if row["id"].endswith("_demo")]
-    prefill_ms = sum(row["prefill_npu_ms"] for row in rows)
-    decode_ms = sum(row["decode_ms"] for row in rows)
-    if not rows or min(prefill_ms, decode_ms, raw["peak_rss_mib"]) <= 0:
-        raise ValueError("DeepSeek 生成性能或 RSS 记录无效.")
-    return {"status": "partial", "evaluation_scope": "authored_generation_not_full_benchmark",
-            "precision": raw["precision"], "accuracy": {"status": "not_implemented",
-            "reason": "尚未接入正式 MMLU/WikiText 完整协议,生成样例不作为正式精度."},
-            "performance": {
-                "prefill_tokens_per_second": sum(row["prefill_tokens"] for row in rows) * 1000 / prefill_ms,
-                "decode_tokens_per_second": sum(len(row["tokens"]) for row in rows) * 1000 / decode_ms,
-                "scope": "固定中英文生成样例,不是 MiniCPM 定长测速协议",
-                "peak_process_rss_mib": raw["peak_rss_mib"],
-                "memory_scope": "Python Neuron Runtime 推理进程峰值 RSS"}}
 
 
 def publish(ctx, report):
@@ -253,14 +239,18 @@ def main():
     ctx = context(__file__)
     model = ctx.config["name"]
     print(f"[评价汇总] 核对同次精度、性能与峰值 RSS: {ctx.run_id}.", flush=True)
-    if model == "minicpm5_2b":
+    if model in ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b"):
         result = llm_accuracy(ctx)
         result["performance"] = llm_performance(ctx)
         result["precision"] = read_json(ctx.root / "manifest.json")["precision"]
+        if model == "deepseek_r1_distill_qwen_1_5b":
+            manifest = read_json(ctx.root / "manifest.json")
+            result.update(context=manifest["context"], prefill=manifest["prefill"],
+                          precision_settings=manifest["precision_settings"],
+                          source={key: manifest["preparation"]["source"][key]
+                                  for key in ("repo", "revision")})
         if result["performance"]["functional_failures"]:
             result["status"] = "functional_checks_failed"
-    elif model == "deepseek_r1_distill_qwen_1_5b":
-        result = deepseek_result(ctx)
     else:
         result = vision_accuracy(ctx)
     summary = {"schema_version": 1, "model": model, "run_id": ctx.run_id,

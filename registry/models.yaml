@@ -13,6 +13,7 @@ models:
       genio_720: board_verified
       genio_5100: not_started
   - id: deepseek_r1_distill_qwen_1_5b
+    latest_run: 20261022_deepseek_w4a16_subset
     batch: supplemental
     pilot: false
     scenario: gen_ai

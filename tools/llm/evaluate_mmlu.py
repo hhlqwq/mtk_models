@@ -222,13 +222,14 @@ def evaluate(args):
         meta["config_sha256"] = sha256(args.model / "config.json")
         if meta["config_sha256"] != protocol["model_config_sha256"]:
             raise ValueError("FP32 模型配置与题目 Token 准备配置不一致.")
-        reference = load_reference(args.model)
+        device = getattr(args, "device", "cpu")
+        reference = load_reference(args.model).to(device)
 
         def score(tokens):
             """取完整 Prompt 的最后一行官方浮点 logits."""
             with torch.inference_mode():
-                output = reference(torch.tensor([tokens])).logits[0, -1]
-            return output[protocol["choice_token_ids"]].numpy().tolist()
+                output = reference(torch.tensor([tokens], device=device)).logits[0, -1]
+            return output[protocol["choice_token_ids"]].cpu().numpy().tolist()
     else:
         # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
         from tools.llm.evaluate_board_quality import HardwareModel, transfer_cache
@@ -331,6 +332,7 @@ def main():
     parser.add_argument("backend", choices=("prepare", "pytorch", "tflite", "npu"))
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--model", type=Path)
+    parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
     parser.add_argument("--graph", type=Path)
     parser.add_argument("--context", type=int, default=1024)
     parser.add_argument("--limit", type=int, default=1000,

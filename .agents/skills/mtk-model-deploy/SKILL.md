@@ -57,7 +57,7 @@ description: 在 mtk_models 仓库适配和部署官方开源模型到 MediaTek 
 | 人脸 | `models/interaction/face_recognition/mobilefacenet` | 五点对齐、128 维特征及 LFW 十折阈值协议 |
 | 分割与深度 | `models/navigation/segmentation/fastsam`、`models/navigation/single_camera_depth/depth_anything_v2_small` | 类别无关 AR@100 与 DA-2K 点对准确率,不能替换为其他任务指标 |
 | 音频 | `models/audio/ambient_sound/yamnet`、`models/audio/stt/whisper_tiny` | 标签投影和评价折;双 DLA、自回归解码与文本规范化 |
-| 原生 LLM | `models/gen_ai/llm/minicpm5_2b`、`deepseek_r1_distill_qwen_1_5b` | Prefill/Decode、KV Cache、tokenizer、embedding、上下文;生成 Demo 不等于正式 MMLU/PPL |
+| 原生 LLM | `models/gen_ai/llm/minicpm5_2b`、`deepseek_r1_distill_qwen_1_5b` | W4A16 双 DLA、独立 MMLU/PPL 与定长性能评价;保留各模型 tokenizer、停止 Token、GQA 和 KV 契约 |
 
 G720 结果仅证明对应模型、版本和环境.G5100 无实测时保持未验证,先核实目标平台参数,不能复用 G720 编译目标或指标.
 

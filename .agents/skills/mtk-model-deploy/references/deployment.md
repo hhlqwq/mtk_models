@@ -43,6 +43,7 @@ ncc-tflite --arch=mdla5.3 --suppress-output --disallow-bridge input.tflite -o mo
 - tokenizer、chat template、BOS/EOS 和停止 Token 与官方参考一致.文本/Token 输入一致性须有实测记录.
 - 双 DLA、外置 embedding、tokenizer、配置及匹配桥接库共同构成交付,不能只统计单 DLA.
 - W4A16 与 INT16 原生 I/O 按实际图记录,重新量化后不能复用旧契约.
+- MiniCPM 和 DeepSeek 使用各自的 host/convert.py、compile.py、package.py 及板端入口,共享量化适配、KV 转移和评价工具.不得跨模型复制特殊 Token、聊天模板或 KV Head 配置.
 - 编译阶段仅准备生成示例所需 Token 与运行参数,不加载浮点模型计算基准.完整 MMLU/PPL 参考和评价输入在 evaluate.sh 阶段准备.
 - Prefill/Decode 测速及 RSS 采集只属于 evaluate.sh,输入长度、生成计数及内存范围统一写入 summary.json.
 - 生成文本放 examples/output,日志和中间指标放临时目录,results 只留一份报告.

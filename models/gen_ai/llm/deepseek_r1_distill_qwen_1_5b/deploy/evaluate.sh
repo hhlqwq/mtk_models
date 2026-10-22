@@ -1,19 +1,26 @@
 #!/usr/bin/env bash
-# 对已有模型运行生成性能评价,正式精度未实现时据实标记.
+# 独立评价已有模型的精度、性能与峰值 RSS,不量化、编译或部署.
 set -euo pipefail
-export MTK_EVAL_SCOPE=full
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export MTK_EVAL_SCOPE=full
+if (( $# != 0 )); then
+    echo '[错误] 用法: bash evaluate.sh.' >&2
+    exit 2
+fi
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"
     export PYTHONDONTWRITEBYTECODE=1
     exec 9>"${SCRIPT_DIR}/.run.lock"
     flock -n 9 || { echo "[错误] 本模型已有运行任务." >&2; exit 2; }
-    echo "[评价 1/2] 固定生成样例、性能与峰值 RSS,不作为全量基准精度."
+    echo "[全量 1/3] 已有模型性能与 RSS,运行编号: ${EVAL_RUN_ID}."
     python3 "${SCRIPT_DIR}/board/infer.py"
-    echo "[评价 2/2] 写入唯一 summary.json."
+    echo "[全量 2/3] 完整 MMLU Accuracy 和 WikiText2 PPL."
+    python3 "${SCRIPT_DIR}/board/evaluate.py"
+    echo "[全量 3/3] 保存精度、性能与峰值 RSS 到唯一 summary.json."
     python3 "${SCRIPT_DIR}/board/summary.py"
 else
-    : "${MTK_LLM_PYTHON:?请先进入已有容器}"
-    "${MTK_LLM_PYTHON}" "${SCRIPT_DIR}/host/evaluate_reference.py"
-    echo "[提示] 当前固定语料参考不代表正式 MMLU/WikiText 全量精度."
+    : "${MTK_MODELS_ROOT:?请先进入已有编译容器,仅对已有浮点模型准备评价参考}"
+    echo "[全量参考] 仅推理已有浮点模型,不导出、量化、编译或上传."
+    python "${SCRIPT_DIR}/host/evaluate.py"
+    echo "[下一步] 将上述全量参考和必要评价输入单独放入现有部署包对应位置,再在板端执行 bash evaluate.sh."
 fi
