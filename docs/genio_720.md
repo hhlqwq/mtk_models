@@ -16,7 +16,7 @@
 
 ## 独立评价
 
-在已有编译容器的模型目录执行 `bash deploy/evaluate.sh`,只读取已有浮点模型,生成同协议参考与必要输入.不导出、量化、编译或构建.普通参考为模型资源 `build/onnx_reference.json`,放入板端 `models/onnx_reference.json`;YAMNet 参考为模型资源 `fp32_reference.json`,放入板端 `models/fp32_reference.json`.MiniCPM 和 DeepSeek 的模型资源 `build/native/evaluation/full/` 整体放入板端 `evaluation/full/`.这些是评价输入,不属于对外交付报告.
+在已有编译容器的模型目录执行 `bash deploy/evaluate.sh`,只读取已有浮点模型,生成同协议参考与必要输入.不导出、量化、编译或构建.普通参考为模型资源 `build/onnx_reference.json`,放入板端 `models/onnx_reference.json`;YAMNet 参考为模型资源 `fp32_reference.json`,放入板端 `models/fp32_reference.json`.MiniCPM 的模型资源 `build/native/evaluation/mmlu1000/` 整体放入板端 `evaluation/mmlu1000/`;DeepSeek 的 `build/native/evaluation/full/` 整体放入板端 `evaluation/full/`.这些是评价输入,不属于对外交付报告.
 
 在现有板端部署目录执行:
 
@@ -28,7 +28,7 @@ bash evaluate.sh
 
 中间预测、日志、逐任务指标和调试记录位于 `/tmp/hailongcodex/当天日期/<模型>_<阶段>_<运行编号>/`.失败时保留现场,不拿上次指标冒充本次结果,不为失败运行伪造成功报告.成功发布后 results 内只保留 summary.json.临时目录由使用者按需清理.
 
-MiniCPM 和 DeepSeek 要求完整 MMLU 14042 题与 WikiText2 test.若已有上下文不足,明确报错,不截题或自动重编译.Python 生成使用官方 Token 输入,样例速度不能标为标准定长基准.新接入评价代码不代表已完成全量实测,成绩以对应版本的实际报告为准.
+MiniCPM 正式评价为 MMLU 固定 1000 题、57 学科、seed=17 的分层子集与完整 WikiText2 test,不复用旧 `evaluation/full/` 资源.DeepSeek 仍使用 MMLU 完整 14042 题及完整 WikiText2 test.若已有上下文不足,明确报错,不截题或自动重编译.Python 生成使用官方 Token 输入,样例速度不能标为标准定长基准.新接入评价代码不代表已完成实测,成绩以对应版本的实际报告为准.
 
 ## 目录
 

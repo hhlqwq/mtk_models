@@ -33,7 +33,9 @@ bash compile.sh
 
 板端会显示英文示例输入及实际聊天模板,提示 Prefill 阶段,随后实时追加生成文本并显示停止原因.英文按完整词、中文按完整字符刷新,避免显示未完成的 UTF-8 字符.示例最多生成 32 Token,可能只是回答片段,结果保存到 `examples/output/sample_1.txt`.正式评价中的展示输入也会流式打印,独立预热和性能测量关闭文本打印.
 
-正式评价前按[板端规范](../../../../docs/genio_720.md)准备完整 MMLU/WikiText2 输入和参考,再在开发板部署目录执行:
+正式评价在编译容器中先执行 `bash deploy/evaluate.sh`: MMLU 使用固定 1000 题、57 学科、seed=17 的按学科比例分层抽样,WikiText2 使用完整 raw test.参考计算读取 `evaluation.reference_device`,MMLU 不再默认落到 CPU;CUDA 不可用时明确报错,不自动回退.不运行 W8A16,不重新量化或编译.
+
+将模型资源目录 `build/native/evaluation/mmlu1000/` 的内容单独放入已有板端部署包 `evaluation/mmlu1000/`,按[板端规范](../../../../docs/genio_720.md)核对后在开发板部署目录执行:
 
 ```bash
 bash evaluate.sh
@@ -41,11 +43,17 @@ bash evaluate.sh
 
 compile.sh 仅生成少量示例,正式指标统一由 evaluate.sh 给出.
 
+MMLU 是无聊天模板、不自动加特殊 Token 的 0-shot 单 Token 选项评分,不生成完整回答,EOS 和生成上限不参与评分.准备时核对原始与转换副本分词器对每题和选项的 Token 一致性,确认空格加 A/B/C/D 在完整提示词后仍为单 Token 延续.参考与板端共用同一份题目 Token、顺序和评分协议.新资源目录不复用旧 `evaluation/full/` 的结果;新生成的题目指纹未与历史清单核对前,不能宣称复现了旧基线.
+
+原始 safetensors 存储为 BF16;当前本地参考将其加载为 FP32 参数计算,并记录存储 dtype、实际参数 dtype、设备及权重文件字节数.它不是官方公布的 FP32 基准成绩,转为 FP32 也不会恢复 BF16 权重舍弃的信息.报告中的 `evaluation_scope=full` 表示完整执行本模型约定范围,MMLU 仍标为固定千题子集,`full_benchmark_evaluated=false`.
+
+W4A16 的误差归因先比较原框架浮点、SDK 转换浮点、同图 W4A16 软件执行和 G720 NPU.先用固定小样本定位 logits 与预测差异,再决定是否运行千题诊断;这些比较不由正式入口自动追加.缺少同版本对照时不将全部掉点归因于量化,不自动判定精度损失合理或验收通过.
+
 ## 迁移前结果
 
 以下为已有交付模型的固定子集成绩,不是全量基准.
 
-| 指标 | 官方 FP32 | W4A16 |
+| 指标 | 本地浮点参考,历史记录标为 FP32 | W4A16 |
 |---|---:|---:|
 | MMLU,1000 题 | 55.9% | 41.3% |
 | WikiText2 PPL,前 128 行 | 40.04 | 48.38 |
@@ -53,5 +61,7 @@ compile.sh 仅生成少量示例,正式指标统一由 evaluate.sh 给出.
 | Decode 速度 | — | 8.15 Token/s |
 | 推理进程峰值 RSS | — | 1152.42 MiB |
 
-以上成绩对应已归档的量化配方,不代表默认配置重新转换后的结果.
+以上成绩对应已归档的 `hessian_16_samples` 量化配方及迁移前实现,历史参考运行的完整精度口径仍待原始证据核对,不代表当前默认配方和 Python 实现的结果.55.9% 到 41.3% 是下降 14.6 个百分点,不是 W4A16 的合理损失阈值,也不是官方分数对比.
+
+历史部署大小 2827.29 MB 包含 Prefill/Decode 两个独立 DLA 合计 2292.52 MB 和外置 INT16 embedding 534.77 MB,不能当作单份 INT4 权重体积.输入 Embedding 与 LM Head 各有 267386880 个参数且不共享;估算时不能遗漏 LM Head,也不能把 INT16 embedding 称为 FP16.
 结果及适配说明见 [summary.json](results/summary.json) 和 [ADAPTATION.md](ADAPTATION.md).

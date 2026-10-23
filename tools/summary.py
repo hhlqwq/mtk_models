@@ -92,8 +92,9 @@ def vision_accuracy(ctx):
 
 
 def llm_accuracy(ctx):
-    """核对完整 MMLU/PPL 协议及模型标识,不读取 Demo 或性能文件."""
-    data = ctx.root / "evaluation/full"
+    """核对约定范围的 MMLU/PPL 协议及模型标识,不读取 Demo 或性能文件."""
+    minicpm = ctx.config["name"] == "minicpm5_2b"
+    data = ctx.root / ("evaluation/mmlu1000" if minicpm else "evaluation/full")
     mmlu = read_json(ctx.result / "mmlu/mmlu_accuracy.json")
     ppl = read_json(ctx.result / "wikitext/npu_quality.json")
     reference_mmlu = read_json(data / "reference/mmlu/mmlu_accuracy.json")
@@ -110,9 +111,19 @@ def llm_accuracy(ctx):
         for field in fields:
             if actual[field] != reference[field]:
                 raise ValueError(f"LLM 参考与硬件评价协议不一致: {field}.")
-    require_count(mmlu["evaluated_questions"], 14042)
-    if mmlu["scope"] != "full_test" or ppl["protocol"] != "full_test_block128_v1":
-        raise ValueError("要求完整 MMLU 和 WikiText2 test 协议.")
+    require_count(mmlu["evaluated_questions"], 1000 if minicpm else 14042)
+    expected_scope = "first_round_stratified_subset" if minicpm else "full_test"
+    if mmlu["scope"] != expected_scope or ppl["protocol"] != "full_test_block128_v1":
+        raise ValueError("MMLU 或 WikiText2 test 不符合本模型约定的评价范围.")
+    if minicpm:
+        for row in (mmlu, reference_mmlu):
+            if (row.get("sampling_seed") != 17 or row.get("subjects") != 57
+                    or row.get("source_tokenizer_parity") is not True
+                    or row.get("choice_continuation_checked") is not True):
+                raise ValueError("MiniCPM 千题抽样或 Token 协议核对记录不完整.")
+        if (mmlu.get("tokenizer_sha256") != reference_mmlu.get("tokenizer_sha256")
+                or reference_mmlu.get("reference", {}).get("parameter_dtypes") != ["torch.float32"]):
+            raise ValueError("MiniCPM 参考缺少匹配的 Tokenizer 或实际 FP32 精度记录.")
     manifest = read_json(ctx.root / "manifest.json")
     prompt_name = f"{manifest['context']}c/prompt.dla"
     prompt = next(row for row in manifest["files"] if row["name"] == prompt_name)
@@ -125,14 +136,26 @@ def llm_accuracy(ctx):
     if not all(math.isfinite(row["perplexity"]) and row["perplexity"] > 0
                for row in (ppl, reference_ppl)):
         raise ValueError("WikiText2 PPL 无效.")
-    return {"full_benchmark_evaluated": True, "accuracy": {
+    result = {"full_benchmark_evaluated": not minicpm, "accuracy": {
         "mmlu": {"questions": mmlu["evaluated_questions"],
+                 "scope": mmlu["scope"], "subjects": mmlu["subjects"],
+                 "sampling_seed": mmlu["sampling_seed"],
+                 "scoring": mmlu["scoring"], "cases_sha256": mmlu["cases_sha256"],
                  "fp32_accuracy": reference_mmlu["accuracy"], "npu_accuracy": mmlu["accuracy"],
                  "difference_percentage_points": 100 * (mmlu["accuracy"] - reference_mmlu["accuracy"])},
         "wikitext": {"blocks": ppl["blocks"], "scored_tokens": ppl["scored_tokens"],
                      "protocol": ppl["protocol"], "fp32_ppl": reference_ppl["perplexity"],
                      "npu_ppl": ppl["perplexity"],
                      "difference": ppl["perplexity"] - reference_ppl["perplexity"]}}}
+    if minicpm:
+        result.update(
+            accuracy_scope="fixed_1000_mmlu_and_full_wikitext2",
+            reference=reference_mmlu["reference"],
+            quality_assessment={
+                "status": "measured_difference_not_automatically_accepted",
+                "error_attribution": "unverified_without_matched_sdk_float_and_w4a16_software_comparison",
+            })
+    return result
 
 
 def vision_performance(ctx, report):

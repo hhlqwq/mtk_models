@@ -13,7 +13,7 @@ board:
   dataset_dir: .
   results_dir: results
 conversion:
-  # 全量题集超限时按入口报告增大上下文并重新转换,禁止截题或丢题.
+  # 约定题集超限时按入口报告增大上下文并另行转换,禁止截题或丢题.
   context: 1024
   max_new_tokens: 512
 native:
@@ -31,7 +31,10 @@ native:
   weight_opt_config: ''
   calibration_train: ''
 evaluation:
-  # 默认小批量只缩小评价范围,不改变校准和量化配方;全量精度独立执行.
+  # 正式 MMLU 固定 1000 题,覆盖 57 学科;WikiText2 仍使用完整 test.
+  mmlu_questions: 1000
+  mmlu_seed: 17
+  # 小批量仅用于通路诊断,不作为正式精度.
   test_mmlu_questions: 16
   test_wikitext_blocks: 4
   reference_device: cuda

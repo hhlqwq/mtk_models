@@ -38,6 +38,8 @@ bash compile.sh
 
 原生 LLM 参考 MiniCPM5 或 DeepSeek 的双 DLA 流程,按本模型定义 tokenizer、停止 Token、Prefill/Decode 与 KV 接口.参考输入必须匹配已有部署图;完整题目超上下文时报告所需长度,不在评价入口截题或重新编译.
 
+评价范围按模型明确配置: MiniCPM 为固定 1000 题、57 学科、seed=17 的 MMLU 分层子集及完整 WikiText2 test,参考资源用 evaluation/mmlu1000/;DeepSeek 保持完整 MMLU 与 WikiText2 test.不得把千题子集标为完整 MMLU 基准.参考计算读取实际设备配置,分别记录权重存储精度与参考计算精度;MMLU 校验提示词 Token 和单 Token 选项延续,不自动套用聊天模板.仅做 W4A16,掉点先比较原框架、SDK 浮点转换、W4A16 软件和 NPU,不默认追加实验或宣称损失合理.
+
 ## 结果与示例
 
 `results/summary.json` 保存真实汇总,未完成评价不得填入示例数字.选取少量有来源和许可的输入,展示本次真实输出.全量数据和原始权重保存在 NAS,不进入 Git.

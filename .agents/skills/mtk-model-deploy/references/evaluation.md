@@ -24,7 +24,7 @@
 └── results/summary.json      唯一正式评价报告
 ```
 
-正式模型、tokenizer、张量契约及必要评价输入仍存配置指定的资源位置.普通浮点参考进入板端 models/onnx_reference.json,YAMNet 使用 models/fp32_reference.json,MiniCPM 和 DeepSeek 使用 evaluation/full/.这些是评价输入,不在 results 内复制报告.
+正式模型、tokenizer、张量契约及必要评价输入仍存配置指定的资源位置.普通浮点参考进入板端 models/onnx_reference.json,YAMNet 使用 models/fp32_reference.json,MiniCPM 使用 evaluation/mmlu1000/,DeepSeek 使用 evaluation/full/.这些是评价输入,不在 results 内复制报告.
 
 预测、日志、缓存和逐任务内部指标放 /tmp/hailongcodex/当天日期/模型_阶段_运行编号/,Windows 使用 D:/tmp/hailongcodex/当天日期/.失败现场保留在那里.不在 results 创建 test/full/latest/运行编号目录,不增加 accuracy_summary.json、summary_test.json 或报告格式副本.清理仅针对当前部署包 results,验证路径边界并拒绝链接越界,不能删除其他任务数据.
 
@@ -38,7 +38,9 @@
 - 参考与 NPU 必须属于同一模型版本和协议,同为 full 不足以证明可比.无匹配参考时记录绝对精度,差值留空并说明原因.
 - AP/AR/准确率/WER 的变化用原始值算百分点,PPL 用绝对差或相对变化,不称百分点.
 - 缺数据、上下文不足或程序错误时停止,不能截题、丢样本、修改阈值或自动重编译后继续宣称原模型成绩.
-- 原生 LLM 使用完整 MMLU 与 WikiText2 协议,核对部署图、配置和输入契约对应同一次转换.接入评价代码不代表已经实测,旧生成样例不能代替新模型的正式成绩.
+- 原生 LLM 按模型约定范围评价: MiniCPM 使用固定 1000 题、57 学科、seed=17 的分层 MMLU 子集和完整 WikiText2 test,DeepSeek 保持完整 MMLU 与 WikiText2 test.正式入口的 full 表示完整执行约定范围,不能将千题子集标为完整 MMLU 基准.核对部署图、配置和输入契约对应同一次转换,接入代码或旧生成样例不能代替新实测.
+- 区分官方权重存储 dtype 与本地参考参数/计算精度及设备,本地复现不能标成官方公布分数.MMLU 保留约定的提示词及选项评分,验证完整提示词后的选项 Token 延续,不因模型用于聊天就自动套用 Chat Template.主机与板端共用固定题目清单,变更抽样或协议后不直接比较旧基线.
+- 仅做 W4A16.精度退化先区分原框架、SDK 浮点转换、同图 W4A16 软件执行和 NPU 的误差;先获准做小样本定位,不默认增加耗时实验.无同版本对照及明确验收依据时,不把测得的掉点解释为合理损失或量化极限.
 
 ## 性能与内存
 

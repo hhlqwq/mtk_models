@@ -1,4 +1,4 @@
-"""使用固定 MMLU 0-shot 题集对比官方 FP32 与板端 NPU Accuracy."""
+"""使用固定 MMLU 0-shot 题集对比官方权重的 FP32 参考与板端 Accuracy."""
 
 import argparse
 from collections import defaultdict
@@ -62,6 +62,8 @@ def prepare(args):
     selected = (sorted(random.Random(args.seed).sample(range(len(rows)), test_questions))
                 if is_test() else select_questions(rows, args.limit, args.seed))
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
+    source_tokenizer = (AutoTokenizer.from_pretrained(args.source_model, local_files_only=True)
+                        if getattr(args, "source_model", None) else None)
     choices = [tokenizer.encode(" " + letter, add_special_tokens=False)
                for letter in "ABCD"]
     if any(len(tokens) != 1 for tokens in choices):
@@ -75,9 +77,20 @@ def prepare(args):
         prompt += "\n".join(f"{letter}. {choice}" for letter, choice in
                             zip("ABCD", row["choices"])) + "\nAnswer:"
         tokens = tokenizer.encode(prompt, add_special_tokens=False)
+        if source_tokenizer is not None and tokens != source_tokenizer.encode(
+                prompt, add_special_tokens=False):
+            raise ValueError(f"原始与转换副本 Tokenizer 的题目输入不一致: {source_index}.")
+        for letter, choice in zip("ABCD", choices):
+            if tokenizer.encode(prompt + " " + letter, add_special_tokens=False) != tokens + choice:
+                raise ValueError(f"选项不是完整 Prompt 后的单 Token 延续: {source_index},{letter}.")
+            if source_tokenizer is not None and source_tokenizer.encode(
+                    prompt + " " + letter, add_special_tokens=False) != tokens + choice:
+                raise ValueError(f"原始 Tokenizer 的选项延续不一致: {source_index},{letter}.")
         cases.append({"id": index, "subject": row["subject"],
                       "source_question_id": source_index,
                       "input_ids": tokens, "answer": int(row["answer"])})
+        if (index + 1) % 100 == 0 or index + 1 == len(selected):
+            print(f"[MMLU Token 核对] {index + 1}/{len(selected)}.", flush=True)
     subject_count = len({case["subject"] for case in cases})
     maximum = max(len(case["input_ids"]) for case in cases)
     print(f"[MMLU 输入] {len(cases)} 题,{subject_count} 学科,0-shot,最长 {maximum} Token.",
@@ -96,6 +109,9 @@ def prepare(args):
                 "context": args.context, "choice_token_ids": [x[0] for x in choices],
                 "chat_template": False, "add_special_tokens": False,
                 "scoring": "argmax_single_token_continuation_space_ABCD",
+                "choice_continuation_checked": True,
+                "source_tokenizer_parity": source_tokenizer is not None,
+                "tokenizer_sha256": sha256(args.model / "tokenizer.json"),
                 "model_config_sha256": sha256(args.model / "config.json")}
     if is_test():
         record_selection(row["source_question_id"] for row in cases)
@@ -141,7 +157,7 @@ def prepare(args):
 
 
 def load_reference(model_path):
-    """按官方 Safetensors 严格加载 FP32 权重,不重写官方资源."""
+    """将官方存储精度的权重严格加载到 FP32 模型,记录两种精度口径."""
     # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     import torch
     from safetensors.torch import load_file
@@ -158,7 +174,16 @@ def load_reference(model_path):
     for name in files:
         print(f"[MMLU FP32] 加载 {name}.", flush=True)
         state.update(load_file(model_path / name, device="cpu"))
+    storage_dtypes = sorted({str(value.dtype) for value in state.values()})
     model.load_state_dict(state, strict=True)
+    del state
+    model.reference_metadata = {
+        "checkpoint_dtypes": storage_dtypes,
+        "parameter_dtypes": sorted({str(value.dtype) for value in model.parameters()}),
+        "checkpoint_bytes": sum((model_path / name).stat().st_size for name in files),
+        "parameter_count": sum(value.numel() for value in model.parameters()),
+        "origin": "local_reference_from_official_weights_not_official_benchmark",
+    }
     return model.eval()
 
 
@@ -223,12 +248,26 @@ def evaluate(args):
         if meta["config_sha256"] != protocol["model_config_sha256"]:
             raise ValueError("FP32 模型配置与题目 Token 准备配置不一致.")
         device = getattr(args, "device", "cpu")
+        if device == "cuda":
+            if not torch.cuda.is_available():
+                raise RuntimeError("MMLU 配置为 CUDA,但 CUDA 不可用;不自动退回 CPU.")
+            torch.backends.cuda.matmul.allow_tf32 = False
+            torch.backends.cudnn.allow_tf32 = False
+        if protocol.get("tokenizer_sha256") and sha256(
+                args.model / "tokenizer.json") != protocol["tokenizer_sha256"]:
+            raise ValueError("MMLU 参考的 Tokenizer 与题目准备阶段不一致.")
         reference = load_reference(args.model).to(device)
+        meta["reference"] = dict(reference.reference_metadata, device=device,
+                                 cuda_matmul_tf32=False if device == "cuda" else None,
+                                 torch_version=torch.__version__)
+        print(f"[MMLU 参考] 存储 {meta['reference']['checkpoint_dtypes']},"
+              f"参数 {meta['reference']['parameter_dtypes']},设备 {device},"
+              f"待评分 {len(cases)} 题.", flush=True)
 
         def score(tokens):
             """取完整 Prompt 的最后一行官方浮点 logits."""
             with torch.inference_mode():
-                output = reference(torch.tensor([tokens], device=device)).logits[0, -1]
+                output = reference(torch.tensor([tokens], device=device), use_cache=False).logits[0, -1]
             return output[protocol["choice_token_ids"]].cpu().numpy().tolist()
     else:
         # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
@@ -241,6 +280,9 @@ def evaluate(args):
         graph = (args.package / f"{manifest['context']}c/prompt.dla"
                  if args.backend == "npu" else args.graph)
         embeddings = args.package / "tokenizer/embedding_int16.bin"
+        if protocol.get("tokenizer_sha256") and sha256(
+                args.package / "tokenizer/tokenizer.json") != protocol["tokenizer_sha256"]:
+            raise ValueError("部署 Tokenizer 与 MMLU 题目准备阶段不一致.")
         for path in ([graph, embeddings] if args.backend == "npu" else [embeddings]):
             relative = path.relative_to(args.package).as_posix()
             entries = [x for x in manifest["files"] if x["name"] == relative]
@@ -316,6 +358,8 @@ def evaluate(args):
                   subject_accuracy={name: sum(values) / len(values)
                                     for name, values in groups.items()},
                   elapsed_seconds_this_run=time.perf_counter() - started)
+    if "reference" in meta:
+        report["reference"] = meta["reference"]
     if args.diagnostic_questions:
         report["scope"] = "multiblock_diagnostic_not_first_round_accuracy"
         report["diagnostic_case_ids"] = [row["id"] for row in cases]
@@ -336,7 +380,7 @@ def main():
     parser.add_argument("--graph", type=Path)
     parser.add_argument("--context", type=int, default=1024)
     parser.add_argument("--limit", type=int, default=1000,
-                        help="独立工具保留首轮 1000 题默认值,模型一键入口显式传入 0 使用完整测试集.")
+                        help="默认按学科分层抽取 1000 题;0 表示完整测试集,模型入口按约定显式选择.")
     parser.add_argument("--seed", type=int, default=17)
     parser.add_argument("--diagnostic-questions", type=int, default=0,
                         help="仅用于覆盖不同长度的多块执行诊断,不代替千题成绩.")

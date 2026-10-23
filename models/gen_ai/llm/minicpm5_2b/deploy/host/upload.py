@@ -29,7 +29,8 @@ def main():
     print("[待板端检查] 上传完成,尚未执行板端推理或生成展示示例.", flush=True)
     print(f"[板端入口] 请登录开发板后执行: cd -- {shlex.quote(target)} && bash compile.sh",
           flush=True)
-    print("[评价入口] 准备全量资源后在部署目录执行 bash evaluate.sh.", flush=True)
+    print("[评价入口] 独立准备千题 MMLU 和完整 WikiText2 参考,放入板端 evaluation/mmlu1000/ 后执行 bash evaluate.sh.",
+          flush=True)
 
 
 

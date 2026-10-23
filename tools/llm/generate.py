@@ -196,7 +196,8 @@ def run(entry):
                 samples.append(row)
         if is_test():
             return
-        quality = read_json(ctx.root / "evaluation/full/quality/board_quality_protocol.json")
+        evaluation = "mmlu1000" if ctx.config["name"] == "minicpm5_2b" else "full"
+        quality = read_json(ctx.root / f"evaluation/{evaluation}/quality/board_quality_protocol.json")
         tokens = quality["input_ids"][:128]
         if len(tokens) != 128:
             raise ValueError("定长性能输入不足 128 Token.")

@@ -8,15 +8,15 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export PYTHONDONTWRITEBYTECODE=1
     exec 9>"${SCRIPT_DIR}/.run.lock"
     flock -n 9 || { echo "[错误] 本模型已有运行任务." >&2; exit 2; }
-    echo "[全量 1/3] 已有模型推理,运行编号: ${EVAL_RUN_ID}."
+    echo "[正式评价 1/3] 已有模型推理,MMLU 固定 1000 题、WikiText2 完整 test,运行编号: ${EVAL_RUN_ID}."
     python3 "${SCRIPT_DIR}/board/infer.py"
     python3 "${SCRIPT_DIR}/board/evaluate.py"
-    echo "[全量 2/3] MMLU Accuracy 和 WikiText2 PPL 已计算."
-    echo "[全量 3/3] 保存精度、性能与峰值 RSS 到唯一 summary.json."
+    echo "[正式评价 2/3] 千题 MMLU Accuracy 和完整 WikiText2 PPL 已计算."
+    echo "[正式评价 3/3] 保存实际范围、精度、性能与峰值 RSS 到唯一 summary.json."
     python3 "${SCRIPT_DIR}/board/summary.py"
 else
     : "${MTK_MODELS_ROOT:?请先进入已有编译容器,仅对已有浮点模型准备评价参考}"
-    echo "[全量参考] 仅推理已有浮点模型,不导出、量化、编译或上传."
+    echo "[正式参考] MMLU 固定 1000 题、WikiText2 完整 test,使用配置的参考设备;不导出、量化、编译或上传."
     python "${SCRIPT_DIR}/host/evaluate.py"
-    echo "[下一步] 将上述全量参考和必要评价输入单独放入现有部署包对应位置,再在板端执行 bash evaluate.sh."
+    echo "[下一步] 将上述参考和必要评价输入单独放入板端 evaluation/mmlu1000/,再在板端执行 bash evaluate.sh."
 fi

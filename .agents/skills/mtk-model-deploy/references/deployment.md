@@ -47,7 +47,7 @@ ncc-tflite --arch=mdla5.3 --suppress-output --disallow-bridge input.tflite -o mo
 - 双 DLA、外置 embedding、tokenizer、配置及 Python 推理代码共同构成交付,依赖匹配的 SDK 动态库,不能只统计单 DLA.生成循环、KV 转移及采样均使用 Python.
 - W4A16 与 INT16 原生 I/O 按实际图记录,重新量化后不能复用旧契约.
 - MiniCPM 和 DeepSeek 使用各自的 host/convert.py、compile.py、package.py 及板端入口,共享量化适配、KV 转移和评价工具.不得跨模型复制特殊 Token、聊天模板或 KV Head 配置.
-- 编译阶段仅准备生成示例所需 Token 与运行参数,不加载浮点模型计算基准.完整 MMLU/PPL 参考和评价输入在 evaluate.sh 阶段准备.
+- 编译阶段仅准备生成示例所需 Token 与运行参数,不加载浮点模型计算基准.按约定范围的 MMLU/PPL 参考和评价输入在 evaluate.sh 阶段准备;MiniCPM 固定千题 MMLU 的正式资源用 evaluation/mmlu1000/,DeepSeek 完整 MMLU 的资源用 evaluation/full/,两者 WikiText2 均为完整 test.
 - Prefill/Decode 测速及 RSS 采集只属于 evaluate.sh,输入长度、生成计数及内存范围统一写入 summary.json.
 - 生成文本放 examples/output,日志和中间指标放临时目录,results 只留一份报告.
 
