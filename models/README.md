@@ -62,7 +62,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | LightGlue（SuperPoint，固定1024关键点） | SLAM / 定位 | — | — | — | — | — | — | — |
 | PointPillar-Tiny | 点云 / 点云 | — | — | — | — | — | — | — |
 | CenterPoint-Pillar 0.2（双 PFN,10 sweeps）<br>[tianweiy/CenterPoint](https://github.com/tianweiy/CenterPoint) | 点云 / 点云 | 每点 5 维,10 sweeps<br>参数量待统计 | — | nuScenes,10 类<br>mAP / NDS | — | — | — | — |
-| MIT BEVFusion | 点云 / 3D融合 | — | — | — | — | — | — | — |
+| [MIT BEVFusion](pointcloud/three_d_fusion/mit_bevfusion/README.md)<br>camera+lidar,swint_v0p075 | 点云 / 3D融合 | 六相机 256×704<br>5维 LiDAR,最多10帧 | 原始: 163.72 MB<br>四个 FP32 子图 | nuScenes trainval val,6019 帧<br>mAP / NDS,待评价 | **CPU FP32 + NPU FP16**<br>三 DLA: 13.43 MB<br>一帧板端完整通路通过 | 待用户全量评价 | — | — |
 | [YOLOv5s-v7.0](perception/object_detection/yolov5s/README.md)<br>YOLOv5-S,官方 `v7.0` 权重 | 感知 / 目标检测 | RGB `1×3×640×640`<br>7.24 M | 原始: 14.81 MB<br>ONNX: 28.94 MB | COCO val2017,5000 张<br>bbox mAP@0.5:0.95<br>ONNX: 37.09% | **W8A8**<br>DLA: 7.66 MB<br>NPU: 9.757 ms<br>RSS: 33.23 MiB | 35.86%<br>下降 1.23 个百分点<br>[报告](perception/object_detection/yolov5s/results/summary.json) | — | — |
 
 ### 数据说明

@@ -1,0 +1,13 @@
+# 官方 camera + lidar 检测权重,连接信息由平台本地配置提供.
+model:
+    weights: bevfusion-det.pth
+    source: upstream
+    output_dir: .
+data:
+    dataset_dir: nuScenes/raw/v1.0-mini
+    version: v1.0-mini
+    split: mini_val
+board:
+    deploy_dir: mit_bevfusion
+    dataset_dir: nuScenes
+    results_dir: results

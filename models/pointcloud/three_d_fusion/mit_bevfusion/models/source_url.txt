@@ -1,0 +1,18 @@
+官方源码: MIT HAN Lab BEVFusion,Apache-2.0.
+https://github.com/mit-han-lab/bevfusion/tree/db75150717a9462cb60241e36ba28d65f6908607
+固定配置: configs/nuscenes/det/transfusion/secfpn/camera+lidar/swint_v0p075/convfuser.yaml
+https://github.com/mit-han-lab/bevfusion/blob/db75150717a9462cb60241e36ba28d65f6908607/configs/nuscenes/det/transfusion/secfpn/camera%2Blidar/swint_v0p075/convfuser.yaml
+原始权重: bevfusion-det.pth,163715701 bytes,由用户下载到模型资源目录.
+官方 README 中的下载链接:
+https://www.dropbox.com/scl/fi/ulaz9z4wdwtypjhx7xdi3/bevfusion-det.pth?rlkey=ovusfi2rchjub5oafogou255v&dl=1
+官方许可证:
+https://github.com/mit-han-lab/bevfusion/blob/db75150717a9462cb60241e36ba28d65f6908607/LICENSE
+Swin 与 OpenMMLab 推理语义参考:
+https://github.com/open-mmlab/mmdetection/blob/v2.20.0/mmdet/models/backbones/swin.py
+https://github.com/open-mmlab/mmdetection/blob/v2.20.0/mmdet/models/utils/transformer.py
+厂商分图参考,不使用其预导出模型或权重:
+https://github.com/NVIDIA-AI-IOT/Lidar_AI_Solution/tree/master/CUDA-BEVFusion
+数据集与官方评分工具:
+https://www.nuscenes.org/download
+https://github.com/nutonomy/nuscenes-devkit
+https://pypi.org/project/nuscenes-devkit/1.2.0/

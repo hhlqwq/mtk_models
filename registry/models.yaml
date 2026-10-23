@@ -1,5 +1,16 @@
 schema_version: 1
 models:
+  - id: mit_bevfusion
+    batch: first_batch
+    pilot: false
+    scenario: pointcloud
+    category: three_d_fusion
+    path: models/pointcloud/three_d_fusion/mit_bevfusion
+    source: mit-han-lab/bevfusion
+    delivery_reference: NVIDIA-AI-IOT/Lidar_AI_Solution/CUDA-BEVFusion
+    platforms:
+      genio_720: board_verified
+      genio_5100: not_started
   - id: resnet101
     latest_run: 20261023_041137_1275282
     batch: supplemental
