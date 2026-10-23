@@ -32,7 +32,7 @@ bash models/perception/object_detection/yolov5s/deploy/compile.sh
 
 也可以在模型目录单独执行主流程文件,例如 YOLOv5s 在容器中执行 `python deploy/host/compile_model.py`,无需传配置路径.板端使用 `python3 board/infer.py` 做默认小批量推理,`python3 board/render_examples.py` 读取当天同模型、同范围的最近一次结果.独立评价文件默认全量,需要已有全量推理结果;缺少前一步产物时直接报错,不会补跑.完整评价仍运行 `bash evaluate.sh`.
 
-`evaluate.sh` 独立使用已有模型: 容器端生成浮点参考及必要评价输入,单独放入现有板端部署包后,板端执行 `bash evaluate.sh`,统一给出精度、性能和推理进程峰值 RSS,不重新量化或编译.每个模型的 `results/` 只保留一个 `summary.json`,示例位于 `examples/`,预测、日志及中间报告位于日期临时目录.后续新增模型遵循同一方式,详见[板端规范](docs/genio_720.md).
+`evaluate.sh` 独立使用已有模型: 容器端生成浮点参考及必要评价输入,放入现有板端部署包后,板端执行 `bash evaluate.sh`,统一给出精度、性能和推理进程峰值 RSS,不重新量化或编译.ResNet101 的容器入口已自动上传参考,具体行为见模型说明.每个模型的 `results/` 只保留一个 `summary.json`,示例位于 `examples/`,预测、日志及中间报告位于日期临时目录.后续新增模型遵循同一方式,详见[板端规范](docs/genio_720.md).
 
 新建编译环境时使用 `docker/build_image.sh` 和 `docker/create_container.sh`,具体资源要求见 Docker 文档.运行模型时不自动下载权重、数据集或安装依赖.
 
@@ -74,4 +74,4 @@ tests/               公共代码回归测试
 
 精度比较须使用同一模型、输入和评价协议.全量、固定子集和功能示例分别标识,运行成功不等于精度合格.性能注明纯 NPU 或端到端范围,RSS 不等同于全部驱动内存.更换权重、量化配方或设备环境后须重新评价才能更新结论.
 
-原有 11 个已适配模型的 Python 推理代码已迁移,尚未进行板端验证.这些模型文档中的历史精度、性能、RSS 和示例不能作为新实现的验证结果.新增 [ResNet101](models/perception/image_classification/resnet101/README.md)已完成 G720 编译、部署和三张图片的 Python NPU 通路检查,全量精度、性能与 RSS 尚未评价.
+原有 11 个已适配模型的 Python 推理代码已迁移,尚未进行板端验证.这些模型文档中的历史精度、性能、RSS 和示例不能作为新实现的验证结果.[ResNet101](models/perception/image_classification/resnet101/README.md)已完成 G720 Python NPU 全量精度、性能与 RSS 评价,同协议 ONNX 参考已核对,当前结果见模型总览和报告.

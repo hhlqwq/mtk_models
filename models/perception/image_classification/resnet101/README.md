@@ -19,7 +19,7 @@ dataset_root/ImageNet/
 
 标签按上述图片编号排列,每行一个 TorchVision 零基类别 ID,共 50000 行;也接受从 1 开始的连续行号加类别 ID 两列.必须由 ImageNet devkit 的类别信息映射到 TorchVision 类别顺序,不能直接将 devkit 原始标签减 1.数据来自 [ILSVRC2012 官方入口](https://image-net.org/challenges/LSVRC/2012/),遵守其访问和使用条件.
 
-默认校准按文件名排序跳过 1000 张,取之后的 100 张.这是复用验证集的 PTQ 校准,与正式 50000 张验证集有 100 张重叠,不是独立校准集.评价报告同时记录重叠数量和排除这些图片后的 NPU Top-1/Top-5;后者没有独立 FP32 子集参考,不计算差值.若改用独立校准集,须同步调整配置,重新编译后再评价.
+默认校准按文件名排序跳过 1000 张,取之后的 100 张.这是复用验证集的 PTQ 校准,与正式 50000 张验证集有 100 张重叠,不是独立校准集.报告保留这项重叠说明,分类精度只评价完整验证集 Top-1.若改用独立校准集,须同步调整配置,重新编译后再评价.
 
 ## 张量与预处理
 
@@ -65,13 +65,17 @@ bash compile.sh
 bash models/perception/image_classification/resnet101/deploy/evaluate.sh
 ```
 
-只对已导出的 `model_fp32.onnx` 计算全量 ImageNet Top-1/Top-5,参考保存为资源目录的 `build/onnx_reference.json`.将此文件单独放到已有板端部署包的 `models/onnx_reference.json`,确认板端已有完整验证集和标签,再在部署目录执行:
+只对已导出的 `model_fp32.onnx` 计算全量 ImageNet Top-1,参考保存为资源目录的 `build/onnx_reference.json`.入口随后校验已有板端模型版本,自动将参考上传到 `models/onnx_reference.json`,不上传或替换模型,也不自动启动板端任务.确认板端已有完整验证集和标签后,在部署目录执行:
 
 ```bash
 bash evaluate.sh
 ```
 
-板端执行 5 次预热和 50000 张验证图推理,严格核对图片顺序、数量、标签和模型版本,完整后将精度、相对同协议 FP32 的百分点变化、性能和 RSS 发布到唯一 `results/summary.json`.缺参考时保留绝对精度,差值为空并标记 `partial`;存在不匹配参考时直接报错.评价不触发导出、量化、编译或上传.
+板端执行 5 次预热和 50000 张验证图推理,严格核对图片顺序、数量、标签和模型版本,完整后将 Top-1、相对同协议 FP32 的百分点变化、性能和 RSS 发布到唯一 `results/summary.json`.缺参考时保留绝对精度,差值为空并标记 `partial`;存在不匹配参考时直接报错.评价不触发模型导出、量化、编译或重新部署.
+
+如果已经完成 ONNX 评价,在容器的本模型目录执行 `python deploy/host/upload_reference.py` 即可上传已有参考,不会重复计算浮点参考.如果板端也已完成推理,可以只运行 `python3 board/evaluate.py --run-id <原运行编号>`,读取当天已有预测重新汇总,不调用 NPU.本次报告就是复用原运行编号补齐参考后生成的.
+
+摘要沿用已有 ViT 分类模型的字段: `metric`、`board_accuracy`、`reference_accuracy`、`accuracy_change_percentage_points`、`npu_mean_ms`、`peak_rss_mib` 和 `model_size`.分类指标只有 Top-1,精度使用 0-1 比例,文件大小使用十进制 MB.完整预处理参数留在模型契约和本页说明中,不在摘要里重复 mean/std、原生缓冲区大小或辅助子集精度;运行时契约和已有预测格式保持不变.
 
 - 纯 NPU 时间: SDK 同步 `inference` 调用,不含 I/O 绑定与前后处理,报告均值和 P95.
 - 端到端时间: 图片读取、预处理、量化、I/O 绑定、NPU 和 Top-5,不含模型加载、预热、预测写盘及评分.
@@ -82,7 +86,19 @@ bash evaluate.sh
 
 ## 当前状态
 
-2026-10-23 已完成官方本地权重加载、FP32 ONNX 导出、100 张校准、INT8 TFLite 转换、MDLA 5.3 编译、上传及板端三图 Python NPU 通路检查.本次过程编号为 `20261023_023105_1273829`.未执行全量 `evaluate.sh`,未采集或发布正式精度、性能、RSS,因此没有 `results/summary.json`.
+2026-10-23 已完成官方权重转换、编译、部署、三图通路检查及 ImageNet val2012 全量 50000 张的 FP32 ONNX 与 Python NPU 评价.正式报告见 [results/summary.json](results/summary.json),运行编号为 `20261023_041137_1275282`.后续补齐参考与精简报告只读取已有预测,保留原运行编号和全部主要实测值,未重新执行模型.
+
+| 全量指标 | 本次结果 |
+| --- | ---: |
+| ONNX FP32 Top-1 | **81.898%** |
+| NPU INT8 Top-1 | **81.544%** |
+| NPU 相对 ONNX 变化 | **下降 0.354 个百分点** |
+| 纯 NPU 平均耗时 | **5.157 ms** |
+| 纯 NPU P95 | **5.308 ms** |
+| 端到端平均耗时 | **22.666 ms** |
+| Python 推理进程峰值 RSS | **243.74 MiB** |
+
+上述精度采用同一 ONNX、标签映射、全量样本及预处理协议.耗时来自 5 次预热后的 50000 次 batch=1 实际调用;RSS 为推理进程高水位,不等同于设备全部驱动或 NPU 内存.默认校准与这次验证集重叠 100 张,没有将辅助子集指标混入完整验证集结果.
 
 | 产物 / 检查 | 本次实际结果 |
 | --- | --- |
@@ -97,7 +113,7 @@ bash evaluate.sh
 
 ## 实际分类示例
 
-以下图片来自本次板端真实预测,输入为 ImageNet 验证集前三张图片.只展示类别排序,不将三图结果作为全量精度.第三张图片的 NPU Top-1 与 FP32 Top-1 不同,说明量化后的类别排序仍须全量评价.
+以下图片来自编译阶段的板端真实预测,输入为 ImageNet 验证集前三张图片,保留当时的 Top-5 类别排序展示.正式分类评价只报告 Top-1,以本页全量结果为准.第三张图片的 NPU Top-1 与 FP32 Top-1 不同,这项样例变化没有被删改.
 
 ![海蛇的板端 Top-5](examples/output/sample_1_classification.jpg)
 
@@ -105,4 +121,4 @@ bash evaluate.sh
 
 ![牧羊犬的板端 Top-5](examples/output/sample_3_classification.jpg)
 
-[TorchVision 官方文档](https://docs.pytorch.org/vision/0.15/models/generated/torchvision.models.resnet101.html)报告该 V2 权重 ImageNet-1K Top-1 为 81.886%,Top-5 为 95.780%;这些是官方浮点参考,不能作为本仓库 ONNX 或 MTK NPU 的实测结果.G5100 尚未适配或验证.
+[TorchVision 官方文档](https://docs.pytorch.org/vision/0.15/models/generated/torchvision.models.resnet101.html)报告该 V2 权重 ImageNet-1K Top-1 为 81.886%;它仅作选型参考,本页精度变化使用本仓库实际测得的 ONNX 81.898% 计算.G5100 尚未适配或验证.

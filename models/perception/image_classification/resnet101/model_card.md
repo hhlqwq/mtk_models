@@ -15,9 +15,9 @@
 
 输入为 RGB FP32 `[1,3,224,224]`、范围 `[0,1]`,图内包含 ImageNet mean/std 归一化;输出为 1000 类 logits.原生量化 I/O 必须为逐张量 INT8,实际 scale/zero point 从转换图提取,缓冲区大小在 SDK Runtime 中核对.
 
-正式评价使用 ImageNet ILSVRC2012 validation 全量 50000 张,单中心裁剪,指标为 Top-1 和 Top-5.默认从该验证集取 100 张用于校准,完整评价如实记录重叠,另给排除校准图片的 NPU 指标.不将三张展示输入当作正式精度.
+正式评价使用 ImageNet ILSVRC2012 validation 全量 50000 张,单中心裁剪,分类指标只有 Top-1.默认从该验证集取 100 张用于校准,完整评价如实记录这 100 张的重叠.不将三张展示输入当作正式精度.
 
-官方 V2 浮点 Top-1 81.886%、Top-5 95.780%,仅用于选型.本仓库同协议 FP32 ONNX 和 NPU 成绩需另行实测.预热后的纯 NPU、端到端耗时与 Python 进程峰值 RSS 只在 `evaluate.sh` 采集,详见 [README](README.md).
+官方 V2 浮点 Top-1 81.886%,仅用于选型.本仓库已完成同协议全量实测: ONNX Top-1 81.898%,NPU Top-1 81.544%,下降 0.354 个百分点.预热后的纯 NPU 平均耗时 5.157 ms,Python 推理进程峰值 RSS 243.74 MiB.本次报告复用原运行记录补齐参考,未重新执行模型,详见 [README](README.md)与 [报告](results/summary.json).
 
 ## 交付参考与限制
 

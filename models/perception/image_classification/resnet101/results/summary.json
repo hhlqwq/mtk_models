@@ -1,0 +1,34 @@
+{
+  "status": "complete",
+  "model": "resnet101",
+  "run_id": "20261023_041137_1275282",
+  "dataset": "imagenet_val2012",
+  "samples": 50000,
+  "metric": "Top-1",
+  "board_accuracy": 0.81544,
+  "npu_mean_ms": 5.15670322930906,
+  "timing_scope": "常驻模型,50000 张图片的 NeuronRuntime_inference 调用,预热 5 次",
+  "peak_rss_mib": 243.7421875,
+  "memory_scope": "Python 推理进程峰值 RSS",
+  "reference_accuracy": 0.81898,
+  "accuracy_change_percentage_points": -0.354,
+  "reference_source": "本次 ONNX FP32 全量实测,使用与板端相同的评测协议",
+  "model_size": {
+    "unit": "MB",
+    "compiled_dla": 45.377343
+  },
+  "evaluation_scope": "full",
+  "weights": "ResNet101_Weights.IMAGENET1K_V2",
+  "precision": "W8A8",
+  "calibration_samples": 100,
+  "calibration_overlap_samples": 100,
+  "npu_p95_ms": 5.307537969201803,
+  "end_to_end_mean_ms": 22.66626543909777,
+  "end_to_end_timing_scope": "图片读取至类别排序,不含模型加载及预测写盘",
+  "target_backend": "python_neuron_runtime_hw",
+  "runtime": {
+    "machine": "aarch64",
+    "kernel": "6.6.137-mtk+ga246e0c68c39-g429091ed5965"
+  },
+  "unavailable_metrics": []
+}

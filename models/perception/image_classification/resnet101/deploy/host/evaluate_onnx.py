@@ -39,26 +39,24 @@ def main() -> None:
             or inputs[0].shape != [1, 3, 224, 224] or inputs[0].type != "tensor(float)"
             or outputs[0].shape != [1, 1000] or outputs[0].type != "tensor(float)"):
         raise ValueError("FP32 ONNX 张量契约不符.")
-    top1 = top5 = 0
-    for path, label in tqdm(zip(paths, labels), total=50000, desc="ResNet101 FP32 参考"):
+    top1 = 0
+    for path, label in tqdm(zip(paths, labels), total=50000, desc="ResNet101 FP32 Top-1 参考"):
         logits = session.run([outputs[0].name], {inputs[0].name: preprocess(path)})[0]
         if logits.shape != (1, 1000) or not np.isfinite(logits).all():
             raise ValueError(f"ONNX 输出无效: {path.name}.")
-        predictions = np.argsort(-logits[0], kind="stable")[:5]
-        top1 += int(predictions[0] == label)
-        top5 += int(label in predictions)
+        top1 += int(np.argmax(logits[0]) == label)
     report = {
         "model": MODEL, "weights": WEIGHTS, "status": "complete",
         "evaluation_scope": "full", "protocol": PROTOCOL, "samples": len(paths),
         "source": "locally_exported_official_torchvision_onnx",
         "onnx_sha256": metadata["onnx_sha256"], "labels_sha256": label_signature(labels),
         "pillow": PIL.__version__, "onnxruntime": ort.__version__,
-        "accuracy": {"top1": top1 / len(paths), "top5": top5 / len(paths)},
+        "metric": "Top-1", "accuracy": top1 / len(paths),
     }
     destination = reference_path(ctx)
     destination.write_text(
         json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-    print(f"[参考完成] {destination}; 请单独放入板端 models/onnx_reference.json.", flush=True)
+    print(f"[参考完成] {destination}.", flush=True)
 
 
 if __name__ == "__main__":

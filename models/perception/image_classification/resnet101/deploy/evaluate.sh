@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 独立评价已有模型,不重新导出、量化、编译或上传.
+# 独立评价已有模型,主机仅上传评价参考,不重新编译或部署模型.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export MTK_EVAL_SCOPE=full
@@ -15,7 +15,9 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     python3 "${SCRIPT_DIR}/board/evaluate.py"
 else
     : "${MTK_MODELS_ROOT:?请先进入已有编译容器}"
-    echo "[全量参考] 使用已有 FP32 ONNX 计算 Top-1/Top-5."
+    echo "[容器 1/2] 使用已有 FP32 ONNX 计算全量 Top-1."
     python "${SCRIPT_DIR}/host/evaluate_onnx.py"
-    echo "[下一步] 将参考单独放入板端 models/onnx_reference.json,再在板端执行 bash evaluate.sh."
+    echo "[容器 2/2] 将同协议参考上传至现有板端部署包."
+    python "${SCRIPT_DIR}/host/upload_reference.py"
+    echo "[下一步] 请登录开发板,在现有部署目录执行 bash evaluate.sh."
 fi
