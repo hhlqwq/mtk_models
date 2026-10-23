@@ -2,6 +2,8 @@
 
 基于 Ubuntu 22.04,预装 Python 3.11、Torch、NeuroPilot Converter、LLM SDK 和 NCC,用于视觉模型及原生 LLM 的转换与评价.依赖版本由 Dockerfile 和 requirements.txt 固定.
 
+默认自建镜像名称为 `mtk/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11`,标签对应 NeuroPilot SDK 8.0.11,`mtk/` 仅作为本地镜像分类.可通过本地 `configs/storage.local.json` 的 `container_image` 或环境变量 `MTK_G720_IMAGE` 指定镜像名称.给已有镜像增加标签后,现有容器仍可能显示创建时使用的名称,后续重新创建容器时才会使用新名称.
+
 ## 配置
 
 平台路径和连接信息放在 `configs/platforms/genio_720.local.yaml`,模型与数据集路径放在 `configs/storage.local.json`,本地配置不提交 Git.

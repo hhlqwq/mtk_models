@@ -7,7 +7,7 @@ source "${PROJECT_ROOT}/tools/storage.sh"
 readonly DATASET_ROOT="${MTK_DATASET_ROOT}"
 readonly MODEL_STORAGE_ROOT="${MTK_MODEL_STORAGE_ROOT}"
 readonly TOOLCHAIN_ROOT="${MTK_TOOLCHAIN_ROOT}"
-readonly IMAGE_NAME="${MTK_G720_IMAGE:-openexplorer/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11}"
+readonly IMAGE_NAME="${MTK_G720_IMAGE:-mtk/ai_toolchain_ubuntu_22_g720_gpu:np8.0.11}"
 readonly CONTAINER_NAME="${MTK_CONTAINER_NAME}"
 
 echo "[1/4] 检查目录和同名容器."
