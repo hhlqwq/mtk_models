@@ -1,0 +1,14 @@
+# ResNet101 官方 V2 权重,公共环境和连接信息由本地配置加载.
+model:
+    weights: resnet101-cd907fc2.pth
+    output_dir: .
+data:
+    dataset_dir: ImageNet
+    # 复用已有验证集校准,正式全量评价会明确记录这 100 张的重叠.
+    calibration_dir: ImageNet/ILSVRC2012_img_val
+    calibration_samples: 100
+    calibration_offset: 1000
+board:
+    deploy_dir: resnet101
+    dataset_dir: ImageNet
+    results_dir: results

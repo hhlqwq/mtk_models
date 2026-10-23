@@ -7,7 +7,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 
 ## Models List
 
-已有 11 个模型的推理代码已迁移为 Python,尚未做板端验证.下表指标和示例保留迁移前 C++/原生 CLI 的历史记录,不能代表当前 Python 实现;当前状态见各模型 summary.json.
+原有 11 个模型的推理代码已迁移为 Python,尚未做板端验证.这些模型的下表指标和示例保留迁移前 C++/原生 CLI 的历史记录,不能代表当前 Python 实现;当前状态见各模型 summary.json.新增 ResNet101 已完成编译和三图 Python NPU 通路检查,尚未全量评价.
 
 列出计划适配的模型及已完成量化的版本.型号与结果按具体版本对应,不在不同规模模型之间复用数据.具体版本与来源见各模型文档.
 
@@ -22,7 +22,7 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 | RT-DETRv2-S（640×640） | 感知 / 目标检测 | — | — | — | — | — | — | — |
 | SqueezeNet-1.1 | 感知 / 分类 | — | — | — | — | — | — | — |
 | ResNet50 | 感知 / 分类 | — | — | — | — | — | — | — |
-| ResNet101 | 感知 / 分类 | — | — | — | — | — | — | — |
+| [ResNet101](perception/image_classification/resnet101/README.md)<br>TorchVision `IMAGENET1K_V2` | 感知 / 分类 | RGB `1×3×224×224`<br>44.55 M | 原始: 178.81 MB<br>ONNX: 178.04 MB | ImageNet val2012,50000 张<br>Top-1 / Top-5<br>本仓库参考待评价 | **W8A8**<br>DLA: 45.38 MB<br>三图 NPU 通路通过<br>性能/RSS 未测 | 待全量评价 | — | — |
 | MobileNetV3-Large | 感知 / 分类 | — | — | — | — | — | — | — |
 | [ViT-B/16](perception/image_classification/vit_base_patch16_224/README.md)<br>ViT-B/16,TorchVision `IMAGENET1K_V1` | 感知 / 分类 | RGB `1×3×224×224`<br>86.57 M | 原始: 346.33 MB<br>ONNX: 346.44 MB | ImageNet val2012,50000 张<br>Top-1 Accuracy<br>ONNX: 80.66% | **W8A8**<br>DLA: 88.00 MB<br>NPU: 51.754 ms<br>RSS: 141.30 MiB | 79.40%<br>下降 1.27 个百分点<br>[报告](perception/image_classification/vit_base_patch16_224/results/summary.json) | — | — |
 | MediaPipe Gesture Recognizer（Palm+Hand Landmark+Gesture Classifier） | 交互 / 手势识别 | — | — | — | — | — | — | — |

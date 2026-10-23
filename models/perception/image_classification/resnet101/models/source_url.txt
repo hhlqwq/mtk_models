@@ -1,0 +1,16 @@
+官方源码: pytorch/vision,固定版本 v0.15.1.
+https://github.com/pytorch/vision/tree/v0.15.1
+ResNet101 架构与权重枚举定义:
+https://github.com/pytorch/vision/blob/v0.15.1/torchvision/models/resnet.py
+官方原始权重: resnet101-cd907fc2.pth,ResNet101_Weights.IMAGENET1K_V2,约 170.5 MiB;由用户下载后离线加载.
+https://download.pytorch.org/models/resnet101-cd907fc2.pth
+官方模型文档与验证协议:
+https://docs.pytorch.org/vision/0.15/models/generated/torchvision.models.resnet101.html
+源码许可: BSD-3-Clause.
+https://github.com/pytorch/vision/blob/v0.15.1/LICENSE
+预训练权重使用提示:
+https://docs.pytorch.org/vision/0.15/models.html
+ImageNet ILSVRC2012 validation 与 devkit 官方入口;图像与标签由用户按原始条款准备,不自动下载.
+https://image-net.org/challenges/LSVRC/2012/
+交付参考,不作为模型源码或权重来源;厂商成绩不能作为 MTK 实测.
+https://aihub.qualcomm.com/iot/models/resnet101

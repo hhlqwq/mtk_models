@@ -1,5 +1,16 @@
 schema_version: 1
 models:
+  - id: resnet101
+    batch: supplemental
+    pilot: false
+    scenario: perception
+    category: image_classification
+    path: models/perception/image_classification/resnet101
+    source: pytorch/vision
+    delivery_reference: qualcomm/ResNet101
+    platforms:
+      genio_720: board_verified
+      genio_5100: not_started
   - id: minicpm5_2b
     latest_run: 20261014_minicpm5_w4_light_hessian_v8
     batch: supplemental

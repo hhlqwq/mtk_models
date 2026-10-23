@@ -1,0 +1,11 @@
+正式开源上游为 PyTorch Vision v0.15.1,源码采用 BSD-3-Clause:
+https://github.com/pytorch/vision/blob/v0.15.1/LICENSE
+
+本适配从官方 ResNet101_Weights.IMAGENET1K_V2 权重自行导出模型.
+交付应保留 TorchVision 原始许可证及必要第三方声明.
+
+预训练权重可能受训练数据集使用条件约束,见官方提示及 ImageNet 原始条款:
+https://docs.pytorch.org/vision/0.15/models.html
+https://image-net.org/challenges/LSVRC/2012/
+
+仓库根目录许可不替代上游源码、权重或数据集的使用条件.

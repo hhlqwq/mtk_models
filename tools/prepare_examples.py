@@ -9,7 +9,7 @@ from tools.files import read_json as load_json
 
 
 COCO_MODELS = ("yolov5s", "yolov8n", "fastsam", "rtmpose_body2d")
-OTHER_MODELS = ("vit_base_patch16_224", "mobilefacenet",
+OTHER_MODELS = ("vit_base_patch16_224", "resnet101", "mobilefacenet",
                 "depth_anything_v2_small", "whisper_tiny")
 
 
@@ -34,12 +34,14 @@ def coco_samples(dataset: Path, model: str) -> dict:
             "class_names": [item["name"] for item in categories]}
 
 
-def classification_samples(dataset: Path) -> dict:
-    """使用 TorchVision 类别顺序与数据集标签生成 ViT 三图清单."""
+def classification_samples(dataset: Path, model: str = "vit_base_patch16_224") -> dict:
+    """使用对应官方权重的类别顺序生成三图清单,不下载权重."""
     # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
-    from torchvision.models import ViT_B_16_Weights
+    from torchvision.models import ResNet101_Weights, ViT_B_16_Weights
 
-    names = ViT_B_16_Weights.IMAGENET1K_V1.meta["categories"]
+    weights = (ResNet101_Weights.IMAGENET1K_V2 if model == "resnet101"
+               else ViT_B_16_Weights.IMAGENET1K_V1)
+    names = weights.meta["categories"]
     labels = (dataset / "val_labels_0based.txt").read_text().splitlines()
     images = "val" if (dataset / "val").is_dir() else "ILSVRC2012_img_val"
     samples = []
@@ -47,7 +49,9 @@ def classification_samples(dataset: Path) -> dict:
         relative = f"{images}/ILSVRC2012_val_{position:08d}.JPEG"
         if not (dataset / relative).is_file():
             raise FileNotFoundError(dataset / relative)
-        label = int(labels[position - 1])
+        label = int(labels[position - 1].split()[-1])
+        if not 0 <= label < len(names):
+            raise ValueError(f"示例标签越界: 第 {position} 张图片.")
         samples.append({"file": f"sample_{position}.JPEG", "image": relative,
                         "label_id": label, "label": names[label]})
     return {"source": "https://image-net.org/challenges/LSVRC/2012/",
@@ -117,7 +121,9 @@ def main() -> None:
     adapters = {"vit_base_patch16_224": classification_samples,
                 "mobilefacenet": face_samples, "depth_anything_v2_small": depth_samples,
                 "whisper_tiny": speech_samples}
-    if args.model in COCO_MODELS:
+    if args.model == "resnet101":
+        manifest = classification_samples(args.dataset_root, args.model)
+    elif args.model in COCO_MODELS:
         manifest = coco_samples(args.dataset_root, args.model)
     else:
         manifest = adapters[args.model](args.dataset_root)

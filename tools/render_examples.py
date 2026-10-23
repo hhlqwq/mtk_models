@@ -57,7 +57,7 @@ def save_image(args, position: int, suffix: str, image: np.ndarray) -> None:
 
 
 def classification(args, manifest) -> None:
-    """复用 ViT 类别排序展示 Top-1 与 Top-5,不虚构置信度."""
+    """复用分类预测展示 Top-1 与 Top-5,不虚构置信度."""
     samples = manifest["samples"]
     wanted = {Path(item["image"]).name for item in samples}
     records = {}
@@ -245,7 +245,8 @@ def audio(args, manifest) -> None:
 
 def main() -> None:
     """统一选择任务适配器,仅保存固定的少量示例产物."""
-    adapters = {"vit_base_patch16_224": classification, "yolov5s": detections,
+    adapters = {"vit_base_patch16_224": classification, "resnet101": classification,
+                "yolov5s": detections,
                 "rtmpose_body2d": pose,
                 "fastsam": segmentation, "depth_anything_v2_small": depth,
                 "mobilefacenet": face, "whisper_tiny": speech, "yamnet": audio}

@@ -1,0 +1,66 @@
+"""对已有 ResNet101 FP32 ONNX 计算同协议 ImageNet 全量参考."""
+
+import json
+import os
+from pathlib import Path
+import sys
+
+import numpy as np
+import onnxruntime as ort
+import PIL
+from tqdm import tqdm
+
+from tools.deploy import arguments, reference_path
+from tools.evaluation import is_test
+from tools.files import read_json, require_file, sha256
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
+from resnet101 import (
+    MODEL, PROTOCOL, WEIGHTS, label_signature, preprocess, read_labels,
+    validate_contract, validation_images,
+)
+
+
+def main() -> None:
+    """只推理已有浮点模型,不触发导出、量化、编译或板端任务."""
+    if is_test():
+        raise ValueError("ResNet101 正式参考只支持完整 50000 张验证集.")
+    ctx = arguments(__file__)
+    source = require_file(ctx.output / "model_fp32.onnx")
+    metadata = read_json(ctx.work / "quantization.json")
+    validate_contract(metadata)
+    if sha256(source) != metadata["onnx_sha256"]:
+        raise ValueError("已有 ONNX 与部署模型的量化来源不一致.")
+    paths = validation_images(ctx.dataset)
+    labels = read_labels(ctx.dataset / "val_labels_0based.txt")
+    session = ort.InferenceSession(str(source), providers=["CPUExecutionProvider"])
+    inputs, outputs = session.get_inputs(), session.get_outputs()
+    if (len(inputs) != 1 or len(outputs) != 1
+            or inputs[0].shape != [1, 3, 224, 224] or inputs[0].type != "tensor(float)"
+            or outputs[0].shape != [1, 1000] or outputs[0].type != "tensor(float)"):
+        raise ValueError("FP32 ONNX 张量契约不符.")
+    top1 = top5 = 0
+    for path, label in tqdm(zip(paths, labels), total=50000, desc="ResNet101 FP32 参考"):
+        logits = session.run([outputs[0].name], {inputs[0].name: preprocess(path)})[0]
+        if logits.shape != (1, 1000) or not np.isfinite(logits).all():
+            raise ValueError(f"ONNX 输出无效: {path.name}.")
+        predictions = np.argsort(-logits[0], kind="stable")[:5]
+        top1 += int(predictions[0] == label)
+        top5 += int(label in predictions)
+    report = {
+        "model": MODEL, "weights": WEIGHTS, "status": "complete",
+        "evaluation_scope": "full", "protocol": PROTOCOL, "samples": len(paths),
+        "source": "locally_exported_official_torchvision_onnx",
+        "onnx_sha256": metadata["onnx_sha256"], "labels_sha256": label_signature(labels),
+        "pillow": PIL.__version__, "onnxruntime": ort.__version__,
+        "accuracy": {"top1": top1 / len(paths), "top5": top5 / len(paths)},
+    }
+    destination = reference_path(ctx)
+    destination.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    print(f"[参考完成] {destination}; 请单独放入板端 models/onnx_reference.json.", flush=True)
+
+
+if __name__ == "__main__":
+    os.environ.setdefault("MTK_EVAL_SCOPE", "full")
+    main()
