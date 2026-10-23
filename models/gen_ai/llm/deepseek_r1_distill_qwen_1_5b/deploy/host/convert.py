@@ -111,15 +111,18 @@ def prepare(source, output, context, calibration_train=None, mask_value=-10000.0
         if len(train_tokens) < 2048:
             raise ValueError("校准训练文本不足 2048 Token,不能重复填充.")
         mixed_records = []
+        offsets = [(len(train_tokens) - 256) * index // 7 for index in range(8)]
         for index in range(8):
-            segment = train_tokens[index * 256:(index + 1) * 256]
+            # 均匀覆盖训练文本,避免全部校准片段集中在文件开头.
+            segment = train_tokens[offsets[index]:offsets[index] + 256]
             mixed_records.append({"tokens": " ".join(map(str, segment))})
             mixed_records.append(records[index])
         records = mixed_records
-        calibration_scope = "wikitext2_train_8x256_and_authored_bilingual_8"
+        calibration_scope = "wikitext2_train_8x256_uniform_and_authored_bilingual_8"
         training_source = {"revision": "b08601e04326c79dfdd32d625aee71d232d685c3",
                            "split": "train", "sha256": sha256(calibration_train),
-                           "text_tokens": 2048}
+                           "text_tokens": 2048, "selection": "uniform_token_offsets",
+                           "token_offsets": offsets}
     demos = []
     # 展示输入独立于校准记录,使用官方聊天模板生成 Token.
     for name, question in (("zh_demo", "请用中文简单介绍你自己。"),
@@ -216,6 +219,10 @@ def quantize_model(native):
         "attention": "asym4W_sym16A", "mlp": "asym4W_sym16A",
         "lm_head": "asym4W_sym16A", "quantized_prefix": native.prefix,
         "weight_optimization": native.optimization,
+        "weight_optimization_options": (
+            json.loads(Path(native.extra).read_text()) if native.extra else {}),
+        "rotate": bool(native.rotate),
+        "rotate_mode": config["rotate_mode"], "rotate_seed": config["rotate_seed"],
     }, indent=2) + "\n")
 
 

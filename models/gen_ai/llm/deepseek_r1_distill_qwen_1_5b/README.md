@@ -10,7 +10,9 @@
 
 ## 编译与部署
 
-模型与数据提前放在 NAS,连接信息和工具链路径由本地配置提供.板端生成与评价使用 Python3、NumPy、tokenizers 和匹配的 Neuron Runtime,不再使用原生 CLI 或自编桥接库.参数统一在 [config.yaml](config.yaml): Prefill=128、Decode=1、上下文默认 1024、校准批次 32、权重优化默认关闭.
+模型与数据提前放在 NAS,连接信息和工具链路径由本地配置提供.板端生成与评价使用 Python3、NumPy、tokenizers 和匹配的 Neuron Runtime,不再使用原生 CLI 或自编桥接库.参数统一在 [config.yaml](config.yaml): Prefill=128、Decode=1、上下文默认 1024、校准批次 32.
+
+权重优化使用 Hessian,稳定性系数见 [hessian_stable.json](deploy/host/hessian_stable.json).校准默认读取 NAS 中的 WikiText2 raw train,训练文本路径相对于数据集根目录解析,参数文件路径相对于本模型目录解析.
 
 进入已有编译容器,在本模型目录执行:
 
@@ -32,7 +34,7 @@ bash deploy/evaluate.sh
 
 - MMLU: test 全部 14042 题、57 学科、0-shot.两端共用题目 Token,按空格加 A/B/C/D 的单 Token logits 评分,不套聊天模板.
 - WikiText2: raw test 全部文本,按 128 Token 分块并重置每块上下文,每块评分 127 次下一 Token,记录不足一块的尾部数量.
-- 完整题目超过已有上下文时,在浮点评分前停止并输出 `mmlu/length_report.json`.按报告要求调整上下文后另行编译部署;评价入口不截题、不丢题、不自动重编译.默认 1024 不保证容纳完整题集.
+- 当前固定 MMLU 题集按此格式编码最长 1010 Token,可容纳于默认 1024 上下文.更换输入协议后仍检查完整题目长度,超过已有上下文时在浮点评分前停止并输出 `mmlu/length_report.json`,不截题、不丢题、不自动重编译.
 
 将模型资源目录 `build/native/evaluation/full/` 的内容单独放入已有板端部署包 `evaluation/full/`,然后在板端部署目录运行:
 
@@ -46,4 +48,4 @@ bash evaluate.sh
 
 使用官方 tokenizer 的 Token 输入,保留聊天模板、BOS/EOS 和停止列表.GQA 为 Q/KV Head=12/2,RoPE=10000;输入、KV Cache、mask、RoPE 与输出使用图中实际 INT16 接口.外置 embedding、tokenizer、Prefill/Decode DLA 和配置必须成套使用.Python 使用随包的官方 tokenizer.json 解码,生成输入继续使用已准备的官方 Token.
 
-校准默认使用 16 条自编双语输入;可通过 `native.calibration_train` 指定 NAS 中的 WikiText2 raw train 文件,混合 8 段 256 Token 训练文本和 8 条双语输入.测试集不参与校准.该配方的质量需由实际评价确认.
+校准使用全文均匀取出的 8 段 256 Token 训练文本和 8 条双语输入,测试集不参与校准.每条保存 Prefill 和单 Token Decode 数据,共 32 个批次.固定小样本比较见 [ADAPTATION.md](ADAPTATION.md),完整质量由独立评价确认.

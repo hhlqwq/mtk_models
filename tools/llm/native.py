@@ -23,6 +23,12 @@ def settings(ctx, *, python_executable=None):
         raise ValueError("上下文、Prefill、校准批次或旋转参数无效.")
     optimization = os.environ.get("WEIGHT_OPTIMIZATION", config["weight_optimization"])
     extra = os.environ.get("WEIGHT_OPT_CONFIG", config["weight_opt_config"])
+    train = os.environ.get("CALIBRATION_TRAIN", config["calibration_train"])
+    # 相对配置路径以模型代码或 NAS 数据集为基准,不依赖启动目录.
+    if extra and not Path(extra).is_absolute():
+        extra = str(ctx.model / extra)
+    if train and not Path(train).is_absolute():
+        train = str(ctx.dataset / train)
     if optimization not in ("none", "hessian", "gradient") or (optimization == "none" and extra):
         raise ValueError("重优化设置不符合 none/hessian/gradient 协议.")
     prefix = f"{name}_asym4W_sym16A_Overall"
@@ -40,4 +46,4 @@ def settings(ctx, *, python_executable=None):
         mask=float(os.environ.get("MASK_VALUE", config["mask_value"])),
         optimization=optimization, extra=extra, prefix=prefix,
         quantized=work / "tflite" / prefix,
-        train=os.environ.get("CALIBRATION_TRAIN", config["calibration_train"]))
+        train=train)

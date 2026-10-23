@@ -25,8 +25,8 @@ native:
   attention_precision: asym4W_sym16A
   mlp_precision: asym4W_sym16A
   tail_precision: asym4W_sym16A
-  weight_optimization: none
-  weight_opt_config: ''
-  calibration_train: ''
+  weight_optimization: hessian
+  weight_opt_config: deploy/host/hessian_stable.json
+  calibration_train: wikitext/wikitext-2-raw-v1/train-00000-of-00001.parquet
 evaluation:
   reference_device: cuda
