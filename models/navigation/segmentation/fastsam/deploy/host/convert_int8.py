@@ -44,7 +44,7 @@ def main():
                  "calibration": dataset / config["data"]["calibration_dir"]}
         samples = config["data"]["calibration_samples"]
     parser.add_argument("--onnx", type=Path, required=paths is None,
-                        default=paths["output"] / "model_fp32.onnx" if paths else None)
+                        default=paths["output"] / "FastSAM-s.onnx" if paths else None)
     parser.add_argument("--calibration-dir", type=Path, required=paths is None,
                         default=paths["calibration"] if paths else None)
     parser.add_argument("--samples", type=int, default=samples)

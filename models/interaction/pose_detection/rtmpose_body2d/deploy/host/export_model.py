@@ -270,12 +270,15 @@ def parse_args() -> argparse.Namespace:
         "mmpose_config": lambda c: Path(mmpose.__file__).resolve().parent / ".mim" /
             c.config["model"]["upstream_config"],
         "weights": lambda c: c.config["model"]["weights"],
-        "output": lambda c: c.output / "model_fp32.onnx",
-        "compatible_output": lambda c: c.output / "model_mtk_compatible.onnx",
+        "output": lambda c: c.output / (
+            "rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192.onnx"),
+        "compatible_output": lambda c: c.output / (
+            "rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192_mtk_compatible.onnx"),
     })
     args = parser.parse_args()
     if args.compatible_output is None:
-        args.compatible_output = args.output.with_name("model_mtk_compatible.onnx")
+        args.compatible_output = args.output.with_name(
+            args.output.stem + "_mtk_compatible.onnx")
     return args
 
 

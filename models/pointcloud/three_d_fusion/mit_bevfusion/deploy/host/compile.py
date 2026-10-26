@@ -46,7 +46,7 @@ def main():
         if unused:
             raise ValueError(f"子图有未消费的官方参数: {sorted(unused)}")
         consumed.update(module.names)
-        onnx_path = ctx.work / f"{name}.onnx"
+        onnx_path = ctx.work / f"bevfusion-det_{name}.onnx"
         torch.onnx.export(module, tensors, onnx_path, opset_version=13,
                           input_names=input_names, output_names=output_names, do_constant_folding=True)
         item = {"backend": "onnxruntime_cpu", "file": onnx_path.name,

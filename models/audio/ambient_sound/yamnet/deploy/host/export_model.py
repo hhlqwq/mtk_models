@@ -66,7 +66,7 @@ def export_model(args):
     args.models_dir.mkdir(parents=True, exist_ok=True)
     tf2onnx.convert.from_keras(
         model, input_signature=[tf.TensorSpec((1, 1, 96, 64), tf.float32, name="audio")],
-        opset=13, output_path=str(args.models_dir / "model_fp32.onnx"))
+        opset=13, output_path=str(args.models_dir / "yamnet.onnx"))
     (args.models_dir / "export_check.json").write_text(json.dumps({
         "samples": 10, "streaming_chunk_samples": 1600,
         "streaming_windows_match": True, "maximum_feature_error": maximum_feature_error,

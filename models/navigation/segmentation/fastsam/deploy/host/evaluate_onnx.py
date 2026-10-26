@@ -19,7 +19,7 @@ def onnx_eval(config: dict, paths: dict, config_path: Path) -> None:
     # 先写入临时文件,校验完成后再发布本次报告.
     pending = paths["work"] / "tmp" / ("onnx_reference_test.pending.json" if is_test() else "onnx_reference.pending.json")
     pending.unlink(missing_ok=True)
-    evaluate_model(model="fastsam", onnx=paths["output"] / "model_fp32.onnx",
+    evaluate_model(model="fastsam", onnx=paths["output"] / "FastSAM-s.onnx",
                    dataset_root=paths["dataset"], output=pending,
                    temp_dir=paths["work"] / "tmp")
     if not pending.is_file() or pending.stat().st_size == 0:

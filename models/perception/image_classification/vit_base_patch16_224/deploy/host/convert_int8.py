@@ -103,7 +103,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--offset", type=int, default=0,
                         help="跳过排序后前 offset 张, 与评测子集错开.")
     configure_parser(parser, __file__, {
-        "onnx": lambda c: c.output / "model_mtk_compatible.onnx",
+        "onnx": lambda c: c.output / "vit_b_16_mtk_compatible.onnx",
         "calibration_dir": lambda c: c.calibration,
         "samples": lambda c: c.config["data"]["calibration_samples"],
         "offset": lambda c: c.config["data"]["calibration_offset"],

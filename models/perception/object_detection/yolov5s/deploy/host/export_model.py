@@ -31,9 +31,9 @@ def main():
     run_command([sys.executable, source / "export.py", "--weights", weights,
                  "--img-size", "640", "640", "--batch-size", "1", "--device", "0",
                  "--include", "torchscript", "onnx"], cwd=source)
-    weights.with_suffix(".onnx").replace(ctx.output / "model_fp32.onnx")
+    weights.with_suffix(".onnx").replace(ctx.output / "yolov5s.onnx")
     weights.with_suffix(".torchscript").replace(ctx.work / "yolov5s.torchscript")
-    print(f"[ONNX] {ctx.output / 'model_fp32.onnx'}", flush=True)
+    print(f"[ONNX] {ctx.output / 'yolov5s.onnx'}", flush=True)
 
 
 if __name__ == "__main__":

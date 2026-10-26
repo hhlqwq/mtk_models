@@ -8,7 +8,7 @@ from tools.deploy import arguments, reference_path
 def main():
     """使用本模型的固定 ONNX 和数据协议,不再启动中转 Python 进程."""
     ctx = arguments(__file__)
-    evaluate_model(model="vit_base_patch16_224", onnx=ctx.output / "model_mtk_compatible.onnx",
+    evaluate_model(model="vit_base_patch16_224", onnx=ctx.output / "vit_b_16_mtk_compatible.onnx",
                    dataset_root=ctx.dataset, output=reference_path(ctx))
 
 

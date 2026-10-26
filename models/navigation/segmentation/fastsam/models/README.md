@@ -5,7 +5,7 @@
 | 外部资源目录内的路径 | 内容 |
 | --- | --- |
 | FastSAM-s.pt | 官方原始权重 |
-| model_fp32.onnx | 唯一一份 FP32 ONNX,opset 13,静态 640,10 个原始输出 |
+| FastSAM-s.onnx | 唯一一份 FP32 ONNX,opset 13,静态 640,10 个原始输出 |
 | build/model_int8.tflite | MTK INT8 校准产物 |
 | build/model_int8.json | 量化参数、输出索引语义映射、校准图片清单 |
 | build/runtime_config.csv | Python 板端代码使用的输入输出张量契约 |

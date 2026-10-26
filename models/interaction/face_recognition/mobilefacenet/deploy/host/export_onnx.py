@@ -43,7 +43,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     configure_parser(parser, __file__, {
         "weights": lambda c: Path(c.config["model"]["weights"]),
-        "output": lambda c: c.output / "model_fp32.onnx",
+        "output": lambda c: c.output / "mobilefacenet.onnx",
     })
     args = parser.parse_args()
     export_model(args.weights, args.output)

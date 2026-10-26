@@ -97,7 +97,7 @@ def main() -> None:
     configure_parser(parser, __file__, {
         "upstream": lambda c: c.model / "models/upstream",
         "weights": lambda c: Path(c.config["model"]["weights"]),
-        "output": lambda c: c.output / "model_fp32.onnx",
+        "output": lambda c: c.output / "depth_anything_v2_vits.onnx",
     })
     args = parser.parse_args()
     export_model(args.upstream, args.weights, args.output, args.size)

@@ -65,7 +65,7 @@ bash compile.sh
 bash models/perception/image_classification/resnet101/deploy/evaluate.sh
 ```
 
-只对已导出的 `model_fp32.onnx` 计算全量 ImageNet Top-1,参考保存为资源目录的 `build/onnx_reference.json`.入口随后校验已有板端模型版本,自动将参考上传到 `models/onnx_reference.json`,不上传或替换模型,也不自动启动板端任务.确认板端已有完整验证集和标签后,在部署目录执行:
+只对已导出的 `resnet101.onnx` 计算全量 ImageNet Top-1,参考保存为资源目录的 `build/onnx_reference.json`.入口随后校验已有板端模型版本,自动将参考上传到 `models/onnx_reference.json`,不上传或替换模型,也不自动启动板端任务.确认板端已有完整验证集和标签后,在部署目录执行:
 
 ```bash
 bash evaluate.sh

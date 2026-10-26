@@ -211,7 +211,7 @@ def export_models(weights: Path, output_dir: Path,
     mel = torch.zeros(1, dimensions.n_mels, 3000, dtype=torch.float32)
 
     print("[2/3] 导出固定 30 秒 Encoder ONNX.")
-    encoder_path = output_dir / "encoder_fp32.onnx"
+    encoder_path = output_dir / "tiny_encoder.onnx"
     torch.onnx.export(
         encoder, mel, str(encoder_path), input_names=["mel"],
         output_names=["audio_features"], opset_version=17,
@@ -237,7 +237,7 @@ def export_models(weights: Path, output_dir: Path,
     attention_mask = torch.full(
         (1, 1, 1, max_tokens), MASK_NEGATIVE, dtype=torch.float32)
     attention_mask[..., 0] = 0.0
-    decoder_path = output_dir / "decoder_step_fp32.onnx"
+    decoder_path = output_dir / "tiny_decoder_step.onnx"
     torch.onnx.export(
         decoder,
         (token_onehot, audio_features, position_weights, cache_update_mask,

@@ -17,7 +17,7 @@ def main():
     config.write_text(json.dumps(ctx.config, ensure_ascii=False, indent=2), encoding="utf-8")
     model_files = [ctx.work / name for name in ("contract.json", "sparse_weights.npz", "geometry.npz")]
     for name, item in manifest["stages"].items():
-        model_files.append(ctx.work / f"{name}.onnx")
+        model_files.append(ctx.work / f"bevfusion-det_{name}.onnx")
         if item["backend"] == "mtk_npu":
             model_files.append(ctx.work / item["file"])
     groups = {"": [ctx.model / "deploy/compile.sh", ctx.model / "deploy/evaluate.sh",

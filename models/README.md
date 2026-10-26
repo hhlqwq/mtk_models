@@ -5,6 +5,28 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 目录结构、模型卡、Demo 和评测方式的 `delivery_reference`，实际模型必须使用官方或原作者
 公开源码与权重完成 MTK 侧转换和验证。
 
+## 统一入口与 ONNX 命名
+
+在已有编译容器内执行 `bash models/deploy/compile.sh`,顺序调用全部 13 个模型的编译上传入口.该入口同时将本目录 `deploy/` 下的两个 Shell 脚本上传到本地配置的板端部署根目录 `deploy/` 下.板端运行同一份 `compile.sh` 做少量样本检查,运行 `evaluate.sh` 做各模型约定的全量评价.容器中的 `bash models/deploy/evaluate.sh` 仅准备已有浮点模型的全量参考,必要资源按模型提示传输.板端只执行代码,不负责修改或生成脚本.
+
+入口按 ResNet101、ViT、YOLOv5s、YOLOv8n、MobileFaceNet、RTMPose、FastSAM、Depth Anything V2、YAMNet、Whisper、BEVFusion、MiniCPM、DeepSeek 的顺序执行,首个失败即停止.板端部署子目录与模型代码目录末级名称一致,修改布局时同步更新总入口.
+
+| 原始模型资源 | 导出的 ONNX 文件 |
+| --- | --- |
+| `resnet101-cd907fc2.pth` | `resnet101.onnx` |
+| `vit_b_16-c867db91.pth` | `vit_b_16.onnx`、`vit_b_16_mtk_compatible.onnx` |
+| `yolov5s.pt` | `yolov5s.onnx` |
+| `yolov8n.pt` | `yolov8n.onnx` |
+| `mobilefacenet.pt` | `mobilefacenet.onnx` |
+| RTMPose 官方 `rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192-cd5e845c_20230123.pth` | `rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192.onnx` 及同名前缀的 `_mtk_compatible.onnx` |
+| `FastSAM-s.pt` | `FastSAM-s.onnx` |
+| `depth_anything_v2_vits.pth` | `depth_anything_v2_vits.onnx` |
+| `yamnet.h5` | `yamnet.onnx` |
+| Whisper `tiny.pt` | `tiny_encoder.onnx`、`tiny_decoder_step.onnx` |
+| `bevfusion-det.pth` | `bevfusion-det_camera.onnx`、`bevfusion-det_camera_downsample.onnx`、`bevfusion-det_fusion.onnx`、`bevfusion-det_head.onnx` |
+
+MiniCPM 与 DeepSeek 沿用原生 LLM 双静态图链路,不增加 ONNX 导出.命名调整已同步导出、转换、评价和相关校验引用,未自动改名或删除 NAS 旧产物,需要重新运行编译入口生成新文件.本次入口及命名修改尚未执行编译或板端测试.
+
 ## Models List
 
 原有 11 个模型的推理代码已迁移为 Python,尚未做板端验证.这些模型的下表指标和示例保留迁移前 C++/原生 CLI 的历史记录,不能代表当前 Python 实现;当前状态见各模型 summary.json.ResNet101 已完成 Python NPU 全量评价,其下表指标为当前实现的实际结果.

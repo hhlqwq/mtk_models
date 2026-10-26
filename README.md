@@ -24,6 +24,18 @@ bash docker/enter_container.sh
 bash models/perception/object_detection/yolov5s/deploy/compile.sh
 ```
 
+需要顺序处理全部 13 个已有模型时,在容器中执行:
+
+```bash
+bash models/deploy/compile.sh
+```
+
+总入口先将仓库中的 `models/deploy/compile.sh` 和 `evaluate.sh` 原样上传到本地配置 `board_open_models_root` 下的 `deploy/`,再顺序调用各模型已有的编译入口.登录开发板后,进入该 `deploy/` 目录执行 `bash compile.sh`,顺序运行各模型的少量样本检查与示例生成.所有脚本均在仓库维护,板端只执行上传后的代码.
+
+正式评价分两次执行:容器中运行 `bash models/deploy/evaluate.sh` 准备已有模型的全量参考,按各模型终端提示传输必要评价资源后,在板端部署根目录的 `deploy/` 中运行 `bash evaluate.sh`.总入口显示模型进度,遇到首个失败立即停止并显示模型和退出码;修复后也可直接运行该模型的入口.不跳过失败模型,不另建总报告.全量指完整执行各模型已约定的协议范围,MiniCPM 的 MMLU 仍为固定 1000 题.
+
+ONNX 文件按原始权重中的模型名称命名,去除权重校验后缀,例如 `resnet101-cd907fc2.pth` 导出为 `resnet101.onnx`,`yolov8n.pt` 导出为 `yolov8n.onnx`.兼容图保留 `_mtk_compatible` 后缀,多子图保留模型名和子图名,具体见[模型目录](models/README.md).本次统一命名不自动移动或删除已有资源;旧名称产物需要通过编译入口重新导出,独立评价读取新名称文件.
+
 所有模型的主机端完成转换、编译和上传后结束.请登录开发板,在终端提示的部署目录执行 `bash compile.sh`,完成少量通路检查并生成展示示例.
 
 `compile.sh` 按执行环境区分职责: 主机完成模型转换、量化、编译、打包及上传,不自动启动板端推理;用户在开发板执行同名入口检查通路并保存 README 所需的展示示例.上传完成只标为待板端检查,不代表已验证或已生成示例.这两个阶段均不生成精度、性能或 RSS 报告.

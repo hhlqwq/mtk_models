@@ -27,7 +27,7 @@ def main() -> None:
     if is_test():
         raise ValueError("ResNet101 正式参考只支持完整 50000 张验证集.")
     ctx = arguments(__file__)
-    source = require_file(ctx.output / "model_fp32.onnx")
+    source = require_file(ctx.output / "resnet101.onnx")
     metadata = read_json(ctx.work / "quantization.json")
     validate_contract(metadata)
     if sha256(source) != metadata["onnx_sha256"]:

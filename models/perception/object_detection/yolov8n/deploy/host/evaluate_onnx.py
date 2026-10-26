@@ -104,7 +104,7 @@ def main():
     for backend in ("pytorch", "onnx"):
         current = argparse.Namespace(**vars(args))
         current.weights = ctx.config["model"]["weights"] if backend == "pytorch" else None
-        current.onnx = ctx.output / "model_fp32.onnx" if backend == "onnx" else None
+        current.onnx = ctx.output / "yolov8n.onnx" if backend == "onnx" else None
         if backend == "pytorch":
             current.output = ctx.work / ("pytorch_reference_test.json" if is_test()
                                          else "pytorch_reference.json")

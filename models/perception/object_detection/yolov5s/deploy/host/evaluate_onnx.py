@@ -11,7 +11,7 @@ def main():
     """保持原有 COCO 阈值、尺寸和样本范围,直接调用评测函数."""
     ctx = arguments(__file__)
     evaluate_onnx_accuracy(Namespace(
-        onnx=ctx.output / "model_fp32.onnx", images_dir=ctx.dataset / "images",
+        onnx=ctx.output / "yolov5s.onnx", images_dir=ctx.dataset / "images",
         ann=ctx.dataset / "annotations/instances_val2017.json", summary=reference_path(ctx),
         image_size=640, confidence=0.001, iou=0.6, max_det=300))
 

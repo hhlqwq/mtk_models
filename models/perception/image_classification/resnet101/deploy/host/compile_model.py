@@ -12,7 +12,7 @@ def main() -> None:
     source = require_file(ctx.work / "model_int8.tflite")
     metadata_path = ctx.work / "quantization.json"
     metadata = read_json(metadata_path)
-    if metadata["onnx_sha256"] != sha256(require_file(ctx.output / "model_fp32.onnx")):
+    if metadata["onnx_sha256"] != sha256(require_file(ctx.output / "resnet101.onnx")):
         raise ValueError("ONNX 已改变,请先重新量化.")
     destination = ctx.output / "model_int8.dla"
     compile_dla(ctx, source, destination)

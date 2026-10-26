@@ -73,7 +73,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--samples", type=int, default=100)
     configure_parser(parser, __file__, {
-        "onnx": lambda c: c.output / "model_fp32.onnx",
+        "onnx": lambda c: c.output / "mobilefacenet.onnx",
         "image_dir": lambda c: c.calibration,
         "samples": lambda c: c.config["data"]["calibration_samples"],
         "output": lambda c: c.work / "model_int8.tflite",

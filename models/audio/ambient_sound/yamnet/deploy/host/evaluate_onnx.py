@@ -35,7 +35,7 @@ def evaluate(args):
         import onnxruntime as ort
         options = ort.SessionOptions()
         options.intra_op_num_threads = 2
-        session = ort.InferenceSession(str(args.models_dir / "model_fp32.onnx"),
+        session = ort.InferenceSession(str(args.models_dir / "yamnet.onnx"),
                                        options, providers=["CPUExecutionProvider"])
     all_scores = []
     for row in tqdm(records, desc=f"YAMNet {args.mode} 全量精度"):
@@ -47,7 +47,7 @@ def evaluate(args):
             for patch in preprocess(waveform):
                 tensor = patch[None]
                 output = session.run(None, {"audio": tensor})[0]
-                record_reference(args.models_dir / "model_fp32.onnx", [tensor], {"output": output})
+                record_reference(args.models_dir / "yamnet.onnx", [tensor], {"output": output})
                 window_scores.append(output)
             patch_scores = np.concatenate(window_scores)
         all_scores.append(patch_scores.mean(axis=0))

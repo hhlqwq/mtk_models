@@ -35,7 +35,7 @@ def main() -> None:
     else:
         for index, name in enumerate(("encoder", "decoder_step"), 1):
             print(f"[转换 {index}/2] {name}", flush=True)
-            convert_model(ctx.output / f"{name}_fp32.onnx", ctx.work / f"{name}_fp32.tflite")
+            convert_model(ctx.output / f"tiny_{name}.onnx", ctx.work / f"{name}_fp32.tflite")
 
 
 if __name__ == "__main__":

@@ -98,7 +98,7 @@ def main():
     args.output_dir.mkdir(parents=True, exist_ok=True)
     if args.precision == "fp16":
         converter = mtk_converter.OnnxConverter.from_model_proto_file(
-            str(args.models_dir / "model_fp32.onnx"))
+            str(args.models_dir / "yamnet.onnx"))
         converter.convert_float32_weights_to_float16 = True
         converter.convert_to_tflite(str(args.output_dir / "model_fp16.tflite"))
         with (args.output_dir / "runtime_config_fp16.csv").open("w", newline="") as stream:
@@ -129,7 +129,7 @@ def main():
                 yield [patch[None]]
 
     converter = mtk_converter.OnnxConverter.from_model_proto_file(
-        str(args.models_dir / "model_fp32.onnx"))
+        str(args.models_dir / "yamnet.onnx"))
     converter.quantize = True
     converter.use_per_output_channel_quantization = True
     if args.precision == "w8a16":

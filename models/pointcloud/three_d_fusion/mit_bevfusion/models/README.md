@@ -4,7 +4,7 @@
 
 - `bevfusion-det.pth`: 用户下载的官方完整相机与 LiDAR 检测权重.
 - `upstream/`: 固定 MIT commit 的离线源码,用于核对配置与算子语义.
-- `build/`: 四个 FP32 ONNX,三个 NPU FP16 DLA,张量契约,CPU 稀疏参数和几何参数.
+- `build/`: `bevfusion-det_camera.onnx`、`bevfusion-det_camera_downsample.onnx`、`bevfusion-det_fusion.onnx`、`bevfusion-det_head.onnx`,三个 NPU FP16 DLA,张量契约,CPU 稀疏参数和几何参数.
 - `build/sample.npz` 与 `sample.json`: 一帧 mini_val 编译输入及其来源.
 - `build/samples.json`, `ground_truth.json`, `onnx_reference.json`: 只在独立评价入口运行后生成的全量评价输入.
 

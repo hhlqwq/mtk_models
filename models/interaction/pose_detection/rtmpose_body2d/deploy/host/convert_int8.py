@@ -59,7 +59,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--samples", type=int, default=100)
     parser.add_argument("--offset", type=int, default=0)
     configure_parser(parser, __file__, {
-        "onnx": lambda c: c.output / "model_mtk_compatible.onnx",
+        "onnx": lambda c: c.output / "rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192_mtk_compatible.onnx",
         "image_dir": lambda c: c.calibration,
         "annotations": lambda c: storage_roots()["dataset_root"] / c.config["data"]["calibration_annotations"],
         "samples": lambda c: c.config["data"]["calibration_samples"],

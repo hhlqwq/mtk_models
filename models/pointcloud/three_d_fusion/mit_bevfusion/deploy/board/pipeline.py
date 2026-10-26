@@ -31,8 +31,8 @@ class Stage:
         self.cpu, self.runtime = None, None
         self.inputs, self.outputs = [], []
         self.elapsed_npu_ms = 0
-        self.reference = cpu_session(root / f"{name}.onnx") if reference else None
-        self.comparison = (cpu_session(root / f"{name}.onnx")
+        self.reference = cpu_session(root / f"bevfusion-det_{name}.onnx") if reference else None
+        self.comparison = (cpu_session(root / f"bevfusion-det_{name}.onnx")
                            if compare and contract["backend"] == "mtk_npu" else None)
         self.output_metrics = {}
         if contract["backend"] == "mtk_npu":
@@ -120,7 +120,7 @@ class Pipeline:
         try:
             for name, item in self.contract["stages"].items():
                 if floating:
-                    item = {**item, "backend": "onnxruntime_cpu", "file": f"{name}.onnx"}
+                    item = {**item, "backend": "onnxruntime_cpu", "file": f"bevfusion-det_{name}.onnx"}
                 self.stages[name] = Stage(root, name, item, reference=check, compare=compare)
         except Exception:
             self.close()

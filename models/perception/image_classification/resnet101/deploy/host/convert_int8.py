@@ -28,7 +28,7 @@ def main() -> None:
     paths = paths[offset:offset + count]
     if len(paths) != count:
         raise ValueError(f"校准图片不足: 需要 {count},实际 {len(paths)}.")
-    source = require_file(ctx.output / "model_fp32.onnx")
+    source = require_file(ctx.output / "resnet101.onnx")
     destination = ctx.work / "model_int8.tflite"
 
     def calibration_data():

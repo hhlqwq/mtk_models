@@ -90,7 +90,7 @@ def main():
     np.testing.assert_allclose(decoded, expected, atol=2e-4, rtol=2e-4)
 
     print("[2/4] 原始头 CPU 解码与官方前向一致,导出 ONNX.", flush=True)
-    onnx_path = args.output_dir / "model_fp32.onnx"
+    onnx_path = args.output_dir / "yolov8n.onnx"
     torch.onnx.export(raw_model, torch.from_numpy(tensor), str(onnx_path),
                       input_names=["images"], output_names=OUTPUT_NAMES,
                       opset_version=13, do_constant_folding=True)

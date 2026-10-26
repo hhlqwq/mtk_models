@@ -207,8 +207,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--compatible-output", type=Path, required=True)
     configure_parser(parser, __file__, {
         "weights": lambda c: Path(c.config["model"]["weights"]),
-        "reference_output": lambda c: c.output / "model_fp32.onnx",
-        "compatible_output": lambda c: c.output / "model_mtk_compatible.onnx",
+        "reference_output": lambda c: c.output / "vit_b_16.onnx",
+        "compatible_output": lambda c: c.output / "vit_b_16_mtk_compatible.onnx",
     })
     return parser.parse_args()
 

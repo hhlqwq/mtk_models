@@ -46,7 +46,7 @@ def main() -> None:
     model = resnet101(weights=None)
     model.load_state_dict(torch.load(weights, map_location="cpu", weights_only=True), strict=True)
     model = NormalizedResNet(model.eval()).eval()
-    destination = ctx.output / "model_fp32.onnx"
+    destination = ctx.output / "resnet101.onnx"
     torch.onnx.export(
         model, torch.zeros(1, 3, 224, 224), str(destination),
         export_params=True, opset_version=13, do_constant_folding=True,

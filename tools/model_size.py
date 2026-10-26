@@ -23,7 +23,7 @@ def collect_model_size(models_dir: Path, includes: list[str] | None = None,
     root = models_dir.resolve(strict=True)
     if not root.is_dir():
         raise ValueError(f"模型目录无效: {root}")
-    patterns = includes or ["*.dla", "embedding*.bin", "*fp32*.onnx",
+    patterns = includes or ["*.dla", "embedding*.bin", "*.onnx",
                             "*int8*.tflite", "*w8*.tflite", "*.pt", "*.pth",
                             "*.safetensors", "*.h5"]
     files = set()
@@ -45,7 +45,7 @@ def collect_model_size(models_dir: Path, includes: list[str] | None = None,
             role = "compiled_dla"
         elif path.suffix == ".bin" and path.name.startswith("embedding"):
             role = "auxiliary_weights"
-        elif path.suffix == ".onnx" and "fp32" in path.name:
+        elif path.suffix == ".onnx":
             role = "fp32_onnx"
         elif path.suffix == ".tflite" and any(
                 name in path.name for name in ("int8", "w8")):

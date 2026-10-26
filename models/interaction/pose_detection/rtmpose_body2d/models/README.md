@@ -6,8 +6,8 @@
 
 - `rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192-cd5e845c_20230123.pth`:
   官方 PyTorch 权重.
-- `model_fp32.onnx`: 从 MMPose v1.3.2 官方 PyTorch 权重自行导出的 FP32 基线.
-- `model_mtk_compatible.onnx`: 逐节点检查后将 opset 限制到 18、IR 限制到 8,并在唯一
+- `rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192.onnx`: 从 MMPose v1.3.2 官方 PyTorch 权重自行导出的 FP32 基线.
+- `rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192_mtk_compatible.onnx`: 逐节点检查后将 opset 限制到 18、IR 限制到 8,并在唯一
   图结构匹配时展开 NCC 不支持的 GAU 双轴广播.固定输入的双输出数值等价验证通过后
   才允许转换.
 - `model_int8.tflite`: MTK Converter 8.16.0 生成的 INT8 模型.
