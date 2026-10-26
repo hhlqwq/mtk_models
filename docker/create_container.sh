@@ -3,6 +3,12 @@
 set -euo pipefail
 
 readonly PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly HOST_UID="$(id -u)"
+readonly HOST_GID="$(id -g)"
+if [[ "${HOST_UID}" == 0 ]]; then
+    echo "[错误] 请用宿主机普通用户创建容器,不要使用 sudo bash." >&2
+    exit 1
+fi
 source "${PROJECT_ROOT}/tools/storage.sh"
 readonly DATASET_ROOT="${MTK_DATASET_ROOT}"
 readonly MODEL_STORAGE_ROOT="${MTK_MODEL_STORAGE_ROOT}"
@@ -67,12 +73,14 @@ else
     docker run --detach \
         --name "${CONTAINER_NAME}" \
         --hostname "${CONTAINER_NAME}" \
+        --user "${HOST_UID}:${HOST_GID}" \
         --gpus all \
         --network host \
         --shm-size 8g \
         --env NVIDIA_VISIBLE_DEVICES=all \
         --env NVIDIA_DRIVER_CAPABILITIES=compute,utility \
         --env PYTHONDONTWRITEBYTECODE=1 \
+        --env HOME="/home/mtk_${HOST_UID}" \
         --env MTK_MODELS_ROOT="${PROJECT_ROOT}" \
         --env PYTHONPATH="${PROJECT_ROOT}" \
         --env MTK_MODEL_STORAGE_ROOT \
@@ -102,20 +110,15 @@ else
 fi
 
 echo "[4/4] 固定终端环境并设置项目访问权限."
+source "${PROJECT_ROOT}/docker/user.sh"
 # 创建时写入普通登录终端的环境,进入容器时无需重新读取配置.
 {
     python3 "${PROJECT_ROOT}/tools/storage.py"
     printf 'export MTK_MODELS_ROOT=%q\n' "${PROJECT_ROOT}"
     printf 'export PYTHONPATH=%q\n' "${PROJECT_ROOT}"
     printf 'export PATH=%q:$PATH\n' "${NCC_ROOT}/bin"
-} | docker exec -i "${CONTAINER_NAME}" sh -c 'cat > /etc/profile.d/mtk-models.sh'
-# GPU 透传可能附加宿主机组编号,补齐组名以消除交互终端的 groups 警告.
-docker exec "${CONTAINER_NAME}" sh -c '
-    for GROUP_ID in $(id -G); do
-        if ! getent group "$GROUP_ID" >/dev/null; then
-            groupadd --gid "$GROUP_ID" "host_$GROUP_ID"
-        fi
-    done'
-docker exec "${CONTAINER_NAME}" git config --global --add safe.directory \
+} | docker exec --user 0 -i "${CONTAINER_NAME}" sh -c 'cat > /etc/profile.d/mtk-models.sh'
+docker exec --user "${MTK_CONTAINER_UID}:${MTK_CONTAINER_GID}" \
+    --env HOME="${MTK_CONTAINER_HOME}" "${CONTAINER_NAME}" git config --global --add safe.directory \
     "${PROJECT_ROOT}"
-echo "[OK] 容器 ${CONTAINER_NAME} 已就绪."
+echo "[OK] 容器 ${CONTAINER_NAME} 已就绪,编译用户 ${MTK_CONTAINER_UID}:${MTK_CONTAINER_GID}."
