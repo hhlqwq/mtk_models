@@ -14,6 +14,8 @@
 
 权重优化使用 Hessian,稳定性系数见 [hessian_stable.json](deploy/host/hessian_stable.json).校准默认读取 NAS 中的 WikiText2 raw train,训练文本路径相对于数据集根目录解析,参数文件路径相对于本模型目录解析.
 
+当前配方是不旋转、混合训练文本校准、Hessian 稳定性 0.1,仍在精度优化中.[唯一报告](results/summary.json)保留旧无优化基线的小样本实测,不代表当前配方已完成评价.候选对照、独立 64 题复核和逐层局部误差见 [适配说明](ADAPTATION.md).
+
 进入已有编译容器,在本模型目录执行:
 
 ```bash
