@@ -5,10 +5,12 @@ from collections import defaultdict
 import json
 from pathlib import Path
 import random
+import sys
 import time
 
 import numpy as np
 
+from tools.llm.artifacts import dla_relative_path
 from tools.files import sha256
 
 from tools.evaluation import (
@@ -190,12 +192,13 @@ def load_reference(model_path):
 class QuantizedExecutor:
     """用官方软件执行器复核多块 Prefill 与 KV,接口与硬件一致."""
 
-    def __init__(self, graph, contract):
+    def __init__(self, graph, contract, *, simulate_fp16=False):
         """加载同一静态图并分配原始 INT16 缓冲区."""
         # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
         from mtk_converter.python.tools.tflite_executor import TFLiteExecutor
 
-        self.executor = TFLiteExecutor(str(graph), cache_dequantized_weight=True)
+        self.executor = TFLiteExecutor(str(graph), simulate_fp16=simulate_fp16,
+                                       cache_dequantized_weight=True)
         self.contract = contract
         self.inputs = [np.full(item["shape"], item["zero_point"], dtype="<i2")
                        for item in contract["inputs"]]
@@ -216,8 +219,94 @@ class QuantizedExecutor:
         self.executor = None
 
 
+def evaluate_sdk(args):
+    """借用 SDK 浮点驱动采集小批量 MMLU 分数,不发布填充文本的 PPL."""
+    import torch
+    from types import SimpleNamespace
+    from mtk_llm_sdk import benchmark
+
+    if not is_test():
+        raise ValueError("SDK 浮点对照仅用于小批量诊断.")
+    protocol = json.loads((args.data / "protocol.json").read_text())
+    if sha256(args.data / "cases.json") != protocol["cases_sha256"]:
+        raise ValueError("SDK 对照题目指纹不符.")
+    if sha256(args.model / "config.json") != protocol["model_config_sha256"]:
+        raise ValueError("SDK 对照模型配置与输入不符.")
+    cases = json.loads((args.data / "cases.json").read_text())
+    if not 1 <= len(cases) <= 16:
+        raise ValueError("SDK 首轮对照仅允许最多 16 题.")
+    context = protocol["context"]
+    vocab_size = json.loads((args.model / "config.json").read_text())["vocab_size"]
+    ids = []
+    for case in cases:
+        if not 1 <= len(case["input_ids"]) <= context:
+            raise ValueError("SDK 对照输入超出上下文.")
+        # 仅右侧补齐,读取真实末位置;填充位置不参与 MMLU 评分.
+        ids.extend(case["input_ids"] + [1] * (context - len(case["input_ids"])))
+    record_selection(case["source_question_id"] for case in cases)
+    args.output.mkdir(parents=True, exist_ok=True)
+    output = args.output / "questions.jsonl"
+    if output.exists():
+        raise ValueError("SDK 对照输出已存在,请使用新的日期临时目录.")
+    rows, parameter_dtypes = [], set()
+
+    def capture(module, inputs, outputs):
+        """只保存四个选项的分数,不落盘完整词表 logits."""
+        values = outputs if isinstance(outputs, (tuple, list)) else [outputs]
+        logits = next(value for value in values if torch.is_tensor(value)
+                      and value.ndim == 3 and value.shape[-1] == vocab_size)
+        case = cases[len(rows)]
+        scores = logits[0, len(case["input_ids"]) - 1,
+                        protocol["choice_token_ids"]].detach().float().cpu().tolist()
+        row = {key: case[key] for key in ("id", "subject", "source_question_id", "answer")}
+        row.update(scores=scores, prediction=int(np.argmax(scores)))
+        with output.open("a") as stream:
+            stream.write(json.dumps(row) + "\n")
+        rows.append(row)
+        print(f"[SDK 浮点 MMLU] {len(rows)}/{len(cases)}.", flush=True)
+
+    original_evaluate, original_dataset = benchmark.evaluate_ppl, benchmark.datautils.get_dataset
+    original_argv = sys.argv
+
+    def forward(*values, **kwargs):
+        """保留 SDK 自身的掩码与前向实现,截取末层输出."""
+        models = values[4]
+        parameter_dtypes.update(str(parameter.dtype) for model in models
+                                for parameter in model.parameters())
+        handle = models[-1].register_forward_hook(capture)
+        try:
+            return original_evaluate(*values, **kwargs)
+        finally:
+            handle.remove()
+
+    try:
+        benchmark.datautils.get_dataset = lambda *values, **kwargs: SimpleNamespace(
+            input_ids=torch.tensor([ids]))
+        benchmark.evaluate_ppl = forward
+        sys.argv = ["sdk_mmlu", str(args.model / "config.json"),
+                    "pytorch", "ppl", "--dtype", "float32"]
+        try:
+            benchmark.main()
+        except ModuleNotFoundError as error:
+            if error.name != "pytablewriter" or len(rows) != len(cases):
+                raise
+    finally:
+        benchmark.evaluate_ppl, benchmark.datautils.get_dataset = original_evaluate, original_dataset
+        sys.argv = original_argv
+    if len(rows) != len(cases):
+        raise ValueError("SDK 对照未完成全部固定样本.")
+    correct = sum(row["prediction"] == row["answer"] for row in rows)
+    report = dict(protocol, backend="sdk", evaluated_questions=len(rows), correct=correct,
+                  accuracy=correct / len(rows), parameter_dtypes=sorted(parameter_dtypes),
+                  padding="right_pad_context_read_last_valid_token", **scope_metadata())
+    report["status"] = result_status()
+    (args.output / "mmlu_accuracy.json").write_text(json.dumps(report, indent=2) + "\n")
+
+
 def evaluate(args):
     """统一评分完整题集,落盘每题选项分数和可恢复的进度."""
+    if args.backend == "sdk":
+        return evaluate_sdk(args)
     protocol = json.loads((args.data / "protocol.json").read_text())
     if sha256(args.data / "cases.json") != protocol["cases_sha256"]:
         raise ValueError("MMLU 题目 Token 文件哈希不符.")
@@ -237,6 +326,8 @@ def evaluate(args):
         record_selection(row["source_question_id"] for row in cases)
     args.output.mkdir(parents=True, exist_ok=True)
     meta = {"backend": args.backend, "cases_sha256": protocol["cases_sha256"]}
+    if args.backend == "tflite":
+        meta["simulate_fp16"] = bool(getattr(args, "simulate_fp16", False))
     if args.diagnostic_questions:
         meta["diagnostic_case_ids"] = [row["id"] for row in cases]
     hardware = None
@@ -277,7 +368,15 @@ def evaluate(args):
         if manifest["context"] != protocol["context"]:
             raise ValueError("交付上下文与 MMLU 协议不符.")
         contract = json.loads((args.data / "board_input_contract.json").read_text())
-        graph = (args.package / f"{manifest['context']}c/prompt.dla"
+        expected = manifest["graph_contracts"]["prompt"]
+        fields = ("name", "shape", "scale", "zero_point")
+        if (contract["tflite_sha256"] != expected["tflite_sha256"]
+                or any(len(contract[kind]) != len(expected[kind]) or any(
+                    any(actual[field] != saved[field] for field in fields)
+                    for actual, saved in zip(contract[kind], expected[kind]))
+                    for kind in ("inputs", "outputs"))):
+            raise ValueError("MMLU 输入契约与部署 DLA 所属图或 I/O 不一致.")
+        graph = (args.package / dla_relative_path(manifest, "prompt")
                  if args.backend == "npu" else args.graph)
         embeddings = args.package / "tokenizer/embedding_int16.bin"
         if protocol.get("tokenizer_sha256") and sha256(
@@ -299,8 +398,10 @@ def evaluate(args):
         bank = np.load(args.data / "mmlu_inputs.npz")
         embedding = np.memmap(embeddings, dtype="<i2", mode="r").reshape(
             -1, contract["inputs"][0]["shape"][-1])
+        print(f"[MMLU {args.backend}] 加载模型,待评分 {len(cases)} 题.", flush=True)
         hardware = (HardwareModel(graph, contract)
-                    if args.backend == "npu" else QuantizedExecutor(graph, contract))
+                    if args.backend == "npu" else QuantizedExecutor(
+                        graph, contract, simulate_fp16=meta["simulate_fp16"]))
 
         def score(tokens):
             """执行同协议多块 Prefill,读取最后有效位置的选项 logits."""
@@ -343,7 +444,7 @@ def evaluate(args):
                 stream.write(json.dumps(row) + "\n")
                 stream.flush()
                 done.append(row)
-                if len(done) % 100 == 0 or len(done) == len(cases):
+                if len(done) % min(100, max(1, len(cases) // 4)) == 0 or len(done) == len(cases):
                     print(f"[MMLU {args.backend}] {len(done)}/{len(cases)}.",
                           flush=True)
     finally:
@@ -373,10 +474,12 @@ def evaluate(args):
 def main():
     """解析完整测试的准备、官方参考或板端执行参数."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("backend", choices=("prepare", "pytorch", "tflite", "npu"))
+    parser.add_argument("backend", choices=("prepare", "pytorch", "sdk", "tflite", "npu"))
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--model", type=Path)
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
+    parser.add_argument("--simulate-fp16", action="store_true",
+                        help="仅对量化软件执行启用 SDK FP16 计算模拟,用于硬件误差诊断.")
     parser.add_argument("--graph", type=Path)
     parser.add_argument("--context", type=int, default=1024)
     parser.add_argument("--limit", type=int, default=1000,
@@ -388,6 +491,8 @@ def main():
     parser.add_argument("--package", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if args.simulate_fp16 and args.backend != "tflite":
+        parser.error("--simulate-fp16 仅用于 tflite 软件诊断.")
     if is_test():
         args.output = args.output / "test"
         if args.backend == "prepare":

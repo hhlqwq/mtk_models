@@ -10,6 +10,7 @@ import sys
 from tools.deploy import arguments
 from tools.files import copy_public_tools, read_json, sha256, single_file
 from tools.llm.native import settings
+from tools.llm.artifacts import dla_filename
 from tools.llm.package import generation_resources, graph_contract
 from tools.storage import REPO_ROOT
 
@@ -33,15 +34,18 @@ def package_model(native):
         shutil.rmtree(output)
     for folder in (f"{native.context}c", "tokenizer", "scripts/prompts", "board/tools/llm"):
         (output / folder).mkdir(parents=True, exist_ok=True)
-    contracts = {}
+    contracts, model_files = {}, {}
     for phase, tokens in (("prompt", native.prefill), ("decode", 1)):
         folder = native.quantized.with_name(f"{native.prefix}_{tokens}t{native.context}c")
         graph = single_file(folder, "*.tflite")
-        dla = graph.with_suffix(".dla")
+        filename = dla_filename(native.model.name, config["num_hidden_layers"],
+                                tokens, native.context)
+        dla = folder / filename
         if not dla.is_file() or dla.stat().st_size == 0:
             raise FileNotFoundError(f"缺少已编译的 {phase} DLA.")
         contracts[phase] = dict(graph_contract(graph), tflite_sha256=sha256(graph))
-        shutil.copyfile(dla, output / f"{native.context}c/{phase}.dla")
+        model_files[phase] = f"{native.context}c/{filename}"
+        shutil.copyfile(dla, output / model_files[phase])
     embedding = native.quantized / "embedding_int16.bin"
     if embedding.stat().st_size != config["hidden_size"] * config["vocab_size"] * 2:
         raise ValueError("INT16 embedding 大小与词表、hidden size 不一致.")
@@ -56,7 +60,7 @@ def package_model(native):
         shutil.copyfile(native.ctx.model / "deploy/board" / name, output / "board" / name)
     shutil.copyfile(REPO_ROOT / "tools/summary.py", output / "board/summary.py")
     copy_public_tools(output / "board/tools", ("files", "evaluation", "board", "runtime", "output_metrics"))
-    for name in ("__init__", "evaluate_board_quality", "evaluate_mmlu", "generate"):
+    for name in ("__init__", "artifacts", "evaluate_board_quality", "evaluate_mmlu", "generate"):
         shutil.copyfile(REPO_ROOT / "tools/llm" / f"{name}.py",
                         output / "board/tools/llm" / f"{name}.py")
     snapshot = copy.deepcopy(native.ctx.config)
@@ -84,7 +88,7 @@ def package_model(native):
         "model": native.ctx.config["name"], "status": "compiled_pending_board",
         "precision": "asym4W_sym16A", "precision_settings": quantization,
         "preparation": preparation, "context": native.context, "prefill": native.prefill,
-        "graph_contracts": contracts,
+        "graph_contracts": contracts, "model_files": model_files,
         "files": [{"name": path.relative_to(output).as_posix(),
                    "bytes": path.stat().st_size, "sha256": sha256(path)}
                   for path in sorted(output.rglob("*")) if path.is_file()],

@@ -7,6 +7,7 @@ import numpy as np
 
 from tools.board import context
 from tools.evaluation import is_test
+from tools.llm.artifacts import dla_relative_path
 from tools.files import read_json, sha256
 from tools.llm.evaluate_board_quality import HardwareModel, transfer_cache
 from tools.runtime import peak_rss_kib
@@ -44,7 +45,7 @@ class Generator:
         self.manifest = manifest
         self.prompt = self.decode = self.bank = None
         files = {row["name"]: row for row in manifest["files"]}
-        required = [f"{manifest['context']}c/{phase}.dla" for phase in ("prompt", "decode")]
+        required = [dla_relative_path(manifest, phase) for phase in ("prompt", "decode")]
         required += ["tokenizer/embedding_int16.bin", "tokenizer/tokenizer.json",
                      "tokenizer/generation_inputs.npz"]
         for name in required:

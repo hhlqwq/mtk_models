@@ -93,6 +93,8 @@ def vision_accuracy(ctx):
 
 def llm_accuracy(ctx):
     """核对约定范围的 MMLU/PPL 协议及模型标识,不读取 Demo 或性能文件."""
+    from tools.llm.artifacts import dla_relative_path
+
     minicpm = ctx.config["name"] == "minicpm5_2b"
     data = ctx.root / ("evaluation/mmlu1000" if minicpm else "evaluation/full")
     mmlu = read_json(ctx.result / "mmlu/mmlu_accuracy.json")
@@ -125,7 +127,7 @@ def llm_accuracy(ctx):
                 or reference_mmlu.get("reference", {}).get("parameter_dtypes") != ["torch.float32"]):
             raise ValueError("MiniCPM 参考缺少匹配的 Tokenizer 或实际 FP32 精度记录.")
     manifest = read_json(ctx.root / "manifest.json")
-    prompt_name = f"{manifest['context']}c/prompt.dla"
+    prompt_name = dla_relative_path(manifest, "prompt")
     prompt = next(row for row in manifest["files"] if row["name"] == prompt_name)
     hardware = read_json(ctx.result / "mmlu/run_manifest.json")
     if hardware["graph_sha256"] != prompt["sha256"] or ppl["dla_sha256"] != prompt["sha256"]:

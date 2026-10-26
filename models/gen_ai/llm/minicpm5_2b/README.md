@@ -1,6 +1,6 @@
 # MiniCPM5-2B
 
-> Python 推理代码已迁移,尚未做板端验证.下文报告和示例属于迁移前的 C++/原生 CLI 实现,不能作为当前 Python 实现的精度、性能或 RSS.
+> Python 推理已完成固定 16 题 MMLU 板端诊断,尚未完成正式范围评价.下文迁移前报告和示例属于 C++/原生 CLI 实现,不能作为当前 Python 实现的精度、性能或 RSS.
 
 面向 Genio 720 的大语言模型适配,采用全 W4A16 量化,支持英文生成、性能统计及精度评价.
 使用官方 [openbmb/MiniCPM5-2B](https://huggingface.co/openbmb/MiniCPM5-2B),许可证 Apache-2.0.
@@ -49,6 +49,25 @@ MMLU 是无聊天模板、不自动加特殊 Token 的 0-shot 单 Token 选项�
 
 W4A16 的误差归因先比较原框架浮点、SDK 转换浮点、同图 W4A16 软件执行和 G720 NPU.先用固定小样本定位 logits 与预测差异,再决定是否运行千题诊断;这些比较不由正式入口自动追加.缺少同版本对照时不将全部掉点归因于量化,不自动判定精度损失合理或验收通过.
 
+## 小批量误差定位,2026-10-26
+
+本轮只使用 seed=17 的固定 16 题,覆盖 13 学科,输入长度 48 至 342 Token;12 题为单块 Prefill,4 题为多块.不运行千题 MMLU、完整 WikiText2、性能或 RSS 评价.官方原始 tokenizer 与实际题目及选项 Token 已在已有新版库中独立核对;旧 SDK 环境不能直接加载原始 tokenizer 的数组形式 BPE merges.
+
+| 同题同 Token 路径 | 答对题数 |
+|---|---:|
+| 原框架 FP32 参数计算 | 13/16 |
+| SDK 浮点 FP32 参数计算 | 13/16 |
+| 当前 W4A16 静态图软件执行 | 5/16 |
+| 同图软件执行,启用 SDK FP16 计算模拟 | 7/16 |
+| 当前 W4A16 DLA,Python 调用真实 NPU | 5/16 |
+| 已有 W4A16 Hessian/旋转组合候选,真实 NPU | 8/16 |
+
+原框架与 SDK 浮点的预测 16/16 一致,四选项分数最大绝对差约 0.000061.浮点适配在本批样本上未见明显退化.软件量化与 NPU 虽然同为 5/16,预测仅 4/16 一致;FP16 模拟后与 NPU 预测为 7/16 一致,不能认为软件与硬件已经对齐.单块题也存在差异,不能只归因于跨块 KV.
+
+已有候选与当前模型使用相同官方 revision,但校准、Hessian 和旋转同时不同.候选修正 6 题、退化 3 题,净增加 3 题,仅说明组合配方在本批样本上有改善,不能归因于单项优化或外推整体 MMLU.候选只在日期临时目录保留用于 MMLU 的 Prefill 与配套资源,没有替换当前交付包或默认配置.当前 `results/summary.json` 继续明确保存迁移前历史报告,本轮诊断证据不覆盖该报告.
+
+诊断复用 `tools/llm/evaluate_mmlu.py` 的 `pytorch`、`sdk`、`tflite` 和 `npu` 后端;`sdk` 仅允许最多 16 题,通过 SDK 原生前向驱动读取右侧补齐前的最后有效位置,不发布填充文本的 PPL.`tflite --simulate-fp16` 用于硬件计算精度对照,不改动 DLA.新增 SDK 后端另用本批两题在 CPU 核对入口,预测与已有 SDK 浮点记录一致.过程与逐题四选项分数放日期临时目录,不调用本模型正式 `evaluate.sh`.
+
 ## 迁移前结果
 
 以下为已有交付模型的固定子集成绩,不是全量基准.
@@ -69,3 +88,12 @@ W4A16 的误差归因先比较原框架浮点、SDK 转换浮点、同图 W4A16 
 ### 输出误差统计
 
 `evaluate.sh` 同时计算 CosSim、RMSE 和 NRMSE,写入唯一 `results/summary.json` 的 `output_comparison`.对 WikiText2 全部约定文本块的前 127 个位置统计同 Token 上下文的 Prefill logits,不含 MMLU 和 Decode;参考文件随 evaluation 目录下的 quality/output_reference.sqlite 一起传入板端.NRMSE 使用 `RMSE / RMS(浮点参考输出) × 100%`;多输出分别统计,缺参考如实记录缺失.具体定义、资源位置及当前未实测边界见[输出误差统计](../../../../docs/output_metrics.md).本次仅增加统计代码,未重新执行评价,历史指标不代表新增统计已验证.
+
+## DLA 文件命名
+
+编译和部署包统一使用模型名、精度、层数、阶段、输入 Token 数与上下文长度命名.例如当前 1024 上下文:
+
+- `MiniCPM5-2B_asym4W_sym16A_42layer_prefill_128t_1024c.dla`
+- `MiniCPM5-2B_asym4W_sym16A_42layer_decode_1t_1024c.dla`
+
+文件保存在对应的 `1024c/` 目录,加载路径由 `manifest.json` 的 `model_files` 指定.更换上下文或 Prefill 长度时按实际配置命名;历史结果中的旧文件名仅表示当时的产物.

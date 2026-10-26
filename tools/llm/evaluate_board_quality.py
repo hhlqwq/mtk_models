@@ -10,6 +10,7 @@ import numpy as np
 
 from tools.output_metrics import OutputComparison
 
+from tools.llm.artifacts import dla_relative_path
 from tools.files import sha256
 
 from tools.evaluation import (
@@ -99,7 +100,7 @@ def evaluate(args):
     inputs_path = args.quality_data / "board_inputs.npz"
     if sha256(inputs_path) != contract["board_inputs_sha256"]:
         raise ValueError("SDK 输入资源哈希不符.")
-    model_path = args.package / f"{manifest['context']}c/prompt.dla"
+    model_path = args.package / dla_relative_path(manifest, "prompt")
     embedding_path = args.package / "tokenizer/embedding_int16.bin"
     for path in (model_path, embedding_path):
         name = path.relative_to(args.package).as_posix()
@@ -140,7 +141,7 @@ def evaluate(args):
             if sha256(decode_inputs_path) != decode_contract["board_inputs_sha256"]:
                 raise ValueError("Decode SDK 输入哈希不符.")
             decode_arrays = np.load(decode_inputs_path)
-            decode_path = args.package / f"{manifest['context']}c/decode.dla"
+            decode_path = args.package / dla_relative_path(manifest, "decode")
             entry = next(item for item in manifest["files"] if item["name"] ==
                          decode_path.relative_to(args.package).as_posix())
             if sha256(decode_path) != entry["sha256"]:

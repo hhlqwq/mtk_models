@@ -7,6 +7,7 @@ from pathlib import Path
 from tools.deploy import arguments
 from tools.files import read_json, single_file
 from tools.llm.native import settings
+from tools.llm.artifacts import dla_filename
 from tools.process import run_command
 
 
@@ -15,7 +16,9 @@ def compile_dla(native, phase, tokens):
     folder = native.quantized.with_name(
         f"{native.prefix}_{tokens}t{native.context}c")
     source = single_file(folder, "*.tflite")
-    target = source.with_suffix(".dla")
+    config = read_json(native.model / "config.json")
+    target = folder / dla_filename(
+        native.model.name, config["num_hidden_layers"], tokens, native.context)
     ncc = Path(os.environ["NCC_ROOT"])
     if phase == "Prefill":
         extra = ["--broadcast-act-wgt", "--broadcast-flow-distance=63",

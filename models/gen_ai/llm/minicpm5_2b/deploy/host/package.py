@@ -11,6 +11,7 @@ from tools.deploy import arguments
 from tools.evaluation import is_test
 from tools.files import copy_public_tools, sha256, single_file
 from tools.llm.native import settings
+from tools.llm.artifacts import dla_filename
 from tools.llm.package import generation_resources, graph_contract
 from tools.storage import REPO_ROOT
 
@@ -54,10 +55,16 @@ def package(work, output, prefill, quantized_prefix=None):
             raise ValueError("统一权重精度核对与交付配置不一致.")
         if uniform_audit["parts"] != config["num_hidden_layers"] + 1:
             raise ValueError("统一权重精度核对的分片数量不符.")
-    prompt = single_file(Path(f"{base}_{prefill}t{context}c"), "*.dla")
-    decode = single_file(Path(f"{base}_1t{context}c"), "*.dla")
-    contracts = {"prompt": dict(graph_contract(prompt.with_suffix(".tflite")), tflite_sha256=sha256(prompt.with_suffix(".tflite"))),
-                 "decode": dict(graph_contract(decode.with_suffix(".tflite")), tflite_sha256=sha256(decode.with_suffix(".tflite")))}
+    contracts, model_files, sources = {}, {}, {}
+    for phase, tokens in (("prompt", prefill), ("decode", 1)):
+        folder = Path(f"{base}_{tokens}t{context}c")
+        graph = single_file(folder, "*.tflite")
+        filename = dla_filename(model.name, config["num_hidden_layers"], tokens, context)
+        sources[phase] = folder / filename
+        if not sources[phase].is_file():
+            raise FileNotFoundError(f"缺少已编译的 DLA: {sources[phase]}.")
+        model_files[phase] = f"{context}c/{filename}"
+        contracts[phase] = dict(graph_contract(graph), tflite_sha256=sha256(graph))
     embedding = single_file(base, "embedding_int16.bin")
     expected_bytes = config["hidden_size"] * config["vocab_size"] * 2
     if embedding.stat().st_size != expected_bytes:
@@ -66,8 +73,8 @@ def package(work, output, prefill, quantized_prefix=None):
         raise ValueError("交付目录必须为空,避免覆盖既有交付文件.")
     for name in (f"{context}c", "tokenizer", "scripts/prompts"):
         (output / name).mkdir(parents=True, exist_ok=True)
-    for src, dst in ((prompt, f"{context}c/prompt.dla"),
-                     (decode, f"{context}c/decode.dla"),
+    for src, dst in ((sources["prompt"], model_files["prompt"]),
+                     (sources["decode"], model_files["decode"]),
                      (embedding, "tokenizer/embedding_int16.bin")):
         print(f"[打包] {dst}", flush=True)
         shutil.copyfile(src, output / dst)
@@ -106,7 +113,7 @@ def package(work, output, prefill, quantized_prefix=None):
         "cumulative_layer_error": precision_settings.get("cumulative_layer_error"),
         "quantized_prefix": base.name,
         "prefill": prefill, "context": context, "files": files,
-        "graph_contracts": contracts,
+        "graph_contracts": contracts, "model_files": model_files,
         "toolkit_sha256": "da10e770e2950542ab17c63182b0b932348ab05ffdceb18cbb097555ca6127f5",
     }, ensure_ascii=False, indent=2) + "\n")
 
@@ -131,7 +138,7 @@ def package_model(native):
     copy_public_tools(board / "tools", ("files", "evaluation", "board", "runtime", "output_metrics"))
     shared = board / "tools/llm"
     shared.mkdir()
-    for name in ("__init__", "evaluate_board_quality", "evaluate_mmlu", "generate"):
+    for name in ("__init__", "artifacts", "evaluate_board_quality", "evaluate_mmlu", "generate"):
         shutil.copyfile(REPO_ROOT / "tools/llm" / f"{name}.py", shared / f"{name}.py")
     snapshot = copy.deepcopy(native.ctx.config)
     snapshot["model"]["source"] = str(native.source)
