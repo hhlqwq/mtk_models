@@ -27,7 +27,14 @@ if [[ "${CONTAINER_HOME}" != /home/* || "${CONTAINER_HOME}" == *'/../'* ]]; then
     exit 1
 fi
 # 保留宿主机共享目录和 GPU 设备所需的附加组,不继承 root 组.
-for GROUP_ID in ${HOST_GROUPS} $(id -G); do
+DEVICE_GROUPS="$(
+    for DEVICE in /dev/nvidia* /dev/nvidia-caps/* /dev/dri/*; do
+        if [[ -c "${DEVICE}" ]]; then
+            stat -c '%g' "${DEVICE}"
+        fi
+    done
+)"
+for GROUP_ID in ${HOST_GROUPS} ${DEVICE_GROUPS}; do
     if [[ "${GROUP_ID}" == 0 ]]; then
         continue
     fi

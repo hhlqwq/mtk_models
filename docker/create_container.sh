@@ -118,7 +118,7 @@ source "${PROJECT_ROOT}/docker/user.sh"
     printf 'export PYTHONPATH=%q\n' "${PROJECT_ROOT}"
     printf 'export PATH=%q:$PATH\n' "${NCC_ROOT}/bin"
 } | docker exec --user 0 -i "${CONTAINER_NAME}" sh -c 'cat > /etc/profile.d/mtk-models.sh'
-docker exec --user "${MTK_CONTAINER_UID}:${MTK_CONTAINER_GID}" \
+docker exec --user "${MTK_CONTAINER_UID}" \
     --env HOME="${MTK_CONTAINER_HOME}" "${CONTAINER_NAME}" git config --global --add safe.directory \
     "${PROJECT_ROOT}"
 echo "[OK] 容器 ${CONTAINER_NAME} 已就绪,编译用户 ${MTK_CONTAINER_UID}:${MTK_CONTAINER_GID}."
