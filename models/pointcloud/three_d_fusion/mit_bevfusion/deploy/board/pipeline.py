@@ -11,6 +11,7 @@ import onnxruntime as ort
 from geometry import decode, pool_bev, projected_depth, select_queries
 from sparse import SparseEncoder
 from tools.runtime import Runtime
+from tools.output_metrics import Moments
 
 
 def cpu_session(path):
@@ -24,13 +25,16 @@ def cpu_session(path):
 class Stage:
     """依据已编译契约执行固定子图,严格核对原生缓冲区大小."""
 
-    def __init__(self, root, name, contract, reference=False):
+    def __init__(self, root, name, contract, reference=False, compare=False):
         """浮点参考也使用同一导出图,不替换权重或模型版本."""
         self.contract, self.name = contract, name
         self.cpu, self.runtime = None, None
         self.inputs, self.outputs = [], []
         self.elapsed_npu_ms = 0
         self.reference = cpu_session(root / f"{name}.onnx") if reference else None
+        self.comparison = (cpu_session(root / f"{name}.onnx")
+                           if compare and contract["backend"] == "mtk_npu" else None)
+        self.output_metrics = {}
         if contract["backend"] == "mtk_npu":
             self.runtime = Runtime(root / contract["file"])
             for output, tensors, target in ((False, contract["inputs"], self.inputs),
@@ -81,6 +85,11 @@ class Stage:
             result = self.cpu.run([item["name"] for item in self.contract["outputs"]], feed)
         if any(not np.isfinite(item).all() for item in result):
             raise ValueError(f"{self.name} 输出有非有限数值.")
+        if self.comparison is not None:
+            names = [item["name"] for item in self.contract["outputs"]]
+            expected = self.comparison.run(names, feed)
+            for name, actual, floating in zip(names, result, expected):
+                self.output_metrics.setdefault(name, Moments()).update(floating, actual)
         if self.reference and self.runtime:
             expected = self.reference.run([item["name"] for item in self.contract["outputs"]], feed)
             for actual, floating in zip(result, expected):
@@ -102,7 +111,7 @@ class Stage:
 class Pipeline:
     """串接六相机深度特征,稀疏 LiDAR,融合解码与完整检测头."""
 
-    def __init__(self, root, check=False, floating=False, verbose=True):
+    def __init__(self, root, check=False, floating=False, verbose=True, compare=False):
         """只初始化一次,正式评价复用相同模型和稀疏权重."""
         root = Path(root)
         self.contract = json.loads((root / "contract.json").read_text(encoding="utf-8"))
@@ -112,7 +121,7 @@ class Pipeline:
             for name, item in self.contract["stages"].items():
                 if floating:
                     item = {**item, "backend": "onnxruntime_cpu", "file": f"{name}.onnx"}
-                self.stages[name] = Stage(root, name, item, reference=check)
+                self.stages[name] = Stage(root, name, item, reference=check, compare=compare)
         except Exception:
             self.close()
             raise

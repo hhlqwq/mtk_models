@@ -9,6 +9,7 @@ import numpy as np
 from tools.board import context
 from tools.evaluation import is_test, select_samples, SPEECH_EXAMPLES
 from tools.runtime import Runtime, peak_rss_kib
+from tools.output_metrics import OutputComparison
 
 
 def load_samples(root):
@@ -136,12 +137,14 @@ def main():
     cache = ctx.work / "cache/librispeech"
     cache.mkdir(parents=True)
     preprocessing = []
+    comparison = OutputComparison(ctx, scope="encoder_output_all_audio; excludes_autoregressive_decoder")
     with Runtime(ctx.root / "models/encoder_fp32.dla") as encoder, Runtime(ctx.root / "models/decoder_step_fp32.dla") as decoder:
         model = WhisperRuntime(encoder, decoder, config)
         with (cache / "source_manifest.jsonl").open("w") as sources, (ctx.work / "board_predictions.jsonl").open("w") as predictions:
             for count, sample in enumerate(samples, 1):
                 mel, duration, timing = preprocess(sample["audio_path"], filters)
                 row = model.decode(mel)
+                comparison.update([mel[None]], {"output": model.encoder_outputs[0].reshape(1, 1500, 384)})
                 row.update(sample_id=sample["sample_id"], duration_seconds=duration)
                 if not is_test():
                     row["npu_rtf"] = row["npu_total_ms"] / (duration * 1000)
@@ -155,6 +158,7 @@ def main():
     if not is_test():
         (cache / "preprocess_metrics.jsonl").write_text(
             "".join(json.dumps(row) + "\n" for row in preprocessing))
+    comparison.finish()
 
 
 if __name__ == "__main__":

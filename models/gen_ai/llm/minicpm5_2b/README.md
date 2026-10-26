@@ -65,3 +65,7 @@ W4A16 的误差归因先比较原框架浮点、SDK 转换浮点、同图 W4A16 
 
 历史部署大小 2827.29 MB 包含 Prefill/Decode 两个独立 DLA 合计 2292.52 MB 和外置 INT16 embedding 534.77 MB,不能当作单份 INT4 权重体积.输入 Embedding 与 LM Head 各有 267386880 个参数且不共享;估算时不能遗漏 LM Head,也不能把 INT16 embedding 称为 FP16.
 结果及适配说明见 [summary.json](results/summary.json) 和 [ADAPTATION.md](ADAPTATION.md).
+
+### 输出误差统计
+
+`evaluate.sh` 同时计算 CosSim、RMSE 和 NRMSE,写入唯一 `results/summary.json` 的 `output_comparison`.对 WikiText2 全部约定文本块的前 127 个位置统计同 Token 上下文的 Prefill logits,不含 MMLU 和 Decode;参考文件随 evaluation 目录下的 quality/output_reference.sqlite 一起传入板端.NRMSE 使用 `RMSE / RMS(浮点参考输出) × 100%`;多输出分别统计,缺参考如实记录缺失.具体定义、资源位置及当前未实测边界见[输出误差统计](../../../../docs/output_metrics.md).本次仅增加统计代码,未重新执行评价,历史指标不代表新增统计已验证.

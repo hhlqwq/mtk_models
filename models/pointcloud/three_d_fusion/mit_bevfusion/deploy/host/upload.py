@@ -24,7 +24,7 @@ def main():
                      ctx.model / "deploy/requirements-evaluate.txt", config],
               "models": model_files, "board": list((ctx.model / "deploy/board").glob("*.py")),
               "board/tools": [ctx.repo / "tools" / name for name in
-                              ("__init__.py", "runtime.py", "board.py", "evaluation.py")],
+                              ("__init__.py", "runtime.py", "board.py", "evaluation.py", "files.py", "output_metrics.py")],
               "examples/input": [ctx.work / "sample.npz", ctx.work / "sample.json"]}
     for files in groups.values():
         for path in files:

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 独立评价已有模型的精度、性能与峰值 RSS,不量化、编译或部署.
 set -euo pipefail
+export MTK_OUTPUT_METRICS=1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export MTK_EVAL_SCOPE=full
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
@@ -12,7 +13,7 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     python3 "${SCRIPT_DIR}/board/infer.py"
     python3 "${SCRIPT_DIR}/board/evaluate.py"
     echo "[正式评价 2/3] 千题 MMLU Accuracy 和完整 WikiText2 PPL 已计算."
-    echo "[正式评价 3/3] 保存实际范围、精度、性能与峰值 RSS 到唯一 summary.json."
+    echo "[正式评价 3/3] 保存实际范围、CosSim、RMSE、NRMSE、精度、性能与峰值 RSS 到唯一 summary.json."
     python3 "${SCRIPT_DIR}/board/summary.py"
 else
     : "${MTK_MODELS_ROOT:?请先进入已有编译容器,仅对已有浮点模型准备评价参考}"

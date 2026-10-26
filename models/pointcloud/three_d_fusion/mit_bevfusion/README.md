@@ -60,3 +60,7 @@ bash evaluate.sh
 板端评价覆盖 6019 帧,复用 nuScenes 官方类别距离,空点框及 bicycle rack 过滤和评分算法,仅生成 `results/summary.json`.报告包含 mAP,NDS,同协议参考及百分点变化,每帧 NPU 调用总耗时,不含文件加载和图像预处理的完整推理耗时,以及评分前采集的 Python 推理进程峰值 RSS.缺少参考时标记 partial 且差值为空;缺少样本直接停止,不跳过或改用 mini.
 
 目前没有正式精度,性能和 RSS 结果,所以仓库没有创建 `results/summary.json`.评价入口已实现,全量运行及评分依赖仍未验证.
+
+### 输出误差统计
+
+`evaluate.sh` 同时计算 CosSim、RMSE 和 NRMSE,写入唯一 `results/summary.json` 的 `output_comparison`.在性能和 RSS 采集后独立重放全部 6019 帧,使用已有 ONNX 对每个 NPU 子图作同输入比较;不混入 CPU 子图、上游累计误差或最终检测框误差.NRMSE 使用 `RMSE / RMS(浮点参考输出) × 100%`;多输出分别统计,缺参考如实记录缺失.具体定义、资源位置及当前未实测边界见[输出误差统计](../../../../docs/output_metrics.md).本次仅增加统计代码,未重新执行评价,历史指标不代表新增统计已验证.

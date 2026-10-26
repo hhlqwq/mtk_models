@@ -63,3 +63,7 @@ ESC-50 共 2000 条音频、20000 个窗口.第一折每类两条音频、每条
 | [sample_3.wav](examples/input/sample_3.wav) | siren | [JSON](examples/output/sample_3_events.json) |
 
 仓库中的上述输出为 FP16 示例,不作为当前 W8A16 的评价结果.原始样例出处和许可见 [ESC-50 LICENSE](https://github.com/karolpiczak/ESC-50/blob/33c8ce9eb2cf0b1c2f8bcf322eb349b6be34dbb6/LICENSE).
+
+### 输出误差统计
+
+`evaluate.sh` 同时计算 CosSim、RMSE 和 NRMSE,写入唯一 `results/summary.json` 的 `output_comparison`.浮点参考生成时保存 output_reference.sqlite,与任务参考一起放入板端 models/;按量化前输入内容配对,在现有 NPU 评价过程中逐输出累计统计.NRMSE 使用 `RMSE / RMS(浮点参考输出) × 100%`;多输出分别统计,缺参考如实记录缺失.具体定义、资源位置及当前未实测边界见[输出误差统计](../../../../docs/output_metrics.md).本次仅增加统计代码,未重新执行评价,历史指标不代表新增统计已验证.

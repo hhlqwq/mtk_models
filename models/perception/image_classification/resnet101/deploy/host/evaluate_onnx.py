@@ -13,6 +13,7 @@ from tqdm import tqdm
 from tools.deploy import arguments, reference_path
 from tools.evaluation import is_test
 from tools.files import read_json, require_file, sha256
+from tools.output_metrics import record_reference, finish_reference
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from resnet101 import (
@@ -41,7 +42,9 @@ def main() -> None:
         raise ValueError("FP32 ONNX 张量契约不符.")
     top1 = 0
     for path, label in tqdm(zip(paths, labels), total=50000, desc="ResNet101 FP32 Top-1 参考"):
-        logits = session.run([outputs[0].name], {inputs[0].name: preprocess(path)})[0]
+        tensor = preprocess(path)
+        logits = session.run([outputs[0].name], {inputs[0].name: tensor})[0]
+        record_reference(source, [tensor], {"output": logits})
         if logits.shape != (1, 1000) or not np.isfinite(logits).all():
             raise ValueError(f"ONNX 输出无效: {path.name}.")
         top1 += int(np.argmax(logits[0]) == label)
@@ -57,6 +60,7 @@ def main() -> None:
     destination.write_text(
         json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     print(f"[参考完成] {destination}.", flush=True)
+    finish_reference()
 
 
 if __name__ == "__main__":

@@ -55,7 +55,7 @@ def package_model(native):
     for name in ("infer.py", "evaluate.py"):
         shutil.copyfile(native.ctx.model / "deploy/board" / name, output / "board" / name)
     shutil.copyfile(REPO_ROOT / "tools/summary.py", output / "board/summary.py")
-    copy_public_tools(output / "board/tools", ("files", "evaluation", "board", "runtime"))
+    copy_public_tools(output / "board/tools", ("files", "evaluation", "board", "runtime", "output_metrics"))
     for name in ("__init__", "evaluate_board_quality", "evaluate_mmlu", "generate"):
         shutil.copyfile(REPO_ROOT / "tools/llm" / f"{name}.py",
                         output / "board/tools/llm" / f"{name}.py")

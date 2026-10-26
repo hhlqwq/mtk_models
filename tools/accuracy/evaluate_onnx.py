@@ -6,9 +6,9 @@ import importlib.util
 import io
 import json
 import math
+import os
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
@@ -22,6 +22,7 @@ from tools.evaluation import (
     SPEECH_EXAMPLES, coco_ids, is_test, result_status,
     scope_metadata, select_samples,
 )
+from tools.output_metrics import record_reference, finish_reference
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -49,6 +50,7 @@ def make_session(path: Path) -> ort.InferenceSession:
     providers = [name for name in ("CUDAExecutionProvider", "CPUExecutionProvider")
                  if name in ort.get_available_providers()]
     session = ort.InferenceSession(str(path), providers=providers)
+    session.output_reference_source = path
     print(f"[ONNX] {path.name}: {session.get_providers()}", flush=True)
     return session
 
@@ -62,6 +64,8 @@ def infer(session: ort.InferenceSession, tensor: np.ndarray) -> list:
     outputs = session.run(None, {details[0].name: tensor.astype(dtype)})
     if any(not np.isfinite(value).all() for value in outputs):
         raise ValueError("ONNX 输出包含非有限数值.")
+    record_reference(session.output_reference_source, [tensor.astype(dtype)], {
+        item.name: value for item, value in zip(session.get_outputs(), outputs)})
     return outputs
 
 
@@ -259,7 +263,6 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
         raise RuntimeError(
             "Whisper ONNX 评测需要 ffmpeg,请在编译 Docker 中安装该依赖.")
     # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
-    import whisper
     from whisper.tokenizer import get_tokenizer
     helper = load_module("whisper_metrics", deploy / "full_accuracy_board.py")
     assets = load_module("whisper_assets", deploy.parent / "host" / "export_onnx.py")
@@ -267,6 +270,8 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
     chosen = select_samples(sorted(sources), args.model, required=SPEECH_EXAMPLES)
     sources = {key: sources[key] for key in chosen}
     assets.export_assets(args.work_dir)
+    board_infer = load_module("whisper_board_infer", deploy / "infer.py")
+    mel_filters = np.fromfile(args.work_dir / "mel_filters_f32.bin", dtype="<f4").reshape(80, 201)
     config = dict(line.split("=", 1) for line in
                   (args.work_dir / "decode_config.txt").read_text().splitlines())
     initial = [int(value) for value in config["initial"].split(",")]
@@ -281,13 +286,8 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
     tokenizer = get_tokenizer(multilingual=True, language="en", task="transcribe")
     predictions = {}
     for sample_id in tqdm.tqdm(sorted(sources), desc="ONNX WER", unit="audio"):
-        decoded = subprocess.run([ffmpeg, "-nostdin", "-v", "error", "-i",
-            str(sources[sample_id]["audio"]), "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],
-            check=True, stdout=subprocess.PIPE).stdout
-        audio = np.frombuffer(decoded, dtype="<i2").astype(np.float32) / 32768.0
-        if not audio.size:
-            raise ValueError(f"空音频: {sample_id}")
-        mel = whisper.log_mel_spectrogram(whisper.pad_or_trim(audio), n_mels=80).numpy()[None]
+        # 浮点参考与板端共用同一 Log-Mel 实现和 FP16 输入边界.
+        mel = board_infer.preprocess(sources[sample_id]["audio"], mel_filters)[0][None]
         features = infer(encoder, mel)[0]
         caches = {name: np.zeros(decoder_inputs[name].shape, np.float32) for name in cache_names}
         tokens, token = [], initial[0]
@@ -343,6 +343,11 @@ def evaluate_model(*, model, onnx, dataset_root, output, decoder_onnx=None, temp
     if args.model != "fastsam":
         sys.path.insert(0, str(deploy))
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    if os.environ.get("MTK_OUTPUT_METRICS") == "1":
+        os.environ["MTK_OUTPUT_REFERENCE"] = str(args.output.parent / "output_reference.sqlite")
+        if "MTK_OUTPUT_MODEL_DIRS" not in os.environ:
+            os.environ["MTK_OUTPUT_MODEL_DIRS"] = json.dumps([
+                str(args.onnx.parent), str(args.output.parent)])
     # 临时目录由工具创建,成功后仅清理此目录; 失败保留现场.
     temp_root = args.temp_dir or args.output.parent
     temp_root.mkdir(parents=True, exist_ok=True)
@@ -359,6 +364,7 @@ def evaluate_model(*, model, onnx, dataset_root, output, decoder_onnx=None, temp
         "samples": samples, "source": "本次 ONNX 浮点同范围实测,使用与板端相同的评测协议"},
         ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     shutil.rmtree(args.work_dir)
+    finish_reference()
     print(f"[ONNX] {metric}: {value:.6f}; 汇总: {args.output}", flush=True)
 
 

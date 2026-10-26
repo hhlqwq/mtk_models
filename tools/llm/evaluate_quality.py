@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -16,6 +17,7 @@ from transformers import AutoModelForCausalLM
 from transformers import AutoTokenizer
 
 from tools.files import sha256
+from tools.output_metrics import ReferenceWriter
 
 from tools.evaluation import (
     is_test, record_selection, result_status, scope_metadata,
@@ -163,6 +165,8 @@ def evaluate(args):
         del state
         model = model.to(args.device).eval()
         total_nll = 0.0
+        output_reference = (ReferenceWriter(args.output / "output_reference.sqlite")
+                            if os.environ.get("MTK_OUTPUT_METRICS") == "1" and not is_test() else None)
         with torch.inference_mode():
             for index in range(blocks):
                 ids = tokens[:, index * 128:(index + 1) * 128].to(args.device)
@@ -174,6 +178,9 @@ def evaluate(args):
                     protocol.setdefault("decode_input_ids", []).append(ids[0].tolist())
                 all_logits = model(ids, use_cache=False).logits.float()
                 logits = all_logits[:, :127]
+                if output_reference is not None:
+                    output_reference.add(args.model / "config.json", [ids[:, :128].cpu().numpy()],
+                                         {"output": logits[0].cpu().numpy()})
                 if args.diagnostic_blocks:
                     np.save(args.output / f"pytorch_logits_{index:03d}.npy",
                             logits[0].cpu().numpy())
@@ -188,6 +195,8 @@ def evaluate(args):
                 total_nll += loss.item()
                 print(f"[质量参考] {index + 1}/{blocks}", flush=True)
         ppl = float(torch.exp(torch.tensor(total_nll / protocol["scored_tokens"])))
+        if output_reference is not None:
+            output_reference.finish()
         preparation = json.loads((args.model.parent / "native_prepare.json").read_text())
         protocol["demo_references"] = []
         for sample in ([] if args.skip_demo else preparation["demos"]):

@@ -37,9 +37,9 @@ STRIDES = [8.0, 16.0, 32.0]
 def letterbox(image: np.ndarray, image_size: int) -> tuple:
     """按 YOLOv5 规则缩放并填充图片, 返回画布与仿射元数据."""
     height, width = image.shape[:2]
-    scale = min(image_size / width, image_size / height)
-    resized_width = round(width * scale)
-    resized_height = round(height * scale)
+    scale = np.float32(min(image_size / width, image_size / height))
+    resized_width = int(np.floor(width * scale + 0.5))
+    resized_height = int(np.floor(height * scale + 0.5))
     resized = cv2.resize(image, (resized_width, resized_height))
     canvas = np.full((image_size, image_size, 3), 114, dtype=np.uint8)
     left = (image_size - resized_width) // 2
@@ -115,6 +115,10 @@ def build_fp32_infer(args: argparse.Namespace):
         rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
         tensor = rgb.transpose(2, 0, 1).astype(np.float32)[None] / 255.0
         outputs = session.run(None, {input_name: tensor})
+        from tools.output_metrics import record_reference
+
+        record_reference(args.onnx, [tensor], {
+            item.name: value for item, value in zip(session.get_outputs(), outputs)})
         heads = [None, None, None]
         for value in outputs:
             if value.ndim != 4 or value.shape[-1] not in order:
@@ -187,6 +191,9 @@ def evaluate_onnx_accuracy(args: argparse.Namespace) -> None:
         "map_50_95": value,
     }, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[ONNX] mAP@0.5:0.95: {value:.6f}", flush=True)
+    from tools.output_metrics import finish_reference
+
+    finish_reference()
 
 
 def parse_args() -> argparse.Namespace:

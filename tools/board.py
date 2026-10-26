@@ -74,6 +74,7 @@ def infer_images(ctx, images, metadata, input_shape, output_shape, preprocess, p
     import numpy as np
 
     from tools.runtime import Runtime, peak_rss_kib, quantize
+    from tools.output_metrics import OutputComparison
 
     if ctx.result.exists():
         raise FileExistsError(ctx.result)
@@ -86,6 +87,7 @@ def infer_images(ctx, images, metadata, input_shape, output_shape, preprocess, p
                 or type(item["zero_point"]) is not int or not -128 <= item["zero_point"] <= 127):
             raise ValueError(f"模型 {name} 张量契约无效.")
     ctx.work.mkdir(parents=True)
+    comparison = OutputComparison(ctx)
     with Runtime(ctx.root / "models/model_int8.dla") as runtime:
         if tuple(map(len, runtime.sizes)) != (1, 1):
             raise ValueError("要求单输入单输出模型.")
@@ -97,13 +99,15 @@ def infer_images(ctx, images, metadata, input_shape, output_shape, preprocess, p
                 image = cv2.imread(str(path))
                 if image is None:
                     raise ValueError(f"无法读取图片: {path}.")
-                np.copyto(input_view, quantize(preprocess(path), metadata["input"]["scale"],
+                floating_input = preprocess(path)
+                np.copyto(input_view, quantize(floating_input, metadata["input"]["scale"],
                                                metadata["input"]["zero_point"]))
                 milliseconds = runtime.infer([inputs], [outputs])
                 values = (output_view.astype(np.float32) - metadata["output"]["zero_point"]) * metadata["output"]["scale"]
                 output = ctx.work / "raw" / f"{index:05d}"
                 output.mkdir(parents=True)
                 postprocess(values, image, output)
+                comparison.update([floating_input], {"output": values})
                 record = {"image": name, "directory": str(output.relative_to(ctx.work)),
                           "backend": "python_neuron_runtime_hw"}
                 if not is_test():
@@ -111,6 +115,7 @@ def infer_images(ctx, images, metadata, input_shape, output_shape, preprocess, p
                 records.write(json.dumps(record, ensure_ascii=False) + "\n")
                 if index % 50 == 0 or index == len(images):
                     print(f"[推理] {ctx.config['name']} {index}/{len(images)}", flush=True)
+    comparison.finish()
 
 
 def inference_records(work, expected):

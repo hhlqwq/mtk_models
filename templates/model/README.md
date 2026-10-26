@@ -34,6 +34,8 @@ bash compile.sh
 
 ## 数据与评价
 
+`evaluate.sh` 启用 CosSim、RMSE 和 NRMSE 统计,复用 `tools/output_metrics.py`,将同输入浮点参考与 NPU 后处理前输出逐头比较,结果合并到唯一 `summary.json` 的 `output_comparison`.NRMSE 使用 `100 * RMSE / RMS(参考输出)`,不同输出不混合量纲.主机保存必要的单文件输出参考,板端核对输入与完整覆盖,缺参考如实记录.适配时必须接入实际输出和打包依赖,不能只保留环境变量.计算接口、参考资源和特殊模型范围见[输出误差统计](../../docs/output_metrics.md).
+
 填写数据目录格式、样本数、校准范围、评价协议及依赖.记录同协议原框架/ONNX 与 NPU 指标、差值、纯 NPU 和端到端耗时及峰值 RSS.多模型 DLA、外置 embedding 分项统计,文件大小采用十进制 MB.
 
 原生 LLM 参考 MiniCPM5 或 DeepSeek 的双 DLA 流程,按本模型定义 tokenizer、停止 Token、Prefill/Decode 与 KV 接口.参考输入必须匹配已有部署图;完整题目超上下文时报告所需长度,不在评价入口截题或重新编译.

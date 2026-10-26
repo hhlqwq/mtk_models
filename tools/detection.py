@@ -8,6 +8,7 @@ import numpy as np
 
 from tools.evaluation import coco_ids, is_test
 from tools.runtime import Runtime, peak_rss_kib, quantize
+from tools.output_metrics import OutputComparison
 
 
 COCO_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17,
@@ -28,6 +29,7 @@ def infer(ctx, input_info, output_info, preprocess, postprocess):
         raise ValueError("没有找到检测输入图片.")
     ctx.work.mkdir(parents=True)
     predictions, timings = [], []
+    comparison = OutputComparison(ctx)
     with Runtime(ctx.root / "models/model_int8.dla") as model:
         if tuple(map(len, model.sizes)) != (1, len(output_info)):
             raise ValueError("检测模型 I/O 数量不符.")
@@ -56,6 +58,8 @@ def infer(ctx, input_info, output_info, preprocess, postprocess):
                        for view, item in zip(output_views, output_info)]
             boxes, scores, classes = postprocess(outputs, geometry)
             ended = time.perf_counter()
+            comparison.update([values], {item.get("name", f"head_{index}"): value
+                                         for index, (item, value) in enumerate(zip(output_info, outputs))})
             for box, score, category in zip(boxes, scores, classes):
                 x1, y1, x2, y2 = map(float, box)
                 predictions.append({"image_id": int(path.stem),
@@ -68,6 +72,7 @@ def infer(ctx, input_info, output_info, preprocess, postprocess):
             if count % 50 == 0 or count == len(images):
                 print(f"[推理] {ctx.config['name']} {count}/{len(images)}", flush=True)
     (ctx.work / "predictions.json").write_text(json.dumps(predictions))
+    comparison.finish()
     (ctx.work / "processed_ids.txt").write_text(
         "".join(f"{int(path.stem)}\n" for path in images))
     if not is_test():

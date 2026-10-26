@@ -44,6 +44,11 @@ def main() -> None:
         if deployed.get(key) != metadata[key]:
             raise ValueError(f"板端模型与本次参考版本不匹配: {key}.")
     run_command(["scp", *options, source, f"{host}:{destination}/onnx_reference.json"])
+    output_reference = ctx.work / "output_reference.sqlite"
+    if os.environ.get("MTK_OUTPUT_METRICS") == "1":
+        if not output_reference.is_file():
+            raise FileNotFoundError(output_reference)
+        run_command(["scp", *options, output_reference, f"{host}:{destination}/output_reference.sqlite"])
     print("[参考已上传] 板端 models/onnx_reference.json; 未启动板端推理或评分.", flush=True)
 
 

@@ -20,6 +20,9 @@ def context(entry, config_path=None, work_dir=None):
     config = load_model_config(config_path)
     output = Path(config["model"]["output_dir"])
     work = Path(work_dir) if work_dir else output / "build"
+    if os.environ.get("MTK_OUTPUT_METRICS") == "1":
+        os.environ["MTK_OUTPUT_REFERENCE"] = str(work / "output_reference.sqlite")
+        os.environ["MTK_OUTPUT_MODEL_DIRS"] = json.dumps([str(output), str(work)])
     for name in ("tmp", "cache"):
         (work / name).mkdir(parents=True, exist_ok=True)
     os.environ.update(PYTHONDONTWRITEBYTECODE="1", TMPDIR=str(work / "tmp"),
@@ -101,7 +104,7 @@ def upload(ctx, model_files, extra_files=()):
         "models": model_files,
         "board": [*code, ctx.repo / "tools/summary.py"],
         "board/tools": [ctx.repo / "tools" / name for name in
-            ("__init__.py", "board.py", "evaluation.py", "files.py", "coco.py", "runtime.py")],
+            ("__init__.py", "board.py", "evaluation.py", "files.py", "coco.py", "runtime.py", "output_metrics.py")],
         "examples/input": [*sorted((ctx.model / "examples/input").glob("sample_*"))],
     }
     if ctx.config["name"] in ("yolov5s", "yolov8n", "fastsam"):

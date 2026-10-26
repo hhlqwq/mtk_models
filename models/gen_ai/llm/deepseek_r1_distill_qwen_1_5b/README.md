@@ -53,3 +53,7 @@ bash evaluate.sh
 使用官方 tokenizer 的 Token 输入,保留聊天模板、BOS/EOS 和停止列表.GQA 为 Q/KV Head=12/2,RoPE=10000;输入、KV Cache、mask、RoPE 与输出使用图中实际 INT16 接口.外置 embedding、tokenizer、Prefill/Decode DLA 和配置必须成套使用.Python 使用随包的官方 tokenizer.json 解码,生成输入继续使用已准备的官方 Token.
 
 校准从全文的 32 个均匀候选位置选取 16 段 256 Token 训练文本,并保留 8 条双语输入,测试集不参与校准.每条保存 Prefill 和单 Token Decode 数据,共 48 个批次.固定小样本比较见 [ADAPTATION.md](ADAPTATION.md),完整质量由独立评价确认.
+
+### 输出误差统计
+
+`evaluate.sh` 同时计算 CosSim、RMSE 和 NRMSE,写入唯一 `results/summary.json` 的 `output_comparison`.对 WikiText2 全部约定文本块的前 127 个位置统计同 Token 上下文的 Prefill logits,不含 MMLU 和 Decode;参考文件随 evaluation 目录下的 quality/output_reference.sqlite 一起传入板端.NRMSE 使用 `RMSE / RMS(浮点参考输出) × 100%`;多输出分别统计,缺参考如实记录缺失.具体定义、资源位置及当前未实测边界见[输出误差统计](../../../../docs/output_metrics.md).本次仅增加统计代码,未重新执行评价,历史指标不代表新增统计已验证.

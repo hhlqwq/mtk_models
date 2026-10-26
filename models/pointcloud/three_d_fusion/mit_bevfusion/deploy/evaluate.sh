@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # 评价独立使用已有子图和官方 val 数据,不重新转换或编译.
 set -euo pipefail
+export MTK_OUTPUT_METRICS=1
+export MTK_EVAL_SCOPE=full
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export PYTHONDONTWRITEBYTECODE=1

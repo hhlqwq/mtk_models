@@ -16,6 +16,7 @@ from tools.board import context
 from tools.evaluation import is_test
 from tools.files import read_json, require_file, sha256
 from tools.runtime import Runtime, peak_rss_kib, quantize
+from tools.output_metrics import OutputComparison
 
 
 def input_images(ctx) -> list[tuple[str, Path]]:
@@ -56,6 +57,7 @@ def main() -> None:
         matched_reference(ctx, metadata, labels_digest)
     ctx.work.mkdir(parents=True)
     warmup_runs = 0 if is_test() else 5
+    comparison = OutputComparison(ctx)
     with Runtime(dla) as runtime:
         if tuple(map(len, runtime.sizes)) != (1, 1):
             raise ValueError("ResNet101 要求单输入单输出.")
@@ -80,6 +82,9 @@ def main() -> None:
                 if started is not None:
                     row.update(npu_ms=milliseconds, end_to_end_ms=(time.perf_counter() - started) * 1000)
                 stream.write(json.dumps(row) + "\n")
+                item_out = metadata["output"]
+                comparison.update([values], {"output": (
+                    logits.astype(np.float32) - item_out["zero_point"]) * item_out["scale"]})
                 if (index + 1) % 500 == 0 or index + 1 == len(images):
                     print(f"[推理] {MODEL} {index + 1}/{len(images)}.", flush=True)
         if not is_test():
@@ -97,6 +102,7 @@ def main() -> None:
             (ctx.work / "inference.json").write_text(
                 json.dumps(details, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"[推理完成] 本次过程目录: {ctx.result}.", flush=True)
+    comparison.finish()
 
 
 if __name__ == "__main__":

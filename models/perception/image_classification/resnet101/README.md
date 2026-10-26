@@ -122,3 +122,7 @@ bash evaluate.sh
 ![牧羊犬的板端 Top-5](examples/output/sample_3_classification.jpg)
 
 [TorchVision 官方文档](https://docs.pytorch.org/vision/0.15/models/generated/torchvision.models.resnet101.html)报告该 V2 权重 ImageNet-1K Top-1 为 81.886%;它仅作选型参考,本页精度变化使用本仓库实际测得的 ONNX 81.898% 计算.G5100 尚未适配或验证.
+
+### 输出误差统计
+
+`evaluate.sh` 同时计算 CosSim、RMSE 和 NRMSE,写入唯一 `results/summary.json` 的 `output_comparison`.浮点参考生成时保存 output_reference.sqlite,与任务参考一起放入板端 models/;按量化前输入内容配对,在现有 NPU 评价过程中逐输出累计统计.NRMSE 使用 `RMSE / RMS(浮点参考输出) × 100%`;多输出分别统计,缺参考如实记录缺失.具体定义、资源位置及当前未实测边界见[输出误差统计](../../../../docs/output_metrics.md).本次仅增加统计代码,未重新执行评价,历史指标不代表新增统计已验证.

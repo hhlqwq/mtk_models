@@ -4,8 +4,11 @@ import argparse
 import json
 from pathlib import Path
 import time
+from types import SimpleNamespace
 
 import numpy as np
+
+from tools.output_metrics import OutputComparison
 
 from tools.files import sha256
 
@@ -122,6 +125,10 @@ def evaluate(args):
         if item["name"] in ("mask", "pos_emb"):
             np.copyto(model.inputs[index], sdk_inputs[item["name"]])
     output_spec = contract["outputs"][0]
+    comparison = OutputComparison(
+        SimpleNamespace(root=args.package, work=args.output.parent / "work"),
+        reference=args.quality_data / "output_reference.sqlite",
+        scope="wikitext2_prefill_teacher_forcing_127_positions_per_block; excludes_mmlu_and_decode")
     rows, nll_values = [], []
     started = time.perf_counter()
     decode_model = None
@@ -149,6 +156,7 @@ def evaluate(args):
             raw = all_raw[:-1]
             inference_seconds = time.perf_counter() - tick
             logits = (raw.astype(np.float64) - output_spec["zero_point"]) * output_spec["scale"]
+            comparison.update([tokens[None]], {"output": logits})
             if args.diagnostic_blocks:
                 np.save(args.output / f"npu_logits_{index:03d}.npy",
                         logits.astype(np.float32))
@@ -210,6 +218,7 @@ def evaluate(args):
                       decode_graph_mode="teacher_forcing_with_backend_own_prefill_cache")
     args.output.mkdir(parents=True, exist_ok=True)
     result.update(status=result_status(), **scope_metadata())
+    comparison.finish()
     (args.output / "npu_quality.json").write_text(
         json.dumps(result, ensure_ascii=False, indent=2) + "\n")
     print(f"[MDLA 质量结果] PPL={result['perplexity']:.6f}", flush=True)

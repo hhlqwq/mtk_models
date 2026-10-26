@@ -12,6 +12,7 @@ from full_accuracy_board import save_checkpoint
 from tools.board import context
 from tools.evaluation import coco_ids, is_test
 from tools.runtime import Runtime, peak_rss_kib, quantize, read_contract
+from tools.output_metrics import OutputComparison
 
 
 def main():
@@ -31,6 +32,7 @@ def main():
                for name in OUTPUT_NAMES]
     checkpoint_dir = ctx.work / "predictions_by_image"
     checkpoint_dir.mkdir(parents=True)
+    comparison = OutputComparison(ctx)
     with Runtime(ctx.root / "models/model_int8.dla") as runtime:
         if tuple(map(len, runtime.sizes)) != (1, 10):
             raise ValueError("FastSAM 要求单输入和十个输出.")
@@ -44,6 +46,7 @@ def main():
         for count, path in enumerate(images, 1):
             started = time.perf_counter()
             values, geometry = preprocess(cv2.imread(str(path)))
+            floating_input = values
             np.copyto(view, quantize(values, input_info["scale"], input_info["zero_point"]))
             milliseconds = runtime.infer([inputs], buffers)
             values = [(tensor.astype(np.float32) - item["zero_point"]) * item["scale"]
@@ -64,8 +67,11 @@ def main():
                 record.update(npu_ms=milliseconds, peak_rss_kib=peak_rss_kib(),
                               end_to_end_ms=(time.perf_counter() - started) * 1000)
             save_checkpoint(checkpoint_dir / f"{path.stem}.json", record)
+            comparison.update([floating_input], {item["name"]: value
+                                                for item, value in zip(outputs, values)})
             if count % 50 == 0 or count == len(images):
                 print(f"[推理] FastSAM {count}/{len(images)}", flush=True)
+    comparison.finish()
 
 
 if __name__ == "__main__":

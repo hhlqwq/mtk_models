@@ -123,3 +123,7 @@ examples/
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
 - `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.
+
+### 输出误差统计
+
+`evaluate.sh` 同时计算 CosSim、RMSE 和 NRMSE,写入唯一 `results/summary.json` 的 `output_comparison`.比较全部音频的 Encoder 输出,不含自回归 Decoder;浮点与板端共用 Log-Mel 实现和 FP16 输入边界.NRMSE 使用 `RMSE / RMS(浮点参考输出) × 100%`;多输出分别统计,缺参考如实记录缺失.具体定义、资源位置及当前未实测边界见[输出误差统计](../../../../docs/output_metrics.md).本次仅增加统计代码,未重新执行评价,历史指标不代表新增统计已验证.

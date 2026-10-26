@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from audio_utils import load_records, load_waveform, mapping, metrics, preprocess
 
 from tools.deploy import configure_parser
+from tools.output_metrics import record_reference, finish_reference
 
 from tools.evaluation import (
     audio_records, is_test, result_status, scope_metadata,
@@ -42,9 +43,13 @@ def evaluate(args):
         if args.mode == "tensorflow":
             patch_scores = frames(waveform)[0].numpy()
         else:
-            patch_scores = np.concatenate([
-                session.run(None, {"audio": patch[None]})[0]
-                for patch in preprocess(waveform)])
+            window_scores = []
+            for patch in preprocess(waveform):
+                tensor = patch[None]
+                output = session.run(None, {"audio": tensor})[0]
+                record_reference(args.models_dir / "model_fp32.onnx", [tensor], {"output": output})
+                window_scores.append(output)
+            patch_scores = np.concatenate(window_scores)
         all_scores.append(patch_scores.mean(axis=0))
     scores = np.stack(all_scores)
     if scores.shape != (len(records), 521) or not np.isfinite(scores).all():
@@ -59,6 +64,8 @@ def evaluate(args):
         summary["maximum_reference_score_error"] = float(np.max(np.abs(scores-reference)))
     (args.output / "summary.json").write_text(json.dumps(summary, indent=2))
     print(f"[OK] {summary}", flush=True)
+    if args.mode == "onnx":
+        finish_reference()
 
 
 def main():

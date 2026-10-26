@@ -10,6 +10,7 @@ from rtmpose_utils import decode_prediction, preprocess_image
 from tools.board import context
 from tools.evaluation import coco_ids, is_test
 from tools.runtime import Runtime, peak_rss_kib, quantize
+from tools.output_metrics import OutputComparison
 
 
 def main():
@@ -31,6 +32,7 @@ def main():
     rows.sort(key=lambda item: (item["image_id"], item["detection_id"]))
     ctx.work.mkdir(parents=True)
     timings = []
+    comparison = OutputComparison(ctx)
     with Runtime(ctx.root / "models/model_int8.dla") as runtime:
         if tuple(map(len, runtime.sizes)) != (1, 2):
             raise ValueError("RTMPose 要求一输入两输出.")
@@ -59,6 +61,7 @@ def main():
                 pred_y = (y.astype(np.float32) + 14) * 0.007497822400182486
                 keypoints, area = decode_prediction(pred_x, pred_y, geometry)
                 ended = time.perf_counter()
+                comparison.update([values], {"simcc_x": pred_x, "simcc_y": pred_y})
                 stream.write(json.dumps({"backend": "python_neuron_runtime_hw", "detection_id": item["detection_id"],
                     "image_id": item["image_id"], "bbox_score": item["score"],
                     "area": area, "keypoints": keypoints}) + "\n")
@@ -74,6 +77,7 @@ def main():
         for index, name in enumerate(("preprocess_mean_ms", "npu_mean_ms", "postprocess_mean_ms")):
             report[name] = float(values[:, index].mean())
         (ctx.work / "timing_summary.json").write_text(json.dumps(report))
+    comparison.finish()
 
 
 if __name__ == "__main__":

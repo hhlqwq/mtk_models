@@ -104,3 +104,7 @@ NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不
 - `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
 - `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.
+
+### 输出误差统计
+
+`evaluate.sh` 同时计算 CosSim、RMSE 和 NRMSE,写入唯一 `results/summary.json` 的 `output_comparison`.浮点参考生成时保存 output_reference.sqlite,与任务参考一起放入板端 models/;按量化前输入内容配对,在现有 NPU 评价过程中逐输出累计统计.NRMSE 使用 `RMSE / RMS(浮点参考输出) × 100%`;多输出分别统计,缺参考如实记录缺失.具体定义、资源位置及当前未实测边界见[输出误差统计](../../../../docs/output_metrics.md).本次仅增加统计代码,未重新执行评价,历史指标不代表新增统计已验证.

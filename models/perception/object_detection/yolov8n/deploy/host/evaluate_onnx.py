@@ -22,6 +22,7 @@ from yolov8_utils import COCO_IDS, OUTPUT_NAMES, postprocess, preprocess
 
 from tools.evaluation import coco_ids, is_test, result_status, scope_metadata
 from tools.deploy import configure_parser, reference_path
+from tools.output_metrics import record_reference, finish_reference
 
 
 def evaluate(args):
@@ -49,6 +50,7 @@ def evaluate(args):
             args.dataset_root / "images" / record["file_name"])))
         if args.onnx:
             outputs = session.run(OUTPUT_NAMES, {"images": tensor})
+            record_reference(args.onnx, [tensor], dict(zip(OUTPUT_NAMES, outputs)))
         else:
             with torch.no_grad():
                 outputs = [value.cpu().numpy() for value in
@@ -79,6 +81,8 @@ def evaluate(args):
     args.output.write_text(json.dumps(summary, ensure_ascii=False, indent=2),
                            encoding="utf-8")
     print(f"[OK] 精度汇总: {args.output}", flush=True)
+    if args.onnx:
+        finish_reference()
 
 
 
