@@ -17,11 +17,13 @@ from tools.storage import model_storage, storage_roots
 
 
 def prepare(source, output, context, calibration_train=None, mask_value=-10000.0,
-            rotate=False):
+            rotate=False, calibration_train_samples=8):
     """读取官方文件并生成独立配置、双语校准输入和板端 Prompt."""
     manifest = json.loads((source / "source_manifest.json").read_text())
     if output.resolve() == source.resolve() or context < 128:
         raise ValueError("输出必须独立于源目录,上下文不得小于 128.")
+    if calibration_train is not None and calibration_train_samples < 8:
+        raise ValueError("训练校准至少需要 8 段文本,并保留 8 条双语输入.")
     output.mkdir(parents=True, exist_ok=True)
     model = output / "DeepSeek-R1-Distill-Qwen-1.5B"
     model.mkdir(exist_ok=True)
@@ -108,21 +110,37 @@ def prepare(source, output, context, calibration_train=None, mask_value=-10000.0
         train_tokens = tokenizer.encode(
             "\n\n".join(table.column("text").to_pylist()),
             add_special_tokens=False)
-        if len(train_tokens) < 2048:
-            raise ValueError("校准训练文本不足 2048 Token,不能重复填充.")
+        training_tokens = calibration_train_samples * 256
+        # 默认 8 段保持原取样,新增覆盖复用至少 32 个均匀候选位置.
+        pool_samples = (8 if calibration_train_samples == 8
+                        else max(32, calibration_train_samples))
+        if len(train_tokens) < pool_samples * 256:
+            raise ValueError(f"校准训练文本不足 {pool_samples * 256} Token,不能重复填充.")
         mixed_records = []
-        offsets = [(len(train_tokens) - 256) * index // 7 for index in range(8)]
-        for index in range(8):
+        pool_offsets = [(len(train_tokens) - 256) * index // (pool_samples - 1)
+                        for index in range(pool_samples)]
+        offsets = [
+            pool_offsets[(pool_samples - 1) * index // (calibration_train_samples - 1)]
+            for index in range(calibration_train_samples)]
+        for index in range(calibration_train_samples):
             # 均匀覆盖训练文本,避免全部校准片段集中在文件开头.
             segment = train_tokens[offsets[index]:offsets[index] + 256]
             mixed_records.append({"tokens": " ".join(map(str, segment))})
-            mixed_records.append(records[index])
+            if index < 8:
+                mixed_records.append(records[index])
         records = mixed_records
-        calibration_scope = "wikitext2_train_8x256_uniform_and_authored_bilingual_8"
+        calibration_scope = (
+            f"wikitext2_train_{calibration_train_samples}x256_uniform_"
+            "and_authored_bilingual_8")
         training_source = {"revision": "b08601e04326c79dfdd32d625aee71d232d685c3",
                            "split": "train", "sha256": sha256(calibration_train),
-                           "text_tokens": 2048, "selection": "uniform_token_offsets",
+                           "text_tokens": training_tokens,
+                           "selection": ("uniform_token_offsets"
+                                         if pool_samples == calibration_train_samples
+                                         else "uniform_token_grid_subset"),
                            "token_offsets": offsets}
+        if pool_samples != calibration_train_samples:
+            training_source["sampling_pool_samples"] = pool_samples
     demos = []
     # 展示输入独立于校准记录,使用官方聊天模板生成 Token.
     for name, question in (("zh_demo", "请用中文简单介绍你自己。"),
@@ -166,6 +184,14 @@ def prepare_model(native):
         raise ValueError("校准训练集必须位于 NAS 数据集目录.")
     if native.prefill != 128 or native.context % 128:
         raise ValueError("本模型要求 Prefill=128,上下文为 128 的整数倍.")
+    training_samples = int(native.ctx.config["native"].get("calibration_train_samples", 8))
+    if native.train and training_samples < 8:
+        raise ValueError("训练校准至少需要 8 段文本.")
+    expected_samples = training_samples + 8 if native.train else 16
+    if native.batches != expected_samples * 2:
+        raise ValueError(
+            f"当前 {expected_samples} 条校准输入需要 {expected_samples * 2} 批次,"
+            "请同步配置 calibration_train_samples 与 calibration_batches.")
     if native.work.is_symlink() or native.work.resolve() == native.source.resolve():
         raise ValueError("转换目录不能是软链接或原始资源目录.")
     expected = model_storage(Path(__file__).resolve().parents[2]) / "build/native"
@@ -176,7 +202,8 @@ def prepare_model(native):
         print("[清理] 替换上一次转换工作目录,保留官方资源及当前部署包.", flush=True)
         shutil.rmtree(native.work)
     prepare(native.source, native.work, native.context,
-            Path(native.train) if native.train else None, native.mask, bool(native.rotate))
+            Path(native.train) if native.train else None, native.mask, bool(native.rotate),
+            calibration_train_samples=training_samples)
 
 
 def calibrate(native):

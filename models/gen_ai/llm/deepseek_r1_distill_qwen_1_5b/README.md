@@ -1,6 +1,6 @@
 # DeepSeek-R1-Distill-Qwen-1.5B
 
-> 当前 Python 实现已完成板端生成检查和固定小样本回归,全量精度、标准性能及 RSS 尚未评价.
+> 既有 Python 实现已完成板端生成检查和固定小样本回归.当前 16 段训练校准候选已完成软件小样本对照和双 DLA 编译,尚未上传或进行新候选板端验证;全量精度、标准性能及 RSS 尚未评价.
 
 使用 [DeepSeek 官方权重](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B),面向 Genio 720 部署全 W4A16 模型.来源与许可见[模型卡](model_card.md)和[资源记录](models/source_url.txt).
 
@@ -10,11 +10,13 @@
 
 ## 编译与部署
 
-模型与数据提前放在 NAS,连接信息和工具链路径由本地配置提供.板端生成与评价使用 Python3、NumPy、tokenizers 和匹配的 Neuron Runtime,不再使用原生 CLI 或自编桥接库.参数统一在 [config.yaml](config.yaml): Prefill=128、Decode=1、上下文默认 1024、校准批次 32.
+模型与数据提前放在 NAS,连接信息和工具链路径由本地配置提供.板端生成与评价使用 Python3、NumPy、tokenizers 和匹配的 Neuron Runtime,不再使用原生 CLI 或自编桥接库.参数统一在 [config.yaml](config.yaml): Prefill=128、Decode=1、上下文默认 1024、校准批次 48.
 
 权重优化使用 Hessian,稳定性系数见 [hessian_stable.json](deploy/host/hessian_stable.json).校准默认读取 NAS 中的 WikiText2 raw train,训练文本路径相对于数据集根目录解析,参数文件路径相对于本模型目录解析.
 
-当前配方是不旋转、混合训练文本校准、Hessian 稳定性 0.1,仍在精度优化中.[唯一报告](results/summary.json)保留旧无优化基线的小样本实测,不代表当前配方已完成评价.候选对照、独立 64 题复核和逐层局部误差见 [适配说明](ADAPTATION.md).
+训练文本段数由 `native.calibration_train_samples` 控制,当前为 16 段,每段固定 256 Token,另保留 8 条双语输入.历史 8 段配方保留原来的均匀取样;新增覆盖从至少 32 个均匀候选位置选取,使 16/32 段对照可复用同一校准池.启用训练文本时,`calibration_batches` 必须为 `2 * (calibration_train_samples + 8)`,例如 16 段对应 48 批次,32 段对应 80 批次.未启用训练文本时使用原有 16 条双语输入和 32 批次.不匹配的配置会在替换转换目录前报错,避免实际只覆盖部分输入.
+
+当前编译配置选择不旋转、16 段混合训练文本校准、Hessian 稳定性 0.1 的待板端复核候选,尚未确认全量质量.[唯一报告](results/summary.json)保留旧无优化基线的小样本实测,不代表当前候选已完成板端评价.候选对照、独立 64 题复核和逐层局部误差见 [适配说明](ADAPTATION.md).
 
 进入已有编译容器,在本模型目录执行:
 
@@ -50,4 +52,4 @@ bash evaluate.sh
 
 使用官方 tokenizer 的 Token 输入,保留聊天模板、BOS/EOS 和停止列表.GQA 为 Q/KV Head=12/2,RoPE=10000;输入、KV Cache、mask、RoPE 与输出使用图中实际 INT16 接口.外置 embedding、tokenizer、Prefill/Decode DLA 和配置必须成套使用.Python 使用随包的官方 tokenizer.json 解码,生成输入继续使用已准备的官方 Token.
 
-校准使用全文均匀取出的 8 段 256 Token 训练文本和 8 条双语输入,测试集不参与校准.每条保存 Prefill 和单 Token Decode 数据,共 32 个批次.固定小样本比较见 [ADAPTATION.md](ADAPTATION.md),完整质量由独立评价确认.
+校准从全文的 32 个均匀候选位置选取 16 段 256 Token 训练文本,并保留 8 条双语输入,测试集不参与校准.每条保存 Prefill 和单 Token Decode 数据,共 48 个批次.固定小样本比较见 [ADAPTATION.md](ADAPTATION.md),完整质量由独立评价确认.

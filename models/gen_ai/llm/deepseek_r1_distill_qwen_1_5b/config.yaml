@@ -18,7 +18,9 @@ native:
   # W4A16 校准、量化和双静态图集中到 build/native.
   work_dir: build/native
   prefill: 128
-  calibration_batches: 32
+  calibration_batches: 48
+  # 训练文本段数,每段 256 Token,另保留 8 条双语输入;每条对应两个校准批次.
+  calibration_train_samples: 16
   mask_value: -10000
   rotate: false
   # 只支持全 W4A16,不通过提高权重位宽替代误差排查.
