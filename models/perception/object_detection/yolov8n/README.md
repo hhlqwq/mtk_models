@@ -104,6 +104,7 @@ Genio 5100 尚未执行,上述数字只对应 Genio 720.
 ## 真实板端效果
 
 展示阈值为 0.25,图像取自 COCO val2017,来源清单在编译时生成并随部署上传.
+示例渲染和 COCO 评价均读取本次过程目录 `work/predictions.json` 中的 JSON 数组预测,不生成或依赖 `predictions.jsonl`.已有少量推理结果时,可在板端单独执行 `MTK_EVAL_SCOPE=subset python3 board/render_examples.py --run-id <运行编号>` 补生成示例,无需重新推理.
 效果由上述全量 NPU 预测生成,标签排布仅用于提高可读性.
 
 ![室内检测](examples/output/sample_1_detections.jpg)

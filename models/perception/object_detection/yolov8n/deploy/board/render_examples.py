@@ -55,9 +55,8 @@ def main():
     args = parser.parse_args()
     manifest = json.loads((args.input_dir / "samples.json").read_text(encoding="utf-8"))
     selected = {sample["image_id"]: [] for sample in manifest["samples"]}
-    with (args.work_dir / "predictions.jsonl").open(encoding="utf-8") as source:
-        for line in source:
-            row = json.loads(line)
+    with (args.work_dir / "predictions.json").open(encoding="utf-8") as source:
+        for row in json.load(source):
             if row["image_id"] in selected and row["score"] >= 0.25:
                 selected[row["image_id"]].append(row)
     args.output_dir.mkdir(parents=True, exist_ok=True)

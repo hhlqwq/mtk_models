@@ -80,6 +80,8 @@ NPU 耗时统计预热后 5000 张图片的 `NeuronRuntime_inference` 调用,不
 
 示例来自 [COCO val2017](https://cocodataset.org/#download),原图地址和各图片许可记录在输入清单中.展示分数阈值为 0.25,不改变全量精度评测协议.
 
+示例渲染和 COCO 评价均读取本次过程目录 `work/predictions.json` 中的 JSON 数组预测,不生成或依赖 `predictions.jsonl`.已有少量推理结果时,可在板端单独执行 `MTK_EVAL_SCOPE=subset python3 board/render_examples.py --run-id <运行编号>` 补生成示例,无需重新推理.
+
 ## 板端部署结构
 
 第一步上传到 `BOARD_DEPLOY_DIR` 后的布局统一为:

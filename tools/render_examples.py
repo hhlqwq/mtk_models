@@ -77,10 +77,10 @@ def classification(args, manifest) -> None:
 
 
 def detections(args, manifest) -> None:
-    """复用 COCO 检测结果,按展示阈值绘制类别和检测框."""
+    """读取 COCO JSON 数组预测,按展示阈值绘制类别和检测框."""
     samples = manifest["samples"]
     selected = {item["image_id"]: [] for item in samples}
-    for row in read_jsonl(args.work_dir / "predictions.jsonl"):
+    for row in read_json(args.work_dir / "predictions.json"):
         if row["image_id"] in selected:
             x, y, width, height = row["bbox"]
             selected[row["image_id"]].append({
