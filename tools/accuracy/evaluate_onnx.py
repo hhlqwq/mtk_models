@@ -72,8 +72,12 @@ def infer(session: ort.InferenceSession, tensor: np.ndarray) -> list:
 def evaluate_vit(args, deploy: Path) -> tuple:
     """按板端 OpenCV 缩放和中心裁剪协议计算 ImageNet Top-1."""
     helper = load_module("vit_metrics", deploy / "full_accuracy_board.py")
+    preprocessing = load_module("vit_infer", deploy / "infer.py")
     labels = helper.read_labels(args.dataset_root / "val_labels_0based.txt")
-    paths = sorted((args.dataset_root / "val").glob("*.JPEG"))
+    images = args.dataset_root / "val"
+    if not images.is_dir():
+        images = args.dataset_root / "ILSVRC2012_img_val"
+    paths = sorted(images.glob("*.JPEG"))
     if len(paths) != 50000:
         raise ValueError("ImageNet 验证集必须包含 50000 张图片.")
     paths = select_samples(paths, args.model, key=lambda path: path.name)
@@ -82,15 +86,7 @@ def evaluate_vit(args, deploy: Path) -> tuple:
     for index, path in enumerate(tqdm.tqdm(paths, desc="ONNX Top-1", unit="img")):
         if path.name != f"ILSVRC2012_val_{index + 1:08d}.JPEG":
             raise ValueError(f"ImageNet 图片编号不连续: {path}")
-        image = cv2.imread(str(path))
-        if image is None:
-            raise ValueError(f"无法读取图片: {path}")
-        ratio = 256.0 / min(image.shape[:2])
-        width, height = round(image.shape[1] * ratio), round(image.shape[0] * ratio)
-        resized = cv2.resize(image, (width, height), interpolation=cv2.INTER_CUBIC)
-        top, left = (height - 224) // 2, (width - 224) // 2
-        crop = resized[top:top + 224, left:left + 224, ::-1]
-        tensor = crop.transpose(2, 0, 1)[None].astype(np.float32) / 255.0
+        tensor = preprocessing.floating_preprocess(path).astype(np.float32)
         scores = infer(session, tensor)[0].reshape(-1)
         if scores.size != 1000:
             raise ValueError("分类输出必须有 1000 个类别.")

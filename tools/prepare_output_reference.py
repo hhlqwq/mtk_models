@@ -17,16 +17,29 @@ from tools.process import run_command
 
 
 def classification(ctx):
-    """ResNet 复用板端三张展示输入和相同的预处理函数."""
+    """分类小样本直接复用板端预处理,不依赖全量标签或评价循环."""
     import onnxruntime as ort
 
     sys.path.insert(0, str(ctx.model / "deploy/board"))
-    from resnet101 import preprocess, validation_images
+    if ctx.config["name"] == "resnet101":
+        from resnet101 import preprocess
 
-    source = ctx.output / "resnet101.onnx"
+        filename, count = "resnet101.onnx", 3
+    else:
+        from infer import floating_preprocess as preprocess
+
+        filename, count = "vit_b_16_mtk_compatible.onnx", 5
+    images = ctx.dataset / "val"
+    if not images.is_dir():
+        images = ctx.dataset / "ILSVRC2012_img_val"
+    paths = [images / f"ILSVRC2012_val_{index:08d}.JPEG" for index in range(1, count + 1)]
+    for path in paths:
+        if not path.is_file():
+            raise FileNotFoundError(f"分类小样本输入不存在: {path}.")
+    source = ctx.output / filename
     model = ort.InferenceSession(str(source), providers=["CPUExecutionProvider"])
-    for path in validation_images(ctx.dataset)[:3]:
-        tensor = preprocess(path)
+    for path in paths:
+        tensor = np.asarray(preprocess(path), dtype=np.float32)
         record_reference(source, [tensor], {"output": model.run(None, {model.get_inputs()[0].name: tensor})[0]})
 
 
@@ -66,7 +79,7 @@ def main():
     sys.path.insert(0, str(deploy / "host"))
     name = ctx.config["name"]
     try:
-        if name == "resnet101":
+        if name in ("resnet101", "vit_base_patch16_224"):
             classification(ctx)
         elif name in ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b"):
             language(ctx, reference)
