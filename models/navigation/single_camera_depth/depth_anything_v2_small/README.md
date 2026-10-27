@@ -104,7 +104,7 @@ compile.sh 复用固定少量样本的板端预测,生成展示文件到部署�
 - `deploy/compile.sh`: 编译部署与展示示例入口;精度、性能和 RSS 使用独立的 `deploy/evaluate.sh`.
 - `deploy/host/`: 编译主机使用的导出、转换与辅助工具.
 - `deploy/board/`: 板端程序源码、预处理和评测代码.
-- `models/`: 原始权重、转换产物与来源说明; 必要的上游源码放在 `models/upstream/`.
+- `models/`: 公开来源说明.实际资源位于 NAS 对应模型资源目录: `original/` 保存原始权重与 `upstream/` 离线官方源码,`build/` 保存转换中间产物,最外层只保存导出的 ONNX 和编译后的 DLA.导出直接加载离线源码,不依赖 Git 命令或 `.git` 目录;源码版本见 `models/source_url.txt`.
 - `examples/`: 少量固定输入与实际板端效果输出.
 - `results/summary.json`: 上传后的最新测试汇总.
 

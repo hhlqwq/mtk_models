@@ -2,16 +2,11 @@
 
 import argparse
 from pathlib import Path
-import subprocess
 import sys
 
 import torch
 
 from tools.deploy import configure_parser
-from tools.storage import storage_roots
-
-
-SOURCE_REVISION = "a561b849ebae10a6f5ef49e26c83cbbcd36c71bf"
 
 
 class ExportableAttention(torch.nn.Module):
@@ -44,14 +39,18 @@ class ExportableAttention(torch.nn.Module):
 
 
 def export_model(upstream: Path, weights: Path, output: Path, size: int) -> None:
-    """核验官方源码和权重，导出固定方形输入的深度图。"""
+    """检查离线源码文件,加载权重并导出固定方形输入的深度图."""
     if size <= 0 or size % 14:
         raise ValueError("输入边长必须是 14 的正整数倍。")
-    revision = subprocess.check_output(
-        ["git", "-c", f"safe.directory={upstream.resolve()}",
-         "-C", str(upstream), "rev-parse", "HEAD"], text=True).strip()
-    if revision != SOURCE_REVISION:
-        raise ValueError(f"官方源码提交不匹配: {revision}")
+    required = (
+        "LICENSE", "depth_anything_v2/dpt.py", "depth_anything_v2/dinov2.py",
+        "depth_anything_v2/dinov2_layers/__init__.py",
+        "depth_anything_v2/util/blocks.py",
+    )
+    missing = [name for name in required if not (upstream / name).is_file()]
+    if missing:
+        raise FileNotFoundError(
+            f"离线官方源码不完整: {upstream}; 缺少: {', '.join(missing)}")
 
     sys.path.insert(0, str(upstream))
     # 上游源码目录由参数指定并校验后加载,不能在解析参数前导入.
