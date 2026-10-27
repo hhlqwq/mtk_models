@@ -114,6 +114,8 @@ def main():
                 generated += 1
 
     contract = {"precision": "w8a16", "cacheSize": 256, "maxTokenLength": 448,
+                "activation_quantization": "symmetric_int16",
+                "layer_norm": "integer_instance_norm_decomposition",
                 "cache_policy": "sliding_window", "calibration_audio": [p.name for p in paths],
                 "calibration_decoder_steps": settings["calibration_decoder_steps"],
                 "calibration_overlap": "LibriSpeech test-clean 前部音频,与正式评价重叠"}
@@ -125,11 +127,14 @@ def main():
         converter = mtk_converter.OnnxConverter.from_model_proto_file(
             str(ctx.output / f"tiny_{stage}.onnx"))
         converter.quantize = True
-        converter.allow_asym16_quantization = True
+        # MDLA 的注意力 BatchMatMul 第二输入要求对称 INT16.
+        converter.allow_asym16_quantization = False
+        converter.use_symmetric_quantization = True
         converter.default_quantization_bitwidth = 16
         converter.default_weights_quantization_bitwidth = 8
         converter.input_quantization_bitwidths = 16
         converter.use_per_output_channel_quantization = True
+        converter.decompose_instance_normalization_ops = True
         converter.append_output_dequantize_ops = False
         converter.calibration_data_gen = lambda current=stage: calibration(current)
         target = ctx.work / f"{filename}.tflite"

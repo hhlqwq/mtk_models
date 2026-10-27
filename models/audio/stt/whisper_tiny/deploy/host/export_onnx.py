@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from torch import nn
+from torch.nn import functional as F
 import numpy as np
 import torch
 import whisper
@@ -19,6 +20,46 @@ from tools.storage import storage_roots
 
 MAX_DECODE_TOKENS = 256
 MASK_NEGATIVE = -100.0
+
+
+class ExportLayerNorm(nn.Module):
+    """将逐行 LayerNorm 等价表示为可被 SDK 分解的 InstanceNorm."""
+
+    def __init__(self, original):
+        """保留官方仿射参数和 epsilon,不重新训练或修改权重."""
+        super().__init__()
+        self.weight = original.weight
+        self.bias = original.bias
+        self.eps = original.eps
+
+    def forward(self, tensor):
+        """每行独立计算均值方差,恢复原布局后应用逐特征仿射参数."""
+        shape = tensor.shape
+        width = shape[-1]
+        # InstanceNorm 在 H/W 维归一化,每个原始行放在独立通道.
+        expanded = tensor.float().reshape(1, -1, 1, width)
+        normalized = F.instance_norm(expanded, eps=self.eps).reshape(shape)
+        return (normalized * self.weight + self.bias).to(tensor.dtype)
+
+
+def rewrite_layer_norm(module):
+    """递归替换官方 LayerNorm,逐层检查等价性,避免浮点算子融合回退."""
+    count = 0
+    generator = torch.Generator().manual_seed(17)
+    for name, child in list(module.named_children()):
+        if isinstance(child, nn.LayerNorm):
+            replacement = ExportLayerNorm(child)
+            values = torch.randn(2, 3, child.normalized_shape[-1], generator=generator)
+            with torch.inference_mode():
+                expected, actual = child(values), replacement(values)
+            difference = float((expected - actual).abs().max())
+            if not torch.allclose(expected, actual, atol=2e-5, rtol=2e-5):
+                raise ValueError(f"LayerNorm 等价改写误差超限: {name}, max_abs={difference}.")
+            setattr(module, name, replacement)
+            count += 1
+        else:
+            count += rewrite_layer_norm(child)
+    return count
 
 
 class EncoderWrapper(nn.Module):
@@ -188,7 +229,12 @@ def load_model(weights: Path) -> Any:
     # OpenAI 官方的 MatMul/Softmax 等价分支,数值由后续三方对齐验证.
     MultiHeadAttention.use_sdpa = False
     model = whisper.load_model(str(weights), device="cpu")
-    return model.float().eval()
+    model = model.float().eval()
+    count = rewrite_layer_norm(model)
+    if count != 22:
+        raise ValueError(f"Whisper-Tiny 应有 22 个 LayerNorm,实际替换 {count} 个.")
+    print(f"[归一化] {count} 个 LayerNorm 等价改写检查通过,使用基础整数算子路线.", flush=True)
+    return model
 
 
 def export_models(weights: Path, output_dir: Path,
