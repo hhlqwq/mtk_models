@@ -45,4 +45,5 @@ if [[ "${LOCATION}" == 容器 ]]; then
     echo "[下一步] 登录开发板,在部署根目录的 deploy/ 下执行 bash evaluate.sh."
 else
     echo "[全量评价完成] 各模型结果分别保存在其 results/summary.json."
+    bash "${SCRIPT_DIR}/upload.sh"
 fi

@@ -302,6 +302,14 @@ def main():
                "runtime": {"backend": "python_neuron_runtime_hw", "machine": platform.machine(), "kernel": platform.release()}}
     artifacts = [*ctx.root.glob("models/*.dla"), *ctx.root.glob("*c/*.dla"),
                  *ctx.root.glob("models/embedding*.bin"), *ctx.root.glob("tokenizer/embedding*.bin")]
+    if model == "whisper_tiny":
+        contract = read_json(ctx.root / "models/runtime_contract.json")
+        summary.update(precision="W8A16", cacheSize=contract["cacheSize"],
+                       maxTokenLength=contract["maxTokenLength"],
+                       cache_policy=contract["cache_policy"],
+                       calibration_overlap=contract["calibration_overlap"])
+        artifacts = [ctx.root / "models" / contract[stage]["file"]
+                     for stage in ("encoder", "decoder_step")]
     summary["model_files"] = [{"file": str(path.relative_to(ctx.root)), "bytes": path.stat().st_size}
                               for path in artifacts]
     publish(ctx, summary)

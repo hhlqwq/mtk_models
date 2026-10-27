@@ -30,7 +30,11 @@ bash models/perception/object_detection/yolov5s/deploy/compile.sh
 bash models/deploy/compile.sh
 ```
 
-总入口先将仓库中的 `models/deploy/compile.sh` 和 `evaluate.sh` 原样上传到本地配置 `board_open_models_root` 下的 `deploy/`,再顺序调用各模型已有的编译入口.登录开发板后,进入该 `deploy/` 目录执行 `bash compile.sh`,顺序运行各模型的少量样本检查与示例生成.所有脚本均在仓库维护,板端只执行上传后的代码.
+总入口先将仓库中的 `models/deploy/compile.sh`、`evaluate.sh` 和 `upload.sh` 上传到本地配置 `board_open_models_root` 下的 `deploy/`,再顺序调用各模型已有的编译入口.登录开发板后,进入该 `deploy/` 目录执行 `bash compile.sh`,顺序运行各模型的少量样本检查与示例生成.所有脚本均在仓库维护,板端只执行上传后的代码.
+
+结果回传使用本地平台配置 `results_host` 指定的编译服务器普通账户、`results_root` 指定的仓库根目录.容器编译入口将这两个值生成到板端 `deploy/upload.local.sh`,该文件不提交 Git.板端使用专用 SSH 密钥 `~/.ssh/mtk_results_ed25519`,服务器主机密钥需预先写入板端 known_hosts.认证配置仅保存在本地,不写入公开脚本.
+
+板端总 `compile.sh` 全部成功后自动回传各模型 `examples/output/`;总 `evaluate.sh` 全部成功后自动回传各模型的 `results/summary.json` 和 `examples/output/`,写入编译服务器仓库对应模型路径.可在板端总入口目录执行 `bash upload.sh` 单独补传,或执行 `bash upload.sh examples` 只传示例.回传不执行推理、不传 DLA 或临时预测、不删除服务器其他文件;缺文件时明确报缺失并返回非零状态,不生成空报告.回传文件不会自动提交 Git.
 
 正式评价分两次执行:容器中运行 `bash models/deploy/evaluate.sh` 准备已有模型的全量参考,按各模型终端提示传输必要评价资源后,在板端部署根目录的 `deploy/` 中运行 `bash evaluate.sh`.总入口显示模型进度,遇到首个失败立即停止并显示模型和退出码;修复后也可直接运行该模型的入口.不跳过失败模型,不另建总报告.全量指完整执行各模型已约定的协议范围,MiniCPM 的 MMLU 仍为固定 1000 题.
 

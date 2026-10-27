@@ -1,6 +1,7 @@
 """上传 Whisper 双 DLA、Python 推理代码和原版文本组件."""
 
 from pathlib import Path
+import json
 
 from tools.deploy import arguments, upload
 
@@ -13,8 +14,11 @@ def main():
              for path in sorted((vendor / "whisper").rglob("*")) if path.is_file()]
     if not files:
         raise FileNotFoundError("缺少导出步骤准备的 Whisper 文本组件.")
-    upload(ctx, [ctx.output / "encoder_fp32.dla", ctx.output / "decoder_step_fp32.dla",
-                 ctx.work / "mel_filters_f32.bin", ctx.work / "decode_config.txt"],
+    contract = json.loads((ctx.work / "runtime_contract.json").read_text())
+    upload(ctx, [ctx.output / contract["encoder"]["file"],
+                 ctx.output / contract["decoder_step"]["file"],
+                 ctx.work / "runtime_contract.json", ctx.work / "mel_filters_f32.bin",
+                 ctx.work / "decode_config.txt"],
            extra_files=files)
 
 

@@ -7,7 +7,9 @@ MTK NPU 部署、板端 Demo、精度与性能评估以及文档交付。Qualcom
 
 ## 统一入口与 ONNX 命名
 
-在已有编译容器内执行 `bash models/deploy/compile.sh`,顺序调用全部 13 个模型的编译上传入口.该入口同时将本目录 `deploy/` 下的两个 Shell 脚本上传到本地配置的板端部署根目录 `deploy/` 下.板端运行同一份 `compile.sh` 做少量样本检查,运行 `evaluate.sh` 做各模型约定的全量评价.容器中的 `bash models/deploy/evaluate.sh` 仅准备已有浮点模型的全量参考,必要资源按模型提示传输.板端只执行代码,不负责修改或生成脚本.
+在已有编译容器内执行 `bash models/deploy/compile.sh`,顺序调用全部 13 个模型的编译上传入口.该入口将本目录 `deploy/` 下的 compile、evaluate、upload 三个 Shell 脚本及本地回传配置上传到板端部署根目录 `deploy/` 下.板端运行同一份 `compile.sh` 做少量样本检查,运行 `evaluate.sh` 做各模型约定的全量评价.容器中的 `bash models/deploy/evaluate.sh` 仅准备已有浮点模型的全量参考,必要资源按模型提示传输.板端只执行代码,不负责修改或生成脚本.
+
+板端总 compile 成功后自动回传示例,总 evaluate 成功后自动回传各模型 `results/summary.json` 和 `examples/output/` 到编译服务器对应模型目录.总入口目录的 `bash upload.sh` 可独立补传,`bash upload.sh examples` 只传示例.目标账户及仓库根目录由本地 `results_host`、`results_root` 配置,不包含在公开脚本中.缺失文件如实报告,不上传模型或临时过程文件,不自动提交结果.Whisper 新部署目标为 W8A16、1t256c、Decoder 上限 448,尚待重新编译及板端实测,下表历史浮点指标不代表新目标.
 
 入口按 ResNet101、ViT、YOLOv5s、YOLOv8n、MobileFaceNet、RTMPose、FastSAM、Depth Anything V2、YAMNet、Whisper、BEVFusion、MiniCPM、DeepSeek 的顺序执行,首个失败即停止.板端部署子目录与模型代码目录末级名称一致,修改布局时同步更新总入口.
 

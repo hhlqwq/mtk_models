@@ -7,6 +7,9 @@ board_root: ""
 board_open_models_root: ""
 board_datasets_root: ""
 board_modelzoo_root: ""
+# 板端回传使用编译主机普通账户和仓库根目录,真实值仅填本地覆盖.
+results_host: ""
+results_root: ""
 os: Rity Demo 26.0-release
 kernel: 6.6.137-mtk+ga246e0c68c39-g429091ed5965
 npu: MDLA 5.3

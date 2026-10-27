@@ -4,7 +4,13 @@
 
 多语言语音识别。输入为 16 kHz 单声道音频，板端运行 Encoder 和 Decoder 两个 DLA。模型来源见[模型卡](model_card.md)。
 
-量化方式: 未进行整数定点量化,采用浮点模型部署.
+当前交付目标为 W8A16: 权重 INT8、激活和原生 I/O 为 INT16.本次已修改转换与 Python 推理代码,尚未编译或板端实测,历史浮点模型指标不代表当前实现.
+
+部署配置固定为 `cacheSize: 256`、`maxTokenLength: 448`.Decoder 每步输入 1 Token,使用 448 个绝对位置,Cache 满后左移并保留最近 256 个 Token.这是滑动窗口解码,不是保存 448 Token 完整历史的注意力;ONNX 参考、量化校准和板端使用同一实现.448 为提示词与生成文本的总 Token 上限,达到上限时记录停止原因,不宣称已遇到 EOT.
+
+DLA 分别命名为 `tiny_encoder_w8a16.dla` 和 `tiny_decoder_w8a16_1t256c.dla`.转换后从实际 TFLite 提取 `runtime_contract.json`,记录 I/O 索引、逻辑形状、INT16 scale/zero point 和精度审计.板端按契约分配补齐存储,跨图特征与 KV Cache 先反量化再按目标尺度量化,不将 INT16 内存解释为 FP16.
+
+校准默认使用 LibriSpeech test-clean 排序前 8 条音频,Decoder 每条最多 32 步真实浮点自回归状态,遇到 EOT 提前结束.校准与正式评价存在重叠,契约和新报告明确记录.该设置尚未做精度验收.
 
 ## 执行范围
 
@@ -24,9 +30,9 @@
 bash deploy/compile.sh
 ```
 
-转换、双 DLA 编译、参考评价和上传均在当前容器内完成。
+转换、量化、双 DLA 编译和上传在当前容器内完成;正式参考独立由 evaluate.sh 准备.
 
-双 DLA 编译限定 `mdla5.3`,禁止桥接并保留浮点输入输出.出现不支持的算子时编译直接失败,不上传含板端不支持目标的模型.旧 DLA 若报 `EDPA_1_2` 或加载失败,需要重新编译两个模型后上传.
+双 DLA 编译限定 `mdla5.3`,禁止桥接并使用原生 INT16 输入输出.不支持的算子或无法满足 W8A16 审计时直接失败,不退回浮点模型继续交付.旧 128/200 Cache 浮点 DLA 与新契约不兼容,需要重新执行本模型 compile.sh 转换并上传,不能仅替换板端 Python 脚本.
 
 ## 第二步: 独立评价
 
@@ -126,4 +132,4 @@ examples/
 
 ### 输出误差统计
 
-`evaluate.sh` 同时计算 CosSim、RMSE 和 NRMSE,写入唯一 `results/summary.json` 的 `output_comparison`.比较全部音频的 Encoder 输出,不含自回归 Decoder;浮点与板端共用 Log-Mel 实现和 FP16 输入边界.NRMSE 使用 `RMSE / RMS(浮点参考输出) × 100%`;多输出分别统计,缺参考如实记录缺失.具体定义、资源位置及当前未实测边界见[输出误差统计](../../../../docs/output_metrics.md).本次仅增加统计代码,未重新执行评价,历史指标不代表新增统计已验证.
+`evaluate.sh` 同时计算 CosSim、RMSE 和 NRMSE,写入唯一 `results/summary.json` 的 `output_comparison`.比较全部音频的 Encoder 输出,不含自回归 Decoder;浮点与板端共用 FP32 Log-Mel 和 1t256c 滑动窗口协议.NRMSE 使用 `RMSE / RMS(浮点参考输出) × 100%`;多输出分别统计,缺参考如实记录缺失.具体定义、资源位置及当前未实测边界见[输出误差统计](../../../../docs/output_metrics.md).本次仅增加统计代码,未重新执行评价,历史指标不代表新增统计已验证.

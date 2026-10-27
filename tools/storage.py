@@ -147,6 +147,11 @@ def platform_environment():
     missing = [name for name, value in environment.items() if not value]
     if missing:
         raise ValueError("请在本地平台配置或环境变量中填写: " + ", ".join(missing))
+    for name, key in (("MTK_RESULTS_HOST", "results_host"),
+                      ("MTK_RESULTS_ROOT", "results_root")):
+        value = os.environ.get(name) or config.get(key)
+        if value:
+            environment[name] = str(value)
     return environment
 
 

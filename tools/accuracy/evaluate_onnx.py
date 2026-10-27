@@ -270,6 +270,7 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
     chosen = select_samples(sorted(sources), args.model, required=SPEECH_EXAMPLES)
     sources = {key: sources[key] for key in chosen}
     assets.export_assets(args.work_dir)
+    protocol = load_module("decoder", deploy / "decoder.py")
     board_infer = load_module("whisper_board_infer", deploy / "infer.py")
     mel_filters = np.fromfile(args.work_dir / "mel_filters_f32.bin", dtype="<f4").reshape(80, 201)
     config = dict(line.split("=", 1) for line in
@@ -283,27 +284,18 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
     if len(cache_names) != 8:
         raise ValueError("Whisper-Tiny 必须有四层共八个固定 KV Cache 输入.")
     cache_length = decoder_inputs[cache_names[0]].shape[-1]
+    if cache_length != protocol.CACHE_SIZE:
+        raise ValueError("Whisper 浮点参考需要重新导出 1t256c 模型.")
     tokenizer = get_tokenizer(multilingual=True, language="en", task="transcribe")
     predictions = {}
     for sample_id in tqdm.tqdm(sorted(sources), desc="ONNX WER", unit="audio"):
-        # 浮点参考与板端共用同一 Log-Mel 实现和 FP16 输入边界.
+        # 浮点参考与板端共用同一 FP32 Log-Mel 和滑动 Cache 协议.
         mel = board_infer.preprocess(sources[sample_id]["audio"], mel_filters)[0][None]
         features = infer(encoder, mel)[0]
         caches = {name: np.zeros(decoder_inputs[name].shape, np.float32) for name in cache_names}
         tokens, token = [], initial[0]
-        for position in range(cache_length):
-            feeds = {
-                "token_onehot": np.zeros(decoder_inputs["token_onehot"].shape, np.float32),
-                "audio_features": features,
-                "position_weights": np.zeros(decoder_inputs["position_weights"].shape, np.float32),
-                "cache_update_mask": np.zeros(decoder_inputs["cache_update_mask"].shape, np.float32),
-                "attention_mask": np.full(decoder_inputs["attention_mask"].shape, -10000, np.float32),
-                **caches,
-            }
-            feeds["token_onehot"][0, token] = 1
-            feeds["position_weights"][0, position] = 1
-            feeds["cache_update_mask"][..., position] = 1
-            feeds["attention_mask"][..., :position + 1] = 0
+        for position in range(protocol.MAX_TOKEN_LENGTH):
+            feeds = protocol.feeds_for_step(token, position, features, caches)
             for name, value in feeds.items():
                 dtype = np.float16 if decoder_inputs[name].type == "tensor(float16)" else np.float32
                 feeds[name] = value.astype(dtype)

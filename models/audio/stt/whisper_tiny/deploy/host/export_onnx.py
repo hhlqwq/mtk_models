@@ -17,7 +17,7 @@ from tools.deploy import configure_parser
 from tools.storage import storage_roots
 
 
-MAX_DECODE_TOKENS = 200
+MAX_DECODE_TOKENS = 256
 MASK_NEGATIVE = -100.0
 
 
@@ -200,12 +200,15 @@ def export_models(weights: Path, output_dir: Path,
         output_dir: ONNX 输出目录.
         max_tokens: 静态 KV Cache 长度.
     """
-    if max_tokens <= 0 or max_tokens > 448:
-        raise ValueError("max_tokens 必须位于 1..448.")
+    if max_tokens != 256:
+        raise ValueError("当前交付固定 cacheSize=256,Decoder 绝对位置上限为 448.")
     output_dir.mkdir(parents=True, exist_ok=True)
     print("[1/3] 加载 OpenAI Whisper-Tiny FP32 模型.")
     model = load_model(weights)
     dimensions = model.dims
+    if (dimensions.n_text_ctx, dimensions.n_text_state, dimensions.n_text_head,
+            dimensions.n_text_layer, dimensions.n_vocab) != (448, 384, 6, 4, 51865):
+        raise ValueError(f"Whisper-Tiny 官方维度不符: {dimensions}.")
     encoder = EncoderWrapper(model.encoder).eval()
     decoder = DecoderStepWrapper(model.decoder, max_tokens).eval()
     mel = torch.zeros(1, dimensions.n_mels, 3000, dtype=torch.float32)
@@ -299,7 +302,9 @@ def export_assets(output_dir: Path) -> None:
         f"suppress={join(sorted(suppressed))}",
         f"suppress_first={join(sorted(suppress_first))}",
         f"eot={tokenizer.eot}",
-        "max_generated_tokens=196",
+        "cacheSize=256",
+        "maxTokenLength=448",
+        f"max_generated_tokens={448 - len(tokenizer.sot_sequence_including_notimestamps)}",
     )) + "\n"
     (output_dir / "decode_config.txt").write_text(
         config, encoding="utf-8")
@@ -338,7 +343,7 @@ def parse_args() -> argparse.Namespace:
     configure_parser(parser, __file__, {
         "weights": lambda c: Path(c.config["model"]["weights"]),
         "output_dir": lambda c: c.output,
-        "max_tokens": lambda c: c.config["conversion"]["max_tokens"],
+        "max_tokens": lambda c: c.config["conversion"]["cacheSize"],
     })
     return parser.parse_args()
 

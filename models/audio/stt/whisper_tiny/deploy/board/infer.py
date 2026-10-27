@@ -8,8 +8,10 @@ import numpy as np
 
 from tools.board import context
 from tools.evaluation import is_test, select_samples, SPEECH_EXAMPLES
-from tools.runtime import Runtime, peak_rss_kib
+from tools.runtime import Runtime, peak_rss_kib, quantize
 from tools.output_metrics import OutputComparison
+from decoder import (CACHE_NAMES, INPUT_SHAPES, OUTPUT_SHAPES, MAX_TOKEN_LENGTH,
+                     feeds_for_step, next_token)
 
 
 def load_samples(root):
@@ -47,73 +49,93 @@ def preprocess(path, filters):
     power = (np.abs(spectrum) ** 2).astype(np.float32).T
     mel = np.log10(np.maximum(filters @ power, 1e-10))
     mel = (np.maximum(mel, mel.max() - 8) + 4) / 4
-    return mel.astype("<f2"), duration, {"audio_decode_ms": (decoded - started) * 1000,
+    return mel.astype(np.float32), duration, {"audio_decode_ms": (decoded - started) * 1000,
         "log_mel_ms": (time.perf_counter() - decoded) * 1000,
         "mel_write_ms": 0.0, "cache_hit": False}
 
 
 class WhisperRuntime:
-    """复用 Encoder 与 Decoder,每条音频独立清空 KV Cache."""
+    """按实际 INT16 契约运行 W8A16 双图,使用 1t256c 滑动缓存."""
 
-    def __init__(self, encoder, decoder, config):
-        """绑定既有 FP16 原生接口和固定 200 Token 缓存契约."""
+    def __init__(self, encoder, decoder, config, contract):
+        """逐张量绑定逻辑视图,保留 SDK 要求的原生补齐存储."""
         self.encoder, self.decoder, self.config = encoder, decoder, config
-        if tuple(map(len, encoder.sizes)) != (1, 1) or tuple(map(len, decoder.sizes)) != (13, 9):
-            raise ValueError("Whisper 双 DLA I/O 数量不符.")
-        self.encoder_inputs = [np.zeros(size // 2, dtype="<f2") for size in encoder.sizes[0]]
-        self.encoder_outputs = [np.zeros(size // 2, dtype="<f2") for size in encoder.sizes[1]]
-        self.inputs = [np.zeros(size // 2, dtype="<f2") for size in decoder.sizes[0]]
-        self.outputs = [np.zeros(size // 2, dtype="<f2") for size in decoder.sizes[1]]
-        expected_inputs = [51872, 1500 * 384, 448, 200, 200] + [6 * 64 * 200] * 8
-        expected_outputs = [51872] + [6 * 64 * 200] * 8
-        if (encoder.sizes != [[80 * 3000 * 2], [1500 * 384 * 2]]
-                or any(len(buffer) < expected or len(buffer) > (expected + 7) // 8 * 8
-                       for buffer, expected in zip(self.inputs + self.outputs, expected_inputs + expected_outputs))):
-            raise ValueError("Whisper 原生 FP16 缓冲区形状不符.")
+        if (contract.get("precision"), contract.get("cacheSize"),
+                contract.get("maxTokenLength")) != ("w8a16", 256, 448):
+            raise ValueError("Whisper 需要重新编译 W8A16 / 1t256c / 448 产物.")
+        self.contract = contract
+        self.buffers, self.views = {}, {}
+        for stage, runtime in (("encoder", encoder), ("decoder_step", decoder)):
+            for output, kind in ((False, "inputs"), (True, "outputs")):
+                items = contract[stage][kind]
+                if len(runtime.sizes[int(output)]) != len(items):
+                    raise ValueError(f"Whisper {stage} {kind} 数量不符.")
+                buffers, views = [], {}
+                for index, item in enumerate(items):
+                    if item["dtype"] != "int16" or item["index"] != index:
+                        raise ValueError(f"Whisper 张量类型或索引不符: {item}.")
+                    try:
+                        storage, view = runtime.tensor(index, item["shape"], np.int16,
+                            output=output, fill=item["zero_point"])
+                    except ValueError as error:
+                        raise ValueError(f"Whisper {stage} {kind}[{index}] "
+                                         f"{item['name']}: {error}") from error
+                    buffers.append(storage)
+                    views[item["name"]] = view
+                self.buffers[stage, kind], self.views[stage, kind] = buffers, views
+        if ({item["name"]: tuple(item["shape"]) for item in contract["decoder_step"]["inputs"]}
+                != INPUT_SHAPES or
+                {item["name"]: tuple(item["shape"]) for item in contract["decoder_step"]["outputs"]}
+                != OUTPUT_SHAPES):
+            raise ValueError("Whisper Decoder 逻辑形状与 1t256c 契约不一致.")
         self.initial = [int(value) for value in config["initial"].split(",")]
-        self.suppress = [int(value) for value in config["suppress"].split(",") if value]
-        self.first = [int(value) for value in config["suppress_first"].split(",") if value]
         self.limit = int(config["max_generated_tokens"])
-        if not self.initial or len(self.initial) + self.limit > 200:
-            raise ValueError("解码 Token 数超过固定 Cache 上限.")
+        if (int(config["cacheSize"]), int(config["maxTokenLength"])) != (256, 448):
+            raise ValueError("Whisper 解码配置与模型契约不一致.")
+        if not self.initial or not 0 < self.limit <= 448 - len(self.initial):
+            raise ValueError("Whisper 生成上限与提示词长度不符.")
+
+    def run(self, stage, runtime, feeds):
+        """量化逻辑输入并反量化逻辑输出,跨图和 Cache 不复用错误尺度."""
+        for item in self.contract[stage]["inputs"]:
+            np.copyto(self.views[stage, "inputs"][item["name"]], quantize(
+                feeds[item["name"]], item["scale"], item["zero_point"], np.int16))
+        elapsed = runtime.infer(self.buffers[stage, "inputs"], self.buffers[stage, "outputs"])
+        outputs = {item["name"]:
+                   (self.views[stage, "outputs"][item["name"]].astype(np.float32)
+                    - item["zero_point"]) * item["scale"]
+                   for item in self.contract[stage]["outputs"]}
+        return outputs, elapsed
 
     def decode(self, mel):
-        """逐 Token 执行官方固定过滤规则,只统计实际 SDK 调用耗时."""
-        np.copyto(self.encoder_inputs[0], mel.ravel())
-        encoder_ms = self.encoder.infer(self.encoder_inputs, self.encoder_outputs)
-        np.copyto(self.inputs[1], self.encoder_outputs[0])
-        for cache in self.inputs[5:]:
-            cache.fill(0)
-        current, prompt_index, position = self.initial[0], 0, 0
-        tokens, times, reached, first_ms = [], [], False, 0.0
-        while position < 200 and len(tokens) < self.limit:
-            for index, value in ((0, current), (2, position), (3, position)):
-                self.inputs[index].fill(0)
-                self.inputs[index][value] = 1
-            self.inputs[4].fill(-10000)
-            self.inputs[4][:position + 1] = 0
-            times.append(self.decoder.infer(self.inputs, self.outputs))
-            for index in range(8):
-                np.copyto(self.inputs[5 + index], self.outputs[1 + index])
-            if prompt_index + 1 < len(self.initial):
-                prompt_index += 1
-                current = self.initial[prompt_index]
-                position += 1
+        """使用 448 个绝对位置和 256 槽滑动窗口,只记录实际 SDK 耗时."""
+        features, encoder_ms = self.run("encoder", self.encoder, {"mel": mel[None]})
+        self.encoder_features = features["audio_features"]
+        caches = {name: np.zeros(INPUT_SHAPES[name], np.float32) for name in CACHE_NAMES}
+        current, tokens, times, reached, first_ms = self.initial[0], [], [], False, 0.0
+        position = -1
+        for position in range(MAX_TOKEN_LENGTH):
+            feeds = feeds_for_step(current, position, self.encoder_features, caches)
+            outputs, elapsed = self.run("decoder_step", self.decoder, feeds)
+            times.append(elapsed)
+            caches = {name: outputs[name.removesuffix("_in") + "_out"] for name in CACHE_NAMES}
+            if position + 1 < len(self.initial):
+                current = self.initial[position + 1]
                 continue
-            logits = self.outputs[0][:51865].astype(np.float32)
-            logits[self.suppress] = -np.inf
             if not tokens:
-                logits[self.first] = -np.inf
                 first_ms = encoder_ms + sum(times)
-            token = int(np.argmax(logits))
-            if not np.isfinite(logits[token]):
-                raise ValueError("解码没有有效 Token.")
-            if token == int(self.config["eot"]):
+            current = next_token(outputs["logits"], self.config, first=not tokens)
+            if current == int(self.config["eot"]):
                 reached = True
                 break
-            tokens.append(token)
-            current, position = token, position + 1
+            tokens.append(current)
+            if len(tokens) >= self.limit:
+                break
+            if is_test() and (position + 1) % 64 == 0:
+                print(f"[解码] {position + 1}/{MAX_TOKEN_LENGTH} 步.", flush=True)
         row = {"tokens": tokens, "reached_eot": reached, "status": "ok",
+               "stop_reason": "eot" if reached else "max_token_length",
+               "precision": "W8A16", "cacheSize": 256, "maxTokenLength": 448,
                "backend": "python_neuron_runtime_hw"}
         if not is_test():
             total = encoder_ms + sum(times)
@@ -138,13 +160,18 @@ def main():
     cache.mkdir(parents=True)
     preprocessing = []
     comparison = OutputComparison(ctx, scope="encoder_output_all_audio; excludes_autoregressive_decoder")
-    with Runtime(ctx.root / "models/encoder_fp32.dla") as encoder, Runtime(ctx.root / "models/decoder_step_fp32.dla") as decoder:
-        model = WhisperRuntime(encoder, decoder, config)
+    contract_path = ctx.root / "models/runtime_contract.json"
+    if not contract_path.is_file():
+        raise FileNotFoundError("缺少 runtime_contract.json,请重新运行 Whisper 编译入口生成 W8A16 双图.")
+    contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    with Runtime(ctx.root / "models" / contract["encoder"]["file"]) as encoder, Runtime(
+            ctx.root / "models" / contract["decoder_step"]["file"]) as decoder:
+        model = WhisperRuntime(encoder, decoder, config, contract)
         with (cache / "source_manifest.jsonl").open("w") as sources, (ctx.work / "board_predictions.jsonl").open("w") as predictions:
             for count, sample in enumerate(samples, 1):
                 mel, duration, timing = preprocess(sample["audio_path"], filters)
                 row = model.decode(mel)
-                comparison.update([mel[None]], {"output": model.encoder_outputs[0].reshape(1, 1500, 384)})
+                comparison.update([mel[None]], {"audio_features": model.encoder_features})
                 row.update(sample_id=sample["sample_id"], duration_seconds=duration)
                 if not is_test():
                     row["npu_rtf"] = row["npu_total_ms"] / (duration * 1000)

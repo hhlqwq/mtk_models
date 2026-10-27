@@ -13,4 +13,9 @@ board:
   dataset_dir: librispeech/test-clean
   results_dir: results
 conversion:
-  max_tokens: 128
+  precision: w8a16
+  cacheSize: 256
+  maxTokenLength: 448
+  # 量化校准使用排序后前 8 条真实音频,与 test-clean 评价集存在重叠.
+  calibration_samples: 8
+  calibration_decoder_steps: 32
