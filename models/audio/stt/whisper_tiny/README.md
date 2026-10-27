@@ -1,32 +1,33 @@
 # Whisper-Tiny
 
-> 当前 W8A16 已完成转换、编译和板端少量通路检查,但 50 条非校准音频的识别精度严重异常,未通过精度验收.下文历史浮点/C++ 指标不能作为当前 W8A16 的成绩.
+> 当前 W8A16 已修复归一化量化失真,完成双 DLA 编译、板端示例及 50 条非校准音频对照.本次 NPU WER 为 5.52%,同协议 ONNX 为 5.81%;尚未完成当前版本的全量评价.下文历史浮点/C++ 指标不能作为当前 W8A16 的成绩.
 
 多语言语音识别。输入为 16 kHz 单声道音频，板端运行 Encoder 和 Decoder 两个 DLA。模型来源见[模型卡](model_card.md)。
 
-当前交付目标为 W8A16: 主计算权重 INT8、激活和原生 I/O 为对称 INT16.2026-10-27 已完成编译和小样本实测,当前精度不合格,历史浮点模型指标不代表当前实现.
+当前交付为 W8A16: 主计算权重 INT8、激活和原生 I/O 为对称 INT16.2026-10-27 已完成修复后的编译和小样本实测,历史浮点模型指标不代表当前实现.
 
-当前 Converter 不直接量化 LayerNorm.导出时保留官方参数和 epsilon,将其等价表示为 InstanceNorm,再启用 SDK 的 `decompose_instance_normalization_ops`,得到均值、减法、平方、RSQRT 等整数基础算子.22 个 LayerNorm 的浮点等价检查通过;两个 TFLite 均通过严格审计,无浮点张量.注意力 BatchMatMul 的第二输入要求对称 INT16,因此启用 `use_symmetric_quantization`,不使用非对称 INT16 或 CPU 桥接.
+当前 Converter 不直接量化 LayerNorm.导出时保留官方参数和 epsilon,先对每行中心化并除以该行绝对值最大值(下限为 1),再计算平方、均值和 RSQRT;epsilon 同时除以缩放值的平方,保持浮点数学等价.这避免少数大幅值行占满整个 INT16 平方张量的量程,使其他行的小方差舍入为零.22 个 LayerNorm 的等价检查覆盖普通、小方差、常量和大幅值输入;两个 TFLite 均通过严格审计,仅有 INT8、INT16、INT32 张量,Encoder/Decoder 分别核实 26/43 个 W8A16 仿射层.注意力 BatchMatMul 的第二输入要求对称 INT16,因此启用 `use_symmetric_quantization`,不使用非对称 INT16 或 CPU 桥接.
 
 ### 2026-10-27 小样本精度诊断
 
-正式 `deploy/compile.sh` 已完成双 DLA 编译及上传,板端 `compile.sh` 已完成 5 条通路检查和示例生成.随后单独在 LibriSpeech test-clean 固定选择 50 条音频,排除全部 8 条校准音频,用相同预处理、滑动 Cache 和文本规范化对照 ONNX/NPU:
+正式 `deploy/compile.sh` 已完成修复后的双 DLA 编译及上传,板端 `compile.sh` 已完成 5 条通路检查和示例生成.随后单独在 LibriSpeech test-clean 固定选择 50 条音频,排除全部 8 条校准音频,用相同预处理、滑动 Cache 和文本规范化对照 ONNX/NPU:
 
 | 项目 | 实测 |
 | --- | --- |
 | ONNX 浮点 WER | 5.81% |
-| W8A16 NPU WER | 182.27% |
-| WER 增加 | 176.45 个百分点 |
+| W8A16 NPU WER | 5.52% |
+| NPU WER 减 ONNX WER | -0.29 个百分点 |
+| 正常遇到 EOT | 50/50 |
 
-WER 越低越好,插入错误会使其超过 100%.本次参考文本共 1032 个词,NPU 共 1881 个编辑错误,不能解释为正常或可接受的量化损失.单条非校准音频的 Encoder 输出对照已出现严重偏差,余弦约 -0.0609、NRMSE 约 170.30%,因此问题不只在 Decoder.极小整数归一化探针的 NPU 余弦为 0.99983,表明基础分解路线能执行,但不证明完整 Whisper 的量化质量正常.
+WER 越低越好.本次参考文本共 1032 个词,NPU 共 57 个编辑错误(替换 41、删除 6、插入 10).小样本略优于浮点不代表全量会改善.修复前同批音频的 NPU WER 为 182.27%;逐层定位发现 Encoder 第四个注意力块的归一化首次发生严重误差,SDK 量化图软件执行同样复现.改为逐行缩放后,同一条非校准音频的真实 NPU Encoder 输出余弦从约 -0.0609 提高到 0.99883,NRMSE 从约 170.30% 降到 4.84%.
 
-诊断预测、可复现脚本和 `comparison.json` 保存在日期临时目录的 `whisper_w8a16_accuracy50/`,未将此子集结果混入历史全量报告.未完成 2620 条全量精度、正式性能和 RSS 评价.当前状态为编译及通路通过、精度不合格,需要继续定位 Encoder 内部的量化误差.
+修复后的诊断预测、脚本和 `comparison.json` 保存在日期临时目录的 `whisper_w8a16_fixed50/`,未将此子集结果混入历史全量报告.本次已消除该小样本上的严重退化,未完成 2620 条全量精度、正式性能和 RSS 评价.
 
 部署配置固定为 `cacheSize: 256`、`maxTokenLength: 448`.Decoder 每步输入 1 Token,使用 448 个绝对位置,Cache 满后左移并保留最近 256 个 Token.这是滑动窗口解码,不是保存 448 Token 完整历史的注意力;ONNX 参考、量化校准和板端使用同一实现.448 为提示词与生成文本的总 Token 上限,达到上限时记录停止原因,不宣称已遇到 EOT.
 
 DLA 分别命名为 `tiny_encoder_w8a16.dla` 和 `tiny_decoder_w8a16_1t256c.dla`.转换后从实际 TFLite 提取 `runtime_contract.json`,记录 I/O 索引、逻辑形状、INT16 scale/zero point 和精度审计.板端按契约分配补齐存储,跨图特征与 KV Cache 先反量化再按目标尺度量化,不将 INT16 内存解释为 FP16.
 
-校准默认使用 LibriSpeech test-clean 排序前 8 条音频,Decoder 每条最多 32 步真实浮点自回归状态,遇到 EOT 提前结束.校准与正式评价存在重叠,契约和新报告明确记录.该设置尚未做精度验收.
+校准默认使用 LibriSpeech test-clean 排序前 8 条音频,Decoder 每条最多 32 步真实浮点自回归状态,遇到 EOT 提前结束.校准与正式全量评价存在重叠,契约和新报告明确记录;本次 50 条诊断已排除全部校准音频.
 
 ## 执行范围
 
@@ -71,9 +72,9 @@ bash evaluate.sh
 Docker 需要 ONNX Runtime、NumPy、OpenCV、tqdm、ffmpeg 和 OpenAI Whisper。Whisper 仅提供音频处理、分词及文本规范化,模型推理由 ONNX Runtime 执行。
 仓库 Docker 镜像包含 ffmpeg; 现有容器若缺少该依赖,需在容器中执行 `apt-get update && apt-get install -y --no-install-recommends ffmpeg`.脚本会在模型转换前检查该依赖.
 
-## 当前测试结果
+## 历史浮点/C++ 全量结果
 
-LibriSpeech test-clean 全量 2620 条音频,结果见 [summary.json](results/summary.json)。
+以下为历史浮点/C++ 版本的 LibriSpeech test-clean 全量 2620 条音频结果,见 [summary.json](results/summary.json),不能作为当前 W8A16 Python 版本的精度、性能或内存成绩.
 
 | 指标 | 结果 |
 | --- | ---: |
@@ -89,7 +90,7 @@ WER 越低越好,本次板端 WER 相比 ONNX 上升不足 0.01 个百分点。�
 
 ## 效果示例
 
-提供两位说话人的短音频,输入选自 [LibriSpeech test-clean](https://www.openslr.org/12/),对应输出来自本次板端全量测试。
+提供两位说话人的短音频,输入选自 [LibriSpeech test-clean](https://www.openslr.org/12/),对应输出来自 2026-10-27 修复后的 W8A16 板端 compile.sh 少量样本检查.
 
 输入已放在 `examples/input/`,编译时从配置的数据集自动生成来源与样本清单,随部署上传,不纳入 Git.
 

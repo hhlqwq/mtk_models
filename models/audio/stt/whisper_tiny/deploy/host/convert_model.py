@@ -115,7 +115,7 @@ def main():
 
     contract = {"precision": "w8a16", "cacheSize": 256, "maxTokenLength": 448,
                 "activation_quantization": "symmetric_int16",
-                "layer_norm": "integer_instance_norm_decomposition",
+                "layer_norm": "integer_row_scaled_variance",
                 "cache_policy": "sliding_window", "calibration_audio": [p.name for p in paths],
                 "calibration_decoder_steps": settings["calibration_decoder_steps"],
                 "calibration_overlap": "LibriSpeech test-clean 前部音频,与正式评价重叠"}
@@ -134,7 +134,6 @@ def main():
         converter.default_weights_quantization_bitwidth = 8
         converter.input_quantization_bitwidths = 16
         converter.use_per_output_channel_quantization = True
-        converter.decompose_instance_normalization_ops = True
         converter.append_output_dequantize_ops = False
         converter.calibration_data_gen = lambda current=stage: calibration(current)
         target = ctx.work / f"{filename}.tflite"

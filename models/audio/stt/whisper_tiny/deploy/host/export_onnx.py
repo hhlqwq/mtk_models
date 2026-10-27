@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any
 
 from torch import nn
-from torch.nn import functional as F
 import numpy as np
 import torch
 import whisper
@@ -23,7 +22,7 @@ MASK_NEGATIVE = -100.0
 
 
 class ExportLayerNorm(nn.Module):
-    """将逐行 LayerNorm 等价表示为可被 SDK 分解的 InstanceNorm."""
+    """按行缩放后计算 LayerNorm,避免 INT16 平方张量丢失小方差."""
 
     def __init__(self, original):
         """保留官方仿射参数和 epsilon,不重新训练或修改权重."""
@@ -33,12 +32,15 @@ class ExportLayerNorm(nn.Module):
         self.eps = original.eps
 
     def forward(self, tensor):
-        """每行独立计算均值方差,恢复原布局后应用逐特征仿射参数."""
-        shape = tensor.shape
-        width = shape[-1]
-        # InstanceNorm 在 H/W 维归一化,每个原始行放在独立通道.
-        expanded = tensor.float().reshape(1, -1, 1, width)
-        normalized = F.instance_norm(expanded, eps=self.eps).reshape(shape)
+        """保持 epsilon 等价,将每行中心化数值限制在 [-1, 1] 再平方."""
+        values = tensor.float()
+        centered = values - values.mean(dim=-1, keepdim=True)
+        # 大幅值行不能占满整个平方张量的量程,否则小方差行会被量化成零.
+        magnitude = centered.abs().amax(dim=-1, keepdim=True).clamp(min=1.0)
+        scaled = centered / magnitude
+        variance = (scaled * scaled).mean(dim=-1, keepdim=True)
+        epsilon = self.eps / (magnitude * magnitude)
+        normalized = scaled * torch.rsqrt(variance + epsilon)
         return (normalized * self.weight + self.bias).to(tensor.dtype)
 
 
@@ -50,6 +52,10 @@ def rewrite_layer_norm(module):
         if isinstance(child, nn.LayerNorm):
             replacement = ExportLayerNorm(child)
             values = torch.randn(2, 3, child.normalized_shape[-1], generator=generator)
+            # 同时覆盖小方差、常量行和真实 Encoder 中出现的大幅值特征.
+            values[0, 0] *= 0.01
+            values[0, 1] = 0
+            values[1, 0, 0] = 250
             with torch.inference_mode():
                 expected, actual = child(values), replacement(values)
             difference = float((expected - actual).abs().max())
@@ -233,7 +239,7 @@ def load_model(weights: Path) -> Any:
     count = rewrite_layer_norm(model)
     if count != 22:
         raise ValueError(f"Whisper-Tiny 应有 22 个 LayerNorm,实际替换 {count} 个.")
-    print(f"[归一化] {count} 个 LayerNorm 等价改写检查通过,使用基础整数算子路线.", flush=True)
+    print(f"[归一化] {count} 个 LayerNorm 等价改写检查通过,使用逐行缩放的整数算子路线.", flush=True)
     return model
 
 
