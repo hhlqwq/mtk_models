@@ -22,7 +22,7 @@ from tools.evaluation import (
     SPEECH_EXAMPLES, coco_ids, is_test, result_status,
     scope_metadata, select_samples,
 )
-from tools.output_metrics import record_reference, finish_reference
+from tools.output_metrics import ReferenceComplete, record_reference, finish_reference
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -335,11 +335,6 @@ def evaluate_model(*, model, onnx, dataset_root, output, decoder_onnx=None, temp
     if args.model != "fastsam":
         sys.path.insert(0, str(deploy))
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    if os.environ.get("MTK_OUTPUT_METRICS") == "1":
-        os.environ["MTK_OUTPUT_REFERENCE"] = str(args.output.parent / "output_reference.sqlite")
-        if "MTK_OUTPUT_MODEL_DIRS" not in os.environ:
-            os.environ["MTK_OUTPUT_MODEL_DIRS"] = json.dumps([
-                str(args.onnx.parent), str(args.output.parent)])
     # 临时目录由工具创建,成功后仅清理此目录; 失败保留现场.
     temp_root = args.temp_dir or args.output.parent
     temp_root.mkdir(parents=True, exist_ok=True)
@@ -347,7 +342,11 @@ def evaluate_model(*, model, onnx, dataset_root, output, decoder_onnx=None, temp
     adapters = {"vit_base_patch16_224": evaluate_vit, "mobilefacenet": evaluate_face,
         "depth_anything_v2_small": evaluate_depth, "rtmpose_body2d": evaluate_pose,
         "fastsam": evaluate_coco, "whisper_tiny": evaluate_whisper}
-    metric, value, samples = adapters[args.model](args, deploy)
+    try:
+        metric, value, samples = adapters[args.model](args, deploy)
+    except ReferenceComplete:
+        shutil.rmtree(args.work_dir)
+        raise
     value = float(value)
     if not math.isfinite(value) or value < 0 or (metric != "WER" and value > 1):
         raise ValueError("ONNX 核心精度无效.")

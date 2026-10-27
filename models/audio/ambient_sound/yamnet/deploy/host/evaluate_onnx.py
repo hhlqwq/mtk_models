@@ -27,7 +27,7 @@ from export_model import original_models
 def evaluate(args):
     """对全量 2000 条音频求窗口平均分数,保存结果和校准折外指标."""
     records = audio_records(load_records(args.dataset))
-    indices = mapping(args.models_dir / "upstream/yamnet_class_map.csv")
+    indices = mapping(args.models_dir / "original/upstream/yamnet_class_map.csv")
     if args.mode == "tensorflow":
         frames, _ = original_models(args.models_dir)
     else:

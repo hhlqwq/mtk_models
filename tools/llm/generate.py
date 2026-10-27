@@ -11,6 +11,7 @@ from tools.llm.artifacts import dla_relative_path
 from tools.files import read_json, sha256
 from tools.llm.evaluate_board_quality import HardwareModel, transfer_cache
 from tools.runtime import peak_rss_kib
+from tools.output_metrics import OutputComparison
 
 
 def stream_text(tokenizer, tokens, printed, *, final=False):
@@ -113,6 +114,12 @@ class Generator:
             chunk = tokens[offset:offset + batch]
             self.feed(self.prompt, prompt_contract, "prompt", offset, chunk)
             outputs = self.prompt.run()
+            if (offset == 0 and getattr(self, "comparison", None) is not None
+                    and self.comparison.enabled):
+                item = prompt_contract["outputs"][0]
+                logits = (outputs[0][:, :len(chunk)].astype(np.float32)
+                          - item["zero_point"]) * item["scale"]
+                self.comparison.update([np.array([chunk], dtype=np.int64)], {"output": logits})
             prefill_npu_ms += self.prompt.last_npu_ms
             if offset + batch < len(tokens):
                 transfer_cache(prompt_contract, outputs, prompt_contract, self.prompt.inputs, append=True)
@@ -174,6 +181,7 @@ def run(entry):
         check_resources(ctx.root)
     ctx.result.mkdir(parents=True, exist_ok=False)
     model = Generator(ctx.root, manifest)
+    model.comparison = OutputComparison(ctx, scope="demo_first_prefill_valid_positions; excludes_decode")
     try:
         samples = []
         languages = ("en",) if ctx.config["name"] == "minicpm5_2b" else ("zh", "en")
@@ -196,6 +204,7 @@ def run(entry):
             else:
                 samples.append(row)
         if is_test():
+            model.comparison.finish()
             return
         evaluation = "mmlu1000" if ctx.config["name"] == "minicpm5_2b" else "full"
         quality = read_json(ctx.root / f"evaluation/{evaluation}/quality/board_quality_protocol.json")

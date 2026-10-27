@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # 主机编译上传,板端执行同名入口检查三张输入并生成示例.
 set -euo pipefail
+export MTK_OUTPUT_METRICS=1
+export MTK_EVALUATION_WORK=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export MTK_EVAL_SCOPE=subset
 
@@ -24,5 +26,7 @@ else
     python "${SCRIPT_DIR}/host/compile_model.py"
     echo "[容器 4/4] 打包并上传到开发板."
     python "${SCRIPT_DIR}/host/upload.py"
+    echo "[小样本数值参考] 仅准备固定少量输入的 CosSim、RMSE、NRMSE 对照."
+    python "${MTK_MODELS_ROOT}/tools/prepare_output_reference.py" "${SCRIPT_DIR}"
     echo "[待板端检查] 请登录开发板,在部署目录执行 bash compile.sh."
 fi

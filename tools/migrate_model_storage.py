@@ -1,4 +1,4 @@
-"""迁移仓库模型资源,复制后校验 SHA256,保留同名文件的历史版本."""
+"""按统一结构迁移仓库模型资源,复制后校验,同名内容冲突时停止."""
 
 import argparse
 from functools import partial
@@ -31,6 +31,11 @@ def inventory(repo, destination):
                 continue
             relative = source.relative_to(model)
             keep = source.suffix in CODE_SUFFIXES or source.name in SOURCE_RECORDS
+            if relative.parts[0] not in {"original", "build", "models"}:
+                if source.name in SOURCE_RECORDS or source.suffix in {".pt", ".pth", ".h5", ".zip", ".safetensors"}:
+                    relative = Path("original") / relative
+                elif source.suffix not in {".onnx", ".dla"}:
+                    relative = Path("original" if keep else "build") / relative
             entries.append((source, target / relative, not keep))
     # 只迁移标准模型资源目录,散落的临时模型留在本地,不写入 NAS.
     return entries
@@ -45,7 +50,7 @@ def append_journal(record, report):
 
 
 def copy_verified(source, target, remove, apply, label, journal=None):
-    """核对副本后迁移,同名不同内容先归档目标文件,禁止静默覆盖."""
+    """核对副本后迁移,同名不同内容直接停止,不堆积历史副本."""
     size = source.stat().st_size
     digest = sha256(source)
     record = {"source": str(source), "target": str(target), "bytes": size,
@@ -55,14 +60,7 @@ def copy_verified(source, target, remove, apply, label, journal=None):
     target.parent.mkdir(parents=True, exist_ok=True)
     target_digest = sha256(target) if target.exists() else None
     if target_digest is not None and target_digest != digest:
-        previous_digest = target_digest
-        previous = target.parent / "_previous" / previous_digest / target.name
-        previous.parent.mkdir(parents=True, exist_ok=True)
-        if not previous.exists():
-            shutil.copyfile(target, previous)
-        if sha256(previous) != previous_digest:
-            raise RuntimeError(f"历史副本校验失败: {target.name}")
-        record["previous"] = str(previous)
+        raise ValueError(f"目标存在不同内容,请先核对,不会创建历史副本: {target}")
     if target_digest != digest:
         partial = target.with_name(target.name + ".migration-part")
         copied = 0

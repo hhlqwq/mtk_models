@@ -12,14 +12,15 @@ from tools.process import run_command
 def main():
     """上传固定子图,CPU 参数,一帧输入和板端 Python 依赖代码."""
     ctx = context(__file__)
-    manifest = json.loads((ctx.work / "contract.json").read_text(encoding="utf-8"))
+    package = ctx.output / "models"
+    manifest = json.loads((package / "contract.json").read_text(encoding="utf-8"))
     config = ctx.work / "config.json"
     config.write_text(json.dumps(ctx.config, ensure_ascii=False, indent=2), encoding="utf-8")
-    model_files = [ctx.work / name for name in ("contract.json", "sparse_weights.npz", "geometry.npz")]
+    model_files = [package / name for name in ("contract.json", "sparse_weights.npz", "geometry.npz")]
     for name, item in manifest["stages"].items():
-        model_files.append(ctx.work / f"bevfusion-det_{name}.onnx")
+        model_files.append(package / f"bevfusion-det_{name}.onnx")
         if item["backend"] == "mtk_npu":
-            model_files.append(ctx.work / item["file"])
+            model_files.append(package / item["file"])
     groups = {"": [ctx.model / "deploy/compile.sh", ctx.model / "deploy/evaluate.sh",
                      ctx.model / "deploy/requirements-evaluate.txt", config],
               "models": model_files, "board": list((ctx.model / "deploy/board").glob("*.py")),

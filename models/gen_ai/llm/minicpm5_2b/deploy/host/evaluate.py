@@ -19,7 +19,7 @@ def evaluate_mode(native, datasets):
     if native.prefill != 128 or native.context % 128:
         raise ValueError("当前评价协议要求 Prefill=128,上下文为 128 的整数倍.")
     mode = "test" if is_test() else "mmlu1000"
-    output = native.work / "evaluation" / mode
+    output = native.ctx.work / "evaluation" / mode
     mmlu, corpus = datasets
     graph = single_file(
         Path(f"{native.quantized}_{native.prefill}t{native.context}c"), "*.tflite")
@@ -69,7 +69,7 @@ def main():
     native = settings(ctx, python_executable=sys.executable)
     evaluate_mode(native, datasets)
     mode = "test" if is_test() else "mmlu1000"
-    print(f"[评价资源] {native.work / 'evaluation' / mode}; 单独放入板端 evaluation/{mode}.",
+    print(f"[评价资源] {native.ctx.work / 'evaluation' / mode}; 单独放入板端 evaluation/{mode}.",
           flush=True)
 
 

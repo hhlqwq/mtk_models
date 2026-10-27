@@ -44,11 +44,11 @@ def main():
     for name in ("yamnet.py", "params.py", "features.py", "yamnet_class_map.csv",
                  "README.md"):
         records.append(download(f"{base}/research/audioset/yamnet/{name}",
-                                args.models_dir / "upstream" / name, args.proxy))
-    records.append(download(f"{base}/LICENSE", args.models_dir / "upstream/LICENSE",
+                                args.models_dir / "original/upstream" / name, args.proxy))
+    records.append(download(f"{base}/LICENSE", args.models_dir / "original/upstream/LICENSE",
                             args.proxy))
     records.append(download("https://storage.googleapis.com/audioset/yamnet.h5",
-                            args.models_dir / "yamnet.h5", args.proxy))
+                            args.models_dir / "original/yamnet.h5", args.proxy))
     archive = args.dataset_dir / "ESC-50.zip"
     url = f"https://codeload.github.com/karolpiczak/ESC-50/zip/{DATASET_REVISION}"
     dataset_record = download(url, archive, args.proxy)
@@ -70,7 +70,7 @@ def main():
     if count != 2000:
         raise ValueError(f"ESC-50 音频数量应为 2000,实际 {count}.")
     records.append(dataset_record)
-    (args.models_dir / "resource_manifest.json").write_text(
+    (args.models_dir / "original/resource_manifest.json").write_text(
         json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
     (args.dataset_dir / "source_manifest.json").write_text(
         json.dumps(dataset_record, indent=2), encoding="utf-8")

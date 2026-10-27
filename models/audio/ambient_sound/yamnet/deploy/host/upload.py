@@ -19,7 +19,7 @@ from tools.deploy import arguments, upload
 def prepare_reference(args):
     """整理同范围浮点参考、哈希和固定示例,供当前上传步骤使用."""
     records = audio_records(load_records(args.dataset))
-    labels = args.models_dir / "upstream/yamnet_class_map.csv"
+    labels = args.models_dir / "original/upstream/yamnet_class_map.csv"
     reference = {}
     for backend in ("tensorflow", "onnx"):
         mode = "test" if is_test() else "full"
@@ -39,15 +39,15 @@ def prepare_reference(args):
         for row in records}
     reference.update(scope_metadata())
     filename = "fp32_reference_test.json" if is_test() else "fp32_reference.json"
-    (args.models_dir / filename).write_text(json.dumps(reference, indent=2))
-    print(f"[参考] {args.models_dir / filename}", flush=True)
+    (args.work / filename).write_text(json.dumps(reference, indent=2))
+    print(f"[参考] {args.work / filename}", flush=True)
 
 
 
 def prepare_examples(ctx):
     """只复制固定展示音频和类别表,不计算任何精度参考."""
     records = audio_records(load_records(ctx.dataset))
-    shutil.copy2(ctx.output / "upstream/yamnet_class_map.csv", ctx.output / "yamnet_class_map.csv")
+    shutil.copy2(ctx.output / "original/upstream/yamnet_class_map.csv", ctx.work / "yamnet_class_map.csv")
     inputs = ctx.model / "examples/input"
     inputs.mkdir(parents=True, exist_ok=True)
     samples = []
@@ -68,7 +68,7 @@ def main():
     upload(ctx, [
         ctx.output / f"model_{precision}.dla",
         ctx.work / f"runtime_config_{precision}.csv",
-        ctx.output / "yamnet_class_map.csv",
+        ctx.work / "yamnet_class_map.csv",
     ])
 
 

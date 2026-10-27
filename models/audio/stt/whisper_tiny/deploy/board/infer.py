@@ -159,7 +159,7 @@ def main():
     cache = ctx.work / "cache/librispeech"
     cache.mkdir(parents=True)
     preprocessing = []
-    comparison = OutputComparison(ctx, scope="encoder_output_all_audio; excludes_autoregressive_decoder")
+    comparison = OutputComparison(ctx, scope="encoder_output_compile_subset; excludes_autoregressive_decoder")
     contract_path = ctx.root / "models/runtime_contract.json"
     if not contract_path.is_file():
         raise FileNotFoundError("缺少 runtime_contract.json,请重新运行 Whisper 编译入口生成 W8A16 双图.")

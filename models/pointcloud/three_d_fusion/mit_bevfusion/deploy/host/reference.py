@@ -18,7 +18,8 @@ def main():
     samples = json.loads((ctx.work / "samples.json").read_text(encoding="utf-8"))["frames"]
     if len(samples) != 6019:
         raise ValueError("完整浮点参考必须覆盖 val 6019 帧.")
-    fingerprint = identity(ctx.work)
+    package = ctx.output / "models"
+    fingerprint = identity(package)
     tokens = [sample["token"] for sample in samples]
     target = ctx.work / "onnx_reference.json"
     if target.is_file():
@@ -27,7 +28,7 @@ def main():
             print("[参考复用] 已有同模型同协议完整 FP32 参考,无需重复运行.", flush=True)
             return
     temporary = Path("/tmp/hailongcodex") / date.today().isoformat() / "mit_bevfusion_reference"
-    predictions, _, _, _ = evaluate_dataset(ctx.work, ctx.dataset, samples,
+    predictions, _, _, _ = evaluate_dataset(package, ctx.dataset, samples,
                                            temporary / "predictions.json", floating=True)
     accuracy = score_predictions(ctx.work / "ground_truth.json", predictions)
     target.write_text(json.dumps({"identity": fingerprint, "sample_tokens": tokens, "accuracy": accuracy}),

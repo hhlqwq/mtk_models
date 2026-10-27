@@ -2,7 +2,7 @@
 # 模型相对路径以外部资源目录为基准,数据集根目录由本地存储配置提供.
 model:
   # 已离线放置的官方 FastSAM-s 权重.
-  weights: FastSAM-s.pt
+  weights: original/FastSAM-s.pt
   # 最终 ONNX 和 DLA 的保存目录,中间文件保存到其 build 子目录.
   output_dir: .
 

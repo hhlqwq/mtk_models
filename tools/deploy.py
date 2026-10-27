@@ -20,13 +20,13 @@ def context(entry, config_path=None, work_dir=None):
     config = load_model_config(config_path)
     output = Path(config["model"]["output_dir"])
     work = Path(work_dir) if work_dir else output / "build"
-    if os.environ.get("MTK_OUTPUT_METRICS") == "1":
-        os.environ["MTK_OUTPUT_REFERENCE"] = str(work / "output_reference.sqlite")
-        os.environ["MTK_OUTPUT_MODEL_DIRS"] = json.dumps([str(output), str(work)])
-    for name in ("tmp", "cache"):
-        (work / name).mkdir(parents=True, exist_ok=True)
-    os.environ.update(PYTHONDONTWRITEBYTECODE="1", TMPDIR=str(work / "tmp"),
-                      XDG_CACHE_HOME=str(work / "cache"), TORCH_HOME=str(work / "cache/torch"))
+    if (os.environ.get("MTK_EVALUATION_WORK") == "1"
+            or Path(entry).stem.startswith("evaluate") or Path(entry).stem == "upload_reference"):
+        from datetime import date
+
+        stage = "compile" if os.environ.get("MTK_PREPARE_OUTPUT_REFERENCE") == "1" else "evaluate"
+        work = Path("/tmp/hailongcodex") / date.today().isoformat() / config["name"] / stage
+    work.mkdir(parents=True, exist_ok=True)
     return argparse.Namespace(config=config, config_path=config_path, model=model,
         repo=REPO_ROOT, output=output, work=work,
         dataset=Path(config.get("data", {}).get("dataset_dir", output)),

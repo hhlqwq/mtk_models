@@ -36,10 +36,7 @@ def main():
         dataset = Path(config["data"]["dataset_dir"])
         work = options.work_dir or Path(config["model"]["output_dir"]) / "build"
         work = work.resolve()
-        for name in ("tmp", "cache"):
-            (work / name).mkdir(parents=True, exist_ok=True)
-        os.environ.update(PYTHONDONTWRITEBYTECODE="1", TMPDIR=str(work / "tmp"),
-                          XDG_CACHE_HOME=str(work / "cache"), TORCH_HOME=str(work / "cache/torch"))
+        work.mkdir(parents=True, exist_ok=True)
         paths = {"output": model / config["model"]["output_dir"],
                  "calibration": dataset / config["data"]["calibration_dir"]}
         samples = config["data"]["calibration_samples"]

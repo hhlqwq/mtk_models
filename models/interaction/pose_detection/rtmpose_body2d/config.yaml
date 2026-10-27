@@ -1,7 +1,7 @@
 # rtmpose_body2d 模型参数.公共 SDK、编译器和板端地址由 Docker 环境加载.
 model:
   # 相对于外部模型资源目录的官方原始权重.
-  weights: rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192-cd5e845c_20230123.pth
+  weights: original/rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192-cd5e845c_20230123.pth
   # 最终模型保存在此处,中间文件集中到 build.
   output_dir: .
   upstream_config: configs/wholebody_2d_keypoint/rtmpose/coco-wholebody/rtmpose-m_8xb64-270e_coco-wholebody-256x192.py

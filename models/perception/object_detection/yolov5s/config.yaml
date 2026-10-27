@@ -1,11 +1,11 @@
 # yolov5s 模型参数.公共 SDK、编译器和板端地址由 Docker 环境加载.
 model:
   # 相对于外部模型资源目录的官方原始权重.
-  weights: yolov5s.pt
+  weights: original/yolov5s.pt
   # 最终模型保存在此处,中间文件集中到 build.
   output_dir: .
-  source_archive: yolov5-485da42.zip
-  patch_archive: model_conversion_YOLOv5s_example_20240916.zip
+  source_archive: original/yolov5-485da42.zip
+  patch_archive: original/model_conversion_YOLOv5s_example_20240916.zip
 data:
   # 相对于本地 dataset_root 的评测数据集.
   dataset_dir: coco/coco_val2017

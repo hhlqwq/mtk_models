@@ -65,7 +65,7 @@ def main():
     parser.add_argument("--weights", type=Path, required=True)
     parser.add_argument("--image", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    configure_parser(parser, __file__, {
+    ctx = configure_parser(parser, __file__, {
         "weights": lambda c: Path(c.config["model"]["weights"]),
         "image": lambda c: c.calibration / "000000000139.jpg",
         "output_dir": lambda c: c.output,
@@ -108,7 +108,7 @@ def main():
     for expected_head, actual_head in zip(arrays, actual):
         np.testing.assert_allclose(actual_head, expected_head, atol=2e-4, rtol=2e-4)
     print("[3/4] 保存 PyTorch 输入与输出基线.", flush=True)
-    np.savez(args.output_dir / "pytorch_reference.npz", images=tensor,
+    np.savez(ctx.work / "pytorch_reference.npz", images=tensor,
              **dict(zip(OUTPUT_NAMES, arrays)))
     manifest = {
         "weights": str(args.weights),
@@ -119,7 +119,7 @@ def main():
         "raw_decode_max_absolute_error": float(np.max(np.abs(decoded - expected))),
         "onnx_runtime_verified": True,
     }
-    (args.output_dir / "export_manifest.json").write_text(
+    (ctx.work / "export_manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     print("[4/4] 导出和 ONNX 数值校验完成,NPU 验证仍需单独执行.", flush=True)
 

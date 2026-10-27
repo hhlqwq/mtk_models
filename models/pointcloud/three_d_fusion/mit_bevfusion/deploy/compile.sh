@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # 主机编译上传,板端用一帧真实输入检查 CPU + NPU 完整链路.
 set -euo pipefail
+export MTK_EVAL_SCOPE=subset
+export MTK_OUTPUT_METRICS=1
+export MTK_EVALUATION_WORK=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export PYTHONDONTWRITEBYTECODE=1

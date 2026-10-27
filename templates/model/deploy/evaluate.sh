@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 独立评价已有模型的精度、性能与峰值 RSS,不量化、编译或部署.
 set -euo pipefail
+export MTK_OUTPUT_METRICS=0
 export MTK_OUTPUT_METRICS=1
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export MTK_EVAL_SCOPE=full

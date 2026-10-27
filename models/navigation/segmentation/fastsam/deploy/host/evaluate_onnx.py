@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 
 from tools.storage import REPO_ROOT, load_model_config
+from tools.deploy import context
 
 from tools.accuracy.evaluate_onnx import evaluate_model
 
@@ -48,12 +49,9 @@ def main() -> None:
     config_path = args.config.resolve()
     config = load_model_config(config_path)
     model = Path(__file__).resolve().parents[2]
-    work = args.work_dir or Path(config["model"]["output_dir"]) / "build"
+    work = context(__file__, config_path, args.work_dir).work
     work = work.resolve()
-    for name in ("tmp", "cache"):
-        (work / name).mkdir(parents=True, exist_ok=True)
-    os.environ.update(PYTHONDONTWRITEBYTECODE="1", TMPDIR=str(work / "tmp"),
-                      XDG_CACHE_HOME=str(work / "cache"), TORCH_HOME=str(work / "cache/torch"))
+    (work / "tmp").mkdir(parents=True, exist_ok=True)
     paths = {"model": model, "repo": REPO_ROOT, "work": work,
              "dataset": Path(config["data"]["dataset_dir"]),
              "output": model / config["model"]["output_dir"]}

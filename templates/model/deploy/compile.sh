@@ -2,6 +2,7 @@
 # 新模型入口骨架: 主机部署,板端默认固定小批量验证.
 # 所有模型主机上传后结束,用户登录开发板执行本入口;实现细节见模板 README.
 set -euo pipefail
+export MTK_OUTPUT_METRICS=1
 export MTK_EVAL_SCOPE=subset
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then

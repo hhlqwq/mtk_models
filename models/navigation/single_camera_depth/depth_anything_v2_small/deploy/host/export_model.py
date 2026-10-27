@@ -95,7 +95,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--size", type=int, default=518)
     configure_parser(parser, __file__, {
-        "upstream": lambda c: c.model / "models/upstream",
+        "upstream": lambda c: c.output / "original/upstream",
         "weights": lambda c: Path(c.config["model"]["weights"]),
         "output": lambda c: c.output / "depth_anything_v2_vits.onnx",
     })

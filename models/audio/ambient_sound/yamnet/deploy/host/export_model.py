@@ -22,19 +22,19 @@ def original_models(models_dir):
     # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
     import tensorflow as tf
     import tf_keras
-    sys.path.insert(0, str(models_dir / "upstream"))
+    sys.path.insert(0, str(models_dir / "original/upstream"))
     # 上游源码目录由参数指定并校验后加载,不能在解析参数前导入.
     import params
     # 上游源码目录由参数指定并校验后加载,不能在解析参数前导入.
     import yamnet
     parameters = params.Params()
     frames = yamnet.yamnet_frames_model(parameters)
-    frames.load_weights(str(models_dir / "yamnet.h5"))
+    frames.load_weights(str(models_dir / "original/yamnet.h5"))
     inputs = tf_keras.layers.Input(shape=(1, 96, 64), batch_size=1, name="audio")
     features = tf_keras.layers.Permute((2, 3, 1))(inputs)
     scores, _ = yamnet.yamnet(features, parameters)
     patches = tf_keras.Model(inputs, scores)
-    patches.load_weights(str(models_dir / "yamnet.h5"))
+    patches.load_weights(str(models_dir / "original/yamnet.h5"))
     return frames, patches
 
 
@@ -67,7 +67,7 @@ def export_model(args):
     tf2onnx.convert.from_keras(
         model, input_signature=[tf.TensorSpec((1, 1, 96, 64), tf.float32, name="audio")],
         opset=13, output_path=str(args.models_dir / "yamnet.onnx"))
-    (args.models_dir / "export_check.json").write_text(json.dumps({
+    (args.work / "export_check.json").write_text(json.dumps({
         "samples": 10, "streaming_chunk_samples": 1600,
         "streaming_windows_match": True, "maximum_feature_error": maximum_feature_error,
         "maximum_original_score_error": maximum_score_error}, indent=2))
@@ -79,10 +79,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--models-dir", type=Path, required=True)
     parser.add_argument("--dataset", type=Path, required=True)
-    configure_parser(parser, __file__, {
+    ctx = configure_parser(parser, __file__, {
         "models_dir": lambda c: c.output, "dataset": lambda c: c.dataset,
     })
-    export_model(parser.parse_args())
+    args = parser.parse_args()
+    args.work = ctx.work
+    export_model(args)
 
 
 if __name__ == "__main__":

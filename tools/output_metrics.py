@@ -1,13 +1,10 @@
 """流式保存浮点输出参考,按同输入逐输出统计 CosSim、RMSE 和 NRMSE."""
 
 import hashlib
-import io
 import json
 import math
 import os
 from pathlib import Path
-import sqlite3
-import zlib
 
 import numpy as np
 
@@ -69,81 +66,80 @@ class Moments:
                 + (["NRMSE: 参考输出 RMS 为零"] if self.reference == 0 else [])}
 
 
+class ReferenceComplete(Exception):
+    """固定小样本参考已收集完成,立即停止复用的浮点评价循环."""
+
+
 _writer = None
 
 
 class ReferenceWriter:
-    """用一个 SQLite 文件保存必要浮点输出,重复输入只保留一份张量."""
+    """将少量浮点输出保存到单个 NPZ,禁止在全量评价时收集."""
 
-    def __init__(self, path):
-        """创建新的参考库,未完整结束的库不能用于正式比较."""
+    def __init__(self, path, limit=5):
+        """只在主机本地过程目录创建小样本参考,不访问数据库."""
+        if not is_test() or not 1 <= limit <= 5:
+            raise ValueError("数值参考仅用于 compile 小样本,最多 5 次输入.")
         self.path = Path(path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        if self.path.is_symlink():
-            raise ValueError("输出参考不能为符号链接.")
-        self.db = sqlite3.connect(self.path)
-        self.db.executescript("DROP TABLE IF EXISTS tensors; DROP TABLE IF EXISTS metadata;"
-                             "CREATE TABLE metadata (value TEXT NOT NULL);"
-                             "CREATE TABLE tensors (signature TEXT PRIMARY KEY, payload BLOB, calls INTEGER);")
-        self.sources = {}
+        self.limit = limit
+        self.arrays, self.samples, self.sources = {}, {}, {}
+        self.calls = 0
         self.artifacts = {}
         for directory in json.loads(os.environ.get("MTK_OUTPUT_MODEL_DIRS", "[]")):
-            for artifact in sorted(Path(directory).glob("*.dla")):
-                # 正式产物目录优先,不以 build 中可能残留的旧 DLA 覆盖它.
-                if artifact.name not in self.artifacts:
-                    self.artifacts[artifact.name] = sha256(artifact)
-        self.calls = 0
-        self.db.commit()
+            root = Path(directory)
+            artifacts = root.rglob("*.dla") if root.name == "models" else root.glob("*.dla")
+            for artifact in artifacts:
+                self.artifacts[artifact.relative_to(root).as_posix()] = sha256(artifact)
 
     def add(self, source, inputs, outputs):
-        """记录同输入的后处理前浮点输出,保留来源图和实际调用数."""
+        """记录固定数量同输入输出,达到上限时结束参考准备."""
+        signature = input_signature(inputs)
         source = Path(source)
         if str(source) not in self.sources:
             self.sources[str(source)] = {"file": source.name, "sha256": sha256(source)}
-        signature = input_signature(inputs)
-        arrays = {str(name): np.asarray(value, dtype="<f4") for name, value in outputs.items()}
-        if not arrays or any(not value.size or not np.isfinite(value).all() for value in arrays.values()):
-            raise ValueError("浮点参考输出为空或含非有限数值.")
-        stream = io.BytesIO()
-        np.savez(stream, **arrays)
-        payload = zlib.compress(stream.getvalue(), level=1)
-        row = self.db.execute("SELECT payload FROM tensors WHERE signature=?", (signature,)).fetchone()
-        if row is not None and row[0] != payload:
-            raise ValueError("相同输入对应不同浮点输出,不能合并参考.")
-        self.db.execute("INSERT INTO tensors VALUES (?, ?, 1) ON CONFLICT(signature) "
-                        "DO UPDATE SET calls=calls+1", (signature, payload))
+        if len(outputs) == 1:
+            outputs = {"output": next(iter(outputs.values()))}
+        if signature in self.samples:
+            self.samples[signature]["calls"] += 1
+        else:
+            entry = {"calls": 1, "outputs": {}}
+            for name, value in outputs.items():
+                array = np.asarray(value, dtype="<f4")
+                if not array.size or not np.isfinite(array).all():
+                    raise ValueError("浮点参考输出为空或包含非有限值.")
+                key = f"tensor_{len(self.arrays)}"
+                self.arrays[key] = array
+                entry["outputs"][name] = key
+            self.samples[signature] = entry
         self.calls += 1
-        if self.calls % 32 == 0:
-            self.db.commit()
+        print(f"[小样本数值参考] {self.calls}/{self.limit}", flush=True)
+        if self.calls >= self.limit:
+            raise ReferenceComplete()
 
     def finish(self):
-        """仅成功完成参考生成后标记完整,并打印需要上传的唯一张量资源."""
+        """仅发布完整的小样本数组,不发布任务精度报告."""
         if not self.calls:
-            raise ValueError("浮点输出参考为空.")
-        self.db.execute("INSERT INTO metadata VALUES (?)", (json.dumps({
-            "status": "complete", "calls": self.calls, "sources": list(self.sources.values()),
-            "dla_artifacts": self.artifacts,
-            "evaluation_scope": "full", "input_matching": "shape_and_fp32_content"}),))
-        self.db.commit()
-        self.db.close()
-        print(f"[输出参考] {self.path}; {self.calls} 次输入,随同本次评价参考放入板端对应资源目录.", flush=True)
+            raise ValueError("小样本浮点参考为空.")
+        metadata = {"status": "complete", "evaluation_scope": "compile_subset",
+                    "calls": self.calls, "samples": self.samples,
+                    "sources": list(self.sources.values()), "dla_artifacts": self.artifacts}
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(self.path, metadata=np.array(json.dumps(metadata)), **self.arrays)
+        print(f"[小样本参考] {self.calls} 次输入: {self.path}", flush=True)
 
 
 def record_reference(source, inputs, outputs):
-    """仅由 evaluate.sh 启用参考记录,编译和独立推理不额外保存张量."""
+    """仅由 compile 的独立小样本参考步骤启用,全量评价立即返回."""
     global _writer
-    if os.environ.get("MTK_OUTPUT_METRICS") != "1" or is_test():
+    if not is_test() or os.environ.get("MTK_PREPARE_OUTPUT_REFERENCE") != "1":
         return
     if _writer is None:
         _writer = ReferenceWriter(os.environ["MTK_OUTPUT_REFERENCE"])
-    record = dict(outputs)
-    if len(record) == 1:
-        record = {"output": next(iter(record.values()))}
-    _writer.add(source, inputs, record)
+    _writer.add(source, inputs, outputs)
 
 
 def finish_reference():
-    """由成功的主机评价流程显式完成,异常退出不发布完整标志."""
+    """小样本参考成功结束后关闭收集,全量评价不产生任何张量参考."""
     global _writer
     if _writer is not None:
         _writer.finish()
@@ -151,95 +147,67 @@ def finish_reference():
 
 
 class OutputComparison:
-    """在已有 NPU 推理后比较浮点参考,统计时间不纳入纯 NPU 耗时."""
+    """只在 compile 固定小样本中对照,全量评价不加载参考或计算误差."""
 
-    def __init__(self, ctx, reference=None, scope="all_evaluation_inputs"):
-        """缺参考如实记录,已有但损坏或不完整的参考直接拒绝."""
+    def __init__(self, ctx, reference=None, scope="compile_fixed_subset"):
+        """绑定本次小样本参考与 DLA,缺失时明确提示未完成."""
         self.ctx, self.scope = ctx, scope
-        self.db, self.metadata = None, None
-        self.metrics, self.seen = {}, {}
-        self.enabled = os.environ.get("MTK_OUTPUT_METRICS") == "1" and not is_test()
+        self.enabled = is_test() and os.environ.get("MTK_OUTPUT_METRICS") == "1"
+        self.metrics, self.seen, self.metadata, self.archive = {}, {}, None, None
         if not self.enabled:
             return
-        path = Path(reference or ctx.root / "models/output_reference.sqlite")
-        self.reference_path = path
-        if path.is_file():
-            self.db = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)
-            rows = self.db.execute("SELECT value FROM metadata").fetchall()
-            if len(rows) != 1:
-                raise ValueError("浮点输出参考未完成,请重新准备.")
-            self.metadata = json.loads(rows[0][0])
-            if self.metadata.get("status") != "complete" or self.metadata.get("evaluation_scope") != "full":
-                raise ValueError("不能使用子集或未完成的浮点输出参考.")
-            # 已部署源图可用时核对其版本,其余模型由既有参考协议核对来源.
-            for source in self.metadata["sources"]:
-                candidate = ctx.root / "models" / source["file"]
-                if candidate.is_file() and sha256(candidate) != source["sha256"]:
-                    raise ValueError("输出参考与已部署源图版本不一致.")
-            artifacts = self.metadata.get("dla_artifacts", {})
-            matched = False
-            for name, digest in artifacts.items():
-                candidate = ctx.root / "models" / name
-                if candidate.is_file():
-                    if sha256(candidate) != digest:
-                        raise ValueError("输出参考与已部署 DLA 版本不一致.")
-                    matched = True
-            if reference is None and not matched:
-                raise ValueError("输出参考缺少与当前 DLA 的关联,请使用已有编译产物重新准备参考.")
+        self.path = Path(reference or ctx.root / "board/output_reference.npz")
+        if not self.path.is_file():
+            return
+        self.archive = np.load(self.path, allow_pickle=False)
+        self.metadata = json.loads(str(self.archive["metadata"]))
+        if self.metadata.get("evaluation_scope") != "compile_subset":
+            self.archive.close()
+            raise ValueError("只接受 compile 固定小样本参考.")
+        for name, digest in self.metadata["dla_artifacts"].items():
+            candidates = list((ctx.root / "models").rglob(name))
+            if len(candidates) != 1 or sha256(candidates[0]) != digest:
+                raise ValueError("小样本参考与板端 DLA 不匹配.")
 
     def update(self, inputs, outputs):
-        """以量化前输入内容配对,按语义名称或唯一形状匹配各输出头."""
-        if not self.enabled or self.db is None:
+        """仅比较参考中明确选择的输入,其余 compile 样本正常推理."""
+        if not self.enabled or self.archive is None:
             return
         signature = input_signature(inputs)
-        row = self.db.execute("SELECT payload,calls FROM tensors WHERE signature=?", (signature,)).fetchone()
-        if row is None:
-            raise ValueError("找不到同输入浮点输出参考,请核对预处理、模型和参考范围.")
-        self.seen[signature] = self.seen.get(signature, 0) + 1
-        if self.seen[signature] > row[1]:
-            raise ValueError("NPU 输入重复次数超过浮点参考.")
+        entry = self.metadata["samples"].get(signature)
+        if entry is None or self.seen.get(signature, 0) >= entry["calls"]:
+            return
         actual = dict(outputs)
         if len(actual) == 1:
             actual = {"output": next(iter(actual.values()))}
-        with np.load(io.BytesIO(zlib.decompress(row[0])), allow_pickle=False) as archive:
-            if len(actual) != len(archive.files):
-                raise ValueError("浮点与 NPU 输出数量不一致.")
-            used = set()
-            for name, value in actual.items():
-                candidates = ([name] if name in archive.files else
-                              [key for key in archive.files if archive[key].shape == np.shape(value)])
-                if len(candidates) != 1 or candidates[0] in used:
-                    raise ValueError(f"无法唯一匹配输出头: {name}.")
-                key = candidates[0]
-                used.add(key)
-                self.metrics.setdefault(key, Moments()).update(archive[key], value)
+        expected = entry["outputs"]
+        if len(actual) != len(expected):
+            raise ValueError("浮点与 NPU 输出数量不一致.")
+        used = set()
+        for name, value in actual.items():
+            candidates = [name] if name in expected else [key for key, item in expected.items()
+                if self.archive[item].shape == np.shape(value)]
+            if len(candidates) != 1 or candidates[0] in used:
+                raise ValueError(f"无法唯一匹配小样本输出: {name}.")
+            key = candidates[0]
+            used.add(key)
+            self.metrics.setdefault(key, Moments()).update(self.archive[expected[key]], value)
+        self.seen[signature] = self.seen.get(signature, 0) + 1
 
     def finish(self):
-        """核对完整输入覆盖,将汇总写本模型 work 供唯一正式报告读取."""
+        """在终端显示实际覆盖和误差,不写入正式全量评价报告."""
         if not self.enabled:
             return
-        if self.db is None:
-            result = {"status": "unavailable", "scope": self.scope,
-                      "reason": f"缺少同输入浮点输出参考 {self.reference_path.name}", "outputs": {}}
-        else:
-            expected = dict(self.db.execute("SELECT signature,calls FROM tensors"))
-            if self.seen != expected or sum(self.seen.values()) != self.metadata["calls"]:
-                raise ValueError("输出误差比较未覆盖完整参考输入,拒绝发布部分统计.")
-            result = {"status": "complete", "scope": self.scope,
-                      "reference": self.metadata, "outputs": {
-                          name: metric.result() for name, metric in self.metrics.items()}}
-            self.db.close()
-        result["nrmse_definition"] = "100 * RMSE / RMS(reference), percent"
-        result["aggregation"] = "per_output_global_element_moments; no_cross_output_average"
-        self.ctx.work.mkdir(parents=True, exist_ok=True)
-        (self.ctx.work / "output_metrics.json").write_text(
-            json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-        print(f"[输出误差] {json.dumps(result['outputs'], ensure_ascii=False)}; {result['status']}", flush=True)
-
-
-def report_metrics(ctx):
-    """发布报告时只读取当前运行的指标,缺失项不沿用历史数值."""
-    path = ctx.work / "output_metrics.json"
-    if path.is_file():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {"status": "unavailable", "outputs": {}, "reason": "本次未计算输出误差"}
+        if self.archive is None:
+            print("[输出误差] 未完成: 缺少本次 compile 小样本参考.", flush=True)
+            return
+        try:
+            expected = {key: entry["calls"] for key, entry in self.metadata["samples"].items()}
+            if self.seen != expected:
+                raise ValueError("compile 数值检查没有覆盖选定参考输入,请核对预处理和资源版本.")
+            print(f"[输出误差] {self.scope}, {sum(self.seen.values())} 次输入; "
+                  "NRMSE=100*RMSE/RMS(reference).", flush=True)
+            for name, metric in self.metrics.items():
+                print(f"[输出误差] {name}: {json.dumps(metric.result(), ensure_ascii=False)}", flush=True)
+        finally:
+            self.archive.close()

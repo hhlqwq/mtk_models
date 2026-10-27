@@ -76,10 +76,7 @@ def main():
         dataset = Path(config["data"]["dataset_dir"])
         work = options.work_dir or Path(config["model"]["output_dir"]) / "build"
         work = work.resolve()
-        for name in ("tmp", "cache"):
-            (work / name).mkdir(parents=True, exist_ok=True)
-        os.environ.update(PYTHONDONTWRITEBYTECODE="1", TMPDIR=str(work / "tmp"),
-                          XDG_CACHE_HOME=str(work / "cache"), TORCH_HOME=str(work / "cache/torch"))
+        work.mkdir(parents=True, exist_ok=True)
         paths = {"weights": model / config["model"]["weights"],
                  "image": dataset / config["data"]["sample_image"], "work": work,
                  "output": model / config["model"]["output_dir"]}

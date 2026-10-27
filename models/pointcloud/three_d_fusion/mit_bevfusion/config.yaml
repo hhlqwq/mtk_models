@@ -1,6 +1,6 @@
 # 官方 camera + lidar 检测权重,连接信息由平台本地配置提供.
 model:
-    weights: bevfusion-det.pth
+    weights: original/bevfusion-det.pth
     source: upstream
     output_dir: .
 data:

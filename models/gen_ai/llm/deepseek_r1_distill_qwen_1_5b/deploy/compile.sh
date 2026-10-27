@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # 编译、部署与少量展示示例;正式指标只由 evaluate.sh 生成.
 set -euo pipefail
+export MTK_OUTPUT_METRICS=1
+export MTK_EVALUATION_WORK=0
 export MTK_EVAL_SCOPE=subset
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -24,5 +26,7 @@ else
     python "${SCRIPT_DIR}/host/compile.py"
     echo '[容器 3/3] 打包并上传开发板.'
     python "${SCRIPT_DIR}/host/upload.py"
+    echo "[小样本数值参考] 仅准备固定少量输入的 CosSim、RMSE、NRMSE 对照."
+    python "${MTK_MODELS_ROOT}/tools/prepare_output_reference.py" "${SCRIPT_DIR}"
     echo "[编译完成] 模型已上传,请在开发板执行 compile.sh 检查通路并生成展示示例."
 fi

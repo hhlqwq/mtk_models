@@ -19,6 +19,8 @@ def main():
     import mtk_converter
 
     ctx = context(__file__)
+    package = ctx.output / "models"
+    package.mkdir(parents=True, exist_ok=True)
     torch.set_num_threads(4)
     state = torch.load(ctx.config["model"]["weights"], map_location="cpu", weights_only=True)["state_dict"]
     stages = (
@@ -46,7 +48,7 @@ def main():
         if unused:
             raise ValueError(f"子图有未消费的官方参数: {sorted(unused)}")
         consumed.update(module.names)
-        onnx_path = ctx.work / f"bevfusion-det_{name}.onnx"
+        onnx_path = package / f"bevfusion-det_{name}.onnx"
         torch.onnx.export(module, tensors, onnx_path, opset_version=13,
                           input_names=input_names, output_names=output_names, do_constant_folding=True)
         item = {"backend": "onnxruntime_cpu", "file": onnx_path.name,
@@ -58,7 +60,7 @@ def main():
             converter = mtk_converter.OnnxConverter.from_model_proto_file(str(onnx_path))
             converter.quantize = False
             converter.convert_to_tflite(str(tflite))
-            dla = ctx.work / f"{name}.dla"
+            dla = package / f"{name}.dla"
             compile_dla(ctx, tflite, dla, extra=("--relax-fp32", "--suppress-input"))
         except (RuntimeError, ValueError, subprocess.CalledProcessError) as error:
             # 明确使用 CPU 后端,不声称整个模型都在 NPU 执行.
@@ -76,9 +78,9 @@ def main():
     consumed.update("encoders.camera.vtransform." + key for key in geometry)
     if consumed != set(state):
         raise ValueError(f"完整模型权重覆盖不一致: {set(state) - consumed}")
-    np.savez(ctx.work / "sparse_weights.npz", **sparse)
-    np.savez(ctx.work / "geometry.npz", **geometry)
-    (ctx.work / "contract.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    np.savez(package / "sparse_weights.npz", **sparse)
+    np.savez(package / "geometry.npz", **geometry)
+    (package / "contract.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     if not any(item["backend"] == "mtk_npu" for item in manifest["stages"].values()):
         raise RuntimeError("没有可用 NPU 子图,不能交付为 CPU + NPU 混合部署.")
     print("[编译完成] 子图编译记录已保存,原生 I/O 及完整通路仍需板端核实.", flush=True)

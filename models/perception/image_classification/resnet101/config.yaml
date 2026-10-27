@@ -1,6 +1,6 @@
 # ResNet101 官方 V2 权重,公共环境和连接信息由本地配置加载.
 model:
-    weights: resnet101-cd907fc2.pth
+    weights: original/resnet101-cd907fc2.pth
     output_dir: .
 data:
     dataset_dir: ImageNet

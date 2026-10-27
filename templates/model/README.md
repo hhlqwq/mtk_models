@@ -34,7 +34,7 @@ bash compile.sh
 
 ## 数据与评价
 
-`evaluate.sh` 启用 CosSim、RMSE 和 NRMSE 统计,复用 `tools/output_metrics.py`,将同输入浮点参考与 NPU 后处理前输出逐头比较,结果合并到唯一 `summary.json` 的 `output_comparison`.NRMSE 使用 `100 * RMSE / RMS(参考输出)`,不同输出不混合量纲.主机保存必要的单文件输出参考,板端核对输入与完整覆盖,缺参考如实记录.适配时必须接入实际输出和打包依赖,不能只保留环境变量.计算接口、参考资源和特殊模型范围见[输出误差统计](../../docs/output_metrics.md).
+`compile.sh` 使用固定少量输入计算 CosSim、RMSE、NRMSE,普通模型最多 5 次输入,不减少既有通路样本数.参考使用主机本地 NPZ,上传到板端 board/output_reference.npz,终端显示数值,不使用数据库或 NAS 评价张量.全量 evaluate.sh 只负责任务精度、性能与 RSS.复用 tools/output_metrics.py,实际接入输入、输出与版本核对,具体范围见[输出误差统计](../../docs/output_metrics.md).
 
 填写数据目录格式、样本数、校准范围、评价协议及依赖.记录同协议原框架/ONNX 与 NPU 指标、差值、纯 NPU 和端到端耗时及峰值 RSS.多模型 DLA、外置 embedding 分项统计,文件大小采用十进制 MB.
 
@@ -45,3 +45,5 @@ bash compile.sh
 ## 结果与示例
 
 `results/summary.json` 保存真实汇总,未完成评价不得填入示例数字.选取少量有来源和许可的输入,展示本次真实输出.全量数据和原始权重保存在 NAS,不进入 Git.
+
+NAS 资源统一按 original/ 保存原始权重和来源,build/ 保存转换中间产物,最外层只放当前导出 ONNX 和最终 DLA;多文件部署包使用 models/.评价过程和缓存写主机本地日期临时目录,板端使用本模型 work/ 覆盖.

@@ -13,32 +13,6 @@ from pipeline import Pipeline
 from scoring import format_predictions, score_predictions
 from tools.board import context
 from tools.runtime import peak_rss_kib
-from tools.output_metrics import report_metrics
-
-
-def compare_outputs(ctx, models, samples):
-    """性能和 RSS 采集后独立重放输入,对每个 NPU 子图作同输入 FP32 比较."""
-    from tqdm import tqdm
-
-    pipeline = Pipeline(models, verbose=False, compare=True)
-    try:
-        for frame in tqdm(samples, desc="BEVFusion 子图输出误差"):
-            pipeline(load_frame(ctx.dataset, frame))
-        outputs = {f"{stage.name}/{name}": metric.result()
-                   for stage in pipeline.stages.values()
-                   for name, metric in stage.output_metrics.items()}
-    finally:
-        pipeline.close()
-    if not outputs:
-        raise ValueError("没有完成任何 NPU 子图输出比较.")
-    result = {"status": "complete", "scope": "all_6019_frames_npu_stage_local_same_input",
-              "excluded": "CPU 子图、上游累计误差和最终 3D 检测框;独立重放不计入性能与 RSS",
-              "outputs": outputs, "nrmse_definition": "100 * RMSE / RMS(reference), percent",
-              "aggregation": "per_output_global_element_moments; no_cross_output_average"}
-    ctx.work.mkdir(parents=True, exist_ok=True)
-    (ctx.work / "output_metrics.json").write_text(
-        json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
-    print(f"[输出误差] {json.dumps(outputs, ensure_ascii=False)}", flush=True)
 
 
 def identity(root):
@@ -105,8 +79,6 @@ def main():
             raise ValueError("已有 FP32 参考与当前模型或完整样本不匹配.")
     predictions, elapsed, npu, rss = evaluate_dataset(
         models, ctx.dataset, samples, ctx.result / "predictions.json")
-    if os.environ.get("MTK_OUTPUT_METRICS") == "1":
-        compare_outputs(ctx, models, samples)
     accuracy = score_predictions(ctx.dataset / "ground_truth.json", predictions)
     files = [models / item["file"] for item in json.loads((models / "contract.json").read_text())["stages"].values()]
     files.extend(models / name for name in ("sparse_weights.npz", "geometry.npz"))
@@ -123,7 +95,6 @@ def main():
               "model_size_bytes": sum(path.stat().st_size for path in files),
               "nuscenes_devkit": importlib.metadata.version("nuscenes-devkit"),
               "missing": [] if reference else ["同协议完整 FP32 参考尚未提供,差值留空"]}
-    report["output_comparison"] = report_metrics(ctx)
     ctx.summary.parent.mkdir(parents=True, exist_ok=True)
     ctx.summary.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"[评价完成] {ctx.summary}: {accuracy}", flush=True)

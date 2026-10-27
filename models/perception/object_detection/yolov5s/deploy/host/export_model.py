@@ -3,6 +3,7 @@
 from pathlib import Path
 import subprocess
 import sys
+import shutil
 import zipfile
 
 from tools.deploy import arguments
@@ -27,7 +28,8 @@ def main():
                              input=patch, text=True, capture_output=True)
     if applied.returncode:
         run_command(["patch", "-d", source, "-p1", "--forward"], input=patch, text=True)
-    weights = Path(ctx.config["model"]["weights"])
+    weights = ctx.work / "yolov5s.pt"
+    shutil.copyfile(ctx.config["model"]["weights"], weights)
     run_command([sys.executable, source / "export.py", "--weights", weights,
                  "--img-size", "640", "640", "--batch-size", "1", "--device", "0",
                  "--include", "torchscript", "onnx"], cwd=source)

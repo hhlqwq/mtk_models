@@ -9,7 +9,7 @@ import torch
 
 from tools.storage import model_storage
 
-SOURCE_ROOT = model_storage(Path(__file__).resolve().parents[2]) / "upstream"
+SOURCE_ROOT = model_storage(Path(__file__).resolve().parents[2]) / "original/upstream"
 sys.path.insert(0, str(SOURCE_ROOT))
 
 from mobilefacenet import MobileFaceNet  # noqa: E402

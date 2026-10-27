@@ -13,9 +13,12 @@ def main():
     root = Path(__file__).resolve().parents[1]
     with np.load(root / "examples/input/sample.npz") as archive:
         sample = {key: archive[key] for key in archive.files}
-    pipeline = Pipeline(root / "models", check=True)
+    pipeline = Pipeline(root / "models", compare=True)
     try:
         boxes, scores, labels, _, _ = pipeline(sample)
+        for stage in pipeline.stages.values():
+            for name, metric in stage.output_metrics.items():
+                print(f"[输出误差] 单帧 {stage.name}/{name}: {metric.result()}", flush=True)
     finally:
         pipeline.close()
     destination = root / "examples/output"

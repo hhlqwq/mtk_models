@@ -246,9 +246,7 @@ def llm_performance(ctx):
 
 def publish(ctx, report):
     """发布唯一正式报告,仅清理当前部署包 results 内已由新报告取代的文件."""
-    from tools.output_metrics import report_metrics
 
-    report["output_comparison"] = report_metrics(ctx)
     directory = ctx.root / "results"
     if directory.is_symlink() or not directory.resolve().is_relative_to(ctx.root.resolve()):
         raise ValueError("正式报告目录越出当前部署包.")

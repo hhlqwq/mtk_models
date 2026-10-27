@@ -39,7 +39,7 @@ def main():
     device = native.ctx.config["evaluation"]["reference_device"]
     if device not in ("cuda", "cpu"):
         raise ValueError("reference_device 仅支持 cuda 或 cpu.")
-    output = native.work / "evaluation/full"
+    output = native.ctx.work / "evaluation/full"
     mmlu = SimpleNamespace(
         dataset=datasets[0], model=native.model, graph=graph,
         context=native.context, limit=0, seed=17, output=output / "mmlu")
