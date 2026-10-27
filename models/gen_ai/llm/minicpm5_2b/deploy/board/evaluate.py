@@ -57,7 +57,7 @@ def check_resources(root):
 
 
 def main():
-    """执行约定的千题 MMLU 和完整 WikiText2,中间结果只写日期临时目录."""
+    """执行约定的千题 MMLU 和完整 WikiText2,中间结果写本模型 work."""
     ctx = context(__file__)
     data = check_resources(ctx.root)
     ctx.result.mkdir(parents=True, exist_ok=True)

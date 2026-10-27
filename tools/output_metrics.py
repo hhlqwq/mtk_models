@@ -215,7 +215,7 @@ class OutputComparison:
                 self.metrics.setdefault(key, Moments()).update(archive[key], value)
 
     def finish(self):
-        """核对完整输入覆盖,仅将汇总写日期临时目录供唯一正式报告读取."""
+        """核对完整输入覆盖,将汇总写本模型 work 供唯一正式报告读取."""
         if not self.enabled:
             return
         if self.db is None:

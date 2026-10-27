@@ -59,9 +59,9 @@ def load_protocol(dataset_root: Path) -> dict[str, list[dict]]:
 
 
 def load_output(path: Path) -> np.ndarray:
-    """读取带原图尺寸的 FP32 深度,不再保存单独的尺寸文件."""
+    """读取原始 518x518 FP32 深度图,不保存放大后的重复数据."""
     values = np.load(path, allow_pickle=False)
-    if values.ndim != 2 or min(values.shape) <= 0 or not np.isfinite(values).all() or values.std() <= 0:
+    if values.shape != (518, 518) or not np.isfinite(values).all() or values.std() <= 0:
         raise ValueError(f"深度输出无效: {path}.")
     return values
 
@@ -102,7 +102,7 @@ def evaluate(args: argparse.Namespace) -> None:
         row = records[relative]
         depth = load_output(args.work_dir / row["directory"] / "depth.npy")
         correct, total = score_pairs(args.dataset_root / relative, depth,
-                                     annotations[relative], restored=True)
+                                     annotations[relative])
         correct_pairs += correct
         total_pairs += total
         scene = Path(relative).parts[1]

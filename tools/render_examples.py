@@ -170,11 +170,12 @@ def depth(args, manifest) -> None:
     indices = {row["image"]: row["directory"] for row in rows}
     for position, item in enumerate(manifest["samples"], 1):
         values = load_output(args.work_dir / indices[item["image"]] / "depth.npy")
+        image = load_image(args.input_dir / item["file"])
+        values = cv2.resize(values, (image.shape[1], image.shape[0]),
+                            interpolation=cv2.INTER_LINEAR)
         normalized = (values - values.min()) / (values.max() - values.min())
         colored = cv2.applyColorMap((normalized * 255).astype(np.uint8),
                                     cv2.COLORMAP_TURBO)
-        image = load_image(args.input_dir / item["file"])
-        colored = cv2.resize(colored, (image.shape[1], image.shape[0]))
         save_image(args, position, "depth", panel(
             np.concatenate([image, colored], axis=1),
             ["Input | Board relative depth (warm: near, cool: far)"]))

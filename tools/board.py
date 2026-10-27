@@ -1,19 +1,20 @@
 """板端步骤读取 JSON 配置快照,不依赖主机或 PyYAML."""
 
 import argparse
-from datetime import date, datetime
+from datetime import datetime
 import json
 import math
 import os
 from pathlib import Path
 import re
+import shutil
 import sys
 
 from tools.evaluation import is_test
 
 
 def context(entry, *, new_run=False):
-    """读取板端配置,过程文件统一位于日期临时目录."""
+    """读取板端配置,过程文件固定保存在当前模型的 work 目录."""
     root = Path(entry).resolve().parent.parent
     parser = argparse.ArgumentParser(description="执行当前板端独立步骤.")
     parser.add_argument("--config", type=Path, default=root / "config.json")
@@ -23,25 +24,23 @@ def context(entry, *, new_run=False):
 
 
 def paths(root, config_path, run_id=None, *, new_run=False):
-    """推理新建过程目录,后续单步默认复用当天同模型和范围的最近一次结果."""
+    """每次推理覆盖当前模型的 work,后续评分和展示直接复用该目录."""
+    root = Path(root).resolve()
     config = json.loads(Path(config_path).read_text(encoding="utf-8"))
-    stage = "compile" if is_test() else "evaluate"
-    temporary = Path("/tmp/hailongcodex") / date.today().isoformat()
-    prefix = f"{config['name']}_{stage}_"
     run_id = run_id or os.environ.get("EVAL_RUN_ID")
-    if run_id is None and not new_run:
-        latest = max((path for path in temporary.glob(prefix + "*") if path.is_dir()),
-                     key=lambda path: path.stat().st_mtime, default=None)
-        if latest is not None:
-            run_id = latest.name[len(prefix):]
     run_id = run_id or datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id):
         raise ValueError("运行编号只允许字母、数字、下划线和连字符.")
-    result = Path(os.environ.get("MTK_RUN_DIR", temporary / f"{config['name']}_{stage}_{run_id}"))
-    if not result.resolve().is_relative_to(temporary.resolve()) or result.is_symlink():
-        raise ValueError("过程目录必须位于当天 /tmp/hailongcodex 日期目录.")
+    result = root / "work"
+    if result.is_symlink() or result.resolve() != result:
+        raise ValueError("模型 work 目录不能是符号链接或指向部署目录之外.")
+    if new_run and result.exists():
+        if not result.is_dir():
+            raise ValueError("模型 work 路径必须是目录.")
+        print(f"[过程目录] 覆盖本模型上次中间结果: {result}", flush=True)
+        shutil.rmtree(result)
     return argparse.Namespace(root=root, config=config, run_id=run_id,
-        dataset=Path(config["board"]["dataset_dir"]), result=result, work=result / "work",
+        dataset=Path(config["board"]["dataset_dir"]), result=result, work=result,
         summary=root / "results/summary.json")
 
 

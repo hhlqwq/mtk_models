@@ -8,6 +8,7 @@ __pycache__/
 
 # 精度评测工作区.
 .eval/
+**/work/
 
 # 本地环境和日志.
 configs/storage.local.json

@@ -2,7 +2,6 @@
 
 import json
 
-import cv2
 import numpy as np
 
 from full_accuracy_board import load_protocol
@@ -11,13 +10,11 @@ from tools.board import context, infer_images
 
 
 def postprocess(values, image, output):
-    """保存评分和展示所需的连续 FP32 模型结果."""
+    """只保存 518x518 FP32 深度图,评分和展示时再恢复原图尺寸."""
     depth = values.reshape(518, 518)
     if not np.isfinite(depth).all() or depth.std() <= 0:
         raise ValueError("深度图无效或恒定.")
-    height, width = image.shape[:2]
-    restored = cv2.resize(depth, (width, height), interpolation=cv2.INTER_LINEAR)
-    np.save(output / "depth.npy", restored.astype("<f4"))
+    np.save(output / "depth.npy", depth.astype("<f4"))
 
 
 def main():

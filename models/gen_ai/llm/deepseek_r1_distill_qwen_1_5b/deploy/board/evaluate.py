@@ -47,7 +47,7 @@ def check_resources(root):
 
 
 def main():
-    """执行完整题集评分,中间结果只写日期临时目录."""
+    """执行完整题集评分,中间结果写本模型 work."""
     ctx = context(__file__)
     data = check_resources(ctx.root)
     ctx.result.mkdir(parents=True, exist_ok=True)

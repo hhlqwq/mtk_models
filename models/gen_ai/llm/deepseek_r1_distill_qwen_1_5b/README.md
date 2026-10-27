@@ -46,7 +46,7 @@ bash deploy/evaluate.sh
 bash evaluate.sh
 ```
 
-板端核对部署模型与参考输入后,采集生成样例、128 Token 输入/最多 128 Token 输出的Python Prefill/Decode 阶段速度及进程 RSS,再执行完整 MMLU/WikiText2.最终只发布 `results/summary.json`.速度按实际生成数量记录,Python 阶段速度与纯 NPU 调用耗时分开标注,未采集分项明确列出.预测与内部指标保存在日期临时目录.
+板端核对部署模型与参考输入后,采集生成样例、128 Token 输入/最多 128 Token 输出的Python Prefill/Decode 阶段速度及进程 RSS,再执行完整 MMLU/WikiText2.最终只发布 `results/summary.json`.速度按实际生成数量记录,Python 阶段速度与纯 NPU 调用耗时分开标注,未采集分项明确列出.板端预测与内部指标统一保存在本模型部署目录的 work/,每次开始推理时覆盖.
 
 ## 模型约定
 

@@ -26,7 +26,7 @@ bash evaluate.sh
 
 评价入口使用已有 DLA 和 Python 脚本,执行完整精度评价、必要预热和性能统计,采集推理进程峰值 RSS,最终只给出 `results/summary.json`.不调用 compile.sh,不重新量化或编译.重复评价成功后更新这一个报告,运行编号、数据集范围、版本和缺失项写在报告内部.
 
-中间预测、日志、逐任务指标和调试记录位于 `/tmp/hailongcodex/当天日期/<模型>_<阶段>_<运行编号>/`.失败时保留现场,不拿上次指标冒充本次结果,不为失败运行伪造成功报告.成功发布后 results 内只保留 summary.json.临时目录由使用者按需清理.
+所有模型的中间预测、日志和内部指标统一位于各自部署目录的 `work/`.compile 和 evaluate 开始推理时覆盖该模型上次的 work,后续评分、展示和报告步骤复用同一目录;不按日期、阶段或运行编号累积目录,不写入板端 /tmp 内存盘.失败现场保留到下次推理开始,不拿上次指标冒充本次结果.覆盖范围只限本模型 work,不影响 models、examples、results 或其他模型.历史 /tmp/hailongcodex 不自动迁移或清理.
 
 MiniCPM 正式评价为 MMLU 固定 1000 题、57 学科、seed=17 的分层子集与完整 WikiText2 test,不复用旧 `evaluation/full/` 资源.DeepSeek 仍使用 MMLU 完整 14042 题及完整 WikiText2 test.若已有上下文不足,明确报错,不截题或自动重编译.Python 生成使用官方 Token 输入,样例速度不能标为标准定长基准.新接入评价代码不代表已完成实测,成绩以对应版本的实际报告为准.
 
@@ -41,6 +41,7 @@ MiniCPM 正式评价为 MMLU 固定 1000 题、57 学科、seed=17 的分层子�
 ├── board/                     Python 脚本和公共模块
 ├── examples/input/            少量展示输入
 ├── examples/output/           README 使用的结果图或文本
+├── work/                      本模型中间结果,每次推理覆盖
 └── results/summary.json        唯一正式报告
 ```
 
