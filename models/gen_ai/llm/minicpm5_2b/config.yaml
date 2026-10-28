@@ -18,18 +18,20 @@ conversion:
   max_new_tokens: 512
 native:
   # 转换中间文件集中到 build/native,校准、量化和静态图导出由 convert.py 完成.
-  work_dir: build/native
+  work_dir: build/native_hessian16
+  # 复用已验证的量化图和双 DLA,缺失时停止,不自动重新量化.
+  reuse_compiled: true
   prefill: 128
-  calibration_batches: 32
+  calibration_batches: 128
   mask_value: -100
-  rotate: false
+  rotate: true
   # 只支持全 W4A16,不通过提高权重位宽替代误差排查.
   attention_precision: asym4W_sym16A
   mlp_precision: asym4W_sym16A
   tail_precision: asym4W_sym16A
-  weight_optimization: none
+  weight_optimization: hessian
   weight_opt_config: ''
-  calibration_train: ''
+  calibration_train: wikitext/wikitext-2-raw-v1/train-00000-of-00001.parquet
 evaluation:
   # 正式 MMLU 固定 1000 题,覆盖 57 学科;WikiText2 仍使用完整 test.
   mmlu_questions: 1000

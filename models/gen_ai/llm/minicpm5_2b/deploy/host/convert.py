@@ -228,6 +228,12 @@ def export_shapes(native):
 def main():
     """在固定工作目录执行转换函数,不再启动仓库内的 Python 子脚本."""
     native = settings(arguments(__file__), python_executable=sys.executable)
+    if native.ctx.config["native"].get("reuse_compiled", False):
+        from models.gen_ai.llm.minicpm5_2b.deploy.host.compile import validate_compiled
+
+        validate_compiled(native, check_files=False)
+        print("[转换] 已选配方保持不变,不重新校准、量化或导出.", flush=True)
+        return
     print("[转换 1/4] 准备模型副本和输入.", flush=True)
     prepare_model(native)
     previous = os.getcwd()
