@@ -1,6 +1,6 @@
 # MiniCPM5-2B
 
-面向 MediaTek Genio 720 / MT8189 的文本生成模型,使用官方 [openbmb/MiniCPM5-2B](https://huggingface.co/openbmb/MiniCPM5-2B),许可证 Apache-2.0.来源见 [source_url.txt](models/source_url.txt).
+面向 MediaTek Genio 720 / MT8189 的文本生成模型,使用官方 [openbmb/MiniCPM5-2B](https://huggingface.co/openbmb/MiniCPM5-2B),许可证 Apache-2.0.来源见 [source_url.txt](models/source_url.txt),完整规格和评价边界见 [模型卡](model_card.md),资源布局见 [模型资源](models/README.md).
 
 | 项目 | 当前配置 |
 |---|---|
@@ -27,7 +27,7 @@ bash deploy/compile.sh
 bash compile.sh
 ```
 
-板端检查少量输入,显示输入、实际聊天模板及流式文本,示例最多生成 32 Token,可能仅为回答片段;输出位于 `examples/output/`.compile 子集精度和数值对比只在终端显示,不生成正式报告.本次启用配方后未重新生成示例或运行新的评价.
+板端检查少量输入,显示输入、实际聊天模板及流式文本,示例最多生成 32 Token,可能仅为回答片段;输出位于 `examples/output/`.compile 在两端对相同子集评分,板端将任务精度、精度损失及 CosSim/RMSE/NRMSE 写入 `results/summary_test.json`;总入口完成后自动回传报告和示例.本次文档补齐未重新生成示例或运行新的模型评价.
 
 `deploy/evaluate.sh` 是独立正式评价入口,不重新转换或编译,结果只写入 `results/summary.json`.正式 MMLU 为固定 1000 题、57 学科、seed=17,WikiText2 为完整 test;本轮没有执行正式范围评价.使用与板端目录规范见 [Genio 720 文档](../../../../docs/genio_720.md).
 
