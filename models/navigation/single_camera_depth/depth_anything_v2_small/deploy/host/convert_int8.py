@@ -29,9 +29,8 @@ def convert_model(onnx: Path, image_dir: Path, output: Path,
                    for path in paths]
 
     def calibration_data():
-        """逐张提供与冒烟一致的归一化输入，并打印进度。"""
-        for index, path in enumerate(paths, start=1):
-            print(f"[CALIBRATION] {index}/{len(paths)} {path.name}", flush=True)
+        """逐张提供与推理一致的归一化输入,进度由转换器统一显示."""
+        for path in paths:
             yield [preprocess(path)]
 
     output.parent.mkdir(parents=True, exist_ok=True)

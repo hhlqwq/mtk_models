@@ -37,7 +37,7 @@ SIGMAS = np.asarray([
 CUTS = np.cumsum([0, 17, 6, 68, 21, 21])
 
 
-def load_predictions(path: Path) -> dict[int, list[dict]]:
+def load_predictions(path: Path, backend: str) -> dict[int, list[dict]]:
     """读取 JSONL,按 detection_id 去重并按 image_id 分组."""
     predictions = {}
     with path.open("r", encoding="utf-8") as input_file:
@@ -45,8 +45,8 @@ def load_predictions(path: Path) -> dict[int, list[dict]]:
             if not line.strip():
                 continue
             item = json.loads(line)
-            if item.get("backend") != "python_neuron_runtime_hw":
-                raise ValueError("必须使用本次 Python 姿态推理记录.")
+            if item.get("backend") != backend:
+                raise ValueError(f"第 {line_number} 行姿态预测来源不符,要求 {backend}.")
             detection_id = int(item["detection_id"])
             keypoints = np.asarray(item["keypoints"], dtype=np.float32)
             if keypoints.shape != (133 * 3,):
@@ -140,11 +140,13 @@ def evaluate_component(coco_gt: COCO, coco_dt: COCO, name: str,
     return {"AP": float(evaluator.stats[0])}
 
 
-def evaluate(args: argparse.Namespace) -> None:
-    """格式化板端结果并计算整体 WholeBody AP."""
+def evaluate(args: argparse.Namespace, backend: str = "python_neuron_runtime_hw") -> None:
+    """核对调用方的推理来源,按相同协议计算 WholeBody AP."""
+    if backend not in ("python_neuron_runtime_hw", "onnxruntime"):
+        raise ValueError(f"不支持的姿态预测来源: {backend}.")
     if SIGMAS.shape != (133,):
         raise RuntimeError(f"WholeBody sigma 数量错误: {SIGMAS.shape}")
-    grouped = load_predictions(args.predictions)
+    grouped = load_predictions(args.predictions, backend)
     image_ids = None
     if is_test():
         path = args.annotations.parent.parent / "person_detection_results/COCO_val2017_detections_AP_H_56_person.json"

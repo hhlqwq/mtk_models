@@ -30,6 +30,7 @@ else
     python "${SCRIPT_DIR}/host/upload.py"
     echo "[小样本数值参考] 仅准备固定少量输入的 CosSim、RMSE、NRMSE 对照."
     python "${MTK_MODELS_ROOT}/tools/prepare_output_reference.py" "${SCRIPT_DIR}"
+    echo "[浮点子集精度] 评估完整选定子集并保存 summary_sub.json,上传同子集参考."
     python "${MTK_MODELS_ROOT}/tools/compile_accuracy.py" "${SCRIPT_DIR}"
     echo "[编译完成] 模型已上传,请在开发板执行 compile.sh 检查通路并生成展示示例."
 fi

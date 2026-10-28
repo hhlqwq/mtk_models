@@ -1,6 +1,7 @@
 """读取不提交 Git 的资源路径配置,代码目录与模型资源目录分离."""
 
 import argparse
+from datetime import date
 import hashlib
 import json
 import os
@@ -155,14 +156,37 @@ def platform_environment():
     return environment
 
 
+def write_upload_config():
+    """生成仅供板端回传使用的本地配置,返回路径供 Shell 上传."""
+    config = platform_environment()
+    values = {name: config.get(name, "") for name in
+              ("MTK_RESULTS_HOST", "MTK_RESULTS_ROOT")}
+    root = Path(values["MTK_RESULTS_ROOT"])
+    if not all(values.values()) or not root.is_absolute() or root == Path("/"):
+        raise ValueError("请在本地平台配置填写 results_host 和 results_root 仓库绝对路径.")
+    directory = Path("/tmp/hailongcodex") / date.today().isoformat() / f"results_upload_{os.getuid()}"
+    directory.mkdir(parents=True, exist_ok=True)
+    target = directory / "upload.local.sh"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW
+    with os.fdopen(os.open(target, flags, 0o600), "w", encoding="utf-8") as stream:
+        os.fchmod(stream.fileno(), 0o600)
+        stream.write("".join(f"{key}={shlex.quote(value)}\n" for key, value in values.items()))
+    return target
+
+
 def main():
     """输出经过 Shell 转义的变量,供 Bash 入口加载."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", type=Path)
     parser.add_argument("--model-config", type=Path)
+    parser.add_argument("--write-upload-config", action="store_true",
+                        help="生成板端本地回传配置,只输出文件路径.")
     parser.add_argument("--print-build-dir", type=Path, metavar="MODEL_CONFIG",
                         help="只输出模型配置对应的构建目录.")
     args = parser.parse_args()
+    if args.write_upload_config:
+        print(write_upload_config())
+        return
     if args.print_build_dir:
         config = load_model_config(args.print_build_dir)
         print(Path(config["model"]["output_dir"]) / "build")

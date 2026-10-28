@@ -228,12 +228,13 @@ def evaluate_pose(args, deploy: Path) -> tuple:
             # 根据宽度排列两个输出,不依赖导出顺序.
             outputs = sorted(outputs, key=lambda value: value.shape[-1])
             keypoints, area = decode_prediction(*outputs, geometry)
-            stream.write(json.dumps({"detection_id": index, "image_id": current_id,
+            stream.write(json.dumps({"backend": "onnxruntime",
+                "detection_id": index, "image_id": current_id,
                 "bbox_score": record["score"], "area": area, "keypoints": keypoints}) + "\n")
     metrics.evaluate(SimpleNamespace(predictions=path,
         annotations=args.dataset_root / "annotations/coco_wholebody_val_v1.0.json",
         formatted=args.work_dir / "formatted.json", metrics=args.work_dir / "metrics.json",
-        summary_log=args.work_dir / "cocoeval.log"))
+        summary_log=args.work_dir / "cocoeval.log"), backend="onnxruntime")
     value = json.loads((args.work_dir / "metrics.json").read_text())["metrics"]["wholebody"]["AP"]
     return "WholeBody AP", value, len(ordered)
 

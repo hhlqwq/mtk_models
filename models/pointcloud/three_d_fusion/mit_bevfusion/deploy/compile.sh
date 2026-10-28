@@ -21,5 +21,6 @@ else
     python "${SCRIPT_DIR}/host/prepare.py"
     echo "[容器 3/3] 上传完整 Python 部署包."
     python "${SCRIPT_DIR}/host/upload.py"
+    echo "[浮点子集精度] 评估完整选定子集并保存 summary_sub.json,上传同子集参考."
     python "${MTK_MODELS_ROOT}/tools/compile_accuracy.py" "${SCRIPT_DIR}"
 fi

@@ -18,9 +18,8 @@ from tools.quantization import tensor_metadata
 
 
 def calibration_data(images: list[Path]) -> Iterator[list[np.ndarray]]:
-    """逐张提供真实对齐人脸输入并报告进度。"""
-    for index, path in enumerate(images, start=1):
-        print(f"[CALIBRATION] {index}/{len(images)} {path.name}", flush=True)
+    """逐张提供真实对齐人脸输入,进度由转换器统一显示."""
+    for path in images:
         yield [load_aligned_face(path)]
 
 

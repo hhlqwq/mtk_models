@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 顺序编译上传所有模型;上传到板端后,同一入口只运行少量样本检查.
+# 顺序完成所有模型转换、量化、编译、上传及浮点子集评估;板端执行同子集 NPU 评估.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODELS_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -25,25 +25,7 @@ if [[ -f "${MODELS_ROOT}/../tools/storage.py" ]]; then
     : "${MTK_BOARD_OPEN_MODELS_ROOT:?缺少本地平台配置中的板端部署根目录}"
     BOARD_DEPLOY_DIR="${MTK_BOARD_OPEN_MODELS_ROOT%/}/deploy"
     printf -v QUOTED_BOARD_DEPLOY_DIR '%q' "${BOARD_DEPLOY_DIR}"
-    UPLOAD_CONFIG="$(python - <<'PY'
-from datetime import date
-import os
-from pathlib import Path
-import shlex
-from tools.storage import platform_environment
-
-config = platform_environment()
-values = {name: config.get(name, "") for name in ("MTK_RESULTS_HOST", "MTK_RESULTS_ROOT")}
-if not all(values.values()) or not values["MTK_RESULTS_ROOT"].startswith("/"):
-    raise ValueError("请在本地平台配置填写 results_host 和 results_root 绝对路径.")
-path = Path("/tmp/hailongcodex") / date.today().isoformat() / f"results_upload_{os.getuid()}"
-path.mkdir(parents=True, exist_ok=True)
-target = path / "upload.local.sh"
-target.write_text("".join(f"{key}={shlex.quote(value)}\n" for key, value in values.items()), encoding="utf-8")
-target.chmod(0o600)
-print(target)
-PY
-)"
+    UPLOAD_CONFIG="$(python "${MTK_MODELS_ROOT}/tools/storage.py" --write-upload-config)"
     echo "[总入口] 上传 compile.sh、evaluate.sh、upload.sh 和本地回传配置到板端."
     ssh -o BatchMode=yes "${MTK_BOARD_HOST}" "mkdir -p -- ${QUOTED_BOARD_DEPLOY_DIR}"
     scp -o BatchMode=yes "${SCRIPT_DIR}/compile.sh" "${SCRIPT_DIR}/evaluate.sh" \
@@ -70,7 +52,7 @@ done
 
 if [[ "${LOCATION}" == 容器 ]]; then
     echo "[上传完成] 请登录开发板执行: bash ${BOARD_DEPLOY_DIR}/compile.sh"
-    echo "[待板端检查] 尚未执行板端推理或生成展示示例."
+    echo "[浮点子集完成] 所有模型浮点子集评估已完成;待板端执行同子集 NPU 评估及精度损失统计."
 else
     echo "[少量样本完成] 所有模型入口执行结束,未执行全量评价."
     bash "${SCRIPT_DIR}/upload.sh" subset
