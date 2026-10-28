@@ -2,6 +2,22 @@
 # 顺序评价已有模型;容器准备全量参考,板端执行各模型约定的全量评价.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 只由最外层总入口保存日志,末尾回传不再打开 compile.log.
+if [[ "${MTK_DEPLOY_LOG_ACTIVE:-0}" != 1 ]]; then
+    LOG_FILE="${SCRIPT_DIR}/evaluate.log"
+    : > "${LOG_FILE}"
+    set +e
+    {
+        printf '[日志] %s; 开始: %s; 本次覆盖旧日志.\n' "${LOG_FILE}" "$(date '+%F %T %z')"
+        PYTHONUNBUFFERED=1 MTK_DEPLOY_LOG_ACTIVE=1 bash "${BASH_SOURCE[0]}" "$@"
+    } 2>&1 | tee -- "${LOG_FILE}"
+    LOG_STATUSES=("${PIPESTATUS[@]}")
+    # 优先保留原流程退出码;流程成功时仍须检查日志是否写入成功.
+    if (( LOG_STATUSES[0] != 0 )); then
+        exit "${LOG_STATUSES[0]}"
+    fi
+    exit "${LOG_STATUSES[1]}"
+fi
 MODELS_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 MODELS=(
     perception/image_classification/resnet101

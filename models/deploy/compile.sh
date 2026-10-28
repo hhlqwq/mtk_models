@@ -2,6 +2,22 @@
 # 顺序完成所有模型转换、量化、编译、上传及浮点子集评估;板端执行同子集 NPU 评估.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 只由最外层总入口保存日志,evaluate 的回传调用沿用 evaluate.log.
+if [[ "${MTK_DEPLOY_LOG_ACTIVE:-0}" != 1 ]]; then
+    LOG_FILE="${SCRIPT_DIR}/compile.log"
+    : > "${LOG_FILE}"
+    set +e
+    {
+        printf '[日志] %s; 开始: %s; 本次覆盖旧日志.\n' "${LOG_FILE}" "$(date '+%F %T %z')"
+        PYTHONUNBUFFERED=1 MTK_DEPLOY_LOG_ACTIVE=1 bash "${BASH_SOURCE[0]}" "$@"
+    } 2>&1 | tee -- "${LOG_FILE}"
+    LOG_STATUSES=("${PIPESTATUS[@]}")
+    # 优先保留原流程退出码;流程成功时仍须检查日志是否写入成功.
+    if (( LOG_STATUSES[0] != 0 )); then
+        exit "${LOG_STATUSES[0]}"
+    fi
+    exit "${LOG_STATUSES[1]}"
+fi
 MODELS_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 RETURN_ONLY=0
 RESULT_SCOPE=subset

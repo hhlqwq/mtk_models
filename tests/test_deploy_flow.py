@@ -275,6 +275,75 @@ class DeployFlowTest(unittest.TestCase):
                                MTK_BOARD_OPEN_MODELS_ROOT="/test-only", FLOW_CONFIG=str(local))
         return deploy, environment, log, models
 
+    def check_entry_logs(self, host):
+        """检查两阶段的屏幕与文件输出、覆盖行为、失败码及回传日志归属."""
+        deploy, environment, calls, models = self.make_shell_environment(host=host)
+        first = (deploy.parent / models[0] / "deploy" if host
+                 else deploy.parent / models[0].rsplit("/", 1)[-1])
+        for phase in ("compile", "evaluate"):
+            with self.subTest(host=host, phase=phase):
+                entry = first / f"{phase}.sh"
+                entry.write_text(entry.read_text() +
+                                 f'printf "stdout-{phase}\\n"\nprintf "stderr-{phase}\\n" >&2\n'
+                                 + 'printf "unbuffered=%s\\n" "${PYTHONUNBUFFERED:-}"\n')
+                target = deploy / f"{phase}.log"
+                other = deploy / ("evaluate.log" if phase == "compile" else "compile.log")
+                other.write_text("另一阶段的已有日志\n")
+                target.write_text("本阶段的旧日志\n")
+                result = subprocess.run(["bash", str(deploy / f"{phase}.sh")],
+                                        env=environment, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(target.read_text(), result.stdout)
+                self.assertEqual(result.stderr, "")
+                self.assertIn(f"stdout-{phase}", result.stdout)
+                self.assertIn(f"stderr-{phase}", result.stdout)
+                self.assertIn("unbuffered=1", result.stdout)
+                self.assertNotIn("本阶段的旧日志", target.read_text())
+                self.assertEqual(other.read_text(), "另一阶段的已有日志\n")
+                if not host:
+                    self.assertIn("[回传完成]", target.read_text())
+
+                calls.write_text("")
+                failed = dict(environment, FAIL_MODEL=models[1])
+                result = subprocess.run(["bash", str(deploy / f"{phase}.sh")],
+                                        env=failed, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 7)
+                self.assertEqual(target.read_text(), result.stdout)
+                self.assertIn("退出码 7", target.read_text())
+                self.assertNotIn(f"{phase}:" + models[2], calls.read_text())
+                self.assertEqual(other.read_text(), "另一阶段的已有日志\n")
+
+    def test_host_entry_logs(self):
+        """编译服务器的两个固定日志完整保存标准输出与错误输出."""
+        self.check_entry_logs(host=True)
+
+    def test_board_entry_logs(self):
+        """板端的两个固定日志互不覆盖,全量回传继续写 evaluate.log."""
+        self.check_entry_logs(host=False)
+
+    def test_log_open_failure_stops_before_models(self):
+        """日志路径不可写时在启动模型或远程上传之前停止."""
+        deploy, environment, calls, _ = self.make_shell_environment(host=True)
+        for phase in ("compile", "evaluate"):
+            with self.subTest(phase=phase):
+                (deploy / f"{phase}.log").mkdir()
+                result = subprocess.run(["bash", str(deploy / f"{phase}.sh")],
+                                        env=environment, capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(calls.exists())
+
+    def test_log_writer_failure_is_not_success(self):
+        """即使模型替身全部成功,日志进程失败也不能返回成功."""
+        deploy, environment, _, _ = self.make_shell_environment(host=True)
+        writer = self.work / "commands/tee"
+        writer.write_text("#!/bin/bash\ncat\nexit 9\n")
+        writer.chmod(0o755)
+        for phase in ("compile", "evaluate"):
+            with self.subTest(phase=phase):
+                result = subprocess.run(["bash", str(deploy / f"{phase}.sh")],
+                                        env=environment, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 9)
+
     def test_board_compile_and_full_return(self):
         """真实板端总入口顺序执行 13 模型,全量末尾回传不再次触发 compile."""
         deploy, environment, log, models = self.make_shell_environment()
