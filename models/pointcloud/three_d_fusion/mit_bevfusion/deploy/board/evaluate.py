@@ -12,6 +12,7 @@ from dataset import load_frame
 from pipeline import Pipeline
 from scoring import format_predictions, score_predictions
 from tools.board import context
+from tools.evaluation import is_test, select_samples
 from tools.runtime import peak_rss_kib
 
 
@@ -35,18 +36,21 @@ def evaluate_dataset(models, dataset, samples, predictions_path, floating=False)
     pipeline = Pipeline(models, floating=floating, verbose=False)
     predictions, elapsed, npu_elapsed = {}, [], []
     try:
-        print("[评价预热] 一帧完整链路,不计入性能统计.", flush=True)
-        pipeline(load_frame(dataset, samples[0]))
+        if not is_test():
+            print("[评价预热] 一帧完整链路,不计入性能统计.", flush=True)
+            pipeline(load_frame(dataset, samples[0]))
         for frame in tqdm(samples, desc="BEVFusion FP32" if floating else "BEVFusion CPU+NPU"):
-            boxes, scores, labels, milliseconds, npu = pipeline(load_frame(dataset, frame), measure=True)
+            boxes, scores, labels, milliseconds, npu = pipeline(load_frame(dataset, frame), measure=not is_test())
             predictions[frame["token"]] = format_predictions(frame, boxes, scores, labels)
             elapsed.append(milliseconds)
             npu_elapsed.append(npu)
     finally:
         pipeline.close()
-    rss = peak_rss_kib() / 1024
+    rss = None if is_test() else peak_rss_kib() / 1024
     predictions_path.parent.mkdir(parents=True, exist_ok=True)
     predictions_path.write_text(json.dumps(predictions), encoding="utf-8")
+    if is_test():
+        return predictions, None, None, None
     return predictions, float(np.mean(elapsed)), float(np.mean(npu_elapsed)), rss
 
 
@@ -57,12 +61,17 @@ def main():
     from tqdm import tqdm
 
     ctx = context(__file__, new_run=True)
-    manifest = json.loads((ctx.dataset / "samples.json").read_text(encoding="utf-8"))
+    manifest_path = ctx.root / "board/compile_samples.json" if is_test() else ctx.dataset / "samples.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     samples = manifest["frames"]
-    if (manifest["version"], manifest["split"], len(samples)) != ("v1.0-trainval", "val", 6019):
+    expected_count = min(100, 81 if ctx.config["data"]["version"] == "v1.0-mini" else 6019) if is_test() else 6019
+    expected_version = ctx.config["data"]["version"] if is_test() else "v1.0-trainval"
+    expected_split = ctx.config["data"]["split"] if is_test() else "val"
+    if (manifest["version"], manifest["split"], len(samples)) != (expected_version, expected_split, expected_count):
         raise ValueError("正式评价仅接受 v1.0-trainval/val 完整 6019 帧.")
     tokens = [frame["token"] for frame in samples]
-    if len(set(tokens)) != 6019 or not (ctx.dataset / "ground_truth.json").is_file():
+    ground_truth = ctx.root / "board/compile_ground_truth.json" if is_test() else ctx.dataset / "ground_truth.json"
+    if len(set(tokens)) != expected_count or not ground_truth.is_file():
         raise ValueError("完整标注缺失或评价样本重复.")
     for frame in tqdm(samples, desc="评价输入预检"):
         names = [frame["lidar"], *(item["path"] for item in frame["sweeps"]),
@@ -70,16 +79,23 @@ def main():
         if any(not (ctx.dataset / name).is_file() for name in names):
             raise FileNotFoundError(f"样本资源不完整: {frame['token']}.")
     models = ctx.root / "models"
+    samples = select_samples(samples, "mit_bevfusion", key=lambda frame: frame["token"])
+    tokens = [frame["token"] for frame in samples]
     model_identity = identity(models)
     reference_path = models / "onnx_reference.json"
     reference = None
-    if reference_path.is_file():
+    if reference_path.is_file() and not is_test():
         reference = json.loads(reference_path.read_text(encoding="utf-8"))
         if reference["identity"] != model_identity or reference["sample_tokens"] != tokens:
             raise ValueError("已有 FP32 参考与当前模型或完整样本不匹配.")
     predictions, elapsed, npu, rss = evaluate_dataset(
         models, ctx.dataset, samples, ctx.result / "predictions.json")
-    accuracy = score_predictions(ctx.dataset / "ground_truth.json", predictions)
+    accuracy = score_predictions(ground_truth, predictions)
+    if is_test():
+        report = {"identity": model_identity, "sample_tokens": tokens, "accuracy": accuracy}
+        (ctx.work / "compile_accuracy.json").write_text(
+            json.dumps(report, ensure_ascii=False, allow_nan=False), encoding="utf-8")
+        return
     files = [models / item["file"] for item in json.loads((models / "contract.json").read_text())["stages"].values()]
     files.extend(models / name for name in ("sparse_weights.npz", "geometry.npz"))
     report = {"model": "MIT BEVFusion camera+lidar swint_v0p075", "run_id": ctx.run_id,

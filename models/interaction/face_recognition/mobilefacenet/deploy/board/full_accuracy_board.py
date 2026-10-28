@@ -11,7 +11,7 @@ import numpy as np
 
 from tools.board import configure_parser, inference_records
 
-from tools.evaluation import lfw_pairs, result_status, scope_metadata
+from tools.evaluation import is_test, lfw_pairs, result_status, scope_metadata
 
 
 EXPECTED_PAIRS = 6000
@@ -143,16 +143,16 @@ def evaluate(args: argparse.Namespace) -> None:
         if index % 100 == 0 or index == len(names):
             print(f"[评测] LFW {index}/{len(names)}", flush=True)
     verification, details = evaluate_pairs(rows, features)
-    times = [row["npu_ms"] for row in records.values()]
+    times = [] if is_test() else [row["npu_ms"] for row in records.values()]
     report = {
         "status": result_status(), **scope_metadata(),
         "model": "mobilefacenet", "run_id": args.run_id,
         "dataset": "LFW_upstream_MTCNN_5_point_aligned",
         "input_protocol": "RGB_ImageNet_normalize_aligned_112x112",
         "distinct_images": len(names), **verification,
-        "backend": "python_neuron_runtime_hw", "npu_mean_ms": float(np.mean(times)),
-        "npu_p95_ms": float(np.percentile(times, 95)),
-        "peak_rss_kib": max(row["peak_rss_kib"] for row in records.values()),
+        "backend": "python_neuron_runtime_hw", "npu_mean_ms": None if is_test() else float(np.mean(times)),
+        "npu_p95_ms": None if is_test() else float(np.percentile(times, 95)),
+        "peak_rss_kib": None if is_test() else max(row["peak_rss_kib"] for row in records.values()),
         "timing_scope": "常驻 Python 模型,单独统计 NeuronRuntime_inference 调用",
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

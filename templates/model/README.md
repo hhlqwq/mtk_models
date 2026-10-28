@@ -47,3 +47,9 @@ bash compile.sh
 `results/summary.json` 保存真实汇总,未完成评价不得填入示例数字.选取少量有来源和许可的输入,展示本次真实输出.全量数据和原始权重保存在 NAS,不进入 Git.
 
 NAS 资源统一按 original/ 保存原始权重和来源,build/ 保存转换中间产物,最外层只放当前导出 ONNX 和最终 DLA;多文件部署包使用 models/.评价过程和缓存写主机本地日期临时目录,板端使用本模型 work/ 覆盖.
+
+### compile 子集精度检查
+
+compile.sh 在固定验证子集上计算任务精度,终端显示同一子集的浮点精度、NPU 精度及变化,不改写 results/summary.json.图像任务默认 100 张;LFW 保留十折共 100 对,ESC-50 保留 50 类和 5 折共 250 条音频,Whisper 使用固定 5 条音频,LLM 使用配置指定的 MMLU 小题集与 WikiText2 少量块,BEVFusion 最多使用 100 帧,划分不足 100 帧时使用全部帧并明确显示实际数量.子集成绩只用于快速检查,不能代替全量成绩.
+
+任务精度与数值误差分开计算: CosSim、RMSE、NRMSE 仍只比较最多 5 次输入,不保存整个子集的浮点输出.主机参考保存在本地 compile 临时目录,上传板端 board/;预测及评分中间数据复用本模型 work/.正式 evaluate.sh 才更新 results/summary.json 并统计性能与 RSS.

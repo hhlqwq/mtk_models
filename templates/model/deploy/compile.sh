@@ -17,6 +17,7 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     done
     echo "[小批量 1/2] 已部署模型推理."
     python3 "${SCRIPT_DIR}/board/infer.py"
+    python3 "${SCRIPT_DIR}/board/compile_accuracy.py"
     echo "[小批量 2/2] 保存 README 所需的展示示例."
     python3 "${SCRIPT_DIR}/board/render_examples.py"
 else

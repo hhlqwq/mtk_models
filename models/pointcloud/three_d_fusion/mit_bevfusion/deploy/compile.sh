@@ -10,6 +10,7 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export OPENBLAS_NUM_THREADS=4
     exec 9>"${SCRIPT_DIR}/.run.lock"
     flock -n 9 || { echo "[错误] 本模型已有任务运行." >&2; exit 2; }
+    python3 "${SCRIPT_DIR}/board/compile_accuracy.py"
     python3 "${SCRIPT_DIR}/board/check.py"
     echo "[完成] 一帧完整通路检查与示例,未生成正式评价报告."
 else
@@ -20,4 +21,5 @@ else
     python "${SCRIPT_DIR}/host/prepare.py"
     echo "[容器 3/3] 上传完整 Python 部署包."
     python "${SCRIPT_DIR}/host/upload.py"
+    python "${MTK_MODELS_ROOT}/tools/compile_accuracy.py" "${SCRIPT_DIR}"
 fi

@@ -8,6 +8,7 @@ import sys
 import numpy as np
 
 from tools.deploy import context
+from tools.evaluation import is_test, select_samples
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
 from dataset import CHANNELS, load_frame, transform
@@ -83,10 +84,11 @@ def main():
     args = parser.parse_args()
     ctx = context(__file__)
     data = ctx.config["data"]
-    if args.evaluate and (data["version"], data["split"]) != ("v1.0-trainval", "val"):
+    if args.evaluate and not is_test() and (data["version"], data["split"]) != ("v1.0-trainval", "val"):
         raise ValueError("正式评价需在本模型配置中选择 v1.0-trainval/val 及已解压的数据根目录.")
     frames = index_frames(ctx.dataset, data["version"], data["split"])
     if args.evaluate:
+        frames = select_samples(frames, "mit_bevfusion", key=lambda frame: frame["token"])
         for number, frame in enumerate(frames, 1):
             files = [frame["lidar"], *(item["path"] for item in frame["sweeps"]),
                      *(item["path"] for item in frame["cameras"])]
@@ -97,7 +99,7 @@ def main():
         target = ctx.work / "samples.json"
         target.write_text(json.dumps({"version": data["version"], "split": data["split"], "frames": frames}),
                           encoding="utf-8")
-        prepare_ground_truth(ctx.dataset, ctx.work / "ground_truth.json")
+        prepare_ground_truth(ctx.dataset, ctx.work / "ground_truth.json", data["version"], data["split"])
         print("[评价输入] 已生成完整清单,请与已解压数据一起放入板端配置的数据集目录.", flush=True)
     else:
         np.savez(ctx.work / "sample.npz", **load_frame(ctx.dataset, frames[0]))
@@ -105,15 +107,15 @@ def main():
         print(f"[编译输入] 一帧 mini_val,token={frames[0]['token']}.", flush=True)
 
 
-def prepare_ground_truth(root, target):
+def prepare_ground_truth(root, target, version="v1.0-trainval", split="val"):
     """主机用官方 devkit 导出 val 标注及 bike-rack 过滤输入,降低板端内存需求."""
     from nuscenes import NuScenes
     from nuscenes.eval.common.loaders import add_center_dist, load_gt
     from nuscenes.eval.detection.data_classes import DetectionBox
 
     print("[官方标注] 在主机加载 trainval 数据库,导出评分必要字段.", flush=True)
-    database = NuScenes(version="v1.0-trainval", dataroot=str(root), verbose=True)
-    boxes = add_center_dist(database, load_gt(database, "val", DetectionBox, verbose=True))
+    database = NuScenes(version=version, dataroot=str(root), verbose=True)
+    boxes = add_center_dist(database, load_gt(database, split, DetectionBox, verbose=True))
     bikeracks = {}
     for token in boxes.sample_tokens:
         annotations = [database.get("sample_annotation", key) for key in database.get("sample", token)["anns"]]

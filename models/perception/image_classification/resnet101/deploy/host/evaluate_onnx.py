@@ -11,7 +11,7 @@ import PIL
 from tqdm import tqdm
 
 from tools.deploy import arguments, reference_path
-from tools.evaluation import is_test
+from tools.evaluation import is_test, select_samples, scope_metadata
 from tools.files import read_json, require_file, sha256
 from tools.output_metrics import record_reference, finish_reference
 
@@ -24,15 +24,13 @@ from resnet101 import (
 
 def main() -> None:
     """只推理已有浮点模型,不触发导出、量化、编译或板端任务."""
-    if is_test():
-        raise ValueError("ResNet101 正式参考只支持完整 50000 张验证集.")
     ctx = arguments(__file__)
     source = require_file(ctx.output / "resnet101.onnx")
     metadata = read_json(ctx.output / "build/quantization.json")
     validate_contract(metadata)
     if sha256(source) != metadata["onnx_sha256"]:
         raise ValueError("已有 ONNX 与部署模型的量化来源不一致.")
-    paths = validation_images(ctx.dataset)
+    paths = select_samples(validation_images(ctx.dataset), MODEL, key=lambda path: path.name)
     labels = read_labels(ctx.dataset / "val_labels_0based.txt")
     session = ort.InferenceSession(str(source), providers=["CPUExecutionProvider"])
     inputs, outputs = session.get_inputs(), session.get_outputs()
@@ -41,7 +39,7 @@ def main() -> None:
             or outputs[0].shape != [1, 1000] or outputs[0].type != "tensor(float)"):
         raise ValueError("FP32 ONNX 张量契约不符.")
     top1 = 0
-    for path, label in tqdm(zip(paths, labels), total=50000, desc="ResNet101 FP32 Top-1 参考"):
+    for path, label in tqdm(zip(paths, labels), total=len(paths), desc="ResNet101 FP32 Top-1 参考"):
         tensor = preprocess(path)
         logits = session.run([outputs[0].name], {inputs[0].name: tensor})[0]
         record_reference(source, [tensor], {"output": logits})
@@ -50,7 +48,7 @@ def main() -> None:
         top1 += int(np.argmax(logits[0]) == label)
     report = {
         "model": MODEL, "weights": WEIGHTS, "status": "complete",
-        "evaluation_scope": "full", "protocol": PROTOCOL, "samples": len(paths),
+        **scope_metadata(), "protocol": PROTOCOL, "samples": len(paths),
         "source": "locally_exported_official_torchvision_onnx",
         "onnx_sha256": metadata["onnx_sha256"], "labels_sha256": label_signature(labels),
         "pillow": PIL.__version__, "onnxruntime": ort.__version__,

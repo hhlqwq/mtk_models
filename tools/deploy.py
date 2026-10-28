@@ -24,7 +24,8 @@ def context(entry, config_path=None, work_dir=None):
             or Path(entry).stem.startswith("evaluate") or Path(entry).stem == "upload_reference"):
         from datetime import date
 
-        stage = "compile" if os.environ.get("MTK_PREPARE_OUTPUT_REFERENCE") == "1" else "evaluate"
+        stage = "compile" if (os.environ.get("MTK_PREPARE_OUTPUT_REFERENCE") == "1"
+                              or os.environ.get("MTK_COMPILE_ACCURACY") == "1") else "evaluate"
         work = Path("/tmp/hailongcodex") / date.today().isoformat() / config["name"] / stage
     work.mkdir(parents=True, exist_ok=True)
     return argparse.Namespace(config=config, config_path=config_path, model=model,
@@ -102,7 +103,7 @@ def upload(ctx, model_files, extra_files=()):
     groups = {
         "": [ctx.model / "deploy/compile.sh", ctx.model / "deploy/evaluate.sh", snapshot],
         "models": model_files,
-        "board": [*code, ctx.repo / "tools/summary.py"],
+        "board": [*code, ctx.repo / "tools/summary.py", ctx.repo / "tools/compile_accuracy.py"],
         "board/tools": [ctx.repo / "tools" / name for name in
             ("__init__.py", "board.py", "evaluation.py", "files.py", "coco.py", "runtime.py", "output_metrics.py")],
         "examples/input": [*sorted((ctx.model / "examples/input").glob("sample_*"))],

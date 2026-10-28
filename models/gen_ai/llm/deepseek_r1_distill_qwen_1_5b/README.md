@@ -68,3 +68,7 @@ compile.sh 独立对固定少量输入比较浮点与 NPU 输出,在终端显示
 - `DeepSeek-R1-Distill-Qwen-1.5B_asym4W_sym16A_28layer_decode_1t_1024c.dla`
 
 文件保存在对应的 `1024c/` 目录,加载路径由 `manifest.json` 的 `model_files` 指定.更换上下文或 Prefill 长度时按实际配置命名;历史结果中的旧文件名仅表示当时的产物.
+
+### compile 子集精度检查
+
+compile.sh 使用固定的 配置指定的 MMLU 小题集和 WikiText2 少量块,复用正式评价协议,在终端打印同子集浮点精度、NPU 精度及变化.子集成绩只用于快速检查,不更新 results/summary.json;过程数据覆盖保存在本模型 work/.CosSim、RMSE、NRMSE 仍只比较固定少量输入.详见[输出误差统计](../../../../docs/output_metrics.md).

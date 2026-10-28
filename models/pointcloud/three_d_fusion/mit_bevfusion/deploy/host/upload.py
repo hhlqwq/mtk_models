@@ -23,7 +23,7 @@ def main():
             model_files.append(package / item["file"])
     groups = {"": [ctx.model / "deploy/compile.sh", ctx.model / "deploy/evaluate.sh",
                      ctx.model / "deploy/requirements-evaluate.txt", config],
-              "models": model_files, "board": list((ctx.model / "deploy/board").glob("*.py")),
+              "models": model_files, "board": [*list((ctx.model / "deploy/board").glob("*.py")), ctx.repo / "tools/compile_accuracy.py"],
               "board/tools": [ctx.repo / "tools" / name for name in
                               ("__init__.py", "runtime.py", "board.py", "evaluation.py", "files.py", "output_metrics.py")],
               "examples/input": [ctx.work / "sample.npz", ctx.work / "sample.json"]}

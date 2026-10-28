@@ -13,27 +13,17 @@ from resnet101 import (
     validate_contract, validation_images,
 )
 from tools.board import context
-from tools.evaluation import is_test
+from tools.evaluation import is_test, select_samples
 from tools.files import read_json, require_file, sha256
 from tools.runtime import Runtime, peak_rss_kib, quantize
 from tools.output_metrics import OutputComparison
 
 
 def input_images(ctx) -> list[tuple[str, Path]]:
-    """示例只读取已打包的三张输入,正式评价要求完整验证集."""
-    if not is_test():
-        return [(path.name, path) for path in validation_images(ctx.dataset)]
-    manifest = read_json(ctx.root / "examples/input/samples.json")
-    samples = manifest["samples"]
-    if len(samples) != 3:
-        raise ValueError("ResNet101 编译检查固定使用三张示例.")
-    images = []
-    for index, sample in enumerate(samples, 1):
-        name = f"ILSVRC2012_val_{index:08d}.JPEG"
-        if Path(sample["image"]).name != name or sample["file"] != f"sample_{index}.JPEG":
-            raise ValueError("展示输入不是约定的 ImageNet 前三张图片.")
-        images.append((name, require_file(ctx.root / "examples/input" / sample["file"])))
-    return images
+    """从验证集选择固定子集或完整范围,展示图片另由渲染步骤筛选."""
+    paths = select_samples(validation_images(ctx.dataset), MODEL, key=lambda path: path.name)
+    return [(path.name, path) for path in paths]
+
 
 
 def main() -> None:

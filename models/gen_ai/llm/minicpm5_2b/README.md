@@ -8,7 +8,7 @@
 
 ## 执行范围
 
-先在已有编译容器执行 `bash deploy/compile.sh`,完成转换、量化、编译与上传后结束.随后登录开发板,在部署目录执行 `bash compile.sh`,做少量通路检查并保存 README 示例到 `examples/output/`.编译服务器不自动调用板端推理,该阶段不计算或发布精度、性能和峰值 RSS 报告.
+先在已有编译容器执行 `bash deploy/compile.sh`,完成转换、量化、编译与上传后结束.随后登录开发板,在部署目录执行 `bash compile.sh`,做少量通路检查并保存 README 示例到 `examples/output/`.编译服务器不自动调用板端推理,该阶段计算并打印子集任务精度,不发布正式报告,不统计性能和峰值 RSS.
 
 正式评价使用独立的 `evaluate.sh`: 容器端只计算已有浮点模型的同协议参考及必要评价输入,资源单独放入已有部署包后,板端运行 `bash evaluate.sh`,统计精度、性能和推理进程峰值 RSS.正式结果只写入 `results/summary.json`,不重新量化或编译.板端预测、日志及内部指标统一位于本模型部署目录的 work/,每次开始推理时覆盖上次中间结果.详见[板端规范](../../../../docs/genio_720.md).
 
@@ -99,3 +99,7 @@ compile.sh 独立对固定少量输入比较浮点与 NPU 输出,在终端显示
 - `MiniCPM5-2B_asym4W_sym16A_42layer_decode_1t_1024c.dla`
 
 文件保存在对应的 `1024c/` 目录,加载路径由 `manifest.json` 的 `model_files` 指定.更换上下文或 Prefill 长度时按实际配置命名;历史结果中的旧文件名仅表示当时的产物.
+
+### compile 子集精度检查
+
+compile.sh 使用固定的 配置指定的 MMLU 小题集和 WikiText2 少量块,复用正式评价协议,在终端打印同子集浮点精度、NPU 精度及变化.子集成绩只用于快速检查,不更新 results/summary.json;过程数据覆盖保存在本模型 work/.CosSim、RMSE、NRMSE 仍只比较固定少量输入.详见[输出误差统计](../../../../docs/output_metrics.md).

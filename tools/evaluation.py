@@ -7,9 +7,9 @@ import os
 
 
 LIMITS = {"fastsam": 100, "yolov5s": 100, "yolov8n": 100,
-          "rtmpose_body2d": 100, "vit_base_patch16_224": 200,
+          "resnet101": 100, "rtmpose_body2d": 100, "vit_base_patch16_224": 100,
           "mobilefacenet": 100, "depth_anything_v2_small": 100,
-          "yamnet": 250, "whisper_tiny": 5}
+          "yamnet": 250, "whisper_tiny": 5, "mit_bevfusion": 100}
 COCO_EXAMPLES = (139, 285, 785, 210299, 252219, 481386)
 SPEECH_EXAMPLES = ("1089-134686-0000", "1188-133604-0000")
 
@@ -79,7 +79,7 @@ def select_samples(items, model, *, key=lambda value: value, required=()):
     values = list(items)
     if not is_test():
         return values
-    return fixed_subset(values, LIMITS[model], key=key, required=required)
+    return fixed_subset(values, min(LIMITS[model], len(values)), key=key, required=required)
 
 
 def lfw_pairs(rows):

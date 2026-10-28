@@ -82,7 +82,7 @@ def main():
     args = parser.parse_args()
     mode = "test" if is_test() else "full"
     args.output = args.output or ctx.work / "evaluation" / mode / args.mode
-    if args.mode == "onnx" and args.reference is None:
+    if args.mode == "onnx" and args.reference is None and not is_test():
         args.reference = ctx.work / "evaluation" / mode / "tensorflow"
     evaluate(args)
     if not is_test() and args.mode == "onnx":

@@ -9,7 +9,7 @@ import statistics
 from resnet101 import MODEL, PROTOCOL, WEIGHTS, label_signature, read_labels, validate_contract
 from summary import publish
 from tools.board import context
-from tools.evaluation import is_test
+from tools.evaluation import is_test, select_samples, scope_metadata
 from tools.files import read_json, sha256
 
 
@@ -35,9 +35,28 @@ def matched_reference(ctx, metadata: dict, labels_digest: str):
 
 def main() -> None:
     """评分不补跑推理,完整覆盖后才发布一个报告."""
-    if is_test():
-        raise ValueError("编译示例不得发布正式评价报告.")
     ctx = context(__file__)
+    if is_test():
+        labels = read_labels(ctx.dataset / "val_labels_0based.txt")
+        selected = select_samples(list(range(len(labels))), MODEL)
+        rows = [json.loads(line) for line in
+                (ctx.work / "predictions.jsonl").read_text(encoding="utf-8").splitlines()]
+        if (len(rows) != len(selected) or any(
+                row.get("index") != position or row.get("image") !=
+                f"ILSVRC2012_val_{index + 1:08d}.JPEG" or
+                row.get("backend") != "python_neuron_runtime_hw"
+                for position, (index, row) in enumerate(zip(selected, rows)))):
+            raise ValueError("ResNet 子集预测覆盖或来源不匹配.")
+        # 样本指纹使用图片名称,与主机及推理阶段完全一致.
+        from tools.evaluation import record_selection
+
+        record_selection(row["image"] for row in rows)
+        report = {"metric": "Top-1", "accuracy": sum(
+            row["top5"][0] == labels[index] for index, row in zip(selected, rows)) / len(rows),
+            "samples": len(rows), **scope_metadata()}
+        (ctx.work / "summary.json").write_text(
+            json.dumps(report, ensure_ascii=False, allow_nan=False), encoding="utf-8")
+        return
     metadata = read_json(ctx.root / "models/quantization.json")
     validate_contract(metadata)
     run = read_json(ctx.work / "inference.json")

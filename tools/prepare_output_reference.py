@@ -1,10 +1,13 @@
 """compile 后准备固定小样本数值参考,仅保存在主机本地并上传板端."""
 
 from datetime import date
+import io
 import json
 import os
 from pathlib import Path
 import runpy
+import shlex
+import subprocess
 import sys
 
 import numpy as np
@@ -14,6 +17,7 @@ from tools.output_metrics import (
     ReferenceComplete, ReferenceWriter, finish_reference, record_reference,
 )
 from tools.process import run_command
+from tools.files import sha256
 
 
 def classification(ctx):
@@ -37,9 +41,37 @@ def classification(ctx):
         if not path.is_file():
             raise FileNotFoundError(f"分类小样本输入不存在: {path}.")
     source = ctx.output / filename
+    board_inputs = None
+    if ctx.config["name"] == "vit_base_patch16_224":
+        # OpenCV 在不同 CPU 上的缩放结果可能不同,用板端实际前处理生成数值参考.
+        script = "\n".join((
+            "import hashlib, io, json, sys",
+            "from pathlib import Path",
+            "import numpy as np",
+            f"root = Path({ctx.config['board']['deploy_dir']!r})",
+            "sys.path.insert(0, str(root / 'board'))",
+            "from infer import floating_preprocess",
+            "config = json.loads((root / 'config.json').read_text())",
+            "images = Path(config['board']['dataset_dir'])",
+            "images = images / 'val' if (images / 'val').is_dir() else images / 'ILSVRC2012_img_val'",
+            f"paths = [images / f'ILSVRC2012_val_{{index:08d}}.JPEG' for index in range(1, {count + 1})]",
+            "values = {path.name: floating_preprocess(path).astype(np.float32) for path in paths}",
+            "values['files'] = np.array(json.dumps({path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}))",
+            "buffer = io.BytesIO()",
+            "np.savez(buffer, **values)",
+            "sys.stdout.buffer.write(buffer.getvalue())",
+        ))
+        payload = subprocess.check_output([
+            "ssh", "-o", "BatchMode=yes", os.environ["MTK_BOARD_HOST"],
+            "PYTHONDONTWRITEBYTECODE=1 python3 -c " + shlex.quote(script)])
+        board_inputs = np.load(io.BytesIO(payload), allow_pickle=False)
+        identities = json.loads(str(board_inputs["files"]))
+        if any(identities.get(path.name) != sha256(path) for path in paths):
+            raise ValueError("ViT 数值参考的主机和板端原始图片不一致.")
     model = ort.InferenceSession(str(source), providers=["CPUExecutionProvider"])
     for path in paths:
-        tensor = np.asarray(preprocess(path), dtype=np.float32)
+        tensor = (board_inputs[path.name] if board_inputs is not None
+                  else np.asarray(preprocess(path), dtype=np.float32))
         record_reference(source, [tensor], {"output": model.run(None, {model.get_inputs()[0].name: tensor})[0]})
 
 

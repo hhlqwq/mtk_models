@@ -78,6 +78,12 @@ def score_predictions(ground_truth, predictions):
 
     with open(ground_truth, encoding="utf-8") as stream:
         inputs = json.load(stream)
+    from tools.evaluation import is_test
+
+    if is_test():
+        if not set(predictions).issubset(inputs["boxes"]):
+            raise ValueError("子集预测包含未知 nuScenes 帧.")
+        inputs["boxes"] = {key: inputs["boxes"][key] for key in predictions}
     gt = EvalBoxes.deserialize(inputs["boxes"], DetectionBox)
     pred = EvalBoxes.deserialize(predictions, DetectionBox)
     if set(gt.sample_tokens) != set(pred.sample_tokens):

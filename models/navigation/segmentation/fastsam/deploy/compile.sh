@@ -11,11 +11,13 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export PYTHONDONTWRITEBYTECODE=1
     exec 9>"${SCRIPT_DIR}/.run.lock"
     flock -n 9 || { echo "[错误] 本模型已有运行任务." >&2; exit 2; }
-    echo "[板端 1/2] 少量输入检查与硬件推理."
+    echo "[板端 1/2] 固定子集硬件推理."
     python3 "${SCRIPT_DIR}/board/infer.py"
+    echo "[子集精度] 计算任务精度并与同子集浮点参考对比."
+    python3 "${SCRIPT_DIR}/board/compile_accuracy.py"
     echo "[板端 2/2] 保存 README 展示示例."
     python3 "${SCRIPT_DIR}/board/render_examples.py"
-    echo "[编译完成] 通路和示例已准备,未生成精度、性能或 RSS 报告."
+    echo "[编译完成] 通路和示例已准备,子集精度仅在终端显示,未生成正式精度、性能或 RSS 报告."
 else
     # 编译容器: 各 Python 文件读取 YAML 并直接执行当前步骤.
     echo "[容器 1/4] 导出 FP32 ONNX."
@@ -28,5 +30,6 @@ else
     python "${SCRIPT_DIR}/host/upload.py"
     echo "[小样本数值参考] 仅准备固定少量输入的 CosSim、RMSE、NRMSE 对照."
     python "${MTK_MODELS_ROOT}/tools/prepare_output_reference.py" "${SCRIPT_DIR}"
+    python "${MTK_MODELS_ROOT}/tools/compile_accuracy.py" "${SCRIPT_DIR}"
     echo "[编译完成] 模型已上传,请在开发板执行 compile.sh 检查通路并生成展示示例."
 fi

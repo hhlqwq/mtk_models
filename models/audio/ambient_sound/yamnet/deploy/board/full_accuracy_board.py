@@ -55,6 +55,13 @@ def summarize(args):
     if scores.size != len(records) * 521 or not np.isfinite(scores).all():
         raise ValueError("板端分数覆盖不足或含非有限数.")
     scores = scores.reshape(len(records), 521)
+    if is_test():
+        report = {"model": "yamnet", "samples": len(records), **scope_metadata(),
+                  "metrics": metrics(scores, records, indices)}
+        args.output.mkdir(parents=True, exist_ok=True)
+        (args.output / "summary.json").write_text(
+            json.dumps(report, ensure_ascii=False, allow_nan=False), encoding="utf-8")
+        return
     audio = json.loads((args.work / "audio_manifest.json").read_text())
     if any(row.get("backend") != "python_neuron_runtime_hw" for row in audio):
         raise ValueError("必须使用本次 Python 推理的音频记录.")
