@@ -79,7 +79,7 @@ def metrics(name, report):
         return {"MMLU Accuracy": report["accuracy"]}, report["evaluated_questions"]
     if name == "mit_bevfusion":
         return report["accuracy"], len(report["sample_tokens"])
-    if name == "rtmpose_body2d":
+    if name == "rtmpose_body2d" and "metrics" in report:
         return {"WholeBody AP": report["metrics"]["wholebody"]["AP"]}, report["protocol"]["detections_before_nms"]
     if name == "yamnet":
         return {"ESC-50 macro AP (folds 2-5)": report["metrics"]["held_out"]["map"]}, report["samples"]
