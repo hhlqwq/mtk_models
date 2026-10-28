@@ -42,13 +42,13 @@ ONNX 文件按原始权重中的模型名称命名,去除权重校验后缀,例�
 
 所有模型的主机端完成转换、编译和上传后结束.请登录开发板,在终端提示的部署目录执行 `bash compile.sh`,完成少量通路检查并生成展示示例.
 
-`compile.sh` 按执行环境区分职责: 主机完成模型转换、量化、编译、打包及上传,不自动启动板端推理;用户在开发板执行同名入口检查通路并保存 README 所需的展示示例.上传完成只标为待板端检查,不代表已验证或已生成示例.主机还准备固定子集浮点精度参考;板端 compile 打印同子集任务精度与变化,不改写最终 results/summary.json.正式精度、性能及 RSS 报告仅由 evaluate.sh 生成.
+`compile.sh` 按执行环境区分职责: 主机完成模型转换、量化、编译、打包及上传,不自动启动板端推理;用户在开发板执行同名入口检查通路并保存 README 所需的展示示例.上传完成只标为待板端检查,不代表已验证或已生成示例.主机还准备固定子集浮点精度参考;板端 compile 打印同子集任务精度及损失,保存 results/summary_sub.json,不改写全量 results/summary.json.正式精度、性能及 RSS 报告仅由 evaluate.sh 生成.
 
 入口直接按顺序调用命令,只补充必要阶段提示,工具输出和错误直接显示在终端,不默认保存编译日志.公共环境在创建 Docker 时统一设置,板端路径使用公共工具.
 
 也可以在模型目录单独执行主流程文件,例如 YOLOv5s 在容器中执行 `python deploy/host/compile_model.py`,无需传配置路径.板端使用 `python3 board/infer.py` 做默认小批量推理,`python3 board/render_examples.py` 读取当天同模型、同范围的最近一次结果.独立评价文件默认全量,需要已有全量推理结果;缺少前一步产物时直接报错,不会补跑.完整评价仍运行 `bash evaluate.sh`.
 
-`evaluate.sh` 独立使用已有模型: 容器端生成浮点参考及必要评价输入,放入现有板端部署包后,板端执行 `bash evaluate.sh`,统一给出精度、性能和推理进程峰值 RSS,不重新量化或编译.ResNet101 的容器入口已自动上传参考,具体行为见模型说明.每个模型的 `results/` 只保留一个 `summary.json`,示例位于 `examples/`,板端预测、日志及中间报告位于本模型部署目录的 work/,每次推理覆盖.后续新增模型遵循同一方式,详见[板端规范](docs/genio_720.md).
+`evaluate.sh` 独立使用已有模型: 容器端生成浮点参考及必要评价输入,放入现有板端部署包后,板端执行 `bash evaluate.sh`,统一给出精度、性能和推理进程峰值 RSS,不重新量化或编译.ResNet101 的容器入口已自动上传参考,具体行为见模型说明.每个模型的 `results/` 保留全量 `summary.json` 和独立子集 `summary_sub.json`,示例位于 `examples/`,板端预测、日志及中间报告位于本模型部署目录的 work/,每次推理覆盖.后续新增模型遵循同一方式,详见[板端规范](docs/genio_720.md).
 
 新建编译环境时使用 `docker/build_image.sh` 和 `docker/create_container.sh`,具体资源要求见 Docker 文档.运行模型时不自动下载权重、数据集或安装依赖.
 

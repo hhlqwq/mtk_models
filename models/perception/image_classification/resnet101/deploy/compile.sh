@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 主机编译上传并准备子集参考,板端检查固定 100 张图像精度并生成示例.
+# 主机编译上传并准备子集参考,板端检查固定 1000 张图像精度并生成示例.
 set -euo pipefail
 export MTK_OUTPUT_METRICS=1
 export MTK_EVALUATION_WORK=0
@@ -11,13 +11,13 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export PYTHONDONTWRITEBYTECODE=1
     exec 9>"${SCRIPT_DIR}/.run.lock"
     flock -n 9 || { echo "[错误] 本模型已有运行任务." >&2; exit 2; }
-    echo "[板端 1/2] 固定 100 张验证图像推理."
+    echo "[板端 1/2] 固定 1000 张验证图像推理."
     python3 "${SCRIPT_DIR}/board/infer.py"
     echo "[子集精度] 计算任务精度并与同子集浮点参考对比."
     python3 "${SCRIPT_DIR}/board/compile_accuracy.py"
     echo "[板端 2/2] 保存分类展示示例."
     python3 "${SCRIPT_DIR}/board/render_examples.py"
-    echo "[完成] 示例已生成,子集精度仅在终端显示,未生成正式精度、性能或 RSS 报告."
+    echo "[完成] 示例已生成,子集精度和损失已保存至 results/summary_sub.json,全量 summary.json 未改写."
 else
     : "${MTK_MODELS_ROOT:?请先通过 docker/enter_container.sh 进入已有编译容器}"
     echo "[容器 1/4] 从本地官方权重导出 FP32 ONNX."

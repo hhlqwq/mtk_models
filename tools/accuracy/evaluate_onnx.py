@@ -19,7 +19,7 @@ import onnxruntime as ort
 import tqdm
 
 from tools.evaluation import (
-    SPEECH_EXAMPLES, coco_ids, is_test, result_status,
+    SPEECH_EXAMPLES, coco_ids, is_test, pose_image_ids, result_status,
     scope_metadata, select_samples,
 )
 from tools.output_metrics import ReferenceComplete, record_reference, finish_reference
@@ -84,13 +84,16 @@ def evaluate_vit(args, deploy: Path) -> tuple:
     session = make_session(args.onnx)
     correct = 0
     for index, path in enumerate(tqdm.tqdm(paths, desc="ONNX Top-1", unit="img")):
-        if path.name != f"ILSVRC2012_val_{index + 1:08d}.JPEG":
-            raise ValueError(f"ImageNet 图片编号不连续: {path}")
+        source_index = int(path.stem.rsplit("_", 1)[1]) - 1
+        if (not 0 <= source_index < len(labels)
+                or path.name != f"ILSVRC2012_val_{source_index + 1:08d}.JPEG"
+                or (not is_test() and source_index != index)):
+            raise ValueError(f"ImageNet 图片编号或全量顺序不匹配: {path}")
         tensor = preprocessing.floating_preprocess(path).astype(np.float32)
         scores = infer(session, tensor)[0].reshape(-1)
         if scores.size != 1000:
             raise ValueError("分类输出必须有 1000 个类别.")
-        correct += int(scores.argmax()) == labels[index]
+        correct += int(scores.argmax()) == labels[source_index]
     return "Top-1", correct / len(paths), len(paths)
 
 
@@ -202,7 +205,7 @@ def evaluate_pose(args, deploy: Path) -> tuple:
         "person_detection_results/COCO_val2017_detections_AP_H_56_person.json").read_text())
     if len(detections) != 104125:
         raise ValueError("人体检测框必须有 104125 个.")
-    selected_ids = set(coco_ids({item["image_id"] for item in detections}))
+    selected_ids = set(pose_image_ids(detections))
     ordered = sorted(((index, item) for index, item in enumerate(detections)
                       if item["image_id"] in selected_ids),
                      key=lambda item: (item[1]["image_id"], item[0]))

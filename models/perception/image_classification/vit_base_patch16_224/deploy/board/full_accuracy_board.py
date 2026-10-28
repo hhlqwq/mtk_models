@@ -54,12 +54,12 @@ def read_labels(path: Path) -> list[int]:
 def evaluate(args: argparse.Namespace) -> None:
     """校验全部 Python 输出并汇总精度与纯 NPU 耗时."""
     labels = read_labels(args.labels)
-    labels = select_samples(list(enumerate(labels)), "vit_base_patch16_224", key=lambda row: row[0])
-    labels = [row[1] for row in labels]
-    expected = len(labels)
+    selected = select_samples(list(enumerate(labels)), "vit_base_patch16_224",
+        key=lambda row: f"ILSVRC2012_val_{row[0] + 1:08d}.JPEG")
+    expected = len(selected)
     if is_test():
-        record_selection(f"ILSVRC2012_val_{index + 1:08d}.JPEG" for index in range(expected))
-    holdout_count = sum(not 1000 <= index < 1100 for index in range(expected))
+        record_selection(f"ILSVRC2012_val_{index + 1:08d}.JPEG" for index, _ in selected)
+    holdout_count = sum(not 1000 <= index < 1100 for index, _ in selected)
     top1 = top5 = holdout_top1 = holdout_top5 = 0
     timings = []
     with args.predictions.open(encoding="utf-8") as stream:
@@ -67,7 +67,8 @@ def evaluate(args: argparse.Namespace) -> None:
             if index >= expected:
                 raise ValueError("预测数量超过 50000.")
             record = json.loads(line)
-            expected_image = f"ILSVRC2012_val_{index + 1:08d}.JPEG"
+            source_index, label = selected[index]
+            expected_image = f"ILSVRC2012_val_{source_index + 1:08d}.JPEG"
             predictions = record.get("top5")
             if (record.get("backend") != "python_neuron_runtime_hw" or
                     record.get("index") != index or
@@ -82,11 +83,11 @@ def evaluate(args: argparse.Namespace) -> None:
             if timing is not None and (not math.isfinite(timing) or timing < 0):
                 raise ValueError(f"NPU 耗时非法: {index}.")
             timings.append(timing)
-            top1 += predictions[0] == labels[index]
-            top5 += labels[index] in predictions
-            if not 1000 <= index < 1100:
-                holdout_top1 += predictions[0] == labels[index]
-                holdout_top5 += labels[index] in predictions
+            top1 += predictions[0] == label
+            top5 += label in predictions
+            if not 1000 <= source_index < 1100:
+                holdout_top1 += predictions[0] == label
+                holdout_top5 += label in predictions
             if (index + 1) % 5000 == 0:
                 print(f"[METRIC] ViT {index + 1}/50000 条.", flush=True)
     if len(timings) != expected:

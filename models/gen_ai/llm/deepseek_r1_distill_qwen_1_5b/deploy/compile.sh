@@ -16,7 +16,7 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     echo "[子集精度] 计算任务精度并与同子集浮点参考对比."
     python3 "${SCRIPT_DIR}/board/compile_accuracy.py"
     echo "[板端 2/2] 生成文本示例已保存至 examples/output/."
-    echo "[编译完成] 通路和示例已准备,子集精度仅在终端显示,未生成正式精度、性能或 RSS 报告."
+    echo "[编译完成] 通路和示例已准备,子集精度和损失已保存至 results/summary_sub.json,全量 summary.json 未改写."
 else
     MODEL_BUILD_DIR="$(python "${MTK_MODELS_ROOT}/tools/storage.py" --print-build-dir "${SCRIPT_DIR}/../config.yaml")"
     mkdir -p "${MODEL_BUILD_DIR}"

@@ -12,7 +12,7 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     flock -n 9 || { echo "[错误] 本模型已有任务运行." >&2; exit 2; }
     python3 "${SCRIPT_DIR}/board/compile_accuracy.py"
     python3 "${SCRIPT_DIR}/board/check.py"
-    echo "[完成] 一帧完整通路检查与示例,未生成正式评价报告."
+    echo "[完成] 子集精度对比和示例已完成,子集结果见 results/summary_sub.json."
 else
     : "${MTK_MODELS_ROOT:?请先进入已有编译容器}"
     echo "[容器 1/3] 导出完整权重对应子图并编译 MDLA 5.3."

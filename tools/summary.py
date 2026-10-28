@@ -1,4 +1,4 @@
-"""评价完成后统一发布精度、性能与峰值 RSS,results 仅保留 summary.json."""
+"""评价完成后统一发布精度、性能与峰值 RSS,正式结果为 summary.json,保留独立 summary_sub.json."""
 
 import json
 import math
@@ -262,7 +262,7 @@ def publish(ctx, report):
         raise ValueError("正式报告不能是符号链接.")
     destination.write_text(text, encoding="utf-8")
     for path in previous:
-        if path.name == "summary.json":
+        if path.name in ("summary.json", "summary_sub.json"):
             continue
         if path.is_symlink() or not path.resolve().is_relative_to(directory.resolve()):
             raise ValueError(f"拒绝清理越界或链接文件: {path.name}.")

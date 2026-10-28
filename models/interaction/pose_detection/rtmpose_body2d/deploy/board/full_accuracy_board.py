@@ -14,7 +14,7 @@ from xtcocotools.cocoeval import COCOeval
 from tools.board import configure_parser
 
 from tools.evaluation import (
-    coco_ids, is_test, result_status, scope_metadata,
+    is_test, pose_image_ids, result_status, scope_metadata,
 )
 
 SIGMAS = np.asarray([
@@ -128,12 +128,12 @@ def format_results(grouped: dict[int, list[dict]]) -> list[dict]:
 
 
 def evaluate_component(coco_gt: COCO, coco_dt: COCO, name: str,
-                       iou_type: str, sigmas: np.ndarray) -> dict[str, float]:
+                       iou_type: str, sigmas: np.ndarray, image_ids=None) -> dict[str, float]:
     """执行 WholeBody COCOeval 并返回核心 AP."""
     print(f"[EVAL] {name}: {iou_type}")
     evaluator = COCOeval(coco_gt, coco_dt, iou_type, sigmas, use_area=True)
     evaluator.params.useSegm = None
-    evaluator.params.imgIds = coco_ids(coco_gt.getImgIds())
+    evaluator.params.imgIds = sorted(coco_gt.getImgIds() if image_ids is None else image_ids)
     evaluator.evaluate()
     evaluator.accumulate()
     evaluator.summarize()
@@ -145,8 +145,16 @@ def evaluate(args: argparse.Namespace) -> None:
     if SIGMAS.shape != (133,):
         raise RuntimeError(f"WholeBody sigma 数量错误: {SIGMAS.shape}")
     grouped = load_predictions(args.predictions)
-    if is_test() and len(grouped) != 100:
-        raise ValueError("姿态快速评测需要 100 张图片的全部检测框.")
+    image_ids = None
+    if is_test():
+        path = args.annotations.parent.parent / "person_detection_results/COCO_val2017_detections_AP_H_56_person.json"
+        detections = json.loads(path.read_text(encoding="utf-8"))
+        image_ids = pose_image_ids(detections)
+        selected = set(image_ids)
+        expected = {index for index, row in enumerate(detections) if row["image_id"] in selected}
+        actual = {int(row["detection_id"]) for rows in grouped.values() for row in rows}
+        if set(grouped) != set(image_ids) or actual != expected:
+            raise ValueError("姿态子集必须覆盖选定整图的全部人体框.")
     results = format_results(grouped)
     args.formatted.parent.mkdir(parents=True, exist_ok=True)
     args.formatted.write_text(
@@ -161,7 +169,7 @@ def evaluate(args: argparse.Namespace) -> None:
         with contextlib.redirect_stdout(log_file):
             for name, iou_type, sigmas in components:
                 metrics[name] = evaluate_component(
-                    coco_gt, coco_dt, name, iou_type, sigmas)
+                    coco_gt, coco_dt, name, iou_type, sigmas, image_ids)
     args.metrics.write_text(
         json.dumps({
             "status": result_status(), **scope_metadata(),

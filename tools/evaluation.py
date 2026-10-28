@@ -3,14 +3,16 @@
 from collections import defaultdict
 import hashlib
 import json
+import math
 import os
 
 
-LIMITS = {"fastsam": 100, "yolov5s": 100, "yolov8n": 100,
-          "resnet101": 100, "rtmpose_body2d": 100, "vit_base_patch16_224": 100,
-          "mobilefacenet": 100, "depth_anything_v2_small": 100,
-          "yamnet": 250, "whisper_tiny": 5, "mit_bevfusion": 100}
+LIMITS = {"fastsam": 300, "yolov5s": 300, "yolov8n": 300,
+          "resnet101": 1000, "rtmpose_body2d": 500, "vit_base_patch16_224": 1000,
+          "mobilefacenet": 500, "depth_anything_v2_small": 100,
+          "yamnet": 250, "whisper_tiny": 50, "mit_bevfusion": 100}
 COCO_EXAMPLES = (139, 285, 785, 210299, 252219, 481386)
+IMAGENET_EXAMPLES = tuple(f"ILSVRC2012_val_{index:08d}.JPEG" for index in range(1, 6))
 SPEECH_EXAMPLES = ("1089-134686-0000", "1188-133604-0000")
 
 
@@ -31,7 +33,7 @@ def scope_metadata():
     """记录评测范围与已选择样本的指纹,用于校验参考基准."""
     result = {"evaluation_scope": "subset" if is_test() else "full"}
     if is_test():
-        result["purpose"] = "流程验证,不代表全量精度"
+        result["purpose"] = "固定子集任务精度检查,不代表全量精度"
         digest = os.environ.get("MTK_EVAL_SAMPLE_SHA256")
         if digest:
             result["sample_ids_sha256"] = digest
@@ -49,7 +51,7 @@ def record_selection(values):
 
 
 def fixed_subset(items, count, *, key=lambda value: value, required=()):
-    """保留固定示例后按键补足数量,再按键排序,不随机抽样."""
+    """保留必要示例,其余名额在完整有序样本中等间隔抽取."""
     items = list(items)
     if len(items) < count:
         raise ValueError(f"快速模式需要至少 {count} 个样本,实际 {len(items)}.")
@@ -59,19 +61,54 @@ def fixed_subset(items, count, *, key=lambda value: value, required=()):
     wanted = {value for value in required if value in mapping}
     if len(wanted) > count:
         raise ValueError("固定示例数超过快速评测样本数.")
-    for value in sorted(mapping):
-        if len(wanted) >= count:
-            break
-        wanted.add(value)
+    remaining = [value for value in sorted(mapping) if value not in wanted]
+    slots = count - len(wanted)
+    step = max(1, len(remaining) // slots) if slots else 1
+    for index in range(slots):
+        wanted.add(remaining[index * step])
     selected = [mapping[value] for value in sorted(wanted)]
     record_selection(key(item) for item in selected)
     return selected
 
 
 def coco_ids(ids):
-    """COCO 快速模式固定 100 张,纳入检测、分割和姿态示例."""
+    """检测和分割固定 300 张,保留 README 示例并覆盖整个验证集."""
     values = sorted(int(value) for value in ids)
-    return fixed_subset(values, 100, required=COCO_EXAMPLES) if is_test() else values
+    return fixed_subset(values, 300, required=COCO_EXAMPLES) if is_test() else values
+
+
+def pose_image_ids(detections):
+    """按整图保留全部人体框,均匀取图直到至少覆盖 500 个人体实例."""
+    groups = defaultdict(int)
+    for row in detections:
+        groups[int(row["image_id"])] += 1
+    keys = sorted(groups)
+    if not is_test():
+        return keys
+    if not keys:
+        raise ValueError("姿态检测框列表为空.")
+    target = LIMITS["rtmpose_body2d"]
+    selected = set(COCO_EXAMPLES) & set(keys)
+    total = sum(groups[key] for key in selected)
+    remaining = [key for key in keys if key not in selected]
+    average = len(detections) / len(keys)
+    images = max(1, math.ceil(max(0, target - total) / average))
+    step = max(1, len(remaining) // images)
+    # 先跨整个划分均匀取图,不足时补齐;始终保留每张图的全部检测框.
+    candidates = remaining[::step]
+    sampled = set(candidates)
+    candidates.extend(key for key in remaining if key not in sampled)
+    for key in candidates:
+        if total >= target:
+            break
+        selected.add(key)
+        total += groups[key]
+    if total < target:
+        raise ValueError(f"姿态子集需要至少 {target} 个实例,实际 {total}.")
+    selected = sorted(selected)
+    record_selection(selected)
+    print(f"[姿态子集] {len(selected)} 张完整图像, {total} 个人体实例,目标至少 {target}.", flush=True)
+    return selected
 
 
 def select_samples(items, model, *, key=lambda value: value, required=()):
@@ -79,11 +116,13 @@ def select_samples(items, model, *, key=lambda value: value, required=()):
     values = list(items)
     if not is_test():
         return values
+    if model in ("resnet101", "vit_base_patch16_224"):
+        required = (*required, *IMAGENET_EXAMPLES)
     return fixed_subset(values, min(LIMITS[model], len(values)), key=key, required=required)
 
 
 def lfw_pairs(rows):
-    """每折分别选 5 对同人和 5 对异人,保持十折且覆盖已有示例."""
+    """每折均匀选 25 对同人和 25 对异人,十折共 500 对."""
     if not is_test():
         return rows
     groups = defaultdict(list)
@@ -92,7 +131,7 @@ def lfw_pairs(rows):
     selected = []
     for fold in range(1, 11):
         for label in (0, 1):
-            selected.extend(fixed_subset(groups[(fold, label)], 5,
+            selected.extend(fixed_subset(groups[(fold, label)], 25,
                 key=lambda row: int(row["pair_id"]), required=(0, 1, 300)))
     selected.sort(key=lambda row: int(row["pair_id"]))
     record_selection(row["pair_id"] for row in selected)

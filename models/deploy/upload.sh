@@ -7,8 +7,8 @@ source "${SCRIPT_DIR}/upload.local.sh"
 : "${MTK_RESULTS_HOST:?缺少本地回传账户}"
 : "${MTK_RESULTS_ROOT:?缺少编译服务器仓库根目录}"
 SCOPE="${1:-all}"
-if [[ "${SCOPE}" != all && "${SCOPE}" != examples ]] || (( $# > 1 )); then
-    echo "用法: bash upload.sh [examples]; 默认回传 summary.json 和 examples/output/." >&2
+if [[ "${SCOPE}" != all && "${SCOPE}" != examples && "${SCOPE}" != subset ]] || (( $# > 1 )); then
+    echo "用法: bash upload.sh [examples|subset]; 默认回传全量报告和已有子集报告,subset 回传子集报告,均附带示例." >&2
     exit 2
 fi
 if [[ "${MTK_RESULTS_ROOT}" != /* || "${MTK_RESULTS_ROOT}" == / ]]; then
@@ -52,7 +52,7 @@ for MODEL in "${MODELS[@]}"; do
     SOURCE="${MODELS_ROOT}/${MODEL##*/}"
     TARGET="${MTK_RESULTS_ROOT%/}/models/${MODEL}"
     echo "[回传 ${INDEX}/${#MODELS[@]}] ${MODEL##*/}"
-    if [[ -L "${SOURCE}/examples/output" || -L "${SOURCE}/results/summary.json" ]]; then
+    if [[ -L "${SOURCE}/examples/output" || -L "${SOURCE}/results/summary.json" || -L "${SOURCE}/results/summary_sub.json" ]]; then
         echo "[错误] 回传源不允许为符号链接: ${MODEL}." >&2
         exit 2
     fi
@@ -68,16 +68,24 @@ for MODEL in "${MODELS[@]}"; do
         echo "[缺失] ${MODEL}/examples/output/ 没有非空示例." >&2
         STATUS=1
     fi
+    REPORTS=()
     if [[ "${SCOPE}" == all ]]; then
-        if [[ -s "${SOURCE}/results/summary.json" ]]; then
+        REPORTS+=(summary.json)
+    fi
+    if [[ "${SCOPE}" == subset ]] || \
+            [[ "${SCOPE}" == all && -s "${SOURCE}/results/summary_sub.json" ]]; then
+        REPORTS+=(summary_sub.json)
+    fi
+    for REPORT in "${REPORTS[@]}"; do
+        if [[ -s "${SOURCE}/results/${REPORT}" ]]; then
             rsync -rlt --no-perms --omit-dir-times --protect-args --info=progress2 \
-                -e "${RSYNC_SSH}" "${SOURCE}/results/summary.json" \
-                "${MTK_RESULTS_HOST}:${TARGET}/results/summary.json"
+                -e "${RSYNC_SSH}" "${SOURCE}/results/${REPORT}" \
+                "${MTK_RESULTS_HOST}:${TARGET}/results/${REPORT}"
         else
-            echo "[缺失] ${MODEL}/results/summary.json 未生成,不回传空报告." >&2
+            echo "[缺失] ${MODEL}/results/${REPORT} 未生成,不回传空报告." >&2
             STATUS=1
         fi
-    fi
+    done
 done
 if (( STATUS == 0 )); then
     echo "[回传完成] 已同步 ${SCOPE} 范围的结果,未删除服务器其他文件."

@@ -1,4 +1,4 @@
-"""compile 固定子集任务精度,只打印对比并将必要过程数据保存在 work."""
+"""compile 两端评价同一子集,精度损失写入独立 summary_sub.json."""
 
 import json
 import math
@@ -13,6 +13,59 @@ from tools.files import read_json, sha256
 
 
 LLMS = ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b")
+
+
+def subset_report(reference, actual=None, quality=None):
+    """统一子集参考和板端报告,正的损失始终表示相对浮点变差."""
+    accuracy = {}
+    for name, baseline in reference["metrics"].items():
+        value = None if actual is None else actual[name]
+        if not math.isfinite(baseline) or (value is not None and not math.isfinite(value)):
+            raise ValueError("子集精度包含无效数值.")
+        higher_is_better = name != "WER"
+        loss = None if value is None else (
+            baseline - value if higher_is_better else value - baseline) * 100
+        accuracy[name] = {"fp32_accuracy": baseline, "npu_accuracy": value,
+                          "higher_is_better": higher_is_better,
+                          "accuracy_loss_percentage_points": loss}
+    result = {"model": reference["model"], "evaluation_scope": "subset",
+              "status": "float_reference_ready" if actual is None else "complete",
+              "samples": reference["samples"], "accuracy": accuracy,
+              "sample_unit": {"rtmpose_body2d": "person_instance", "mobilefacenet": "face_pair",
+                  "depth_anything_v2_small": "annotated_point_pair", "yamnet": "audio_clip",
+                  "whisper_tiny": "utterance", "mit_bevfusion": "frame",
+                  **{name: "question" for name in LLMS}}.get(reference["model"], "image"),
+              "sampling": "fixed_task_subset_v2",
+              "sample_ids_sha256": reference.get("sample_ids_sha256"),
+              "dla_artifacts": reference["dla_artifacts"],
+              "loss_definition": "正值表示 NPU 相对浮点精度下降,负值表示改善"}
+    for key in ("cases_sha256", "sample_tokens", "identity"):
+        if key in reference:
+            result[key] = reference[key]
+    if "quality" in reference:
+        baseline = reference["quality"]["perplexity"]
+        value = None if quality is None else quality["perplexity"]
+        if not math.isfinite(baseline) or baseline <= 0 or (
+                value is not None and (not math.isfinite(value) or value <= 0)):
+            raise ValueError("子集 PPL 包含无效数值.")
+        result["wikitext"] = {"scored_tokens": reference["quality"]["scored_tokens"],
+            "fp32_perplexity": baseline, "npu_perplexity": value,
+            "perplexity_increase": None if value is None else value - baseline,
+            "perplexity_increase_percent": None if value is None else (value / baseline - 1) * 100}
+    return result
+
+
+def save_subset(root, report):
+    """只覆盖本模型的子集摘要,不改写或清理正式全量摘要."""
+    root = Path(root).resolve()
+    directory = root / "results"
+    destination = directory / "summary_sub.json"
+    if directory.is_symlink() or destination.is_symlink():
+        raise ValueError("子集报告目录或文件不能是符号链接.")
+    text = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
+    directory.mkdir(parents=True, exist_ok=True)
+    destination.write_text(text, encoding="utf-8")
+    print(f"[子集报告] {destination}", flush=True)
 
 
 def run(path, *arguments):
@@ -68,7 +121,7 @@ def language(ctx, host):
             dataset=ctx.dataset / ctx.config["data"]["mmlu_test"], model=native.model,
             source_model=native.source, graph=graph, context=native.context,
             limit=1000 if name == "minicpm5_2b" else 0, seed=17,
-            test_questions=ctx.config["evaluation"].get("test_mmlu_questions", 16),
+            test_questions=ctx.config["evaluation"].get("test_mmlu_questions", 100),
             output=data / "mmlu"))
         evaluate_mmlu.evaluate(SimpleNamespace(
             backend="pytorch", data=data / "mmlu", model=native.model,
@@ -78,7 +131,7 @@ def language(ctx, host):
             model=native.model, corpus=ctx.dataset / ctx.config["data"]["wikitext_test"],
             output=data / "quality", backend="pytorch", tflite=graph.parent,
             decode_tflite=None, text_rows=128, full_test=False, blocks=None,
-            diagnostic_blocks=ctx.config["evaluation"].get("test_wikitext_blocks", 4),
+            diagnostic_blocks=ctx.config["evaluation"].get("test_wikitext_blocks", 16),
             decode_steps=0, skip_demo=True, device=ctx.config["evaluation"]["reference_device"],
             cpu_threads=8)
         evaluate_quality.evaluate(options)
@@ -151,6 +204,7 @@ def host_reference(deploy):
         reference.update(identity=report["identity"], sample_tokens=report["sample_tokens"])
     if not reference["dla_artifacts"]:
         raise FileNotFoundError("子集参考缺少已编译 DLA.")
+    save_subset(ctx.model, subset_report(reference))
     destination = ctx.config["board"]["deploy_dir"]
     host = os.environ["MTK_BOARD_HOST"]
     target = ctx.work / "compile_accuracy_reference.json"
@@ -177,7 +231,7 @@ def host_reference(deploy):
 
 
 def main():
-    """主机准备子集参考,板端计算同子集任务精度并仅打印差值."""
+    """主机准备子集参考,板端计算精度损失并保存独立子集报告."""
     if not is_test():
         raise ValueError("compile 子集评分不能从全量入口调用.")
     if len(sys.argv) > 1:
@@ -224,9 +278,10 @@ def main():
         baseline = reference["metrics"][metric]
         if not all(isinstance(item, (int, float)) and math.isfinite(item) for item in (value, baseline)):
             raise ValueError("子集精度含无效数值.")
+        loss = (value - baseline if metric == "WER" else baseline - value) * 100
         print(f"[子集精度] {name} {count} 个评价单位, {metric}: "
               f"浮点 {baseline:.6f}, NPU {value:.6f}, "
-              f"变化(NPU - 浮点) {(value - baseline) * 100:+.4f} 个百分点.", flush=True)
+              f"精度损失 {loss:+.4f} 个百分点(正值变差,负值改善).", flush=True)
     if quality is not None:
         if not all(math.isfinite(value) and value > 0 for value in (
                 quality["perplexity"], reference["quality"]["perplexity"])):
@@ -234,7 +289,10 @@ def main():
         print(f"[子集精度] WikiText2 {quality['scored_tokens']} 个 Token, PPL: "
               f"浮点 {reference['quality']['perplexity']:.6f}, NPU {quality['perplexity']:.6f}, "
               f"变化(NPU - 浮点) {quality['perplexity'] - reference['quality']['perplexity']:+.6f}.", flush=True)
-    print("[子集精度完成] 仅供快速检查,未改写 results/summary.json.", flush=True)
+    result = subset_report(reference, actual, quality)
+    result["run_id"] = ctx.run_id
+    save_subset(ctx.root, result)
+    print("[子集精度完成] 已保存 summary_sub.json,未改写全量 summary.json.", flush=True)
 
 
 if __name__ == "__main__":

@@ -38,7 +38,8 @@ def main() -> None:
     ctx = context(__file__)
     if is_test():
         labels = read_labels(ctx.dataset / "val_labels_0based.txt")
-        selected = select_samples(list(range(len(labels))), MODEL)
+        selected = select_samples(list(range(len(labels))), MODEL,
+            key=lambda index: f"ILSVRC2012_val_{index + 1:08d}.JPEG")
         rows = [json.loads(line) for line in
                 (ctx.work / "predictions.jsonl").read_text(encoding="utf-8").splitlines()]
         if (len(rows) != len(selected) or any(

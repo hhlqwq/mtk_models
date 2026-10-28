@@ -58,10 +58,10 @@ def prepare(args):
     rows = parquet.read_table(args.dataset).to_pylist()
     if len(rows) != 14042 or len({row["subject"] for row in rows}) != 57:
         raise ValueError("完整 MMLU 题数或学科数不符.")
-    test_questions = getattr(args, "test_questions", 16)
-    if not 1 <= test_questions <= len(rows):
-        raise ValueError("快速 MMLU 题数必须在有效题集范围内.")
-    selected = (sorted(random.Random(args.seed).sample(range(len(rows)), test_questions))
+    test_questions = getattr(args, "test_questions", 100)
+    if is_test() and not 57 <= test_questions <= len(rows):
+        raise ValueError("MMLU 子集至少需要 57 题以覆盖全部学科.")
+    selected = (select_questions(rows, test_questions, args.seed)
                 if is_test() else select_questions(rows, args.limit, args.seed))
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
     source_tokenizer = (AutoTokenizer.from_pretrained(args.source_model, local_files_only=True)
@@ -104,7 +104,7 @@ def prepare(args):
                 "scope": "smoke_subset" if is_test() else (
                     "first_round_stratified_subset" if args.limit else "full_test"),
                 "dataset_questions": len(rows), "sampling_seed": args.seed,
-                "sampling": "fixed_seed_smoke_subset" if is_test() else (
+                "sampling": "fixed_seed_stratified_subset" if is_test() else (
                     "all_test_questions" if args.limit == 0 else "proportional_subject_largest_remainder"),
                 "selected_source_question_ids": selected,
                 "questions": len(cases), "maximum_prompt_tokens": maximum,
@@ -496,9 +496,7 @@ def main():
     if is_test():
         args.output = args.output / "test"
         if args.backend == "prepare":
-            args.limit = 16
-        else:
-            args.diagnostic_questions = 16
+            args.test_questions = 100
     if not 0 <= args.diagnostic_questions <= 1000:
         parser.error("诊断题数须位于 [0,1000].")
     if args.backend == "prepare":

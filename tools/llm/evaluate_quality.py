@@ -175,7 +175,7 @@ def evaluate(args):
                     protocol.setdefault("decode_input_ids", []).append(ids[0].tolist())
                 all_logits = model(ids, use_cache=False).logits.float()
                 logits = all_logits[:, :127]
-                if args.diagnostic_blocks:
+                if args.diagnostic_blocks and os.environ.get("MTK_COMPILE_ACCURACY") != "1":
                     np.save(args.output / f"pytorch_logits_{index:03d}.npy",
                             logits[0].cpu().numpy())
                     np.save(args.output / f"pytorch_prefill_last_logits_{index:03d}.npy",

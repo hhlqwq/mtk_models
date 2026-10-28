@@ -39,7 +39,8 @@ def main() -> None:
             or outputs[0].shape != [1, 1000] or outputs[0].type != "tensor(float)"):
         raise ValueError("FP32 ONNX 张量契约不符.")
     top1 = 0
-    for path, label in tqdm(zip(paths, labels), total=len(paths), desc="ResNet101 FP32 Top-1 参考"):
+    for path in tqdm(paths, total=len(paths), desc="ResNet101 FP32 Top-1 参考"):
+        label = labels[int(path.stem.rsplit("_", 1)[1]) - 1]
         tensor = preprocess(path)
         logits = session.run([outputs[0].name], {inputs[0].name: tensor})[0]
         record_reference(source, [tensor], {"output": logits})

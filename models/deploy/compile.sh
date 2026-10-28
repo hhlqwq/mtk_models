@@ -73,5 +73,5 @@ if [[ "${LOCATION}" == 容器 ]]; then
     echo "[待板端检查] 尚未执行板端推理或生成展示示例."
 else
     echo "[少量样本完成] 所有模型入口执行结束,未执行全量评价."
-    bash "${SCRIPT_DIR}/upload.sh" examples
+    bash "${SCRIPT_DIR}/upload.sh" subset
 fi

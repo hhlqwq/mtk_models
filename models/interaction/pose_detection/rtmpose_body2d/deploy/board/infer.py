@@ -8,7 +8,7 @@ import numpy as np
 
 from rtmpose_utils import decode_prediction, preprocess_image
 from tools.board import context
-from tools.evaluation import coco_ids, is_test
+from tools.evaluation import is_test, pose_image_ids
 from tools.runtime import Runtime, peak_rss_kib, quantize
 from tools.output_metrics import OutputComparison
 
@@ -22,7 +22,7 @@ def main():
     detections = json.loads(path.read_text())
     if len(detections) != 104125:
         raise ValueError("人体检测框必须覆盖完整 104125 条记录.")
-    selected = set(coco_ids({int(item["image_id"]) for item in detections}))
+    selected = set(pose_image_ids(detections))
     rows = []
     for index, item in enumerate(detections):
         if item["category_id"] != 1 or len(item["bbox"]) != 4 or min(item["bbox"][2:]) <= 0:

@@ -50,6 +50,4 @@ NAS 资源统一按 original/ 保存原始权重和来源,build/ 保存转换中
 
 ### compile 子集精度检查
 
-compile.sh 在固定验证子集上计算任务精度,终端显示同一子集的浮点精度、NPU 精度及变化,不改写 results/summary.json.图像任务默认 100 张;LFW 保留十折共 100 对,ESC-50 保留 50 类和 5 折共 250 条音频,Whisper 使用固定 5 条音频,LLM 使用配置指定的 MMLU 小题集与 WikiText2 少量块,BEVFusion 最多使用 100 帧,划分不足 100 帧时使用全部帧并明确显示实际数量.子集成绩只用于快速检查,不能代替全量成绩.
-
-任务精度与数值误差分开计算: CosSim、RMSE、NRMSE 仍只比较最多 5 次输入,不保存整个子集的浮点输出.主机参考保存在本地 compile 临时目录,上传板端 board/;预测及评分中间数据复用本模型 work/.正式 evaluate.sh 才更新 results/summary.json 并统计性能与 RSS.
+按任务定义固定子集,主机准备浮点精度,板端评价同一子集并统计精度损失,保存 results/summary_sub.json.普通样本按固定间隔抽取,分组任务保留类别、折或学科覆盖;不能用展示图片数量代替任务子集数量.全量结果仍保存在 results/summary.json,两份报告互不覆盖.具体数量及损失定义见[输出误差统计](../../docs/output_metrics.md).

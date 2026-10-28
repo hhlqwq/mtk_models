@@ -18,9 +18,26 @@ CosSim、RMSE、NRMSE 仅在 compile.sh 的固定小样本检查中计算,全量
 
 ### compile 子集精度检查
 
-compile.sh 在固定验证子集上计算任务精度,终端显示同一子集的浮点精度、NPU 精度及变化,不改写 results/summary.json.图像任务默认 100 张;LFW 保留十折共 100 对,ESC-50 保留 50 类和 5 折共 250 条音频,Whisper 使用固定 5 条音频,LLM 使用配置指定的 MMLU 小题集与 WikiText2 少量块,BEVFusion 最多使用 100 帧,划分不足 100 帧时使用全部帧并明确显示实际数量.子集成绩只用于快速检查,不能代替全量成绩.
+compile.sh 在主机计算固定子集的浮点任务精度,保存模型代码目录 results/summary_sub.json;板端推理相同子集后,将浮点精度、NPU 精度和精度损失写入部署目录 results/summary_sub.json.板端总 compile 完成后回传子集摘要和示例,服务器收到的是包含两端对比的子集摘要.全量 evaluate.sh 仍只更新 results/summary.json,两份报告互相保留.
 
-任务精度与数值误差分开计算: CosSim、RMSE、NRMSE 仍只比较最多 5 次输入,不保存整个子集的浮点输出.主机参考保存在本地 compile 临时目录,上传板端 board/;预测及评分中间数据复用本模型 work/.正式 evaluate.sh 才更新 results/summary.json 并统计性能与 RSS.
+| 任务 | compile 子集 | 抽样约束 |
+| --- | --- | --- |
+| ResNet101、ViT 分类 | 1000 张 | ImageNet val,保留前 5 张数值/展示输入 |
+| YOLOv5、YOLOv8 检测 | 300 张 | COCO val2017,保留展示图片 |
+| FastSAM 分割 | 300 张 | 保持本项目 AR@100 协议 |
+| RTMPose | 至少 500 个人体实例 | 按完整图片分组,不截断一张图的人体框 |
+| MobileFaceNet | 500 对 | 十折,每折各 25 对同人和异人 |
+| Depth Anything V2 | 100 张 | 保持 DA-2K 点对协议 |
+| YAMNet | 250 条音频 | ESC-50 每类每折各 1 条 |
+| Whisper | 50 条音频 | LibriSpeech test-clean,保留展示音频 |
+| MiniCPM、DeepSeek | MMLU 100 题,WikiText2 16 块 | 覆盖 57 学科,seed=17;每块 128 Token |
+| BEVFusion | 最多 100 帧 | 当前 mini_val 为全部 81 帧,如实显示范围 |
+
+间隔抽样参考高通默认方式:先对样本标识排序,保留必要示例后,对剩余 N 个候选和 K 个名额设置 step=max(1,N//K),选择下标 0、step、2×step 等,最后按标识排序.因此可复现且跨完整划分取样,不会只取前 K 个样本.高通和本项目的必需样本、数据集及预后处理可能不同,不能直接比较其发布精度.MMLU 使用固定种子的按学科比例分层抽样;ESC-50 保留类别与折覆盖.
+
+精度使用 0-1 比例.损失的正值统一表示变差:Top-1、AP、AR 等为 100×(浮点−NPU),WER 为 100×(NPU−浮点),单位为百分点;PPL 保存 NPU−浮点的绝对增量和相对增幅.主机参考尚未回传板端结果时状态为 float_reference_ready,NPU 精度和损失留空.不得以两个不同子集或不同 DLA 计算损失.
+
+CosSim、RMSE、NRMSE 仍只比较最多 5 次输入,不保存整个子集的浮点输出.主机过程数据保存在本地 compile 临时目录,必要参考上传板端 board/;板端中间文件复用本模型 work/.子集不采集或发布性能和 RSS,这些指标仍属于全量 evaluate.sh.
 
 已有 ONNX/DLA 只需更新子集参考时,在已有编译容器内运行:
 
