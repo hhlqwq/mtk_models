@@ -33,7 +33,7 @@ ncc-tflite --arch=mdla5.3 --suppress-output --disallow-bridge input.tflite -o mo
 
 此配方不是全部 MTK 芯片或模型的通用命令.浮点、多输入、多输出及 LLM 按模型编译实现处理.核对编译后真实 dtype、layout、stride、scale/zero point 和缓冲区字节数,不能直接用 ONNX 逻辑 shape 解释原生输出.
 
-板端部署包包括 compile.sh、evaluate.sh、配置快照、DLA、必要参数、Python 脚本和公共模块,依赖匹配板端架构的 SDK 动态库.所有模型的主机入口完成编译、打包和上传后结束,提示板端部署目录及命令,不通过 SSH 自动执行推理、示例生成或评价,也不自动取回尚未生成的示例.用户登录开发板,在部署目录执行 bash compile.sh,少量推理只检查真实 NPU 通路并保存 README 示例,不计算或发布精度、性能及 RSS.上传成功只能标为待板端检查,不能宣称示例已生成或板端已验证.校准与量化配方不随评价范围变化.
+板端部署包包括 compile.sh、evaluate.sh、配置快照、DLA、必要参数、Python 脚本和公共模块,依赖匹配板端架构的 SDK 动态库.所有模型的主机入口完成编译、打包和上传后结束,提示板端部署目录及命令,不通过 SSH 自动执行推理、示例生成或评价,也不自动取回尚未生成的示例.用户登录开发板,在部署目录执行 bash compile.sh,运行固定子集任务精度、损失及少量数值误差并保存 summary_test.json 和示例,不执行全量评价或专项测速.上传成功只能标为待板端检查,不能宣称示例已生成或板端已验证.校准与量化配方不随评价范围变化.
 
 ## 原生 LLM
 
@@ -47,9 +47,9 @@ ncc-tflite --arch=mdla5.3 --suppress-output --disallow-bridge input.tflite -o mo
 - 双 DLA、外置 embedding、tokenizer、配置及 Python 推理代码共同构成交付,依赖匹配的 SDK 动态库,不能只统计单 DLA.生成循环、KV 转移及采样均使用 Python.
 - W4A16 与 INT16 原生 I/O 按实际图记录,重新量化后不能复用旧契约.
 - MiniCPM 和 DeepSeek 使用各自的 host/convert.py、compile.py、package.py 及板端入口,共享量化适配、KV 转移和评价工具.不得跨模型复制特殊 Token、聊天模板或 KV Head 配置.
-- 编译阶段仅准备生成示例所需 Token 与运行参数,不加载浮点模型计算基准.按约定范围的 MMLU/PPL 参考和评价输入在 evaluate.sh 阶段准备;MiniCPM 固定千题 MMLU 的正式资源用 evaluation/mmlu1000/,DeepSeek 完整 MMLU 的资源用 evaluation/full/,两者 WikiText2 均为完整 test.
+- 编译阶段准备同子集 MMLU/PPL 浮点参考、生成示例所需 Token 与运行参数.按约定范围的 MMLU/PPL 参考和评价输入在 evaluate.sh 阶段准备;MiniCPM 固定千题 MMLU 的正式资源在板端用 build/reference/full/,DeepSeek 完整 MMLU 的资源在板端用 build/reference/full/,两者 WikiText2 均为完整 test.
 - Prefill/Decode 测速及 RSS 采集只属于 evaluate.sh,输入长度、生成计数及内存范围统一写入 summary.json.
-- 生成文本放 examples/output,日志和中间指标放临时目录,results 只留一份报告.
+- 生成文本放 examples/output,日志和中间指标放临时目录,results 仅保留 summary_test.json 和 summary.json.
 
 ## 故障定位
 

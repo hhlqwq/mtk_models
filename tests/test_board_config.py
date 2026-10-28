@@ -22,7 +22,7 @@ class BoardConfigTest(unittest.TestCase):
         self.folder = Path(tempfile.mkdtemp(dir=root))
         self.config = self.folder / "config.json"
         self.config.write_text(json.dumps({
-            "name": "fastsam",
+            "name": "fastsam", "deployment": {"model_directory": "."},
             "board": {"dataset_dir": "/opt/mtk/datasets/coco/val2017",
                       "deploy_dir": "/opt/mtk/open_models/fastsam",
                       "results_dir": "results"}}))
@@ -35,14 +35,14 @@ class BoardConfigTest(unittest.TestCase):
         self.environment.stop()
 
     def test_full_and_quick_results_share_deployment(self):
-        """编译与评价的过程数据都在日期临时目录,正式报告路径相同."""
+        """编译与评价的过程数据统一覆盖本模型 build/work,正式报告路径相同."""
         with mock.patch("sys.argv", ["infer.py"]):
             os.environ["MTK_EVAL_SCOPE"] = "full"
             full = paths(self.root, self.config, "example")
-            self.assertEqual(full.result, Path("/tmp/hailongcodex") / date.today().isoformat() / "fastsam_evaluate_example")
+            self.assertEqual(full.result, self.root.resolve() / "build/work")
             os.environ["MTK_EVAL_SCOPE"] = "subset"
             quick = paths(self.root, self.config, "example")
-            self.assertEqual(quick.result, Path("/tmp/hailongcodex") / date.today().isoformat() / "fastsam_compile_example")
+            self.assertEqual(quick.result, self.root.resolve() / "build/work")
             self.assertEqual(quick.config["board"]["deploy_dir"], str(self.root))
             self.assertEqual(quick.summary, self.root / "results/summary.json")
             self.assertEqual(full.summary, quick.summary)

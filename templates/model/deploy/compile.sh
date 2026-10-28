@@ -4,6 +4,7 @@
 set -euo pipefail
 export MTK_OUTPUT_METRICS=1
 export MTK_EVAL_SCOPE=subset
+export MTK_EVALUATION_WORK=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export EVAL_RUN_ID="${EVAL_RUN_ID:-$(date +%Y%m%d_%H%M%S)_$$}"

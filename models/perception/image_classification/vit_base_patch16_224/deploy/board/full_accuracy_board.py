@@ -1,5 +1,6 @@
 """仅从板端 Python 预测计算 ImageNet val 全量 Top-1/Top-5 指标."""
 
+
 import os
 import argparse
 import json
@@ -13,6 +14,7 @@ from tools.evaluation import (
     is_test, record_selection, result_status, scope_metadata,
     select_samples,
 )
+from tools.evaluation import accuracy_result
 
 
 
@@ -112,6 +114,8 @@ def evaluate(args: argparse.Namespace) -> None:
         "npu_p95_ms": None if is_test() else sorted_times[math.ceil(0.95 * len(sorted_times)) - 1],
     }
     args.report.mkdir(parents=True, exist_ok=True)
+    summary["evaluation"] = accuracy_result("vit_base_patch16_224", "npu",
+        {"Top-1": summary["npu_top1"]}, expected, "image")
     (args.report / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8")

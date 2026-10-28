@@ -14,7 +14,7 @@ from tools.evaluation import is_test
 
 
 def context(entry, *, new_run=False):
-    """读取板端配置,过程文件固定保存在当前模型的 work 目录."""
+    """读取板端配置,过程文件固定保存在当前模型的 build/work 目录."""
     root = Path(entry).resolve().parent.parent
     parser = argparse.ArgumentParser(description="执行当前板端独立步骤.")
     parser.add_argument("--config", type=Path, default=root / "config.json")
@@ -24,16 +24,35 @@ def context(entry, *, new_run=False):
 
 
 def paths(root, config_path, run_id=None, *, new_run=False):
-    """每次推理覆盖当前模型的 work,后续评分和展示直接复用该目录."""
+    """每次推理覆盖当前模型的 build/work,后续评分和展示直接复用该目录."""
     root = Path(root).resolve()
     config = json.loads(Path(config_path).read_text(encoding="utf-8"))
     run_id = run_id or os.environ.get("EVAL_RUN_ID")
     run_id = run_id or datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id):
         raise ValueError("运行编号只允许字母、数字、下划线和连字符.")
-    result = root / "work"
+    result = root / "build/work"
     if result.is_symlink() or result.resolve() != result:
         raise ValueError("模型 work 目录不能是符号链接或指向部署目录之外.")
+    models = root / config["deployment"]["model_directory"]
+    if not models.resolve().is_relative_to(root) or models.is_symlink():
+        raise ValueError("部署模型目录越界或为符号链接.")
+    if new_run:
+        from tools.evaluation import read_accuracy
+        from tools.files import read_json, sha256
+
+        filename = "subset.json" if is_test() else "full.json"
+        reference = read_json(root / "build/reference" / filename)
+        source = reference["evaluation"]["backend"]
+        if source not in ("onnx", "pytorch"):
+            raise ValueError("板端必须使用主机生成的浮点参考.")
+        read_accuracy(reference, config["name"], source)
+        if not reference["dla_artifacts"]:
+            raise ValueError("浮点参考未绑定 DLA.")
+        for name, digest in reference["dla_artifacts"].items():
+            artifact = models / name
+            if not artifact.resolve().is_relative_to(models.resolve()) or sha256(artifact) != digest:
+                raise ValueError("板端 DLA 与当前浮点参考不匹配.")
     if new_run and result.exists():
         if not result.is_dir():
             raise ValueError("模型 work 路径必须是目录.")
@@ -41,6 +60,7 @@ def paths(root, config_path, run_id=None, *, new_run=False):
         shutil.rmtree(result)
     return argparse.Namespace(root=root, config=config, run_id=run_id,
         dataset=Path(config["board"]["dataset_dir"]), result=result, work=result,
+        models=root / config["deployment"]["model_directory"],
         summary=root / "results/summary.json")
 
 
@@ -87,7 +107,7 @@ def infer_images(ctx, images, metadata, input_shape, output_shape, preprocess, p
             raise ValueError(f"模型 {name} 张量契约无效.")
     ctx.work.mkdir(parents=True)
     comparison = OutputComparison(ctx)
-    with Runtime(ctx.root / "models/model_int8.dla") as runtime:
+    with Runtime(ctx.root / "model_int8.dla") as runtime:
         if tuple(map(len, runtime.sizes)) != (1, 1):
             raise ValueError("要求单输入单输出模型.")
         inputs, input_view = runtime.tensor(0, input_shape, np.int8,

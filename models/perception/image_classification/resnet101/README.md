@@ -53,7 +53,7 @@ bash models/perception/image_classification/resnet101/deploy/compile.sh
 bash compile.sh
 ```
 
-板端只读取部署包内的三张输入,无需全量数据集;常驻加载 DLA 后通过 Python 直接调用 MTK SDK 动态库执行 NPU 推理,生成 `examples/output/sample_1_classification.jpg` 至 `sample_3_classification.jpg`.展示图片来自本次板端预测,不会复用 ViT 的结果.编译阶段不写正式报告.
+板端 compile 读取 ImageNet 固定 1000 张子集评分,另从部署包三张示例生成展示;常驻加载 DLA 后通过 Python 直接调用 MTK SDK 动态库执行 NPU 推理,生成 `examples/output/sample_1_classification.jpg` 至 `sample_3_classification.jpg`.展示图片来自本次板端预测,不会复用 ViT 的结果.子集精度、损失及数值误差写入 `results/summary_test.json`.
 
 主机依赖现有容器中的 PyTorch 2.0.0、TorchVision 0.15.1、ONNX、MTK Converter、NCC、NumPy、Pillow 和 tqdm.板端需要 Python 3.10+、NumPy、Pillow 9.1+、用于结果绘图的 OpenCV,以及匹配板端架构与系统的 Neuron Runtime SDK 8 动态库.代码不部署或覆盖系统动态库.
 
@@ -65,7 +65,7 @@ bash compile.sh
 bash models/perception/image_classification/resnet101/deploy/evaluate.sh
 ```
 
-只对已导出的 `resnet101.onnx` 计算全量 ImageNet Top-1,参考保存为资源目录的 `build/onnx_reference.json`.入口随后校验已有板端模型版本,自动将参考上传到 `models/onnx_reference.json`,不上传或替换模型,也不自动启动板端任务.确认板端已有完整验证集和标签后,在部署目录执行:
+只对已导出的 `resnet101.onnx` 计算全量 ImageNet Top-1,参考保存为本地日期过程目录的 `onnx_reference.json`.入口随后校验已有板端模型版本,自动将参考上传到 `build/reference/full.json`,不上传或替换模型,也不自动启动板端任务.确认板端已有完整验证集和标签后,在部署目录执行:
 
 ```bash
 bash evaluate.sh
@@ -73,16 +73,16 @@ bash evaluate.sh
 
 板端执行 5 次预热和 50000 张验证图推理,严格核对图片顺序、数量、标签和模型版本,完整后将 Top-1、相对同协议 FP32 的百分点变化、性能和 RSS 发布到唯一 `results/summary.json`.缺参考时保留绝对精度,差值为空并标记 `partial`;存在不匹配参考时直接报错.评价不触发模型导出、量化、编译或重新部署.
 
-如果已经完成 ONNX 评价,在容器的本模型目录执行 `python deploy/host/upload_reference.py` 即可上传已有参考,不会重复计算浮点参考.如果板端也已完成推理,可以只运行 `python3 board/evaluate.py --run-id <原运行编号>`,读取当天已有预测重新汇总,不调用 NPU.本次报告就是复用原运行编号补齐参考后生成的.
+全量 evaluate.sh 在主机评分完成后自动上传同协议参考,无需手动上传命令.板端过程数据统一位于 build/work/,子集及全量报告分别为 summary_test.json、summary.json.
 
 摘要沿用已有 ViT 分类模型的字段: `metric`、`board_accuracy`、`reference_accuracy`、`accuracy_change_percentage_points`、`npu_mean_ms`、`peak_rss_mib` 和 `model_size`.分类指标只有 Top-1,精度使用 0-1 比例,文件大小使用十进制 MB.完整预处理参数留在模型契约和本页说明中,不在摘要里重复 mean/std、原生缓冲区大小或辅助子集精度;运行时契约和已有预测格式保持不变.
 
 - 纯 NPU 时间: SDK 同步 `inference` 调用,不含 I/O 绑定与前后处理,报告均值和 P95.
 - 端到端时间: 图片读取、预处理、量化、I/O 绑定、NPU 和 Top-5,不含模型加载、预热、预测写盘及评分.
 - 峰值 RSS: Python 推理进程全生命周期的高水位,不是设备全部驱动或 NPU 内存.
-- 板端过程数据: 本模型部署目录的 `work/`,每次开始推理时覆盖,只保存预测和评分所需的推理元数据.
+- 板端过程数据: 本模型部署目录的 `build/work/`,每次开始推理时覆盖,只保存预测和评分所需的推理元数据.
 
-单独运行 `board/infer.py` 默认只检查三张示例;`board/evaluate.py` 默认全量,只评分当天同模型最近一次全量推理结果,缺失时停止,不会补跑推理.两个主要入口无需参数.
+单独运行 `board/infer.py` 默认只检查三张示例;`board/evaluate.py` 默认全量,只评分当前 `build/work/` 中同模型的全量推理结果,缺失时停止,不会补跑推理.两个主要入口无需参数.
 
 ## 当前状态
 
@@ -127,10 +127,10 @@ bash evaluate.sh
 
 compile.sh 独立对固定少量输入比较浮点与 NPU 输出,在终端显示 CosSim、RMSE、NRMSE 和实际覆盖范围.普通模型最多选择 5 次输入,不减少原有 compile 通路检查样本数;LLM 比较示例首个 Prefill 块的有效位置,BEVFusion 比较单帧的 NPU 子图.这些结果用于数值检查,不能代替任务精度.全量 evaluate.sh 只计算任务精度、性能和 RSS,不保存或比较全量浮点张量.
 
-参考为普通 NPZ 数组文件,保存在编译机器本地日期临时目录并上传板端 board/output_reference.npz,由下次 compile 覆盖,不使用数据库,不写入 NAS.板端中间结果仍使用本模型 work/.NRMSE 定义为 100 × RMSE / RMS(浮点参考),多输出分别统计.详见[输出误差统计](../../../../docs/output_metrics.md).
+参考为普通 NPZ 数组文件,保存在编译机器本地日期临时目录并上传板端 build/reference/output_reference.npz,由下次 compile 覆盖,不使用数据库,不写入 NAS.板端中间结果仍使用本模型 build/work/.NRMSE 定义为 100 × RMSE / RMS(浮点参考),多输出分别统计.详见[输出误差统计](../../../../docs/output_metrics.md).
 
 ### compile 子集精度检查
 
-compile.sh 使用 1000 张 ImageNet 验证图片,复用正式评价协议.主机执行子集浮点推理,板端执行同一子集 NPU 推理,在终端打印精度和损失,并保存 results/summary_sub.json.正的损失表示 NPU 变差,负值表示改善;Top-1、AP、AR 等使用浮点减 NPU 的百分点,WER 使用 NPU 减浮点的百分点,PPL 使用增量及相对增幅.
+compile.sh 使用 1000 张 ImageNet 验证图片,复用正式评价协议.主机执行子集浮点推理,板端执行同一子集 NPU 推理,在终端打印精度和损失,并保存 results/summary_test.json.正的损失表示 NPU 变差,负值表示改善;Top-1、AP、AR 等使用浮点减 NPU 的百分点,WER 使用 NPU 减浮点的百分点,PPL 使用增量及相对增幅.
 
-普通样本跨完整划分按固定间隔抽取,保留展示及数值检查的必要输入;LFW、ESC-50 和 MMLU 保持折、类别和学科覆盖.同一子集两端通过样本指纹核对;MMLU 固定 seed=17 分层抽样.该报告不代表全量成绩,不改写 results/summary.json.中间数据覆盖保存在本模型 work/,CosSim、RMSE、NRMSE 仍只比较固定少量输入.详见[输出误差统计](../../../../docs/output_metrics.md).
+普通样本跨完整划分按固定间隔抽取,保留展示及数值检查的必要输入;LFW、ESC-50 和 MMLU 保持折、类别和学科覆盖.同一子集两端通过样本指纹核对;MMLU 固定 seed=17 分层抽样.该报告不代表全量成绩,不改写 results/summary.json.中间数据覆盖保存在本模型 build/work/,CosSim、RMSE、NRMSE 仍只比较固定少量输入.详见[输出误差统计](../../../../docs/output_metrics.md).

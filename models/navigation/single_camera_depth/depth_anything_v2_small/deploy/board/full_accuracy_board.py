@@ -1,5 +1,6 @@
 """在 Genio 720 上评测 DA-2K 全量相对深度点对准确率。"""
 
+
 import os
 import argparse
 import json
@@ -13,6 +14,7 @@ from tools.board import configure_parser, inference_records
 from tools.evaluation import (
     is_test, result_status, scope_metadata, select_samples,
 )
+from tools.evaluation import accuracy_result
 
 
 EXPECTED_IMAGES = 1033
@@ -128,6 +130,8 @@ def evaluate(args: argparse.Namespace) -> None:
         "peak_rss_kib": None if is_test() else max(row["peak_rss_kib"] for row in records.values()),
         "timing_scope": "常驻 Python 模型,单独统计 NeuronRuntime_inference 调用",
     }
+    report["evaluation"] = accuracy_result("depth_anything_v2_small", "npu",
+        {"DA-2K 点对准确率": report["pairwise_accuracy"]}, total_pairs, "annotated_point_pair")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"[评测] DA-2K 点对准确率: {report['pairwise_accuracy']:.6f}; {args.output}", flush=True)

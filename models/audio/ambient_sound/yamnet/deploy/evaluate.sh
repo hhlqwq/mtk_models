@@ -10,8 +10,8 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     export PYTHONDONTWRITEBYTECODE=1
     exec 9>"${SCRIPT_DIR}/.run.lock"
     flock -n 9 || { echo "[错误] 本模型已有运行任务." >&2; exit 2; }
-    [[ -s "${SCRIPT_DIR}/models/fp32_reference.json" ]] || {
-        echo "[错误] 缺少 models/fp32_reference.json,请单独准备全量协议参考." >&2
+    [[ -s "${SCRIPT_DIR}/build/reference/full_detail.json" ]] || {
+        echo "[错误] 缺少全量音频参考,请先在编译服务器执行 evaluate.sh." >&2
         exit 2
     }
     echo "[全量 1/3] 已有模型推理,运行编号: ${EVAL_RUN_ID}."
@@ -22,8 +22,8 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     python3 "${SCRIPT_DIR}/board/summary.py"
 else
     : "${MTK_MODELS_ROOT:?请先进入已有编译容器,仅对已有浮点模型准备评价参考}"
-    echo "[全量参考] 仅推理已有浮点模型,不导出、量化、编译或上传."
+    echo "[全量参考] 仅推理已有浮点模型,不导出、量化或编译,完成后自动上传参考."
     "${MTK_YAMNET_PYTHON:?缺少已准备的 TensorFlow 环境}" "${SCRIPT_DIR}/host/evaluate_onnx.py" --backend tensorflow
     python "${SCRIPT_DIR}/host/evaluate_onnx.py"
-    echo "[下一步] 将上述全量参考 和必要评价输入单独放入现有部署包对应位置,再在板端执行 bash evaluate.sh."
+    python "${MTK_MODELS_ROOT}/tools/deploy.py" --upload-reference "${SCRIPT_DIR}"
 fi

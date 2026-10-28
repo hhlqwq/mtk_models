@@ -13,7 +13,7 @@ __pycache__/
 # 本地环境和日志.
 configs/storage.local.json
 configs/platforms/*.local.yaml
-models/deploy/upload.local.sh
+models/deploy/platform.local.sh
 .env
 *.log
 logs/

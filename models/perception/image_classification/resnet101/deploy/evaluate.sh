@@ -20,6 +20,5 @@ else
     echo "[容器 1/2] 使用已有 FP32 ONNX 计算全量 Top-1."
     python "${SCRIPT_DIR}/host/evaluate_onnx.py"
     echo "[容器 2/2] 将同协议参考上传至现有板端部署包."
-    python "${SCRIPT_DIR}/host/upload_reference.py"
-    echo "[下一步] 请登录开发板,在现有部署目录执行 bash evaluate.sh."
+    python "${MTK_MODELS_ROOT}/tools/deploy.py" --upload-reference "${SCRIPT_DIR}"
 fi

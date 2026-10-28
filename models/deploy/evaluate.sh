@@ -41,9 +41,9 @@ for MODEL in "${MODELS[@]}"; do
 done
 
 if [[ "${LOCATION}" == 容器 ]]; then
-    echo "[参考准备完成] 按各模型提示将全量参考和必要评价输入放入现有部署包."
+    echo "[参考上传完成] 所有模型全量浮点评估及必要参考上传已完成."
     echo "[下一步] 登录开发板,在部署根目录的 deploy/ 下执行 bash evaluate.sh."
 else
     echo "[全量评价完成] 各模型结果分别保存在其 results/summary.json."
-    bash "${SCRIPT_DIR}/upload.sh"
+    bash "${SCRIPT_DIR}/compile.sh" --return-results full
 fi

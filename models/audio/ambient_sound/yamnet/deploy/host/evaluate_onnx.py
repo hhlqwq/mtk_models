@@ -1,5 +1,6 @@
 """按同协议直接计算 TensorFlow 或 ONNX 浮点精度."""
 
+
 import os
 import argparse
 from argparse import Namespace
@@ -11,7 +12,7 @@ import numpy as np
 from tqdm import tqdm
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "board"))
-from audio_utils import load_records, load_waveform, mapping, metrics, preprocess
+from audio_utils import evaluation_ids, load_records, load_waveform, mapping, metrics, preprocess
 
 from tools.deploy import configure_parser
 from tools.output_metrics import record_reference, finish_reference
@@ -22,6 +23,7 @@ from tools.evaluation import (
 
 
 from export_model import original_models
+from tools.evaluation import accuracy_result, record_selection
 
 
 def evaluate(args):
@@ -62,6 +64,10 @@ def evaluate(args):
         reference = np.load(args.reference / "scores.npy")
         np.testing.assert_allclose(scores, reference, atol=3e-5, rtol=3e-4)
         summary["maximum_reference_score_error"] = float(np.max(np.abs(scores-reference)))
+    summary["evaluation"] = accuracy_result("yamnet", "onnx" if args.mode == "onnx" else "tensorflow",
+        {"ESC-50 macro AP (folds 2-5)": summary["metrics"]["held_out"]["map"]},
+        len(evaluation_ids(records, indices)), "audio_clip",
+            selection_id=record_selection(evaluation_ids(records, indices)))
     (args.output / "summary.json").write_text(json.dumps(summary, indent=2))
     print(f"[OK] {summary}", flush=True)
     if args.mode == "onnx":

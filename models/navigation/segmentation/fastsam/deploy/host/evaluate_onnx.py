@@ -11,7 +11,7 @@ from tools.deploy import context
 
 from tools.accuracy.evaluate_onnx import evaluate_model
 
-from tools.evaluation import is_test, result_status
+from tools.evaluation import LIMITS, is_test, result_status
 
 
 def onnx_eval(config: dict, paths: dict, config_path: Path) -> None:
@@ -28,7 +28,7 @@ def onnx_eval(config: dict, paths: dict, config_path: Path) -> None:
     report = json.loads(pending.read_text(encoding="utf-8"))
     accuracy = report.get("accuracy")
     if (report.get("status") != result_status() or report.get("model") != "fastsam"
-            or report.get("metric") != "segm AR@100" or report.get("samples") != (100 if is_test() else 5000)
+            or report.get("metric") != "segm AR@100" or report.get("samples") != (LIMITS["fastsam"] if is_test() else 5000)
             or type(accuracy) not in (int, float) or not math.isfinite(accuracy)
             or not 0 <= accuracy <= 1):
         raise ValueError(f"FastSAM ONNX 全量评测报告不完整: {pending}.")

@@ -1,5 +1,6 @@
 """核对 ResNet101 全量预测并发布唯一精度、性能和 RSS 报告."""
 
+
 import json
 import math
 import os
@@ -11,11 +12,12 @@ from summary import publish
 from tools.board import context
 from tools.evaluation import is_test, select_samples, scope_metadata
 from tools.files import read_json, sha256
+from tools.evaluation import accuracy_result
 
 
 def matched_reference(ctx, metadata: dict, labels_digest: str):
     """只接受相同 ONNX、标签映射和预处理的完整参考,缺失项如实记录."""
-    path = ctx.root / "models/onnx_reference.json"
+    path = ctx.root / "build/reference/full.json"
     if not path.is_file():
         return None, ["缺少同协议 FP32 ONNX 参考,精度差值未计算."]
     baseline = read_json(path)
@@ -55,10 +57,12 @@ def main() -> None:
         report = {"metric": "Top-1", "accuracy": sum(
             row["top5"][0] == labels[index] for index, row in zip(selected, rows)) / len(rows),
             "samples": len(rows), **scope_metadata()}
+        report["evaluation"] = accuracy_result(MODEL, "npu",
+            {"Top-1": report["accuracy"]}, len(rows), "image")
         (ctx.work / "summary.json").write_text(
             json.dumps(report, ensure_ascii=False, allow_nan=False), encoding="utf-8")
         return
-    metadata = read_json(ctx.root / "models/quantization.json")
+    metadata = read_json(ctx.root / "build/reference/quantization.json")
     validate_contract(metadata)
     run = read_json(ctx.work / "inference.json")
     labels = read_labels(ctx.dataset / "val_labels_0based.txt")
@@ -71,7 +75,7 @@ def main() -> None:
     }
     if any(run.get(key) != value for key, value in required.items()):
         raise ValueError("推理记录与本次模型、运行编号或完整评价范围不匹配.")
-    if sha256(ctx.root / "models/model_int8.dla") != run["dla_sha256"]:
+    if sha256(ctx.root / "model_int8.dla") != run["dla_sha256"]:
         raise ValueError("推理后 DLA 已发生变化.")
     baseline, unavailable = matched_reference(ctx, metadata, labels_digest)
     calibration_images = set(metadata["calibration"]["images"])
@@ -118,7 +122,7 @@ def main() -> None:
         "reference_accuracy": reference,
         "accuracy_change_percentage_points": None if reference is None else round((accuracy - reference) * 100, 6),
         "reference_source": None if baseline is None else "本次 ONNX FP32 全量实测,使用与板端相同的评测协议",
-        "model_size": {"unit": "MB", "compiled_dla": (ctx.root / "models/model_int8.dla").stat().st_size / 1000000},
+        "model_size": {"unit": "MB", "compiled_dla": (ctx.root / "model_int8.dla").stat().st_size / 1000000},
         "evaluation_scope": "full", "weights": WEIGHTS, "precision": "W8A8",
         "calibration_samples": metadata["calibration"]["samples"],
         "calibration_overlap_samples": len(overlap),
@@ -129,6 +133,10 @@ def main() -> None:
         "runtime": {"machine": platform.machine(), "kernel": platform.release()},
         "unavailable_metrics": unavailable,
     }
+    from tools.evaluation import record_selection
+
+    record_selection(f"ILSVRC2012_val_{index:08d}.JPEG" for index in range(1, 50001))
+    report["evaluation"] = accuracy_result(MODEL, "npu", {"Top-1": accuracy}, 50000, "image")
     publish(ctx, report)
 
 

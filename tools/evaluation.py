@@ -74,7 +74,10 @@ def fixed_subset(items, count, *, key=lambda value: value, required=()):
 def coco_ids(ids):
     """检测和分割固定 300 张,保留 README 示例并覆盖整个验证集."""
     values = sorted(int(value) for value in ids)
-    return fixed_subset(values, 300, required=COCO_EXAMPLES) if is_test() else values
+    if not is_test():
+        record_selection(values)
+        return values
+    return fixed_subset(values, 300, required=COCO_EXAMPLES)
 
 
 def pose_image_ids(detections):
@@ -84,6 +87,7 @@ def pose_image_ids(detections):
         groups[int(row["image_id"])] += 1
     keys = sorted(groups)
     if not is_test():
+        record_selection(keys)
         return keys
     if not keys:
         raise ValueError("姿态检测框列表为空.")
@@ -115,6 +119,7 @@ def select_samples(items, model, *, key=lambda value: value, required=()):
     """仅在评测调用处选择样本,校准数据的加载规则不受影响."""
     values = list(items)
     if not is_test():
+        record_selection(key(item) for item in values)
         return values
     if model in ("resnet101", "vit_base_patch16_224"):
         required = (*required, *IMAGENET_EXAMPLES)
@@ -124,6 +129,7 @@ def select_samples(items, model, *, key=lambda value: value, required=()):
 def lfw_pairs(rows):
     """每折均匀选 25 对同人和 25 对异人,十折共 500 对."""
     if not is_test():
+        record_selection(row["pair_id"] for row in rows)
         return rows
     groups = defaultdict(list)
     for row in rows:
@@ -141,6 +147,7 @@ def lfw_pairs(rows):
 def audio_records(rows):
     """ESC-50 每个类别、每一折选择一条,共 250 条."""
     if not is_test():
+        record_selection(row["filename"] for row in rows)
         return rows
     groups = defaultdict(list)
     for row in rows:
@@ -160,3 +167,100 @@ def matching_reference(report):
     return (report.get("evaluation_scope") == "subset" and
             report.get("sample_ids_sha256") == os.environ.get("MTK_EVAL_SAMPLE_SHA256") and
             bool(report.get("sample_ids_sha256")))
+
+
+def accuracy_result(model, backend, values, count, unit, *, selection_id=None):
+    """构造两端共同的任务精度接口,指标比例与样本单位必须明确."""
+    if not isinstance(model, str) or not model or backend not in ("onnx", "pytorch", "tensorflow", "npu"):
+        raise ValueError("任务精度必须声明模型和实际推理来源.")
+    if type(count) is not int or count <= 0 or not isinstance(unit, str) or not unit:
+        raise ValueError("任务精度必须有正整数样本数及明确单位.")
+    if not isinstance(values, dict) or not values:
+        raise ValueError("任务精度指标不能为空.")
+    metrics = {}
+    for name, value in values.items():
+        if (not isinstance(name, str) or not name or isinstance(value, bool) or not isinstance(value, (int, float))
+                or not math.isfinite(value) or value < 0
+                or (name != "WER" and value > 1 + 1e-12)):
+            raise ValueError(f"任务精度数值无效: {name}.")
+        metrics[name] = {"value": float(value), "unit": "ratio",
+                         "higher_is_better": name != "WER"}
+    selection = selection_id or os.environ.get("MTK_EVAL_SAMPLE_SHA256")
+    if not isinstance(selection, str) or not selection:
+        raise ValueError("任务精度缺少实际评价样本集合标识.")
+    return {"model": model, "backend": backend,
+            "scope": "subset" if is_test() else "full",
+            "samples": {"count": count, "unit": unit, "selection_id": selection},
+            "metrics": metrics}
+
+
+def read_accuracy(report, model, backend):
+    """严格读取统一接口,不通过模型名称或旧字段猜测报告格式."""
+    try:
+        result = report["evaluation"]
+        if result["model"] != model or result["backend"] != backend:
+            raise ValueError("任务精度的模型或推理来源不匹配.")
+        expected_scope = "subset" if is_test() else "full"
+        if result["scope"] != expected_scope:
+            raise ValueError("任务精度范围不匹配,不能混用子集与全量.")
+        samples = result["samples"]
+        values = {name: item["value"] for name, item in result["metrics"].items()}
+        checked = accuracy_result(model, backend, values, samples["count"],
+                                  samples["unit"], selection_id=samples["selection_id"])
+        if checked != result:
+            raise ValueError("任务精度接口字段或指标单位、方向不符合统一约定.")
+        return result
+    except (KeyError, TypeError, AttributeError) as error:
+        raise ValueError(f"统一任务精度接口不完整: {error}.") from error
+
+
+def compare_accuracy(reference, actual):
+    """只比较同模型同范围同样本同单位的任务指标,正损失表示变差."""
+    for field in ("model", "scope", "samples"):
+        if reference[field] != actual[field]:
+            raise ValueError(f"浮点与 NPU 精度覆盖不一致: {field}.")
+    if reference["backend"] not in ("onnx", "pytorch") or actual["backend"] != "npu":
+        raise ValueError("任务精度对照必须来自浮点模型和真实 NPU.")
+    if reference["metrics"].keys() != actual["metrics"].keys():
+        raise ValueError("浮点与 NPU 指标名称不一致.")
+    result = {}
+    for name, baseline in reference["metrics"].items():
+        measured = actual["metrics"][name]
+        if any(baseline[field] != measured[field] for field in ("unit", "higher_is_better")):
+            raise ValueError(f"浮点与 NPU 指标单位或方向不一致: {name}.")
+        difference = baseline["value"] - measured["value"]
+        if not baseline["higher_is_better"]:
+            difference = -difference
+        result[name] = {"fp32_accuracy": baseline["value"], "npu_accuracy": measured["value"],
+                        "higher_is_better": baseline["higher_is_better"],
+                        "accuracy_loss_percentage_points": difference * 100}
+    return result
+
+
+def publish_result(root, report, filename):
+    """只发布两种最终报告,成功后清除结果目录中的旧格式文件."""
+    from pathlib import Path
+    import shutil
+
+    if filename not in ("summary_test.json", "summary.json"):
+        raise ValueError("结果文件只能是 summary_test.json 或 summary.json.")
+    root = Path(root).resolve()
+    directory = root / "results"
+    if directory.is_symlink():
+        raise ValueError("结果目录不能是符号链接.")
+    text = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
+    directory.mkdir(parents=True, exist_ok=True)
+    previous = list(directory.iterdir())
+    for path in previous:
+        if path.is_symlink() or not path.resolve().is_relative_to(directory.resolve()):
+            raise ValueError("拒绝修改包含链接或越界文件的结果目录.")
+    destination = directory / filename
+    destination.write_text(text, encoding="utf-8")
+    for path in previous:
+        if path.name in ("summary_test.json", "summary.json"):
+            continue
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+    return destination

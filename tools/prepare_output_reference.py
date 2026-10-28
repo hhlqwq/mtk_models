@@ -12,7 +12,7 @@ import sys
 
 import numpy as np
 
-from tools.deploy import context
+from tools.deploy import context, deployment_artifacts
 from tools.output_metrics import (
     ReferenceComplete, ReferenceWriter, finish_reference, record_reference,
 )
@@ -105,9 +105,8 @@ def main():
     reference = local / "output_reference.npz"
     os.environ["TMPDIR"] = str(local)
     os.environ["MTK_OUTPUT_REFERENCE"] = str(reference)
-    os.environ["MTK_OUTPUT_MODEL_DIRS"] = json.dumps([
-        str(ctx.output / "models" if ctx.config["name"] in
-            ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b") else ctx.output)])
+    os.environ["MTK_OUTPUT_DLA_FILES"] = json.dumps({
+        name: str(path) for name, path in deployment_artifacts(ctx).items()})
     sys.path.insert(0, str(deploy / "host"))
     name = ctx.config["name"]
     try:
@@ -125,7 +124,7 @@ def main():
     if not reference.is_file():
         raise FileNotFoundError("未生成 compile 小样本浮点参考.")
     host = os.environ["MTK_BOARD_HOST"]
-    destination = ctx.config["board"]["deploy_dir"] + "/board/output_reference.npz"
+    destination = ctx.config["board"]["deploy_dir"] + "/build/reference/output_reference.npz"
     run_command(["scp", "-o", "BatchMode=yes", reference, f"{host}:{destination}"])
     print("[小样本参考完成] 已上传,板端 compile 比较并打印,全量 evaluate 不读取.", flush=True)
 

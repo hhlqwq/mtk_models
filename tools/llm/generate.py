@@ -172,7 +172,7 @@ class Generator:
 def run(entry):
     """两个模型共享生成流程,语言与停止条件仍由各自部署资源决定."""
     ctx = context(entry, new_run=True)
-    manifest = read_json(ctx.root / "manifest.json")
+    manifest = read_json(ctx.models / "manifest.json")
     if manifest["context"] != ctx.config["conversion"]["context"]:
         raise ValueError("配置与已部署 DLA 上下文不一致.")
     if not is_test():
@@ -180,15 +180,15 @@ def run(entry):
 
         check_resources(ctx.root)
     ctx.result.mkdir(parents=True, exist_ok=False)
-    model = Generator(ctx.root, manifest)
+    model = Generator(ctx.models, manifest)
     model.comparison = OutputComparison(ctx, scope="demo_first_prefill_valid_positions; excludes_decode")
     try:
         samples = []
         languages = ("en",) if ctx.config["name"] == "minicpm5_2b" else ("zh", "en")
         for language in languages:
-            path = ctx.root / f"scripts/prompts/{language}_demo.tokens.txt"
+            path = ctx.models / f"scripts/prompts/{language}_demo.tokens.txt"
             tokens = [int(value) for value in path.read_text().split()]
-            prompt = ctx.root / f"scripts/prompts/{language}_demo.txt"
+            prompt = ctx.models / f"scripts/prompts/{language}_demo.txt"
             print(f"[示例] {language}_demo\n[输入,含聊天模板]\n"
                   f"{prompt.read_text(encoding='utf-8')}", flush=True)
             row, text = model.generate(
@@ -207,7 +207,7 @@ def run(entry):
             model.comparison.finish()
             return
         evaluation = "mmlu1000" if ctx.config["name"] == "minicpm5_2b" else "full"
-        quality = read_json(ctx.root / f"evaluation/{evaluation}/quality/board_quality_protocol.json")
+        quality = read_json(ctx.root / "build/reference/full/quality/board_quality_protocol.json")
         tokens = quality["input_ids"][:128]
         if len(tokens) != 128:
             raise ValueError("定长性能输入不足 128 Token.")

@@ -1,5 +1,6 @@
 """在编译主机运行 YOLOv5s ONNX FP32 COCO 全量精度评测."""
 
+
 import argparse
 import contextlib
 import io
@@ -17,6 +18,7 @@ from torchvision.ops import batched_nms
 import tqdm
 
 from tools.evaluation import coco_ids, result_status, scope_metadata
+from tools.evaluation import accuracy_result, record_selection
 
 COCO_91_CLASSES = [
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21,
@@ -186,6 +188,8 @@ def evaluate_onnx_accuracy(args: argparse.Namespace) -> None:
         raise ValueError("ONNX mAP 无效.")
     args.summary.parent.mkdir(parents=True, exist_ok=True)
     args.summary.write_text(json.dumps({
+        "evaluation": accuracy_result("yolov5s", "onnx",
+            {"mAP@0.5:0.95": value}, len(image_ids), "image"),
         "status": result_status(), **scope_metadata(), "model": "yolov5s",
         "backend": "ONNX FP32", "images": len(image_ids),
         "map_50_95": value,

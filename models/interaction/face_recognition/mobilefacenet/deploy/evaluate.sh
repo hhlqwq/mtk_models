@@ -18,7 +18,7 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     python3 "${SCRIPT_DIR}/board/summary.py"
 else
     : "${MTK_MODELS_ROOT:?请先进入已有编译容器,仅对已有浮点模型准备评价参考}"
-    echo "[全量参考] 仅推理已有浮点模型,不导出、量化、编译或上传."
+    echo "[全量参考] 仅推理已有浮点模型,不导出、量化或编译,完成后自动上传参考."
     python "${SCRIPT_DIR}/host/evaluate_onnx.py"
-    echo "[下一步] 将上述全量参考 和必要评价输入单独放入现有部署包对应位置,再在板端执行 bash evaluate.sh."
+    python "${MTK_MODELS_ROOT}/tools/deploy.py" --upload-reference "${SCRIPT_DIR}"
 fi

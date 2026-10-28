@@ -19,7 +19,7 @@ def main():
                  ctx.output / contract["decoder_step"]["file"],
                  ctx.work / "runtime_contract.json", ctx.work / "mel_filters_f32.bin",
                  ctx.work / "decode_config.txt"],
-           extra_files=files)
+           extra_files=files, multi_file=True)
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ from yolov8_utils import OUTPUT_NAMES, OUTPUT_SHAPES, postprocess, preprocess
 def main():
     """按转换器输出索引绑定原生张量,解码时恢复模型语义顺序."""
     ctx = context(__file__, new_run=True)
-    inputs, outputs = read_contract(ctx.root / "models/runtime_config.csv",
+    inputs, outputs = read_contract(ctx.root / "build/reference/runtime_config.csv",
                                     OUTPUT_NAMES, OUTPUT_SHAPES)
     indices = [next(index for index, item in enumerate(outputs) if item["name"] == name)
                for name in OUTPUT_NAMES]

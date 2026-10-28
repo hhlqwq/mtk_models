@@ -1,5 +1,6 @@
 """在开发板汇总 NPU 平均耗时和 COCO mAP 量化精度变化."""
 
+
 import argparse
 import contextlib
 import io
@@ -16,6 +17,7 @@ from tools.evaluation import (
     matching_reference,
     coco_ids, is_test, result_status, scope_metadata,
 )
+from tools.evaluation import accuracy_result
 
 
 def load_processed_ids(path: Path) -> set[int]:
@@ -128,6 +130,8 @@ def evaluate_coco(args: argparse.Namespace, *, model: str,
         "accuracy_change_percentage_points": None if loss_pp is None else -loss_pp,
         "reference_source": args.fp32_source if fp32_map is not None else None,
     }
+    metrics["evaluation"] = accuracy_result(model, "npu",
+        {"mAP@0.5:0.95": board_map}, len(expected_ids), "image")
     args.metrics.write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
     print(summary_text, end="", flush=True)
@@ -153,7 +157,6 @@ def parse_args(description=__doc__, *, entry=None) -> argparse.Namespace:
             "timings": lambda c: c.work / "timing_summary_current_run.json",
             "metrics": lambda c: c.result / "summary.json",
             "run_id": lambda c: c.run_id,
-            "fp32_report": lambda c: c.root / "models" / (
-                "onnx_reference_test.json" if is_test() else "onnx_reference.json"),
+            "fp32_report": lambda c: c.root / "build/reference/full.json",
         })
     return parser.parse_args()

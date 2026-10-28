@@ -166,7 +166,7 @@ def write_upload_config():
         raise ValueError("请在本地平台配置填写 results_host 和 results_root 仓库绝对路径.")
     directory = Path("/tmp/hailongcodex") / date.today().isoformat() / f"results_upload_{os.getuid()}"
     directory.mkdir(parents=True, exist_ok=True)
-    target = directory / "upload.local.sh"
+    target = directory / "platform.local.sh"
     flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW
     with os.fdopen(os.open(target, flags, 0o600), "w", encoding="utf-8") as stream:
         os.fchmod(stream.fileno(), 0o600)

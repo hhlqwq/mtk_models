@@ -1,2 +1,4 @@
-# 仅独立评价需要,建议安装到本模型目录的隔离依赖路径.
+# compile 子集和 evaluate 全量评分共用官方依赖,使用独立安装目录.
+# 官方来源: https://pypi.org/project/nuscenes-devkit/1.2.0/
+# 安装目标: $HOME/.local/share/mtk_models/bevfusion-evaluation.
 nuscenes-devkit==1.2.0

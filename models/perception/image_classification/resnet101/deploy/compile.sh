@@ -17,7 +17,7 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     python3 "${SCRIPT_DIR}/board/compile_accuracy.py"
     echo "[板端 2/2] 保存分类展示示例."
     python3 "${SCRIPT_DIR}/board/render_examples.py"
-    echo "[完成] 示例已生成,子集精度和损失已保存至 results/summary_sub.json,全量 summary.json 未改写."
+    echo "[完成] 示例已生成,子集精度和损失已保存至 results/summary_test.json,全量 summary.json 未改写."
 else
     : "${MTK_MODELS_ROOT:?请先通过 docker/enter_container.sh 进入已有编译容器}"
     echo "[容器 1/4] 从本地官方权重导出 FP32 ONNX."
@@ -26,11 +26,8 @@ else
     python "${SCRIPT_DIR}/host/convert_int8.py"
     echo "[容器 3/4] 编译 MDLA 5.3 DLA."
     python "${SCRIPT_DIR}/host/compile_model.py"
-    echo "[容器 4/4] 打包并上传到开发板."
-    python "${SCRIPT_DIR}/host/upload.py"
-    echo "[小样本数值参考] 仅准备固定少量输入的 CosSim、RMSE、NRMSE 对照."
-    python "${MTK_MODELS_ROOT}/tools/prepare_output_reference.py" "${SCRIPT_DIR}"
-    echo "[浮点子集精度] 评估完整选定子集并保存 summary_sub.json,上传同子集参考."
+    echo "[容器 4/4] 评估浮点子集并上传模型和参考."
+    echo "[浮点子集精度] 评估完整选定子集并上传模型、精度及数值参考."
     python "${MTK_MODELS_ROOT}/tools/compile_accuracy.py" "${SCRIPT_DIR}"
     echo "[待板端检查] 请登录开发板,在部署目录执行 bash compile.sh."
 fi

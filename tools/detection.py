@@ -30,7 +30,7 @@ def infer(ctx, input_info, output_info, preprocess, postprocess):
     ctx.work.mkdir(parents=True)
     predictions, timings = [], []
     comparison = OutputComparison(ctx)
-    with Runtime(ctx.root / "models/model_int8.dla") as model:
+    with Runtime(ctx.root / "model_int8.dla") as model:
         if tuple(map(len, model.sizes)) != (1, len(output_info)):
             raise ValueError("检测模型 I/O 数量不符.")
         inputs, input_view = model.tensor(0, input_info["shape"], np.int8,

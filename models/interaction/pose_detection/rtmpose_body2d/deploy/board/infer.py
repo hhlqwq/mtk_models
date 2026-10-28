@@ -33,7 +33,7 @@ def main():
     ctx.work.mkdir(parents=True)
     timings = []
     comparison = OutputComparison(ctx)
-    with Runtime(ctx.root / "models/model_int8.dla") as runtime:
+    with Runtime(ctx.root / "model_int8.dla") as runtime:
         if tuple(map(len, runtime.sizes)) != (1, 2):
             raise ValueError("RTMPose 要求一输入两输出.")
         inputs, view = runtime.tensor(0, (1, 3, 256, 192), np.int8, fill=-128)

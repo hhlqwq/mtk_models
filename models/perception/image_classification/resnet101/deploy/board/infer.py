@@ -31,9 +31,9 @@ def main() -> None:
     ctx = context(__file__, new_run=True)
     if ctx.result.exists():
         raise FileExistsError(ctx.result)
-    metadata = read_json(ctx.root / "models/quantization.json")
+    metadata = read_json(ctx.root / "build/reference/quantization.json")
     validate_contract(metadata)
-    dla = require_file(ctx.root / "models/model_int8.dla")
+    dla = require_file(ctx.root / "model_int8.dla")
     print("[检查] 核对部署模型、原生 INT8 张量契约和输入范围.", flush=True)
     if sha256(dla) != metadata["dla_sha256"]:
         raise ValueError("DLA 与量化契约不属于同一次编译.")

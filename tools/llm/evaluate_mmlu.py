@@ -1,5 +1,6 @@
 """使用固定 MMLU 0-shot 题集对比官方权重的 FP32 参考与板端 Accuracy."""
 
+
 import argparse
 from collections import defaultdict
 import json
@@ -16,6 +17,7 @@ from tools.files import sha256
 from tools.evaluation import (
     is_test, record_selection, result_status, scope_metadata,
 )
+from tools.evaluation import accuracy_result
 
 
 DATA_SHA256 = "74a41822ce7d3def56e1682f958469c04642a5336a5ce912fa375fdb90fb25d7"
@@ -464,7 +466,11 @@ def evaluate(args):
     if args.diagnostic_questions:
         report["scope"] = "multiblock_diagnostic_not_first_round_accuracy"
         report["diagnostic_case_ids"] = [row["id"] for row in cases]
+    record_selection(row["source_question_id"] for row in cases)
     report.update(status=result_status(), **scope_metadata())
+    if args.backend in ("pytorch", "npu"):
+        report["evaluation"] = accuracy_result(args.model_name, args.backend,
+            {"MMLU Accuracy": report["accuracy"]}, len(done), "question")
     (args.output / "mmlu_accuracy.json").write_text(
         json.dumps(report, indent=2) + "\n")
     print(f"[MMLU完成] {correct}/{len(done)},Accuracy={report['accuracy']:.6f}.",
@@ -477,6 +483,7 @@ def main():
     parser.add_argument("backend", choices=("prepare", "pytorch", "sdk", "tflite", "npu"))
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--model", type=Path)
+    parser.add_argument("--model-name", required=True, help="部署配置中的模型标识.")
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
     parser.add_argument("--simulate-fp16", action="store_true",
                         help="仅对量化软件执行启用 SDK FP16 计算模拟,用于硬件误差诊断.")

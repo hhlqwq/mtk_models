@@ -12,8 +12,8 @@ from tools.llm import evaluate_board_quality, evaluate_mmlu
 
 def check_resources(root):
     """确认正式输入与现有部署包匹配,缺少资源时在模型执行前停止."""
-    data = root / "evaluation/full"
-    manifest = read_json(root / "manifest.json")
+    data = root / "build/reference/full"
+    manifest = read_json(root / "models/manifest.json")
     for name in ("mmlu/protocol.json", "mmlu/cases.json", "mmlu/mmlu_inputs.npz",
                  "mmlu/board_input_contract.json", "quality/board_inputs.npz",
                  "quality/board_quality_protocol.json", "quality/board_input_contract.json",
@@ -52,10 +52,10 @@ def main():
     data = check_resources(ctx.root)
     ctx.result.mkdir(parents=True, exist_ok=True)
     evaluate_mmlu.evaluate(SimpleNamespace(
-        backend="npu", data=data / "mmlu", package=ctx.root,
+        model_name="deepseek_r1_distill_qwen_1_5b", backend="npu", data=data / "mmlu", package=ctx.models,
         output=ctx.result / "mmlu", diagnostic_questions=0))
     evaluate_board_quality.evaluate(SimpleNamespace(
-        package=ctx.root, quality_data=data / "quality",
+        package=ctx.models, quality_data=data / "quality",
         output=ctx.result / "wikitext", diagnostic_blocks=0, decode_steps=0))
     (ctx.result / "evaluation_memory.json").write_text(json.dumps({
         "peak_process_rss_mib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,

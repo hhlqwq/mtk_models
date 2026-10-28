@@ -19,7 +19,7 @@ import onnxruntime as ort
 import tqdm
 
 from tools.evaluation import (
-    SPEECH_EXAMPLES, coco_ids, is_test, pose_image_ids, result_status,
+    accuracy_result, SPEECH_EXAMPLES, coco_ids, is_test, pose_image_ids, result_status,
     scope_metadata, select_samples,
 )
 from tools.output_metrics import ReferenceComplete, record_reference, finish_reference
@@ -233,8 +233,8 @@ def evaluate_pose(args, deploy: Path) -> tuple:
                 "bbox_score": record["score"], "area": area, "keypoints": keypoints}) + "\n")
     metrics.evaluate(SimpleNamespace(predictions=path,
         annotations=args.dataset_root / "annotations/coco_wholebody_val_v1.0.json",
-        formatted=args.work_dir / "formatted.json", metrics=args.work_dir / "metrics.json",
-        summary_log=args.work_dir / "cocoeval.log"), backend="onnxruntime")
+        formatted=args.work_dir / "formatted.json", metrics=args.work_dir / "metrics.json"),
+        backend="onnxruntime")
     value = json.loads((args.work_dir / "metrics.json").read_text())["metrics"]["wholebody"]["AP"]
     return "WholeBody AP", value, len(ordered)
 
@@ -350,7 +350,11 @@ def evaluate_model(*, model, onnx, dataset_root, output, decoder_onnx=None, temp
     value = float(value)
     if not math.isfinite(value) or value < 0 or (metric != "WER" and value > 1):
         raise ValueError("ONNX 核心精度无效.")
-    args.output.write_text(json.dumps({"status": result_status(), **scope_metadata(), "model": args.model,
+    units = {"rtmpose_body2d": "person_instance", "mobilefacenet": "face_pair",
+             "depth_anything_v2_small": "annotated_point_pair", "whisper_tiny": "utterance",
+             "vit_base_patch16_224": "image", "fastsam": "image"}
+    evaluation = accuracy_result(args.model, "onnx", {metric: value}, samples, units[args.model])
+    args.output.write_text(json.dumps({"evaluation": evaluation, "status": result_status(), **scope_metadata(), "model": args.model,
         "backend": "ONNX Runtime", "metric": metric, "accuracy": value,
         "samples": samples, "source": "本次 ONNX 浮点同范围实测,使用与板端相同的评测协议"},
         ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

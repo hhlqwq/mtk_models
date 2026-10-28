@@ -1,5 +1,6 @@
 """对已有 ResNet101 FP32 ONNX 计算同协议 ImageNet 全量参考."""
 
+
 import json
 import os
 from pathlib import Path
@@ -20,6 +21,7 @@ from resnet101 import (
     MODEL, PROTOCOL, WEIGHTS, label_signature, preprocess, read_labels,
     validate_contract, validation_images,
 )
+from tools.evaluation import accuracy_result
 
 
 def main() -> None:
@@ -55,6 +57,8 @@ def main() -> None:
         "pillow": PIL.__version__, "onnxruntime": ort.__version__,
         "metric": "Top-1", "accuracy": top1 / len(paths),
     }
+    report["evaluation"] = accuracy_result(MODEL, "onnx",
+        {"Top-1": report["accuracy"]}, len(paths), "image")
     destination = reference_path(ctx)
     destination.write_text(
         json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")

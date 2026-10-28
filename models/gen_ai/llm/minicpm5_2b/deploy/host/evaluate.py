@@ -44,6 +44,7 @@ def evaluate_mode(native, datasets):
         backend="pytorch", data=output / "mmlu", model=native.model,
         output=output / "reference/mmlu", diagnostic_questions=0,
         device=config["evaluation"]["reference_device"])
+    mmlu_args.model_name = "minicpm5_2b"
     evaluate_mmlu.evaluate(mmlu_args)
     quality_args = SimpleNamespace(
         model=native.model, corpus=corpus, output=output / "quality",

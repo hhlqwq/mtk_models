@@ -132,3 +132,9 @@ def metrics(scores, records, indices):
                         "top1": float(np.mean(np.argmax(subset, axis=1) == labels)),
                         "map": float(np.mean(aps))}
     return output
+
+
+def evaluation_ids(records, indices):
+    """返回实际参与未校准折宏平均 AP 的音频标识,排除无映射类别."""
+    return [row["filename"] for row in records
+            if int(row["fold"]) != 1 and indices[int(row["target"])]]

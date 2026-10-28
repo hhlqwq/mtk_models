@@ -22,7 +22,7 @@ def main():
     ctx = context(__file__, new_run=True)
     names = sorted(load_protocol(ctx.dataset))
     images = [(name, ctx.dataset / name) for name in names]
-    metadata = json.loads((ctx.root / "models/model_int8.json").read_text(encoding="utf-8"))
+    metadata = json.loads((ctx.root / "build/reference/model_int8.json").read_text(encoding="utf-8"))
     infer_images(ctx, images, metadata, [1, 3, 518, 518], [1, 518, 518],
                  preprocess, postprocess)
 

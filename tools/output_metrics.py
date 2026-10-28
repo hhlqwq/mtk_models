@@ -85,11 +85,10 @@ class ReferenceWriter:
         self.arrays, self.samples, self.sources = {}, {}, {}
         self.calls = 0
         self.artifacts = {}
-        for directory in json.loads(os.environ.get("MTK_OUTPUT_MODEL_DIRS", "[]")):
-            root = Path(directory)
-            artifacts = root.rglob("*.dla") if root.name == "models" else root.glob("*.dla")
-            for artifact in artifacts:
-                self.artifacts[artifact.relative_to(root).as_posix()] = sha256(artifact)
+        files = json.loads(os.environ["MTK_OUTPUT_DLA_FILES"])
+        if not files:
+            raise ValueError("数值参考必须绑定当前部署契约中的 DLA.")
+        self.artifacts = {name: sha256(Path(path)) for name, path in files.items()}
 
     def add(self, source, inputs, outputs):
         """记录固定数量同输入输出,达到上限时结束参考准备."""
@@ -156,17 +155,17 @@ class OutputComparison:
         self.metrics, self.seen, self.metadata, self.archive = {}, {}, None, None
         if not self.enabled:
             return
-        self.path = Path(reference or ctx.root / "board/output_reference.npz")
+        self.path = Path(reference or ctx.root / "build/reference/output_reference.npz")
         if not self.path.is_file():
-            return
+            raise FileNotFoundError("缺少 compile 数值参考,请先完成主机 compile.")
         self.archive = np.load(self.path, allow_pickle=False)
         self.metadata = json.loads(str(self.archive["metadata"]))
         if self.metadata.get("evaluation_scope") != "compile_subset":
             self.archive.close()
             raise ValueError("只接受 compile 固定小样本参考.")
         for name, digest in self.metadata["dla_artifacts"].items():
-            candidates = list((ctx.root / "models").rglob(name))
-            if len(candidates) != 1 or sha256(candidates[0]) != digest:
+            artifact = ctx.models / name
+            if not artifact.is_file() or sha256(artifact) != digest:
                 raise ValueError("小样本参考与板端 DLA 不匹配.")
 
     def update(self, inputs, outputs):
@@ -199,15 +198,20 @@ class OutputComparison:
         if not self.enabled:
             return
         if self.archive is None:
-            print("[输出误差] 未完成: 缺少本次 compile 小样本参考.", flush=True)
-            return
+            raise FileNotFoundError("缺少本次 compile 的数值参考.")
         try:
             expected = {key: entry["calls"] for key, entry in self.metadata["samples"].items()}
             if self.seen != expected:
                 raise ValueError("compile 数值检查没有覆盖选定参考输入,请核对预处理和资源版本.")
             print(f"[输出误差] {self.scope}, {sum(self.seen.values())} 次输入; "
                   "NRMSE=100*RMSE/RMS(reference).", flush=True)
-            for name, metric in self.metrics.items():
-                print(f"[输出误差] {name}: {json.dumps(metric.result(), ensure_ascii=False)}", flush=True)
+            result = {"scope": self.scope, "compared_calls": sum(self.seen.values()),
+                      "nrmse_definition": "100 * RMSE / RMS(reference)",
+                      "outputs": {name: metric.result() for name, metric in self.metrics.items()}}
+            self.ctx.work.mkdir(parents=True, exist_ok=True)
+            (self.ctx.work / "output_metrics.json").write_text(
+                json.dumps(result, ensure_ascii=False, allow_nan=False), encoding="utf-8")
+            for name, values in result["outputs"].items():
+                print(f"[输出误差] {name}: {json.dumps(values, ensure_ascii=False)}", flush=True)
         finally:
             self.archive.close()

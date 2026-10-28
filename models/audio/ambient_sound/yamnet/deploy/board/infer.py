@@ -29,9 +29,9 @@ def main():
     if ctx.result.exists():
         raise FileExistsError(ctx.result)
     precision = ctx.config["conversion"]["precision"]
-    config = ctx.root / "models" / f"runtime_config_{precision}.csv"
+    config = ctx.root / "build/reference" / f"runtime_config_{precision}.csv"
     if not config.is_file() and precision in ("int8", "fp16"):
-        config = ctx.root / "models/runtime_config.csv"
+        config = ctx.root / "build/reference/runtime_config.csv"
     with config.open() as stream:
         rows = list(csv.reader(stream))
     if len(rows) != 2:
@@ -42,7 +42,7 @@ def main():
     counts = [int(value) for value in (ctx.work / "patch_counts.txt").read_text().split()]
     timing_rows, clip_rows = [], []
     comparison = OutputComparison(ctx)
-    with Runtime(ctx.root / "models" / f"model_{precision}.dla") as runtime:
+    with Runtime(ctx.root / f"model_{precision}.dla") as runtime:
         if tuple(map(len, runtime.sizes)) != (1, 1):
             raise ValueError("YAMNet 要求单输入单输出.")
         inputs, view = runtime.tensor(0, (1, 1, 96, 64), input_dtype, fill=input_zero)

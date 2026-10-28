@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import shlex
 
-from tools.deploy import context
+from tools.deploy import context, prune_models
 from tools.process import run_command
 
 
@@ -14,6 +14,7 @@ def main():
     ctx = context(__file__)
     package = ctx.output / "models"
     manifest = json.loads((package / "contract.json").read_text(encoding="utf-8"))
+    ctx.config["deployment"] = {"model_directory": "models"}
     config = ctx.work / "config.json"
     config.write_text(json.dumps(ctx.config, ensure_ascii=False, indent=2), encoding="utf-8")
     model_files = [package / name for name in ("contract.json", "sparse_weights.npz", "geometry.npz")]
@@ -23,7 +24,7 @@ def main():
             model_files.append(package / item["file"])
     groups = {"": [ctx.model / "deploy/compile.sh", ctx.model / "deploy/evaluate.sh",
                      ctx.model / "deploy/requirements-evaluate.txt", config],
-              "models": model_files, "board": [*list((ctx.model / "deploy/board").glob("*.py")), ctx.repo / "tools/compile_accuracy.py"],
+              "build/reference": [], "models": model_files, "board": [*list((ctx.model / "deploy/board").glob("*.py")), ctx.repo / "tools/compile_accuracy.py", ctx.repo / "tools/summary.py"],
               "board/tools": [ctx.repo / "tools" / name for name in
                               ("__init__.py", "runtime.py", "board.py", "evaluation.py", "files.py", "output_metrics.py")],
               "examples/input": [ctx.work / "sample.npz", ctx.work / "sample.json"]}
@@ -37,6 +38,7 @@ def main():
     run_command(["ssh", *options, host, "mkdir -p " + " ".join(map(shlex.quote, directories))])
     for folder, files in groups.items():
         run_command(["scp", *options, *files, f"{host}:{destination}/{folder}/"])
+    prune_models(ctx, [path.name for path in model_files])
     print("[上传完成] 待板端检查.请登录开发板,在本模型部署目录执行 bash compile.sh.", flush=True)
 
 

@@ -1,8 +1,10 @@
 """按 MMPose 协议计算 COCO-WholeBody 整体 AP."""
 
+
 import os
 import argparse
 import contextlib
+import io
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -16,6 +18,7 @@ from tools.board import configure_parser
 from tools.evaluation import (
     is_test, pose_image_ids, result_status, scope_metadata,
 )
+from tools.evaluation import accuracy_result, record_selection
 
 SIGMAS = np.asarray([
     0.026, 0.025, 0.025, 0.035, 0.035, 0.079, 0.079, 0.072, 0.072,
@@ -166,14 +169,16 @@ def evaluate(args: argparse.Namespace, backend: str = "python_neuron_runtime_hw"
     coco_dt = coco_gt.loadRes(str(args.formatted))
     components = (("wholebody", "keypoints_wholebody", SIGMAS),)
     metrics = {}
-    args.summary_log.parent.mkdir(parents=True, exist_ok=True)
-    with args.summary_log.open("w", encoding="utf-8") as log_file:
-        with contextlib.redirect_stdout(log_file):
-            for name, iou_type, sigmas in components:
-                metrics[name] = evaluate_component(
-                    coco_gt, coco_dt, name, iou_type, sigmas, image_ids)
+    with contextlib.redirect_stdout(io.StringIO()):
+        for name, iou_type, sigmas in components:
+            metrics[name] = evaluate_component(
+                coco_gt, coco_dt, name, iou_type, sigmas, image_ids)
     args.metrics.write_text(
         json.dumps({
+            "evaluation": accuracy_result("rtmpose_body2d",
+                "npu" if backend == "python_neuron_runtime_hw" else "onnx",
+                {"WholeBody AP": metrics["wholebody"]["AP"]},
+                sum(map(len, grouped.values())), "person_instance"),
             "status": result_status(), **scope_metadata(),
             "protocol": {
                 "score_mode": "bbox_keypoint",
@@ -197,14 +202,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--predictions", type=Path, required=True)
     parser.add_argument("--formatted", type=Path, required=True)
     parser.add_argument("--metrics", type=Path, required=True)
-    parser.add_argument("--summary-log", type=Path, required=True)
     parser.add_argument("--run-id")
     configure_parser(parser, __file__, {
         "annotations": lambda c: c.dataset / "annotations/coco_wholebody_val_v1.0.json",
         "predictions": lambda c: c.work / "predictions.jsonl",
         "formatted": lambda c: c.work / "wholebody_predictions.json",
         "metrics": lambda c: c.work / "coco_wholebody_metrics.json",
-        "summary_log": lambda c: c.work / "coco_wholebody_summary.log",
     })
     return parser.parse_args()
 

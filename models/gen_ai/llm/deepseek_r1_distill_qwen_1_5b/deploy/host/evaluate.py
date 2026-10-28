@@ -47,7 +47,7 @@ def main():
     evaluate_mmlu.prepare(mmlu)
     print("[参考 2/3] 官方权重 FP32 MMLU.", flush=True)
     evaluate_mmlu.evaluate(SimpleNamespace(
-        backend="pytorch", data=output / "mmlu", model=native.model,
+        model_name="deepseek_r1_distill_qwen_1_5b", backend="pytorch", data=output / "mmlu", model=native.model,
         output=output / "reference/mmlu", diagnostic_questions=0, device=device))
     print("[参考 3/3] WikiText2 test FP32 与原生输入.", flush=True)
     quality = SimpleNamespace(
@@ -59,7 +59,7 @@ def main():
     quality.backend = "prepare_board"
     evaluate_quality.evaluate(quality)
     print(f"[评价资源完成] {output}", flush=True)
-    print("[下一步] 将此目录内容单独放入已有部署包的 evaluation/full/.", flush=True)
+    print("[参考就绪] 入口接下来自动上传至板端 build/reference/full/.", flush=True)
 
 
 if __name__ == "__main__":

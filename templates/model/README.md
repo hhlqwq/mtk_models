@@ -14,11 +14,11 @@
 bash deploy/compile.sh
 ```
 
-所有模型的主机 deploy/compile.sh 完成转换、量化、编译、打包和上传后结束,提示板端部署目录及命令,不通过 SSH 自动执行板端推理、示例生成或评价,不自动取回尚未生成的示例.上传完成只标为待板端检查.用户登录开发板,在部署目录执行 bash compile.sh 检查少量输入并保存 README 示例,不计算或发布指标.正式评价独立使用 evaluate.sh,只运行已有模型并统计精度、性能和进程峰值 RSS.每个模型 results/ 只保留 summary.json;板端预测、日志和中间指标统一放本模型部署目录的 work/,每次推理覆盖.新增模型需要实现示例生成、正式指标和覆盖校验,复用 tools/board.py 与 tools/summary.py.
+所有模型的主机 deploy/compile.sh 完成转换、量化、编译、打包和上传后结束,提示板端部署目录及命令,不通过 SSH 自动执行板端推理、示例生成或评价,不自动取回尚未生成的示例.上传完成只标为待板端检查.用户登录开发板,在部署目录执行 bash compile.sh 检查少量输入并保存 README 示例,计算同子集任务精度、精度损失及固定少量输出数值误差,保存 summary_test.json.正式评价独立使用 evaluate.sh,只运行已有模型并统计精度、性能和进程峰值 RSS.每个模型 results/ 只保留 summary_test.json 和 summary.json;板端预测、日志和中间指标统一放本模型部署目录的 build/work/,每次推理覆盖.新增模型需要实现示例生成、正式指标和覆盖校验,复用 tools/board.py 与 tools/summary.py.
 
 入口直接调用命令,输出和错误直接显示在终端,只补充必要阶段提示.不默认增加日志文件或包装函数.复用 Docker 公共环境与公共路径工具,只保存运行、评分和排错必需的数据.
 
-主流程独立步骤默认读取所属模型配置,不要求手填参数.普通容器步骤使用 python,板端使用 python3.所有模型统一通过 tools/board.py 使用部署目录内的 work/,不按日期或阶段建立过程目录;推理入口使用 context(__file__, new_run=True) 覆盖上次中间结果,评分和画图使用同一 work/.不要为单个模型增加临时目录规则.
+主流程独立步骤默认读取所属模型配置,不要求手填参数.普通容器步骤使用 python,板端使用 python3.所有模型统一通过 tools/board.py 使用部署目录内的 build/work/,不按日期或阶段建立过程目录;推理入口使用 context(__file__, new_run=True) 覆盖上次中间结果,评分和画图使用同一 build/work/.不要为单个模型增加临时目录规则.
 
 用户登录开发板后,进入部署目录执行:
 
@@ -34,7 +34,7 @@ bash compile.sh
 
 ## 数据与评价
 
-`compile.sh` 使用固定少量输入计算 CosSim、RMSE、NRMSE,普通模型最多 5 次输入,不减少既有通路样本数.参考使用主机本地 NPZ,上传到板端 board/output_reference.npz,终端显示数值,不使用数据库或 NAS 评价张量.全量 evaluate.sh 只负责任务精度、性能与 RSS.复用 tools/output_metrics.py,实际接入输入、输出与版本核对,具体范围见[输出误差统计](../../docs/output_metrics.md).
+`compile.sh` 使用固定少量输入计算 CosSim、RMSE、NRMSE,普通模型最多 5 次输入,不减少既有通路样本数.参考使用主机本地 NPZ,上传到板端 build/reference/output_reference.npz,终端显示数值,不使用数据库或 NAS 评价张量.全量 evaluate.sh 只负责任务精度、性能与 RSS.复用 tools/output_metrics.py,实际接入输入、输出与版本核对,具体范围见[输出误差统计](../../docs/output_metrics.md).
 
 填写数据目录格式、样本数、校准范围、评价协议及依赖.记录同协议原框架/ONNX 与 NPU 指标、差值、纯 NPU 和端到端耗时及峰值 RSS.多模型 DLA、外置 embedding 分项统计,文件大小采用十进制 MB.
 
@@ -46,8 +46,11 @@ bash compile.sh
 
 `results/summary.json` 保存真实汇总,未完成评价不得填入示例数字.选取少量有来源和许可的输入,展示本次真实输出.全量数据和原始权重保存在 NAS,不进入 Git.
 
-NAS 资源统一按 original/ 保存原始权重和来源,build/ 保存转换中间产物,最外层只放当前导出 ONNX 和最终 DLA;多文件部署包使用 models/.评价过程和缓存写主机本地日期临时目录,板端使用本模型 work/ 覆盖.
+NAS 资源统一按 original/ 保存原始权重和来源,build/ 保存转换中间产物,最外层只放当前导出 ONNX 和最终 DLA;多文件部署包使用 models/.评价过程和缓存写主机本地日期临时目录,板端使用本模型 build/work/ 覆盖.
 
 ### compile 子集精度检查
 
-按任务定义固定子集,主机准备浮点精度,板端评价同一子集并统计精度损失,保存 results/summary_sub.json.普通样本按固定间隔抽取,分组任务保留类别、折或学科覆盖;不能用展示图片数量代替任务子集数量.全量结果仍保存在 results/summary.json,两份报告互不覆盖.具体数量及损失定义见[输出误差统计](../../docs/output_metrics.md).
+按任务定义固定子集,主机准备浮点精度,板端评价同一子集并统计精度损失,保存 results/summary_test.json.普通样本按固定间隔抽取,分组任务保留类别、折或学科覆盖;不能用展示图片数量代替任务子集数量.全量结果仍保存在 results/summary.json,两份报告互不覆盖.具体数量及损失定义见[输出误差统计](../../docs/output_metrics.md).
+
+
+公共精度出口必须调用 tools.evaluation.accuracy_result,主机和板端明确传入相同指标名称、样本单位及真实样本集合标识.主机 compile 先完成浮点子集评分,再上传已有部署包、少量输出数值参考和子集精度参考;全量 evaluate 完成后调用 tools/deploy.py --upload-reference 自动上传结果和必要输入.板端子集报告包含 output_errors,全量报告不混入该字段.不要在公共读取器增加模型名和字段存在性的组合判断.

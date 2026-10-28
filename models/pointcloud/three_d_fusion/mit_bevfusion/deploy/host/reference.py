@@ -1,6 +1,8 @@
 """独立全量 FP32 参考,已有同协议参考则直接复用,不重新编译."""
 
 from datetime import date
+from tools.evaluation import accuracy_result, record_selection
+
 import json
 from pathlib import Path
 import sys
@@ -22,19 +24,22 @@ def main():
     package = ctx.output / "models"
     fingerprint = identity(package)
     tokens = [sample["token"] for sample in samples]
+    record_selection(tokens)
     target = ctx.work / "onnx_reference.json"
     if target.is_file():
         previous = json.loads(target.read_text(encoding="utf-8"))
-        if previous.get("identity") == fingerprint and previous.get("sample_tokens") == tokens:
+        if (previous.get("identity") == fingerprint and previous.get("sample_tokens") == tokens
+                and "evaluation" in previous):
             print("[参考复用] 已有同模型同协议完整 FP32 参考,无需重复运行.", flush=True)
             return
     temporary = Path("/tmp/hailongcodex") / date.today().isoformat() / "mit_bevfusion_reference"
     predictions, _, _, _ = evaluate_dataset(package, ctx.dataset, samples,
                                            temporary / "predictions.json", floating=True)
     accuracy = score_predictions(ctx.work / "ground_truth.json", predictions)
-    target.write_text(json.dumps({"identity": fingerprint, "sample_tokens": tokens, "accuracy": accuracy}),
+    target.write_text(json.dumps({"identity": fingerprint, "sample_tokens": tokens, "accuracy": accuracy,
+        "evaluation": accuracy_result("mit_bevfusion", "onnx", accuracy, len(tokens), "frame")}),
                       encoding="utf-8")
-    print("[参考完成] 将 onnx_reference.json 单独放入板端 models/,不需要重新上传或编译模型.", flush=True)
+    print("[参考完成] 浮点精度已保存,入口接下来自动上传至板端 build/reference/.", flush=True)
 
 
 if __name__ == "__main__":

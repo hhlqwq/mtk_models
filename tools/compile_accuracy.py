@@ -1,4 +1,4 @@
-"""compile 两端评价同一子集,精度损失写入独立 summary_sub.json."""
+"""compile 两端评价同一子集,精度损失写入独立 summary_test.json."""
 
 import json
 import math
@@ -8,7 +8,7 @@ import subprocess
 import sys
 from types import SimpleNamespace
 
-from tools.evaluation import is_test
+from tools.evaluation import compare_accuracy, is_test, publish_result, read_accuracy
 from tools.files import read_json, sha256
 
 
@@ -31,10 +31,7 @@ def subset_report(reference, actual=None, quality=None):
     result = {"model": reference["model"], "evaluation_scope": "subset",
               "status": "float_reference_ready" if actual is None else "complete",
               "samples": reference["samples"], "accuracy": accuracy,
-              "sample_unit": {"rtmpose_body2d": "person_instance", "mobilefacenet": "face_pair",
-                  "depth_anything_v2_small": "annotated_point_pair", "yamnet": "audio_clip",
-                  "whisper_tiny": "utterance", "mit_bevfusion": "frame",
-                  **{name: "question" for name in LLMS}}.get(reference["model"], "image"),
+              "sample_unit": reference["evaluation"]["samples"]["unit"],
               "sampling": "fixed_task_subset_v2",
               "sample_ids_sha256": reference.get("sample_ids_sha256"),
               "dla_artifacts": reference["dla_artifacts"],
@@ -57,47 +54,13 @@ def subset_report(reference, actual=None, quality=None):
 
 def save_subset(root, report):
     """只覆盖本模型的子集摘要,不改写或清理正式全量摘要."""
-    root = Path(root).resolve()
-    directory = root / "results"
-    destination = directory / "summary_sub.json"
-    if directory.is_symlink() or destination.is_symlink():
-        raise ValueError("子集报告目录或文件不能是符号链接.")
-    text = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
-    directory.mkdir(parents=True, exist_ok=True)
-    destination.write_text(text, encoding="utf-8")
+    destination = publish_result(root, report, "summary_test.json")
     print(f"[子集报告] {destination}", flush=True)
 
 
 def run(path, *arguments):
     """直接运行已有独立步骤,保留原始进度与错误."""
     subprocess.run([sys.executable, str(path), *map(str, arguments)], check=True)
-
-
-def metrics(name, report):
-    """提取已有评分实现的任务精度和实际覆盖,不混入性能指标."""
-    if name in LLMS:
-        return {"MMLU Accuracy": report["accuracy"]}, report["evaluated_questions"]
-    if name == "mit_bevfusion":
-        return report["accuracy"], len(report["sample_tokens"])
-    if name == "rtmpose_body2d" and "metrics" in report:
-        return {"WholeBody AP": report["metrics"]["wholebody"]["AP"]}, report["protocol"]["detections_before_nms"]
-    if name == "yamnet":
-        return {"ESC-50 macro AP (folds 2-5)": report["metrics"]["held_out"]["map"]}, report["samples"]
-    if name in ("yolov5s", "yolov8n"):
-        return {"mAP@0.5:0.95": report.get("board_accuracy", report.get("map_50_95"))}, report.get("samples", report.get("images"))
-    if name == "vit_base_patch16_224" and "npu_top1" in report:
-        return {"Top-1": report["npu_top1"]}, report["samples"]
-    if name == "mobilefacenet" and "verification_accuracy" in report:
-        return {"LFW 验证准确率": report["verification_accuracy"]}, report["pairs"]
-    if name == "depth_anything_v2_small" and "pairwise_accuracy" in report:
-        return {"DA-2K 点对准确率": report["pairwise_accuracy"]}, report["total_pairs"]
-    if name == "fastsam" and "AR_100" in report:
-        return {"segm AR@100": report["AR_100"]}, report["images"]
-    if name == "whisper_tiny" and isinstance(report.get("accuracy"), dict):
-        if report["successful_samples"] != report["expected_samples"]:
-            raise ValueError("Whisper 子集存在失败或缺失样本.")
-        return {"WER": report["accuracy"]["value"]}, report["successful_samples"]
-    return {report["metric"]: report["accuracy"]}, report["samples"]
 
 
 def language(ctx, host):
@@ -124,7 +87,7 @@ def language(ctx, host):
             test_questions=ctx.config["evaluation"].get("test_mmlu_questions", 100),
             output=data / "mmlu"))
         evaluate_mmlu.evaluate(SimpleNamespace(
-            backend="pytorch", data=data / "mmlu", model=native.model,
+            model_name=name, backend="pytorch", data=data / "mmlu", model=native.model,
             output=data / "reference/mmlu", diagnostic_questions=0,
             device=ctx.config["evaluation"]["reference_device"]))
         options = SimpleNamespace(
@@ -140,13 +103,13 @@ def language(ctx, host):
         return data / "reference/mmlu/mmlu_accuracy.json", data / "quality/pytorch_quality.json", data
     from tools.llm import evaluate_board_quality
 
-    data = ctx.root / "evaluation/compile"
+    data = ctx.root / "build/reference/subset"
     output = ctx.work / "compile_accuracy"
     evaluate_mmlu.evaluate(SimpleNamespace(
-        backend="npu", data=data / "mmlu", package=ctx.root,
+        model_name=name, backend="npu", data=data / "mmlu", package=ctx.models,
         output=output / "mmlu", diagnostic_questions=0))
     evaluate_board_quality.evaluate(SimpleNamespace(
-        package=ctx.root, quality_data=data / "quality", output=output / "quality",
+        package=ctx.models, quality_data=data / "quality", output=output / "quality",
         diagnostic_blocks=0, decode_steps=0))
     return output / "mmlu/mmlu_accuracy.json", output / "quality/npu_quality.json", data
 
@@ -160,6 +123,7 @@ def board_report(ctx):
         return read_json(report), read_json(quality)
     if name == "mit_bevfusion":
         run(board / "evaluate.py")
+        run(board / "check.py")
         return read_json(ctx.work / "compile_accuracy.json"), None
     run(board / ("evaluate.py" if name == "resnet101" else "full_accuracy_board.py"))
     report = (ctx.work / "coco_wholebody_metrics.json" if name == "rtmpose_body2d"
@@ -170,7 +134,7 @@ def board_report(ctx):
 
 def host_reference(deploy):
     """在主机本地计算子集浮点任务精度并上传必要参考,不写 NAS."""
-    from tools.deploy import context, reference_path
+    from tools.deploy import context, deployment_artifacts, reference_path
     from tools.process import run_command
 
     os.environ.update(MTK_EVALUATION_WORK="1", MTK_COMPILE_ACCURACY="1",
@@ -191,12 +155,14 @@ def host_reference(deploy):
         path = (ctx.work / "evaluation/test/onnx/summary.json" if name == "yamnet"
                 else reference_path(ctx))
         report = read_json(path)
-    values, count = metrics(name, report)
-    root = ctx.output / "models" if name in LLMS or name == "mit_bevfusion" else ctx.output
-    artifacts = root.rglob("*.dla") if root.name == "models" else root.glob("*.dla")
-    reference = {"model": name, "evaluation_scope": "subset", "samples": count,
+    backend = "pytorch" if name in LLMS else "onnx"
+    evaluation = read_accuracy(report, name, backend)
+    values = {key: item["value"] for key, item in evaluation["metrics"].items()}
+    count = evaluation["samples"]["count"]
+    artifacts = deployment_artifacts(ctx)
+    reference = {"evaluation": evaluation, "model": name, "evaluation_scope": "subset", "samples": count,
                  "metrics": values, "sample_ids_sha256": report.get("sample_ids_sha256"),
-                 "dla_artifacts": {path.relative_to(root).as_posix(): sha256(path) for path in artifacts}}
+                 "dla_artifacts": {name: sha256(path) for name, path in artifacts.items()}}
     if quality is not None:
         reference["quality"] = {key: quality[key] for key in ("perplexity", "input_ids", "scored_tokens")}
         reference["cases_sha256"] = report["cases_sha256"]
@@ -204,17 +170,23 @@ def host_reference(deploy):
         reference.update(identity=report["identity"], sample_tokens=report["sample_tokens"])
     if not reference["dla_artifacts"]:
         raise FileNotFoundError("子集参考缺少已编译 DLA.")
-    save_subset(ctx.model, subset_report(reference))
+    print(f"[浮点子集完成] {name}: {count} 个评价单位, {values}.", flush=True)
+    # 浮点评分和契约核对通过后才上传部署包,不让半完成模型进入下一阶段.
+    upload_environment = dict(os.environ, MTK_EVALUATION_WORK="0",
+                              MTK_COMPILE_ACCURACY="0", MTK_PREPARE_OUTPUT_REFERENCE="0")
+    run_command([sys.executable, deploy / "host/upload.py"], env=upload_environment)
+    if name != "mit_bevfusion":
+        run(ctx.repo / "tools/prepare_output_reference.py", deploy)
     destination = ctx.config["board"]["deploy_dir"]
     host = os.environ["MTK_BOARD_HOST"]
     target = ctx.work / "compile_accuracy_reference.json"
     target.write_text(json.dumps(reference, ensure_ascii=False, allow_nan=False) + "\n", encoding="utf-8")
-    run_command(["scp", "-o", "BatchMode=yes", target, f"{host}:{destination}/board/"])
+    run_command(["scp", "-o", "BatchMode=yes", target, f"{host}:{destination}/build/reference/subset.json"])
     if name == "mit_bevfusion":
         for source, filename in ((ctx.work / "samples.json", "compile_samples.json"),
                                  (ctx.work / "ground_truth.json", "compile_ground_truth.json")):
             run_command(["scp", "-o", "BatchMode=yes", source,
-                         f"{host}:{destination}/board/{filename}"])
+                         f"{host}:{destination}/build/reference/{filename}"])
     if data is not None:
         import shlex
 
@@ -222,7 +194,7 @@ def host_reference(deploy):
             ("mmlu", ("protocol.json", "cases.json", "mmlu_inputs.npz", "board_input_contract.json")),
             ("quality", ("board_quality_protocol.json", "board_inputs.npz", "board_input_contract.json")),
         ):
-            target_folder = destination + "/evaluation/compile/" + folder
+            target_folder = destination + "/build/reference/subset/" + folder
             run_command(["ssh", "-o", "BatchMode=yes", host,
                          "mkdir -p " + shlex.quote(target_folder)])
             run_command(["scp", "-o", "BatchMode=yes", *[data / folder / name for name in filenames],
@@ -237,30 +209,24 @@ def main():
     if len(sys.argv) > 1:
         deploy = Path(sys.argv[1]).resolve()
         sys.argv = [sys.argv[0]]
-        if deploy.name == "deploy" and deploy.parent.name == "models":
-            # 修复评分代码后只补充参考,无需重新转换或编译已有 DLA.
-            entries = sorted(deploy.parent.rglob("config.yaml"))
-            for index, config in enumerate(entries, 1):
-                entry = config.parent / "deploy"
-                print(f"[子集参考 {index}/{len(entries)}] {config.parent.name}", flush=True)
-                if config.parent.name != "mit_bevfusion":
-                    run(deploy.parent.parent / "tools/prepare_output_reference.py", entry)
-                run(Path(__file__), entry)
-            return
         host_reference(deploy)
         return
     from tools.board import context
 
     ctx = context(__file__)
     name = ctx.config["name"]
-    reference = read_json(ctx.root / "board/compile_accuracy_reference.json")
+    reference = read_json(ctx.root / "build/reference/subset.json")
     if reference["model"] != name or reference["evaluation_scope"] != "subset":
         raise ValueError("子集精度参考的模型或范围不匹配.")
     for filename, digest in reference["dla_artifacts"].items():
-        if sha256(ctx.root / "models" / filename) != digest:
+        if sha256(ctx.models / filename) != digest:
             raise ValueError("子集任务精度参考与板端 DLA 不匹配.")
     report, quality = board_report(ctx)
-    actual, count = metrics(name, report)
+    evaluation = read_accuracy(report, name, "npu")
+    actual = {key: item["value"] for key, item in evaluation["metrics"].items()}
+    count = evaluation["samples"]["count"]
+    if evaluation["samples"] != reference["evaluation"]["samples"]:
+        raise ValueError("浮点与 NPU 的实际样本集合、数量或单位不一致.")
     if count != reference["samples"] or actual.keys() != reference["metrics"].keys():
         raise ValueError("浮点与 NPU 子集评价的覆盖或指标不一致.")
     if name in LLMS:
@@ -290,9 +256,12 @@ def main():
               f"浮点 {reference['quality']['perplexity']:.6f}, NPU {quality['perplexity']:.6f}, "
               f"变化(NPU - 浮点) {quality['perplexity'] - reference['quality']['perplexity']:+.6f}.", flush=True)
     result = subset_report(reference, actual, quality)
+    result["accuracy"] = compare_accuracy(reference["evaluation"], evaluation)
+    result["sample_ids_sha256"] = evaluation["samples"]["selection_id"]
     result["run_id"] = ctx.run_id
+    result["output_errors"] = read_json(ctx.work / "output_metrics.json")
     save_subset(ctx.root, result)
-    print("[子集精度完成] 已保存 summary_sub.json,未改写全量 summary.json.", flush=True)
+    print("[子集精度完成] 已保存 summary_test.json,未改写全量 summary.json.", flush=True)
 
 
 if __name__ == "__main__":

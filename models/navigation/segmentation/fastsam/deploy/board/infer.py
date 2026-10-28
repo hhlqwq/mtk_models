@@ -26,14 +26,14 @@ def main():
         raise ValueError("COCO val2017 图片数量不符.")
     selected = set(coco_ids(int(path.stem) for path in images))
     images = [path for path in images if int(path.stem) in selected]
-    input_info, outputs = read_contract(ctx.root / "models/runtime_config.csv",
+    input_info, outputs = read_contract(ctx.root / "build/reference/runtime_config.csv",
                                         OUTPUT_NAMES, OUTPUT_SHAPES)
     indices = [next(index for index, item in enumerate(outputs) if item["name"] == name)
                for name in OUTPUT_NAMES]
     checkpoint_dir = ctx.work / "predictions_by_image"
     checkpoint_dir.mkdir(parents=True)
     comparison = OutputComparison(ctx)
-    with Runtime(ctx.root / "models/model_int8.dla") as runtime:
+    with Runtime(ctx.root / "model_int8.dla") as runtime:
         if tuple(map(len, runtime.sizes)) != (1, 10):
             raise ValueError("FastSAM 要求单输入和十个输出.")
         inputs, view = runtime.tensor(0, input_info["shape"], np.int8,

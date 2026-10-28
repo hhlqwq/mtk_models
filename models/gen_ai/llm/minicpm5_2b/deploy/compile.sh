@@ -16,7 +16,7 @@ if [[ -f "${SCRIPT_DIR}/config.json" ]]; then
     echo "[子集精度] 计算任务精度并与同子集浮点参考对比."
     python3 "${SCRIPT_DIR}/board/compile_accuracy.py"
     echo "[板端 2/2] 生成文本示例已保存至 examples/output/."
-    echo "[编译完成] 通路和示例已准备,子集精度和损失已保存至 results/summary_sub.json,全量 summary.json 未改写."
+    echo "[编译完成] 通路和示例已准备,子集精度和损失已保存至 results/summary_test.json,全量 summary.json 未改写."
 else
     MODEL_BUILD_DIR="$(python "${MTK_MODELS_ROOT}/tools/storage.py" --print-build-dir "${SCRIPT_DIR}/../config.yaml")"
     mkdir -p "${MODEL_BUILD_DIR}"
@@ -26,11 +26,9 @@ else
     python "${SCRIPT_DIR}/host/convert.py"
     echo '[容器 2/3] 核对并复用已选 Prefill 和 Decode 双 DLA.'
     python "${SCRIPT_DIR}/host/compile.py"
-    echo '[容器 3/3] 打包并上传开发板.'
-    python "${SCRIPT_DIR}/host/upload.py"
-    echo "[小样本数值参考] 仅准备固定少量输入的 CosSim、RMSE、NRMSE 对照."
-    python "${MTK_MODELS_ROOT}/tools/prepare_output_reference.py" "${SCRIPT_DIR}"
-    echo "[浮点子集精度] 评估完整选定子集并保存 summary_sub.json,上传同子集参考."
+    echo '[容器 3/3] 打包已有模型,随后评估浮点子集并上传.'
+    python "${SCRIPT_DIR}/host/package.py"
+    echo "[浮点子集精度] 评估完整选定子集并上传模型、精度及数值参考."
     python "${MTK_MODELS_ROOT}/tools/compile_accuracy.py" "${SCRIPT_DIR}"
     echo "[编译完成] 模型已上传,请在开发板执行 compile.sh 检查通路并生成展示示例."
 fi

@@ -25,7 +25,7 @@ def main():
     rows = load_pairs(ctx.dataset)
     names = sorted({row[field] for row in rows for field in ("image_a", "image_b")})
     images = [(name, ctx.dataset / "images" / name) for name in names]
-    metadata = json.loads((ctx.root / "models/metadata.json").read_text(encoding="utf-8"))
+    metadata = json.loads((ctx.root / "build/reference/metadata.json").read_text(encoding="utf-8"))
     if metadata.get("input_protocol") != "RGB_ImageNet_normalize_aligned_112x112":
         raise ValueError("量化元数据的人脸输入协议不匹配.")
     infer_images(ctx, images, metadata, [1, 3, 112, 112], [1, 128],

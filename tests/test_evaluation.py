@@ -28,7 +28,7 @@ class EvaluationTest(unittest.TestCase):
     def test_default_subset_and_explicit_full(self):
         """默认固定小批量,只有显式全量范围保留全集."""
         values = list(range(5000))
-        self.assertEqual(len(evaluation.coco_ids(values)), 100)
+        self.assertEqual(len(evaluation.coco_ids(values)), 300)
         self.assertEqual(evaluation.result_status(), "smoke_test")
         self.assertEqual(evaluation.scope_metadata()["evaluation_scope"], "subset")
         os.environ["MTK_EVAL_SCOPE"] = "full"
@@ -44,29 +44,29 @@ class EvaluationTest(unittest.TestCase):
             evaluation.is_test()
 
     def test_coco_subset_deterministic(self):
-        """固定 100 张包含示例,输入顺序不影响两端指纹."""
+        """固定 300 张包含示例,输入顺序不影响两端指纹."""
         os.environ["MTK_EVAL_SCOPE"] = "subset"
         values = list(range(5000)) + [210299, 252219, 481386]
         selected = evaluation.coco_ids(values)
         digest = evaluation.scope_metadata()["sample_ids_sha256"]
-        self.assertEqual(len(selected), 100)
+        self.assertEqual(len(selected), 300)
         self.assertTrue(set(evaluation.COCO_EXAMPLES).issubset(selected))
         self.assertEqual(selected, evaluation.coco_ids(reversed(values)))
         self.assertEqual(digest, evaluation.scope_metadata()["sample_ids_sha256"])
 
     def test_lfw_balanced_folds(self):
-        """十折每折各选五个同人和异人配对."""
+        """十折每折各选二十五个同人和异人配对."""
         os.environ["MTK_EVAL_SCOPE"] = "subset"
         rows = [{"fold_id": fold, "is_same": label,
                  "pair_id": (fold - 1) * 600 + label * 300 + index}
                 for fold in range(1, 11) for label in (0, 1)
                 for index in range(300)]
         selected = evaluation.lfw_pairs(rows)
-        self.assertEqual(len(selected), 100)
+        self.assertEqual(len(selected), 500)
         for fold in range(1, 11):
             for label in (0, 1):
                 self.assertEqual(sum(int(row["fold_id"]) == fold and
-                                     int(row["is_same"]) == label for row in selected), 5)
+                                     int(row["is_same"]) == label for row in selected), 25)
 
     def test_audio_coverage(self):
         """ESC-50 子集每类每折各一条,且固定按文件名排序."""
@@ -93,17 +93,17 @@ class EvaluationTest(unittest.TestCase):
         """只调用真实参数解析函数,验证 LLM 诊断上限而不加载模型."""
         root = Path(__file__).resolve().parents[1]
         cases = (
-            ("evaluate_mmlu.py", ["prepare", "--output", "/tmp/output"],
+            ("evaluate_mmlu.py", ["prepare", "--model-name", "test_model", "--output", "/tmp/output"],
              "diagnostic_questions", 0, 0),
             ("evaluate_quality.py", ["--model", "/tmp/model", "--corpus", "/tmp/corpus",
              "--output", "/tmp/output", "--backend", "pytorch"],
              "diagnostic_blocks", 0, 4),
             ("evaluate_board_quality.py", ["--package", "/tmp/package",
-             "--quality-data", "/tmp/data", "--library", "/tmp/library",
+             "--quality-data", "/tmp/data",
              "--output", "/tmp/output"], "diagnostic_blocks", 0, 4),
         )
         for filename, arguments, field, full_value, quick_value in cases:
-            tree = ast.parse((root / "tools/llm" / filename).read_text())
+            tree = ast.parse((root / "tools/llm" / filename).read_text(encoding="utf-8"))
             main = next(node for node in tree.body
                         if isinstance(node, ast.FunctionDef) and node.name == "main")
             for quick in (False, True):
@@ -122,7 +122,9 @@ class EvaluationTest(unittest.TestCase):
                 self.assertEqual(getattr(args, field), quick_value if quick else full_value)
                 self.assertEqual(args.output, Path("/tmp/output/test" if quick else "/tmp/output"))
                 if filename == "evaluate_mmlu.py":
-                    self.assertEqual(args.limit, 16 if quick else 1000)
+                    self.assertEqual(args.limit, 1000)
+                    if quick:
+                        self.assertEqual(args.test_questions, 100)
                 if filename == "evaluate_quality.py" and quick:
                     self.assertTrue(args.skip_demo)
                     self.assertFalse(args.full_test)

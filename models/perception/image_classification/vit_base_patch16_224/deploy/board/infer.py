@@ -44,11 +44,11 @@ def main():
             for index, path in enumerate(paths)):
         raise ValueError("ImageNet val 必须包含连续编号的 50000 张图片.")
     paths = select_samples(paths, "vit_base_patch16_224", key=lambda path: path.name)
-    metadata = json.loads((ctx.root / "models/quantization.json").read_text())
+    metadata = json.loads((ctx.root / "build/reference/quantization.json").read_text())
     scale, zero = metadata["input_scale"], metadata["input_zero_point"]
     ctx.work.mkdir(parents=True)
     comparison = OutputComparison(ctx)
-    with Runtime(ctx.root / "models/model_int8.dla") as model:
+    with Runtime(ctx.root / "model_int8.dla") as model:
         if tuple(map(len, model.sizes)) != (1, 1):
             raise ValueError("ViT 要求单输入单输出.")
         inputs, view = model.tensor(0, (1, 3, 224, 224), np.int8, fill=zero)

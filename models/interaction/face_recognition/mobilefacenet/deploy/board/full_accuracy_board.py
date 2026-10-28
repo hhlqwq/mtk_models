@@ -1,5 +1,6 @@
 """在 Genio 720 上完成 LFW 全量十折人脸验证。"""
 
+
 import os
 import argparse
 import csv
@@ -12,6 +13,7 @@ import numpy as np
 from tools.board import configure_parser, inference_records
 
 from tools.evaluation import is_test, lfw_pairs, result_status, scope_metadata
+from tools.evaluation import accuracy_result
 
 
 EXPECTED_PAIRS = 6000
@@ -155,11 +157,10 @@ def evaluate(args: argparse.Namespace) -> None:
         "peak_rss_kib": None if is_test() else max(row["peak_rss_kib"] for row in records.values()),
         "timing_scope": "常驻 Python 模型,单独统计 NeuronRuntime_inference 调用",
     }
+    report["evaluation"] = accuracy_result("mobilefacenet", "npu",
+        {"LFW 验证准确率": verification["verification_accuracy"]}, len(rows), "face_pair")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    with (args.output.parent / "pair_results.jsonl").open("w", encoding="utf-8") as stream:
-        for detail in details:
-            stream.write(json.dumps(detail, ensure_ascii=False) + "\n")
     print(f"[评测] LFW 验证准确率: {report['verification_accuracy']:.6f}; {args.output}", flush=True)
 
 

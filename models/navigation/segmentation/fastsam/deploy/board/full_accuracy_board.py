@@ -1,5 +1,6 @@
 """在板端评测 FastSAM-s 的 COCO val2017 类别无关实例分割 AP."""
 
+
 import argparse
 from tools.board import configure_parser
 import contextlib
@@ -16,6 +17,7 @@ from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
 from tools.evaluation import coco_ids, is_test, result_status, scope_metadata
+from tools.evaluation import accuracy_result
 
 
 def parse_args() -> argparse.Namespace:
@@ -121,7 +123,6 @@ def evaluate(args: argparse.Namespace) -> None:
         evaluator.evaluate()
         evaluator.accumulate()
         evaluator.summarize()
-    (report_dir / "coco_summary.log").write_text(log.getvalue(), encoding="utf-8")
     summary = {
         "status": result_status(),
         **scope_metadata(),
@@ -143,6 +144,8 @@ def evaluate(args: argparse.Namespace) -> None:
         "end_to_end_mean_ms": None if is_test() else statistics.fmean(end_to_end_times),
         "timing_scope": "persistent Python Runtime; NPU inference call reported separately",
     }
+    summary["evaluation"] = accuracy_result("fastsam", "npu",
+        {"segm AR@100": summary["AR_100"]}, len(images), "image")
     (report_dir / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8")

@@ -1,5 +1,6 @@
 """汇总 Whisper-Tiny 正式 WER/CER、框架一致性和板端性能."""
 
+
 import os
 import argparse
 import json
@@ -15,6 +16,7 @@ from tools.board import configure_parser
 from tools.evaluation import (
     is_test, record_selection, result_status, scope_metadata,
 )
+from tools.evaluation import accuracy_result
 
 
 
@@ -214,44 +216,6 @@ def preprocessing_summary(records: list[dict]) -> dict:
     }
 
 
-def write_markdown(path: Path, dataset: str, summary: dict) -> None:
-    """生成可直接审阅的精度与性能 Markdown."""
-    accuracy = summary["accuracy"]
-    performance = summary["performance"]["overall"]
-    lines = [
-        f"# {dataset} 正式评测结果\n\n"
-        f"- 状态：`{summary['status']}`\n"
-        f"- 样例数：`{summary['successful_samples']}` / "
-        f"`{summary['expected_samples']}`\n"
-        f"- NPU {accuracy['metric'].upper()}：`{accuracy['value']:.6f}`\n"
-        f"- 规范化文本完全一致率："
-        f"`{accuracy['normalized_exact_match_rate']:.6f}`\n"
-    ]
-    if "framework_accuracy" in summary:
-        framework_accuracy = summary["framework_accuracy"]
-        parity = summary["framework_parity"]
-        lines.append(
-            f"- OpenAI {framework_accuracy['metric'].upper()}："
-            f"`{framework_accuracy['value']:.6f}`\n"
-            f"- NPU/OpenAI 规范化文本完全一致率："
-            f"`{parity['normalized_text_exact_match_rate']:.6f}`\n"
-            f"- NPU/OpenAI Token 完全一致率："
-            f"`{parity['token_exact_match_rate']:.6f}`\n")
-    lines.append(
-        f"- 未到 EOT 样例数：`{summary['truncated_samples']}`\n"
-        f"- Encoder Mean/P50/P90/P95："
-        f"`{performance['encoder_ms']['mean']:.3f}` / "
-        f"`{performance['encoder_ms']['p50']:.3f}` / "
-        f"`{performance['encoder_ms']['p90']:.3f}` / "
-        f"`{performance['encoder_ms']['p95']:.3f}` ms\n"
-        f"- NPU RTF Mean/P50/P90/P95："
-        f"`{performance['npu_rtf']['mean']:.6f}` / "
-        f"`{performance['npu_rtf']['p50']:.6f}` / "
-        f"`{performance['npu_rtf']['p90']:.6f}` / "
-        f"`{performance['npu_rtf']['p95']:.6f}`\n")
-    path.write_text("".join(lines), encoding="utf-8")
-
-
 def main() -> None:
     """执行完整性检查、精度计算和性能汇总."""
     args = parse_args()
@@ -323,17 +287,14 @@ def main() -> None:
         summary["host_preprocessing"] = preprocessing_summary(
             read_jsonl(args.preprocess_metrics))
 
+    if not complete:
+        raise ValueError("Whisper 任务精度存在失败或缺失样本.")
+    summary["evaluation"] = accuracy_result("whisper_tiny", "npu",
+        {"WER": accuracy["value"]}, len(successful), "utterance")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8")
-    worst = sorted(details, key=lambda item: item["error_rate"], reverse=True)
-    with (args.output_dir / "worst_samples.jsonl").open(
-            "w", encoding="utf-8", newline="\n") as output:
-        for item in worst[:100]:
-            output.write(json.dumps(item, ensure_ascii=False) + "\n")
-    if accuracy and not is_test():
-        write_markdown(args.output_dir / "report.md", args.dataset, summary)
     print("[OK] WER 已计算." if is_test() else "[OK] WER 已计算,准备汇总 NPU 耗时.", flush=True)
     if not complete and not args.allow_incomplete:
         raise SystemExit("评测不完整,请按同一输出文件断点续跑后重新汇总.")

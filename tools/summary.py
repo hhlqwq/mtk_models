@@ -1,13 +1,12 @@
-"""评价完成后统一发布精度、性能与峰值 RSS,正式结果为 summary.json,保留独立 summary_sub.json."""
+"""评价完成后统一发布精度、性能与峰值 RSS,正式结果为 summary.json,保留独立 summary_test.json."""
 
 import json
 import math
 import os
 import platform
-import shutil
 
 from tools.board import context
-from tools.evaluation import is_test
+from tools.evaluation import compare_accuracy, is_test, publish_result, read_accuracy
 from tools.files import read_json
 
 
@@ -30,59 +29,23 @@ def vision_accuracy(ctx):
     if report.get("evaluation_scope") != "full" or report.get("status") not in (
             "complete", "board_verified"):
         raise ValueError(f"原始报告未完成全量评价: {report_path}.")
-    if model == "rtmpose_body2d":
-        samples = report["protocol"]["detections_before_nms"]
-        require_count(samples, 104125)
-        metric, value = "WholeBody AP", report["metrics"]["wholebody"]["AP"]
-    elif model in ("yolov5s", "yolov8n", "yamnet"):
-        samples = report["samples"]
-        require_count(samples, 2000 if model == "yamnet" else 5000)
-        metric, value = report["metric"], report["board_accuracy"]
-    elif model == "vit_base_patch16_224":
-        samples = report["samples"]
-        require_count(samples, 50000)
-        metric, value = "Top-1", report["npu_top1"]
-    elif model == "mobilefacenet":
-        samples = report["pairs"]
-        require_count(samples, 6000)
-        metric, value = "LFW 验证准确率", report["verification_accuracy"]
-    elif model == "depth_anything_v2_small":
-        require_count(report["images"], 1033)
-        samples = report["total_pairs"]
-        require_count(samples, 2068)
-        metric, value = "DA-2K 点对准确率", report["pairwise_accuracy"]
-    elif model == "fastsam":
-        samples = report["images"]
-        require_count(samples, 5000)
-        metric, value = "segm AR@100", report["AR_100"]
-    elif model == "whisper_tiny":
-        samples = report["successful_samples"]
-        require_count(report["expected_samples"], 2620)
-        require_count(samples, 2620)
-        metric, value = "WER", report["accuracy"]["value"]
-    else:
-        raise ValueError(f"没有已实现的全量精度协议: {model}.")
-    if not math.isfinite(value) or value < 0 or (metric != "WER" and value > 1):
-        raise ValueError("精度指标无效.")
-    # 原始任务报告已经验证同协议参考时直接保留;其他任务只接受独立全量参考.
-    reference = report.get("reference_accuracy")
-    source = report.get("reference_source")
-    reference_path = ctx.root / "models/onnx_reference.json"
-    if model not in ("yolov5s", "yolov8n", "yamnet") and reference_path.is_file():
-        baseline = read_json(reference_path)
-        if (baseline.get("evaluation_scope") == "full"
-                and baseline.get("model") == model
-                and baseline.get("metric") == metric
-                and baseline.get("samples") == samples
-                and baseline.get("status") == "complete"):
-            reference, source = baseline["accuracy"], baseline["source"]
-    if reference is not None and (
-            not math.isfinite(reference) or reference < 0 or (metric != "WER" and reference > 1)):
-        raise ValueError("参考指标无效.")
-    change = None if reference is None else (
-        reference - value if metric == "WER" else value - reference) * 100
+    evaluation = read_accuracy(report, model, "npu")
+    expected = {"rtmpose_body2d": 104125, "yolov5s": 5000, "yolov8n": 5000,
+                "yamnet": 1504, "vit_base_patch16_224": 50000, "mobilefacenet": 6000,
+                "depth_anything_v2_small": 2068, "fastsam": 5000, "whisper_tiny": 2620}
+    samples = evaluation["samples"]["count"]
+    require_count(samples, expected[model])
+    baseline = read_json(ctx.root / "build/reference/full.json")
+    reference_evaluation = read_accuracy(baseline, model, "onnx")
+    comparison = compare_accuracy(reference_evaluation, evaluation)
+    metric = next(iter(comparison))
+    value = comparison[metric]["npu_accuracy"]
+    reference = comparison[metric]["fp32_accuracy"]
+    source = "本次同模型同协议浮点全量实测"
+    change = -comparison[metric]["accuracy_loss_percentage_points"]
     return {
-        "dataset": report.get("dataset", "coco_wholebody_val2017"),
+        "evaluation": evaluation,
+        "dataset": report.get("dataset", "见本模型评价协议"),
         "samples": samples, "metric": metric, "board_accuracy": value,
         "reference_accuracy": reference, "reference_source": source,
         "accuracy_change_percentage_points": change,
@@ -96,7 +59,7 @@ def llm_accuracy(ctx):
     from tools.llm.artifacts import dla_relative_path
 
     minicpm = ctx.config["name"] == "minicpm5_2b"
-    data = ctx.root / ("evaluation/mmlu1000" if minicpm else "evaluation/full")
+    data = ctx.root / "build/reference/full"
     mmlu = read_json(ctx.result / "mmlu/mmlu_accuracy.json")
     ppl = read_json(ctx.result / "wikitext/npu_quality.json")
     reference_mmlu = read_json(data / "reference/mmlu/mmlu_accuracy.json")
@@ -126,7 +89,7 @@ def llm_accuracy(ctx):
         if (mmlu.get("tokenizer_sha256") != reference_mmlu.get("tokenizer_sha256")
                 or reference_mmlu.get("reference", {}).get("parameter_dtypes") != ["torch.float32"]):
             raise ValueError("MiniCPM 参考缺少匹配的 Tokenizer 或实际 FP32 精度记录.")
-    manifest = read_json(ctx.root / "manifest.json")
+    manifest = read_json(ctx.models / "manifest.json")
     prompt_name = dla_relative_path(manifest, "prompt")
     prompt = next(row for row in manifest["files"] if row["name"] == prompt_name)
     hardware = read_json(ctx.result / "mmlu/run_manifest.json")
@@ -138,7 +101,8 @@ def llm_accuracy(ctx):
     if not all(math.isfinite(row["perplexity"]) and row["perplexity"] > 0
                for row in (ppl, reference_ppl)):
         raise ValueError("WikiText2 PPL 无效.")
-    result = {"full_benchmark_evaluated": not minicpm, "accuracy": {
+    result = {"evaluation": mmlu["evaluation"],
+              "full_benchmark_evaluated": not minicpm, "accuracy": {
         "mmlu": {"questions": mmlu["evaluated_questions"],
                  "scope": mmlu["scope"], "subjects": mmlu["subjects"],
                  "sampling_seed": mmlu["sampling_seed"],
@@ -148,7 +112,8 @@ def llm_accuracy(ctx):
         "wikitext": {"blocks": ppl["blocks"], "scored_tokens": ppl["scored_tokens"],
                      "protocol": ppl["protocol"], "fp32_ppl": reference_ppl["perplexity"],
                      "npu_ppl": ppl["perplexity"],
-                     "difference": ppl["perplexity"] - reference_ppl["perplexity"]}}}
+                     "difference": ppl["perplexity"] - reference_ppl["perplexity"],
+                     "difference_percent": (ppl["perplexity"] / reference_ppl["perplexity"] - 1) * 100}}}
     if minicpm:
         result.update(
             accuracy_scope="fixed_1000_mmlu_and_full_wikitext2",
@@ -247,46 +212,34 @@ def llm_performance(ctx):
 def publish(ctx, report):
     """发布唯一正式报告,仅清理当前部署包 results 内已由新报告取代的文件."""
 
-    directory = ctx.root / "results"
-    if directory.is_symlink() or not directory.resolve().is_relative_to(ctx.root.resolve()):
-        raise ValueError("正式报告目录越出当前部署包.")
-    directory.mkdir(exist_ok=True)
-    previous = list(directory.iterdir())
-    for path in previous:
-        if path.is_symlink() or not path.resolve().is_relative_to(directory.resolve()):
-            raise ValueError(f"结果目录含越界或链接文件,请先处理: {path.name}.")
-    # 先完整序列化,无效数值不能损坏已有报告.
-    text = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
-    destination = directory / "summary.json"
-    if destination.is_symlink():
-        raise ValueError("正式报告不能是符号链接.")
-    destination.write_text(text, encoding="utf-8")
-    for path in previous:
-        if path.name in ("summary.json", "summary_sub.json"):
-            continue
-        if path.is_symlink() or not path.resolve().is_relative_to(directory.resolve()):
-            raise ValueError(f"拒绝清理越界或链接文件: {path.name}.")
-        if path.is_dir():
-            shutil.rmtree(path)
-        else:
-            path.unlink()
-    print(f"[评价报告] {destination}; 过程诊断保留在 {ctx.result}.", flush=True)
+    actual = read_accuracy(report, ctx.config["name"], "npu")
+    baseline = read_json(ctx.root / "build/reference/full.json")
+    backend = baseline["evaluation"]["backend"]
+    reference = read_accuracy(baseline, ctx.config["name"], backend)
+    if ctx.config["name"] in ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b"):
+        report["wikitext"] = report["accuracy"]["wikitext"]
+    report["accuracy"] = compare_accuracy(reference, actual)
+    report["samples"] = actual["samples"]["count"]
+    report["sample_unit"] = actual["samples"]["unit"]
+    report["sample_ids_sha256"] = actual["samples"]["selection_id"]
+    destination = publish_result(ctx.root, report, "summary.json")
+    print(f"[评价报告] {destination}; 过程数据保留在 {ctx.result}.", flush=True)
 
 
 def main():
     """只由 evaluate.sh 发布一个包含实际覆盖、精度、性能和 RSS 的报告."""
     os.environ.setdefault("MTK_EVAL_SCOPE", "full")
     if is_test():
-        raise ValueError("compile.sh 只生成示例,不允许发布正式评价报告.")
+        raise ValueError("compile.sh 只能发布 summary_test.json,不能改写全量报告.")
     ctx = context(__file__)
     model = ctx.config["name"]
     print(f"[评价汇总] 核对同次精度、性能与峰值 RSS: {ctx.run_id}.", flush=True)
     if model in ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b"):
         result = llm_accuracy(ctx)
         result["performance"] = llm_performance(ctx)
-        result["precision"] = read_json(ctx.root / "manifest.json")["precision"]
+        result["precision"] = read_json(ctx.models / "manifest.json")["precision"]
         if model == "deepseek_r1_distill_qwen_1_5b":
-            manifest = read_json(ctx.root / "manifest.json")
+            manifest = read_json(ctx.models / "manifest.json")
             result.update(context=manifest["context"], prefill=manifest["prefill"],
                           precision_settings=manifest["precision_settings"],
                           source={key: manifest["preparation"]["source"][key]
@@ -298,8 +251,10 @@ def main():
     summary = {"schema_version": 1, "model": model, "run_id": ctx.run_id,
                "status": "complete", "evaluation_scope": "full", **result,
                "runtime": {"backend": "python_neuron_runtime_hw", "machine": platform.machine(), "kernel": platform.release()}}
-    artifacts = [*ctx.root.glob("models/*.dla"), *ctx.root.glob("*c/*.dla"),
-                 *ctx.root.glob("models/embedding*.bin"), *ctx.root.glob("tokenizer/embedding*.bin")]
+    binding = read_json(ctx.root / "build/reference/full.json")["dla_artifacts"]
+    artifacts = [ctx.models / name for name in binding]
+    if model in ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b"):
+        artifacts.append(ctx.models / "tokenizer/embedding_int16.bin")
     if model == "whisper_tiny":
         contract = read_json(ctx.root / "models/runtime_contract.json")
         summary.update(precision="W8A16", cacheSize=contract["cacheSize"],

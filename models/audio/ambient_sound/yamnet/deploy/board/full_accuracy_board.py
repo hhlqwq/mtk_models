@@ -1,5 +1,6 @@
 """板端音频前处理、严格全量校验、精度汇总和实际声音示例."""
 
+
 import os
 import argparse
 import csv
@@ -10,7 +11,7 @@ import time
 
 import numpy as np
 
-from audio_utils import load_records, load_waveform, mapping, metrics, preprocess
+from audio_utils import evaluation_ids, load_records, load_waveform, mapping, metrics, preprocess
 
 from tools.board import configure_parser
 
@@ -18,6 +19,7 @@ from tools.evaluation import (
     audio_records, is_test, matching_reference, result_status,
     scope_metadata,
 )
+from tools.evaluation import accuracy_result, record_selection
 
 
 def prepare(args):
@@ -58,6 +60,10 @@ def summarize(args):
     if is_test():
         report = {"model": "yamnet", "samples": len(records), **scope_metadata(),
                   "metrics": metrics(scores, records, indices)}
+        report["evaluation"] = accuracy_result("yamnet", "npu",
+            {"ESC-50 macro AP (folds 2-5)": report["metrics"]["held_out"]["map"]},
+            len(evaluation_ids(records, indices)), "audio_clip",
+            selection_id=record_selection(evaluation_ids(records, indices)))
         args.output.mkdir(parents=True, exist_ok=True)
         (args.output / "summary.json").write_text(
             json.dumps(report, ensure_ascii=False, allow_nan=False), encoding="utf-8")
@@ -67,9 +73,7 @@ def summarize(args):
         raise ValueError("必须使用本次 Python 推理的音频记录.")
     if [row["filename"] for row in audio] != [row["filename"] for row in records]:
         raise ValueError("音频顺序不一致.")
-    reference_path = args.models_dir / ("fp32_reference_test.json" if is_test() else "fp32_reference.json")
-    if is_test() and not reference_path.exists():
-        reference_path = args.models_dir / "fp32_reference.json"
+    reference_path = args.models_dir / "full_detail.json"
     reference = json.loads(reference_path.read_text())
     annotation_hash = hashlib.sha256((args.dataset / "meta/esc50.csv").read_bytes()).hexdigest()
     if reference["annotations_sha256"] != annotation_hash or reference["mapping"] != indices:
@@ -129,11 +133,14 @@ def summarize(args):
         "memory_scope": "同一 Python 前处理与 NPU 推理进程峰值,不包含 ffmpeg 子进程",
         "annotations_sha256": annotation_hash,
         "artifacts_sha256": {
-            name: hashlib.sha256((args.models_dir / name).read_bytes()).hexdigest()
+            name: hashlib.sha256((args.models_dir.parents[1] / name if name.endswith(".dla") else args.models_dir / name).read_bytes()).hexdigest()
             for name in (f"model_{args.precision}.dla", config_name, "yamnet_class_map.csv")},
         "runtime_program_sha256": hashlib.sha256(
-            (args.models_dir.parent / "board/infer.py").read_bytes()).hexdigest(),
+            (args.models_dir.parents[1] / "board/infer.py").read_bytes()).hexdigest(),
     }
+    summary["evaluation"] = accuracy_result("yamnet", "npu",
+        {"ESC-50 macro AP (folds 2-5)": primary}, len(evaluation_ids(records, indices)), "audio_clip",
+            selection_id=record_selection(evaluation_ids(records, indices)))
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))
     print(f"[评价完成] 过程指标目录: {args.output}", flush=True)
@@ -153,7 +160,7 @@ def main():
                         default="w8a16")
     configure_parser(parser, __file__, {
         "dataset": lambda c: c.dataset, "work": lambda c: c.work,
-        "models_dir": lambda c: c.root / "models", "output": lambda c: c.result,
+        "models_dir": lambda c: c.root / "build/reference", "output": lambda c: c.result,
         "run_id": lambda c: c.run_id, "precision": lambda c: c.config["conversion"]["precision"],
     })
     args = parser.parse_args()

@@ -1,5 +1,6 @@
 """使用统一协议评测原始 PyTorch 或自导出 ONNX 的 COCO 精度."""
 
+
 import os
 import argparse
 import json
@@ -23,6 +24,7 @@ from yolov8_utils import COCO_IDS, OUTPUT_NAMES, postprocess, preprocess
 from tools.evaluation import coco_ids, is_test, result_status, scope_metadata
 from tools.deploy import configure_parser, reference_path
 from tools.output_metrics import record_reference, finish_reference
+from tools.evaluation import accuracy_result
 
 
 def evaluate(args):
@@ -78,6 +80,8 @@ def evaluate(args):
                "protocol": {"confidence": 0.001, "nms_iou": 0.6,
                             "max_det": 300, "class_selection": "single_best",
                             "input": [1, 3, 640, 640]}}
+    summary["evaluation"] = accuracy_result("yolov8n", "onnx" if args.onnx else "pytorch",
+        {"mAP@0.5:0.95": summary["map_50_95"]}, len(ids), "image")
     args.output.write_text(json.dumps(summary, ensure_ascii=False, indent=2),
                            encoding="utf-8")
     print(f"[OK] 精度汇总: {args.output}", flush=True)

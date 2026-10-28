@@ -10,13 +10,13 @@
 
 编译在 Ubuntu Docker 容器执行,板端执行真实 NPU 推理.使用 `--arch=mdla5.3` 和 `--disallow-bridge`,整数原生 I/O 的转换参数须与实际张量契约一致.系统与模型所需 Runtime 不匹配时停止运行并核对版本,不覆盖系统库强行兼容.
 
-所有模型的主机入口 `deploy/compile.sh` 完成导出、量化、DLA 编译及 Python 部署包上传后结束,提示板端部署目录及命令,不通过 SSH 自动执行板端推理、示例生成或评价.用户登录开发板,在部署目录执行 `bash compile.sh`,用固定少量输入检查真实硬件推理并生成 README 示例.上传成功只标为待板端检查,不代表已验证或已生成示例.compile 额外在固定少量输入上显示 CosSim、RMSE、NRMSE,不计算或生成任务精度、性能和 RSS 报告,不会进入全量评价.LLM 示例额外实时显示输入与生成文本,独立性能测量关闭文本打印.
+主机 compile.sh 完成导出、量化、编译及固定子集浮点精度后,自动上传部署文件及必要参考.用户登录板端执行 compile.sh,完成同子集 NPU 精度、损失、固定少量输入的 CosSim/RMSE/NRMSE 和示例,保存 results/summary_test.json.全量 evaluate.sh 不重复采集数值参考.主机不会自动启动板端推理.普通入口无参数,两个总入口依次运行全部模型,首个失败即停止.
 
 入口直接顺序调用命令,输出和错误直接显示在终端,只补充必要阶段提示,不默认保存编译日志.Docker 公共环境由创建容器入口统一设置,板端路径复用公共工具.只保存运行、评分和排错必需的数据.
 
 ## 独立评价
 
-在已有编译容器的模型目录执行 `bash deploy/evaluate.sh`,只读取已有浮点模型,生成同协议参考与必要输入.不导出、量化、编译或构建.普通参考为模型资源 `build/onnx_reference.json`,放入板端 `models/onnx_reference.json`;YAMNet 参考为模型资源 `fp32_reference.json`,放入板端 `models/fp32_reference.json`.MiniCPM 的模型资源 `build/native/evaluation/mmlu1000/` 整体放入板端 `evaluation/mmlu1000/`;DeepSeek 的 `build/native/evaluation/full/` 整体放入板端 `evaluation/full/`.这些是评价输入,不属于对外交付报告.
+在已有编译容器的模型目录执行 `bash deploy/evaluate.sh`,只读取已有浮点模型,生成同协议参考与必要输入.不导出、量化、编译或构建.主机参考及预测保存在本地日期过程目录,入口自动上传至板端 `build/reference/full.json`;LLM 的题目、Token 和质量评价资源在 `build/reference/full/`,BEVFusion 的样本清单及评分标注也在 `build/reference/`.这些是必要评价输入,不属于对外交付报告.
 
 在现有板端部署目录执行:
 
@@ -24,9 +24,9 @@
 bash evaluate.sh
 ```
 
-评价入口使用已有 DLA 和 Python 脚本,执行完整精度评价、必要预热和性能统计,采集推理进程峰值 RSS,最终只给出 `results/summary.json`.不调用 compile.sh,不重新量化或编译.重复评价成功后更新这一个报告,运行编号、数据集范围、版本和缺失项写在报告内部.
+评价入口使用已有 DLA 和 Python 脚本,执行完整精度评价、必要预热和性能统计,采集推理进程峰值 RSS,最终只给出 `results/summary.json`.不重新量化或编译;结束后调用 compile.sh 的仅回传分支,不会重新运行模型.重复评价成功后更新这一个报告,运行编号、数据集范围、版本和缺失项写在报告内部.
 
-所有模型的中间预测、日志和内部指标统一位于各自部署目录的 `work/`.compile 和 evaluate 开始推理时覆盖该模型上次的 work,后续评分、展示和报告步骤复用同一目录;不按日期、阶段或运行编号累积目录,不写入板端 /tmp 内存盘.失败现场保留到下次推理开始,不拿上次指标冒充本次结果.覆盖范围只限本模型 work,不影响 models、examples、results 或其他模型.历史 /tmp/hailongcodex 不自动迁移或清理.
+所有模型的中间预测、日志和内部指标统一位于各自部署目录的 `build/work/`.compile 和 evaluate 开始推理时覆盖该模型上次的 build/work,后续评分、展示和报告步骤复用同一目录;不按日期、阶段或运行编号累积目录,不写入板端 /tmp 内存盘.失败现场保留到下次推理开始,不拿上次指标冒充本次结果.覆盖范围只限本模型 build/work,不影响 models、examples、results 或其他模型.历史 /tmp/hailongcodex 不自动迁移或清理.
 
 MiniCPM 正式评价为 MMLU 固定 1000 题、57 学科、seed=17 的分层子集与完整 WikiText2 test,不复用旧 `evaluation/full/` 资源.DeepSeek 仍使用 MMLU 完整 14042 题及完整 WikiText2 test.若已有上下文不足,明确报错,不截题或自动重编译.Python 生成使用官方 Token 输入,样例速度不能标为标准定长基准.新接入评价代码不代表已完成实测,成绩以对应版本的实际报告为准.
 
@@ -34,18 +34,21 @@ MiniCPM 正式评价为 MMLU 固定 1000 题、57 学科、seed=17 的分层子�
 
 ```text
 <board_root>/open_models/<model>/
-├── compile.sh                 少量通路检查和 README 示例
-├── evaluate.sh                正式评价,不重新编译
-├── config.json                配置快照
-├── models/                    DLA 和必要运行参数
-├── board/                     Python 脚本和公共模块
+├── compile.sh                 同子集精度、数值误差及示例
+├── evaluate.sh                全量精度、性能和峰值 RSS
+├── config.json                配置快照及模型目录声明
+├── model_int8.dla              普通模型最终 DLA
+├── models/                    多文件模型的必要运行包
+├── board/                     Python 代码及公共模块
+├── build/reference/           浮点参考和必要评价输入
+├── build/work/                当前运行数据,覆盖复用
 ├── examples/input/            少量展示输入
-├── examples/output/           README 使用的结果图或文本
-├── work/                      本模型中间结果,每次推理覆盖
-└── results/summary.json        唯一正式报告
+├── examples/output/           展示结果
+├── results/summary_test.json  子集精度、损失及数值误差
+└── results/summary.json       全量精度、损失、性能和 RSS
 ```
 
-原生 LLM 双 DLA、tokenizer 与脚本布局按模型说明维护,同样遵守两个入口和唯一 summary.json.正式模型、数据集和评价输入存放在配置指定的资源位置,临时目录不作为正式模型的唯一存储.
+原生 LLM 双 DLA、tokenizer 与脚本布局按模型说明维护,同样遵守两个入口、两阶段各自唯一报告,运行资源均位于 models/.正式模型、数据集和评价输入存放在配置指定的资源位置,临时目录不作为正式模型的唯一存储.
 
 ## 评价口径
 

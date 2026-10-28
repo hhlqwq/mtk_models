@@ -1,5 +1,6 @@
 """独立全量 3D 检测评价,只发布一个 summary.json."""
 
+
 import hashlib
 import importlib.metadata
 import json
@@ -14,12 +15,19 @@ from scoring import format_predictions, score_predictions
 from tools.board import context
 from tools.evaluation import is_test, select_samples
 from tools.runtime import peak_rss_kib
+from tools.evaluation import accuracy_result, record_selection
 
 
 def identity(root):
     """绑定完整浮点图,稀疏参数和 Python 协议,拒绝混用旧参考."""
     digest = hashlib.sha256()
-    paths = [*sorted(Path(root).glob("*.onnx")), Path(root) / "sparse_weights.npz", Path(root) / "geometry.npz"]
+    root = Path(root)
+    contract = json.loads((root / "contract.json").read_text(encoding="utf-8"))
+    graphs = {f"bevfusion-det_{name}.onnx" for name in contract["stages"]}
+    graphs.update(item["file"] for item in contract["stages"].values()
+                  if item["backend"] != "mtk_npu")
+    paths = [root / "contract.json", *[root / name for name in sorted(graphs)],
+             root / "sparse_weights.npz", root / "geometry.npz"]
     paths.extend(Path(__file__).with_name(name) for name in ("geometry.py", "sparse.py", "dataset.py", "scoring.py"))
     for path in paths:
         digest.update(path.name.encode())
@@ -61,7 +69,7 @@ def main():
     from tqdm import tqdm
 
     ctx = context(__file__, new_run=True)
-    manifest_path = ctx.root / "board/compile_samples.json" if is_test() else ctx.dataset / "samples.json"
+    manifest_path = ctx.root / "build/reference" / ("compile_samples.json" if is_test() else "full_samples.json")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     samples = manifest["frames"]
     expected_count = min(100, 81 if ctx.config["data"]["version"] == "v1.0-mini" else 6019) if is_test() else 6019
@@ -70,7 +78,8 @@ def main():
     if (manifest["version"], manifest["split"], len(samples)) != (expected_version, expected_split, expected_count):
         raise ValueError("正式评价仅接受 v1.0-trainval/val 完整 6019 帧.")
     tokens = [frame["token"] for frame in samples]
-    ground_truth = ctx.root / "board/compile_ground_truth.json" if is_test() else ctx.dataset / "ground_truth.json"
+    record_selection(tokens)
+    ground_truth = ctx.root / "build/reference" / ("compile_ground_truth.json" if is_test() else "full_ground_truth.json")
     if len(set(tokens)) != expected_count or not ground_truth.is_file():
         raise ValueError("完整标注缺失或评价样本重复.")
     for frame in tqdm(samples, desc="评价输入预检"):
@@ -81,8 +90,9 @@ def main():
     models = ctx.root / "models"
     samples = select_samples(samples, "mit_bevfusion", key=lambda frame: frame["token"])
     tokens = [frame["token"] for frame in samples]
+    record_selection(tokens)
     model_identity = identity(models)
-    reference_path = models / "onnx_reference.json"
+    reference_path = ctx.root / "build/reference/full.json"
     reference = None
     if reference_path.is_file() and not is_test():
         reference = json.loads(reference_path.read_text(encoding="utf-8"))
@@ -92,7 +102,8 @@ def main():
         models, ctx.dataset, samples, ctx.result / "predictions.json")
     accuracy = score_predictions(ground_truth, predictions)
     if is_test():
-        report = {"identity": model_identity, "sample_tokens": tokens, "accuracy": accuracy}
+        report = {"identity": model_identity, "sample_tokens": tokens, "accuracy": accuracy,
+                  "evaluation": accuracy_result("mit_bevfusion", "npu", accuracy, len(tokens), "frame")}
         (ctx.work / "compile_accuracy.json").write_text(
             json.dumps(report, ensure_ascii=False, allow_nan=False), encoding="utf-8")
         return
@@ -111,9 +122,11 @@ def main():
               "model_size_bytes": sum(path.stat().st_size for path in files),
               "nuscenes_devkit": importlib.metadata.version("nuscenes-devkit"),
               "missing": [] if reference else ["同协议完整 FP32 参考尚未提供,差值留空"]}
-    ctx.summary.parent.mkdir(parents=True, exist_ok=True)
-    ctx.summary.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"[评价完成] {ctx.summary}: {accuracy}", flush=True)
+    report["evaluation"] = accuracy_result("mit_bevfusion", "npu", accuracy, len(tokens), "frame")
+    from summary import publish
+
+    publish(ctx, report)
+
 
 
 if __name__ == "__main__":
