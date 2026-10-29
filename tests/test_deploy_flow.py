@@ -159,6 +159,38 @@ class DeployFlowTest(unittest.TestCase):
         self.assertEqual(report["metrics"]["mAP"]["value"], score["mAP"])
         self.assertEqual(evaluation.read_accuracy({"evaluation": report}, "mit_bevfusion", "onnx"), report)
 
+    def test_source_tokenizer_merge_formats(self):
+        """官方数组和既有字符串 merges 得到相同 Token,加载时不改源文件."""
+        from tokenizers import Tokenizer, models
+        from transformers import PreTrainedTokenizerFast
+        from tools.llm.evaluate_mmlu import load_source_tokenizer
+
+        folder = self.work / "tokenizer"
+        backend = Tokenizer(models.BPE(
+            vocab={"a": 0, "b": 1, "ab": 2, "[UNK]": 3},
+            merges=[("a", "b")], unk_token="[UNK]"))
+        expected = PreTrainedTokenizerFast(tokenizer_object=backend, unk_token="[UNK]")
+        expected.save_pretrained(folder)
+        path = folder / "tokenizer.json"
+        original = json.loads(path.read_text())
+        for merge_format in ("string", "array"):
+            with self.subTest(merge_format=merge_format):
+                data = copy.deepcopy(original)
+                if merge_format == "array":
+                    data["model"]["merges"] = [["a", "b"]]
+                path.write_text(json.dumps(data))
+                before = {p.name: p.read_bytes() for p in folder.iterdir()}
+                actual = load_source_tokenizer(folder)
+                for text in ("ab", "aba", "b", "unknown"):
+                    self.assertEqual(actual.encode(text), expected.encode(text))
+                self.assertEqual(actual.unk_token_id, expected.unk_token_id)
+                self.assertEqual({p.name: p.read_bytes() for p in folder.iterdir()}, before)
+
+        data["model"]["merges"] = [["a", "b"], ["a"]]
+        path.write_text(json.dumps(data))
+        with self.assertRaisesRegex(ValueError, "两个字符串"):
+            load_source_tokenizer(folder)
+
     def test_numeric_reference_and_report(self):
         """真实 NPZ 读写、误差累加和子集报告形成闭环,全量不读数值参考."""
         os.environ["MTK_OUTPUT_METRICS"] = "1"

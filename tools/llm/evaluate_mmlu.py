@@ -49,6 +49,30 @@ def select_questions(rows, limit, seed):
     return sorted(selected)
 
 
+def load_source_tokenizer(source):
+    """在内存中兼容官方 BPE merges 的数组格式,保持原始文件和分词规则不变."""
+    from tokenizers import Tokenizer
+    from transformers import AutoTokenizer
+
+    source = Path(source)
+    data = json.loads((source / "tokenizer.json").read_text(encoding="utf-8"))
+    merges = data.get("model", {}).get("merges", [])
+    if not merges or not isinstance(merges[0], list):
+        return AutoTokenizer.from_pretrained(source, local_files_only=True)
+    if data["model"]["type"] != "BPE":
+        raise ValueError("仅为 BPE 分词器兼容 merges 数组格式.")
+    for pair in merges:
+        if (not isinstance(pair, list) or len(pair) != 2
+                or not all(isinstance(part, str) for part in pair)):
+            raise ValueError("官方 BPE merges 必须是由两个字符串组成的数组.")
+    data["model"]["merges"] = [" ".join(pair) for pair in merges]
+    backend = Tokenizer.from_str(json.dumps(data, ensure_ascii=False))
+    print("[Tokenizer 兼容] 在内存中转换官方 BPE merges 格式,保留原始资源和 Token 对齐检查.",
+          flush=True)
+    return AutoTokenizer.from_pretrained(
+        source, local_files_only=True, tokenizer_object=backend)
+
+
 def prepare(args):
     """生成两后端共享的原始题目 Token,严格拒绝截断或丢题."""
     # 仅当前模型或后端需要此依赖,其他评测模式和板端环境不要求安装.
@@ -66,7 +90,7 @@ def prepare(args):
     selected = (select_questions(rows, test_questions, args.seed)
                 if is_test() else select_questions(rows, args.limit, args.seed))
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True)
-    source_tokenizer = (AutoTokenizer.from_pretrained(args.source_model, local_files_only=True)
+    source_tokenizer = (load_source_tokenizer(args.source_model)
                         if getattr(args, "source_model", None) else None)
     choices = [tokenizer.encode(" " + letter, add_special_tokens=False)
                for letter in "ABCD"]
