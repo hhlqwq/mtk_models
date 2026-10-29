@@ -113,7 +113,7 @@ def prepare_ground_truth(root, target, version="v1.0-trainval", split="val"):
     from nuscenes.eval.common.loaders import add_center_dist, load_gt
     from nuscenes.eval.detection.data_classes import DetectionBox
 
-    print("[官方标注] 在主机加载 trainval 数据库,导出评分必要字段.", flush=True)
+    print(f"[官方标注] 在主机加载 {version}/{split},导出评分必要字段.", flush=True)
     database = NuScenes(version=version, dataroot=str(root), verbose=True)
     boxes = add_center_dist(database, load_gt(database, split, DetectionBox, verbose=True))
     bikeracks = {}
@@ -121,7 +121,13 @@ def prepare_ground_truth(root, target, version="v1.0-trainval", split="val"):
         annotations = [database.get("sample_annotation", key) for key in database.get("sample", token)["anns"]]
         bikeracks[token] = [{key: row[key] for key in ("token", "category_name", "translation", "size", "rotation")}
                            for row in annotations if row["category_name"] == "static_object.bicycle_rack"]
-    target.write_text(json.dumps({"boxes": boxes.serialize(), "bikeracks": bikeracks}), encoding="utf-8")
+    serialized_boxes = boxes.serialize()
+    # 官方 load_gt 的速度字段为 NumPy 数组,转为列表但保留原值及 NaN 缺失标记.
+    for sample_boxes in serialized_boxes.values():
+        for box in sample_boxes:
+            box["velocity"] = np.asarray(box["velocity"]).tolist()
+    target.write_text(json.dumps({"boxes": serialized_boxes, "bikeracks": bikeracks}), encoding="utf-8")
+    print(f"[官方标注完成] {len(serialized_boxes)} 帧,已保存评分必要字段.", flush=True)
 
 
 if __name__ == "__main__":
