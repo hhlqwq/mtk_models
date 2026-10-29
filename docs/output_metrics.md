@@ -6,7 +6,7 @@ CosSim、RMSE、NRMSE 仅在 compile.sh 的固定小样本检查中计算,全量
 
 普通模型从现有 compile 固定子集中选择最多 5 次输入,不会减少原有通路检查样本数量.LLM 对照示例首个 Prefill 块的有效位置,不包含自回归 Decode;Whisper 对照 Encoder,不包含 Decoder;BEVFusion 对照单帧的 NPU 子图,不混合 CPU 子图误差.终端明确显示实际范围、输入次数和各输出结果,同时写入 summary_test.json,不混入全量 summary.json.
 
-主机参考保存在本地 `/tmp/hailongcodex/当天日期/<模型>/compile/output_reference.npz`,随后上传板端 `build/reference/output_reference.npz`,每次 compile 覆盖.使用普通数组文件,不依赖数据库,不向 NAS 写评价张量.文件记录输入签名、源图及对应 DLA 版本,板端使用相同预处理输入匹配.缺参考、版本或覆盖不符时明确提示,不借用历史指标.
+主机参考保存在本地 `/tmp/hailongcodex/当天日期/<模型>/compile/output_reference.npz`,随后上传板端 `build/reference/output_reference.npz`,每次 compile 覆盖.使用普通数组文件,不依赖数据库,不向 NAS 写评价张量.文件记录明确样本标识、原始数据文件、输入形状与类型、源图及对应 DLA 版本;两端按样本标识配对,不要求独立预处理数组逐字节一致.缺参考、版本或覆盖不符时明确提示,不借用历史指标.
 
 ## 定义
 
@@ -45,4 +45,8 @@ CosSim、RMSE、NRMSE 在终端打印,并按输出名称与比较范围写入 su
 
 YAMNet 子集处理 250 条音频,主指标实际评价 folds 2-5 中有类别映射的 188 条;全量处理 2000 条,主指标评价 1504 条.统一精度接口的样本数与标识对应实际主指标范围,不能把处理数量当作评分数量.
 
-ViT 和 Depth 的数值参考使用板端实际预处理后的最多 5 张输入,主机只执行对应 ONNX,两端核对原始图片一致性.输入数组只在内存中传输,不写入 NAS 或增加板端输入副本,子集任务精度继续按各模型原有流程评价.这样避免 OpenCV 在 x86 和 ARM 上的缩放差异导致输入指纹不匹配;不跳过输入或 DLA 的一致性检查.
+数值对比统一使用明确样本标识:图片用文件名,姿态用图片 ID 和原始人体框 ID,音频窗口用文件名和窗口序号,Whisper 用音频 ID 和 Encoder 阶段,LLM 用示例 ID 和首个 Prefill 块.两端独立预处理,不默认跨机器传输输入数组.原始文件、DLA、输入张量契约、输出形状和样本覆盖仍需一致,内容相同的不同窗口也独立配对;不能用循环位置替代样本标识.
+
+这些指标表示两端部署输出差异,包含预处理及量化/NPU 执行的共同影响,不能解释为纯量化误差.结果的 comparison_basis 明确记录 deployment_output_including_preprocessing.BEVFusion 仍在板端对同一份子图输入计算 CPU ONNX 与 NPU 误差,保留其现有计算边界.
+
+旧的输入哈希参考不包含明确样本标识,正式入口不自动猜测兼容.更新代码时必须同时更新数值参考;编译入口会自动生成新版参考.缺少真实样本、原始文件或模型不一致时仍明确报错,不跳过或伪造指标.

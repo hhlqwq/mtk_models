@@ -64,7 +64,8 @@ def main():
                     record["npu_ms"] = milliseconds
                 stream.write(json.dumps(record) + "\n")
                 comparison.update([floating_input], {"output": (
-                    logits.astype(np.float32) - metadata["output_zero_point"]) * metadata["output_scale"]})
+                    logits.astype(np.float32) - metadata["output_zero_point"]) * metadata["output_scale"]},
+                    sample_id=path.name, sample_files=[path])
                 if (index + 1) % 500 == 0 or index + 1 == len(paths):
                     print(f"[推理] ViT {index + 1}/{len(paths)}", flush=True)
     if not is_test():

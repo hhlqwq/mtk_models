@@ -59,7 +59,8 @@ def infer(ctx, input_info, output_info, preprocess, postprocess):
             boxes, scores, classes = postprocess(outputs, geometry)
             ended = time.perf_counter()
             comparison.update([values], {item.get("name", f"head_{index}"): value
-                                         for index, (item, value) in enumerate(zip(output_info, outputs))})
+                                         for index, (item, value) in enumerate(zip(output_info, outputs))},
+                              sample_id=path.name, sample_files=[path])
             for box, score, category in zip(boxes, scores, classes):
                 x1, y1, x2, y2 = map(float, box)
                 predictions.append({"image_id": int(path.stem),

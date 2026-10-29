@@ -68,7 +68,8 @@ def main():
                               end_to_end_ms=(time.perf_counter() - started) * 1000)
             save_checkpoint(checkpoint_dir / f"{path.stem}.json", record)
             comparison.update([floating_input], {item["name"]: value
-                                                for item, value in zip(outputs, values)})
+                                                for item, value in zip(outputs, values)},
+                              sample_id=path.name, sample_files=[path])
             if count % 50 == 0 or count == len(images):
                 print(f"[推理] FastSAM {count}/{len(images)}", flush=True)
     comparison.finish()

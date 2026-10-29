@@ -45,7 +45,8 @@ def main() -> None:
         label = labels[int(path.stem.rsplit("_", 1)[1]) - 1]
         tensor = preprocess(path)
         logits = session.run([outputs[0].name], {inputs[0].name: tensor})[0]
-        record_reference(source, [tensor], {"output": logits})
+        record_reference(source, [tensor], {"output": logits},
+                         sample_id=path.name, sample_files=[path])
         if logits.shape != (1, 1000) or not np.isfinite(logits).all():
             raise ValueError(f"ONNX 输出无效: {path.name}.")
         top1 += int(np.argmax(logits[0]) == label)

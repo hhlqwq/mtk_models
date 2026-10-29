@@ -55,7 +55,7 @@ def make_session(path: Path) -> ort.InferenceSession:
     return session
 
 
-def infer(session: ort.InferenceSession, tensor: np.ndarray) -> list:
+def infer(session: ort.InferenceSession, tensor: np.ndarray, *, sample_id, sample_files) -> list:
     """按模型声明的浮点输入类型运行推理,不统计主机性能."""
     details = session.get_inputs()
     if len(details) != 1 or details[0].type not in ("tensor(float)", "tensor(float16)"):
@@ -65,7 +65,8 @@ def infer(session: ort.InferenceSession, tensor: np.ndarray) -> list:
     if any(not np.isfinite(value).all() for value in outputs):
         raise ValueError("ONNX 输出包含非有限数值.")
     record_reference(session.output_reference_source, [tensor.astype(dtype)], {
-        item.name: value for item, value in zip(session.get_outputs(), outputs)})
+        item.name: value for item, value in zip(session.get_outputs(), outputs)},
+        sample_id=sample_id, sample_files=sample_files)
     return outputs
 
 
@@ -90,7 +91,7 @@ def evaluate_vit(args, deploy: Path) -> tuple:
                 or (not is_test() and source_index != index)):
             raise ValueError(f"ImageNet 图片编号或全量顺序不匹配: {path}")
         tensor = preprocessing.floating_preprocess(path).astype(np.float32)
-        scores = infer(session, tensor)[0].reshape(-1)
+        scores = infer(session, tensor, sample_id=path.name, sample_files=[path])[0].reshape(-1)
         if scores.size != 1000:
             raise ValueError("分类输出必须有 1000 个类别.")
         correct += int(scores.argmax()) == labels[source_index]
@@ -107,7 +108,9 @@ def evaluate_face(args, deploy: Path) -> tuple:
     session = make_session(args.onnx)
     features = {}
     for name in tqdm.tqdm(names, desc="ONNX LFW", unit="img"):
-        values = infer(session, load_aligned_face(args.dataset_root / "images" / name))[0]
+        image_path = args.dataset_root / "images" / name
+        values = infer(session, load_aligned_face(image_path),
+                       sample_id=name, sample_files=[image_path])[0]
         values = values.astype(np.float32).reshape(-1)
         norm = float(np.linalg.norm(values))
         if values.size != 128 or not math.isfinite(norm) or norm <= 0:
@@ -127,7 +130,7 @@ def evaluate_depth(args, deploy: Path) -> tuple:
     correct = total = 0
     for name in tqdm.tqdm(sorted(annotations), desc="ONNX DA-2K", unit="img"):
         path = args.dataset_root / name
-        depth = infer(session, preprocess(path))[0].squeeze()
+        depth = infer(session, preprocess(path), sample_id=name, sample_files=[path])[0].squeeze()
         if depth.shape != (INPUT_SIZE, INPUT_SIZE) or depth.std() <= 0:
             raise ValueError(f"深度输出形状或数值无效: {name}")
         count, pairs = helper.score_pairs(path, depth, annotations[name])
@@ -184,7 +187,8 @@ def evaluate_coco(args, deploy: Path) -> tuple:
         if image is None:
             raise ValueError(f"无法读取图片: {path}")
         tensor, geometry = preprocess(image)
-        _, scores, masks = postprocess(infer(session, tensor), geometry,
+        _, scores, masks = postprocess(
+            infer(session, tensor, sample_id=path.name, sample_files=[path]), geometry,
             protocol["confidence"], protocol["nms_iou"], protocol["max_detections"],
             show_progress=False)
         for score, mask in zip(scores, masks):
@@ -222,7 +226,10 @@ def evaluate_pose(args, deploy: Path) -> tuple:
                 if image is None:
                     raise ValueError(f"缺少图片: {current_id}")
             tensor, geometry = preprocess_image(image, record["bbox"])
-            outputs = infer(session, tensor)
+            outputs = infer(session, tensor,
+                sample_id=f"{current_id}:detection:{index}",
+                sample_files=[args.dataset_root / "images" / f"{current_id:012d}.jpg",
+                              args.dataset_root / "person_detection_results/COCO_val2017_detections_AP_H_56_person.json"])
             if len(outputs) != 2:
                 raise ValueError("RTMPose 必须输出 X/Y 两个 SimCC 检测头.")
             # 根据宽度排列两个输出,不依赖导出顺序.
@@ -291,7 +298,8 @@ def evaluate_whisper(args, deploy: Path) -> tuple:
     for sample_id in tqdm.tqdm(sorted(sources), desc="ONNX WER", unit="audio"):
         # 浮点参考与板端共用同一 FP32 Log-Mel 和滑动 Cache 协议.
         mel = board_infer.preprocess(sources[sample_id]["audio"], mel_filters)[0][None]
-        features = infer(encoder, mel)[0]
+        features = infer(encoder, mel, sample_id=f"{sample_id}:encoder",
+                         sample_files=[sources[sample_id]["audio"]])[0]
         caches = {name: np.zeros(decoder_inputs[name].shape, np.float32) for name in cache_names}
         tokens, token = [], initial[0]
         for position in range(protocol.MAX_TOKEN_LENGTH):

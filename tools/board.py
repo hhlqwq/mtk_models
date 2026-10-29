@@ -126,7 +126,8 @@ def infer_images(ctx, images, metadata, input_shape, output_shape, preprocess, p
                 output = ctx.work / "raw" / f"{index:05d}"
                 output.mkdir(parents=True)
                 postprocess(values, image, output)
-                comparison.update([floating_input], {"output": values})
+                comparison.update([floating_input], {"output": values},
+                                  sample_id=name, sample_files=[path])
                 record = {"image": name, "directory": str(output.relative_to(ctx.work)),
                           "backend": "python_neuron_runtime_hw"}
                 if not is_test():

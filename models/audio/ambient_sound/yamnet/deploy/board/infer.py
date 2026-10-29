@@ -2,6 +2,7 @@
 
 from argparse import Namespace
 import csv
+import json
 import time
 
 import numpy as np
@@ -40,6 +41,7 @@ def main():
     output_scale, output_zero, output_dtype = read_quantization(rows[1])
     prepare(Namespace(dataset=ctx.dataset, work=ctx.work))
     counts = [int(value) for value in (ctx.work / "patch_counts.txt").read_text().split()]
+    audio_manifest = json.loads((ctx.work / "audio_manifest.json").read_text())
     timing_rows, clip_rows = [], []
     comparison = OutputComparison(ctx)
     with Runtime(ctx.root / f"model_{precision}.dla") as runtime:
@@ -72,7 +74,9 @@ def main():
                         values = (values - output_zero) * output_scale
                     average += values / count
                     comparison_started = time.perf_counter()
-                    comparison.update([floating_input], {"output": values.reshape(1, 521)})
+                    comparison.update([floating_input], {"output": values.reshape(1, 521)},
+                        sample_id=f"{audio_manifest[clip]['filename']}:window:{patch}",
+                        sample_files=[ctx.dataset / "audio" / audio_manifest[clip]["filename"]])
                     comparison_seconds += time.perf_counter() - comparison_started
                     if not is_test():
                         timing_rows.append((clip, patch, milliseconds))

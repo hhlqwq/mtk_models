@@ -205,11 +205,14 @@ class DeployFlowTest(unittest.TestCase):
         reference.parent.mkdir(parents=True)
         writer = ReferenceWriter(reference)
         tensor = np.array([[1, 0]], np.float32)
-        writer.add(source, [tensor], {"output": tensor})
+        writer.add(source, [tensor], {"output": tensor},
+                   sample_id="sample:window:0", sample_files=[source])
         writer.finish()
         ctx = SimpleNamespace(root=self.work, models=models, work=self.work / "build/work")
         comparison = OutputComparison(ctx)
-        comparison.update([tensor], {"output": np.array([[0, 1]], np.float32)})
+        comparison.update([tensor + np.float32(1e-6)],
+                          {"output": np.array([[0, 1]], np.float32)},
+                          sample_id="sample:window:0", sample_files=[source])
         comparison.finish()
         errors = json.loads((ctx.work / "output_metrics.json").read_text())
         values = errors["outputs"]["output"]
@@ -228,8 +231,153 @@ class DeployFlowTest(unittest.TestCase):
         os.environ["MTK_EVAL_SCOPE"] = "full"
         with mock.patch("tools.output_metrics.np.load", side_effect=AssertionError("全量不能读取张量参考")):
             full = OutputComparison(ctx)
-            full.update([], {})
+            full.update([], {}, sample_id="unused", sample_files=[])
             full.finish()
+
+    def test_numeric_pairing_rejects_wrong_resources(self):
+        """允许输入舍入差异,拒绝文件、契约、覆盖和 DLA 错配及旧参考."""
+        os.environ["MTK_OUTPUT_METRICS"] = "1"
+        source = self.work / "sample.wav"
+        source.write_bytes(b"audio")
+        graph = self.work / "model.onnx"
+        graph.write_bytes(b"onnx")
+        dla = self.work / "model.dla"
+        dla.write_bytes(b"dla")
+        os.environ["MTK_OUTPUT_DLA_FILES"] = json.dumps({dla.name: str(dla)})
+        reference = self.work / "build/reference/output_reference.npz"
+        tensor = np.ones((1, 2), np.float32)
+        writer = ReferenceWriter(reference)
+        # 内容相同的两个窗口仍是两个独立样本,不得按输入内容合并.
+        for index in range(2):
+            writer.add(graph, [tensor], {"output": tensor},
+                       sample_id=f"sample.wav:window:{index}", sample_files=[source])
+        with self.assertRaisesRegex(ValueError, "重复"):
+            writer.add(graph, [tensor], {"output": tensor},
+                       sample_id="sample.wav:window:0", sample_files=[source])
+        writer.finish()
+        ctx = SimpleNamespace(root=self.work, models=self.work, work=self.work / "replay")
+        comparison = OutputComparison(ctx)
+        with self.assertRaisesRegex(ValueError, "契约"):
+            comparison.update([tensor.reshape(2)], {"output": tensor},
+                              sample_id="sample.wav:window:0", sample_files=[source])
+        changed = self.work / "other" / source.name
+        changed.parent.mkdir()
+        changed.write_bytes(b"different audio")
+        with self.assertRaisesRegex(ValueError, "原始样本"):
+            comparison.update([tensor], {"output": tensor},
+                              sample_id="sample.wav:window:0", sample_files=[changed])
+        for index in reversed(range(2)):
+            comparison.update([tensor + np.float32(1e-5)], {"output": tensor},
+                              sample_id=f"sample.wav:window:{index}", sample_files=[source])
+        with self.assertRaisesRegex(ValueError, "重复"):
+            comparison.update([tensor], {"output": tensor},
+                              sample_id="sample.wav:window:0", sample_files=[source])
+        comparison.finish()
+        report = json.loads((ctx.work / "output_metrics.json").read_text())
+        self.assertEqual(report["compared_calls"], 2)
+        self.assertEqual(report["outputs"]["output"]["rmse"], 0)
+        self.assertEqual(report["comparison_basis"], "deployment_output_including_preprocessing")
+        missing = OutputComparison(ctx)
+        missing.update([tensor], {"output": tensor}, sample_id="wrong-id", sample_files=[source])
+        with self.assertRaisesRegex(ValueError, "缺少选定样本"):
+            missing.finish()
+        dla.write_bytes(b"wrong dla")
+        with self.assertRaisesRegex(ValueError, "DLA"):
+            OutputComparison(ctx)
+        dla.write_bytes(b"dla")
+        np.savez(reference, metadata=np.array(json.dumps({"evaluation_scope": "compile_subset"})))
+        with self.assertRaisesRegex(ValueError, "旧格式"):
+            OutputComparison(ctx)
+
+    def test_numeric_calls_have_explicit_sample_identity(self):
+        """核对所有真实生产消费调用均显式提供样本标识和原始文件."""
+        calls = 0
+        for folder in (ROOT / "models", ROOT / "tools"):
+            for path in folder.rglob("*.py"):
+                tree = ast.parse(path.read_text(encoding="utf-8"))
+                for node in ast.walk(tree):
+                    if not isinstance(node, ast.Call):
+                        continue
+                    reference = isinstance(node.func, ast.Name) and node.func.id == "record_reference"
+                    comparison = (isinstance(node.func, ast.Attribute)
+                                  and node.func.attr == "update"
+                                  and ast.unparse(node.func.value) in ("comparison", "self.comparison"))
+                    writer = (isinstance(node.func, ast.Attribute) and node.func.attr == "add"
+                              and ast.unparse(node.func.value) in ("writer", "_writer"))
+                    if reference or comparison or writer:
+                        keywords = {item.arg for item in node.keywords}
+                        self.assertTrue({"sample_id", "sample_files"} <= keywords, str(path))
+                        calls += 1
+        self.assertGreater(calls, 0)
+
+    def test_numeric_producer_consumer_sample_expressions(self):
+        """执行各模型真实配对表达式,验证样本及窗口标识在两端一致."""
+        shared = "tools/accuracy/evaluate_onnx.py"
+        cases = [
+            ("resnet101", "tools/prepare_output_reference.py", "classification", "record_reference",
+             "models/perception/image_classification/resnet101/deploy/board/infer.py", "main"),
+            ("vit_base_patch16_224", "tools/prepare_output_reference.py", "classification", "record_reference",
+             "models/perception/image_classification/vit_base_patch16_224/deploy/board/infer.py", "main"),
+            ("yolov5s", "tools/accuracy/yolov5s_val_coco.py", "build_fp32_infer", "record_reference",
+             "tools/detection.py", "infer"),
+            ("yolov8n", "models/perception/object_detection/yolov8n/deploy/host/evaluate_onnx.py", "evaluate", "record_reference",
+             "tools/detection.py", "infer"),
+            ("fastsam", shared, "evaluate_coco", "infer",
+             "models/navigation/segmentation/fastsam/deploy/board/infer.py", "main"),
+            ("mobilefacenet", shared, "evaluate_face", "infer", "tools/board.py", "infer_images"),
+            ("depth_anything_v2_small", shared, "evaluate_depth", "infer", "tools/board.py", "infer_images"),
+            ("rtmpose_body2d", shared, "evaluate_pose", "infer",
+             "models/interaction/pose_detection/rtmpose_body2d/deploy/board/infer.py", "main"),
+            ("yamnet", "models/audio/ambient_sound/yamnet/deploy/host/evaluate_onnx.py", "evaluate", "record_reference",
+             "models/audio/ambient_sound/yamnet/deploy/board/infer.py", "main"),
+            ("whisper_tiny", shared, "evaluate_whisper", "infer",
+             "models/audio/stt/whisper_tiny/deploy/board/infer.py", "main"),
+        ]
+        for model in ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b"):
+            cases.append((model, "tools/prepare_output_reference.py", "language", "add",
+                          "tools/llm/generate.py", "run"))
+        dataset = Path("/dataset")
+        for model, host_path, host_function, host_call, board_path, board_function in cases:
+            with self.subTest(model=model):
+                image = "000000000139.jpg"
+                name = image
+                image_path = dataset / "images" / image
+                if model == "depth_anything_v2_small":
+                    name = "images/indoor/sample.jpg"
+                    image_path = dataset / name
+                if model == "mobilefacenet":
+                    name = "person/sample.jpg"
+                    image_path = dataset / "images" / name
+                annotation = dataset / "person_detection_results/COCO_val2017_detections_AP_H_56_person.json"
+                path = annotation if model == "rtmpose_body2d" else image_path
+                prompt = Path("/models/scripts/prompts/en_demo.tokens.txt")
+                if model in ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b"):
+                    path = prompt
+                namespace = dict(path=path, image_path=image_path, name=name, index=9,
+                    current_id=139, item={"image_id": 139, "detection_id": 9},
+                    args=SimpleNamespace(dataset_root=dataset, dataset=dataset),
+                    ctx=SimpleNamespace(dataset=dataset), record={"file_name": image},
+                    row={"filename": "sample.wav"}, patch_index=4, patch=4, clip=0,
+                    audio_manifest=[{"filename": "sample.wav"}], sample_id="sample",
+                    sample={"sample_id": "sample", "audio_path": dataset / "sample.flac"},
+                    sources={"sample": {"audio": dataset / "sample.flac"}}, language="en", prompt=prompt)
+                expressions = []
+                for source, function, call_name in (
+                        (host_path, host_function, host_call),
+                        (board_path, board_function, "generate" if model in
+                         ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b") else "update")):
+                    tree = ast.parse((ROOT / source).read_text(encoding="utf-8"))
+                    function_node = next(node for node in ast.walk(tree)
+                        if isinstance(node, ast.FunctionDef) and node.name == function)
+                    calls = [node for node in ast.walk(function_node) if isinstance(node, ast.Call)
+                        and ((isinstance(node.func, ast.Name) and node.func.id == call_name)
+                             or (isinstance(node.func, ast.Attribute) and node.func.attr == call_name))
+                        and {"sample_id", "sample_files"} <= {keyword.arg for keyword in node.keywords}]
+                    self.assertEqual(len(calls), 1, source)
+                    values = {keyword.arg: eval(compile(ast.Expression(keyword.value), source, "eval"), namespace)
+                              for keyword in calls[0].keywords if keyword.arg in ("sample_id", "sample_files")}
+                    expressions.append((values["sample_id"], [p.name for p in values["sample_files"]]))
+                self.assertEqual(*expressions)
 
     def test_report_isolation_and_invalid_write(self):
         """只保留两份报告,无效新结果不损坏旧报告."""

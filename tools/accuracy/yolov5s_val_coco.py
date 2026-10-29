@@ -112,7 +112,7 @@ def build_fp32_infer(args: argparse.Namespace):
     input_name = session.get_inputs()[0].name
     order = {80: 0, 40: 1, 20: 2}
 
-    def infer(canvas: np.ndarray) -> list:
+    def infer(canvas: np.ndarray, path: Path) -> list:
         """FP32 ONNX Runtime 推理, 输出按 stride 顺序重排."""
         rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)
         tensor = rgb.transpose(2, 0, 1).astype(np.float32)[None] / 255.0
@@ -120,7 +120,8 @@ def build_fp32_infer(args: argparse.Namespace):
         from tools.output_metrics import record_reference
 
         record_reference(args.onnx, [tensor], {
-            item.name: value for item, value in zip(session.get_outputs(), outputs)})
+            item.name: value for item, value in zip(session.get_outputs(), outputs)},
+            sample_id=path.name, sample_files=[path])
         heads = [None, None, None]
         for value in outputs:
             if value.ndim != 4 or value.shape[-1] not in order:
@@ -152,7 +153,7 @@ def evaluate_onnx_accuracy(args: argparse.Namespace) -> None:
         if image is None:
             raise ValueError(f"无法读取图片: {path}")
         canvas, scale, left, top, shape = letterbox(image, args.image_size)
-        heads = infer(canvas)
+        heads = infer(canvas, path)
         if any(head is None for head in heads) or any(
                 tuple(head.shape) != (1, 255, size, size)
                 for head, size in zip(heads, HEAD_SIZES)):

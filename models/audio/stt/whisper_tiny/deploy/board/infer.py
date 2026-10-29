@@ -171,7 +171,8 @@ def main():
             for count, sample in enumerate(samples, 1):
                 mel, duration, timing = preprocess(sample["audio_path"], filters)
                 row = model.decode(mel)
-                comparison.update([mel[None]], {"audio_features": model.encoder_features})
+                comparison.update([mel[None]], {"audio_features": model.encoder_features},
+                    sample_id=f"{sample['sample_id']}:encoder", sample_files=[sample["audio_path"]])
                 row.update(sample_id=sample["sample_id"], duration_seconds=duration)
                 if not is_test():
                     row["npu_rtf"] = row["npu_total_ms"] / (duration * 1000)

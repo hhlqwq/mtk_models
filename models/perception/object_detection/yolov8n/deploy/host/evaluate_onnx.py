@@ -52,7 +52,9 @@ def evaluate(args):
             args.dataset_root / "images" / record["file_name"])))
         if args.onnx:
             outputs = session.run(OUTPUT_NAMES, {"images": tensor})
-            record_reference(args.onnx, [tensor], dict(zip(OUTPUT_NAMES, outputs)))
+            record_reference(args.onnx, [tensor], dict(zip(OUTPUT_NAMES, outputs)),
+                sample_id=record["file_name"],
+                sample_files=[args.dataset_root / "images" / record["file_name"]])
         else:
             with torch.no_grad():
                 outputs = [value.cpu().numpy() for value in

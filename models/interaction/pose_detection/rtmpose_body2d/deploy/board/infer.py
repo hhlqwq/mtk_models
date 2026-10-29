@@ -61,7 +61,9 @@ def main():
                 pred_y = (y.astype(np.float32) + 14) * 0.007497822400182486
                 keypoints, area = decode_prediction(pred_x, pred_y, geometry)
                 ended = time.perf_counter()
-                comparison.update([values], {"simcc_x": pred_x, "simcc_y": pred_y})
+                comparison.update([values], {"simcc_x": pred_x, "simcc_y": pred_y},
+                    sample_id=f"{item['image_id']}:detection:{item['detection_id']}",
+                    sample_files=[ctx.dataset / "images" / f"{item['image_id']:012d}.jpg", path])
                 stream.write(json.dumps({"backend": "python_neuron_runtime_hw", "detection_id": item["detection_id"],
                     "image_id": item["image_id"], "bbox_score": item["score"],
                     "area": area, "keypoints": keypoints}) + "\n")

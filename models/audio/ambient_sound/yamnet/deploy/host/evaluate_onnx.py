@@ -46,10 +46,12 @@ def evaluate(args):
             patch_scores = frames(waveform)[0].numpy()
         else:
             window_scores = []
-            for patch in preprocess(waveform):
+            for patch_index, patch in enumerate(preprocess(waveform)):
                 tensor = patch[None]
                 output = session.run(None, {"audio": tensor})[0]
-                record_reference(args.models_dir / "yamnet.onnx", [tensor], {"output": output})
+                record_reference(args.models_dir / "yamnet.onnx", [tensor], {"output": output},
+                    sample_id=f"{row['filename']}:window:{patch_index}",
+                    sample_files=[args.dataset / "audio" / row["filename"]])
                 window_scores.append(output)
             patch_scores = np.concatenate(window_scores)
         all_scores.append(patch_scores.mean(axis=0))

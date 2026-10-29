@@ -74,7 +74,8 @@ def main() -> None:
                 stream.write(json.dumps(row) + "\n")
                 item_out = metadata["output"]
                 comparison.update([values], {"output": (
-                    logits.astype(np.float32) - item_out["zero_point"]) * item_out["scale"]})
+                    logits.astype(np.float32) - item_out["zero_point"]) * item_out["scale"]},
+                    sample_id=path.name, sample_files=[path])
                 if (index + 1) % 500 == 0 or index + 1 == len(images):
                     print(f"[推理] {MODEL} {index + 1}/{len(images)}.", flush=True)
         if not is_test():

@@ -96,7 +96,7 @@ class Generator:
             length = min(target.shape[2], combined.shape[2])
             target[:, :, -length:, :] = combined[:, :, -length:, :]
 
-    def generate(self, tokens, limit, *, stream=False):
+    def generate(self, tokens, limit, *, stream=False, sample_id=None, sample_files=None):
         """执行 Prefill 和逐 Token 生成,展示可流式输出,测速默认关闭打印."""
         if (not tokens or limit < 1 or len(tokens) + limit > self.manifest["context"]
                 or min(tokens) < 0 or max(tokens) >= len(self.embedding)):
@@ -119,7 +119,8 @@ class Generator:
                 item = prompt_contract["outputs"][0]
                 logits = (outputs[0][:, :len(chunk)].astype(np.float32)
                           - item["zero_point"]) * item["scale"]
-                self.comparison.update([np.array([chunk], dtype=np.int64)], {"output": logits})
+                self.comparison.update([np.array([chunk], dtype=np.int64)], {"output": logits},
+                                       sample_id=sample_id, sample_files=sample_files)
             prefill_npu_ms += self.prompt.last_npu_ms
             if offset + batch < len(tokens):
                 transfer_cache(prompt_contract, outputs, prompt_contract, self.prompt.inputs, append=True)
@@ -193,7 +194,7 @@ def run(entry):
                   f"{prompt.read_text(encoding='utf-8')}", flush=True)
             row, text = model.generate(
                 tokens, 32 if is_test() else ctx.config["conversion"]["max_new_tokens"],
-                stream=True)
+                stream=True, sample_id=f"{language}_demo:prefill:0", sample_files=[path])
             row["id"] = f"{language}_demo"
             if is_test():
                 output = ctx.root / "examples/output"
