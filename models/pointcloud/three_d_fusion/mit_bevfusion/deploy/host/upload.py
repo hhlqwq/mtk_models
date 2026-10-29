@@ -37,7 +37,8 @@ def main():
     directories = [str(Path(destination) / folder) for folder in groups]
     run_command(["ssh", *options, host, "mkdir -p " + " ".join(map(shlex.quote, directories))])
     for folder, files in groups.items():
-        run_command(["scp", *options, *files, f"{host}:{destination}/{folder}/"])
+        if files:
+            run_command(["scp", *options, *files, f"{host}:{destination}/{folder}/"])
     prune_models(ctx, [path.name for path in model_files])
     print("[上传完成] 待板端检查.请登录开发板,在本模型部署目录执行 bash compile.sh.", flush=True)
 

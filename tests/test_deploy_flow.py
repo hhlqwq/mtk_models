@@ -640,6 +640,51 @@ class DeployFlowTest(unittest.TestCase):
             self.assertEqual(len(identifiers), expected)
             self.assertEqual(actual["held_out"]["samples"], expected)
 
+    def test_bev_upload_skips_empty_groups(self):
+        """实际上传函数保留空目录创建,不执行空 scp,缺文件仍在上传前失败."""
+        import importlib.util
+
+        model = ROOT / "models/pointcloud/three_d_fusion/mit_bevfusion"
+        source = model / "deploy/host/upload.py"
+        spec = importlib.util.spec_from_file_location("bev_upload_test", source)
+        uploader = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(uploader)
+        package = self.work / "models"
+        package.mkdir()
+        stages = {"camera": {"backend": "onnxruntime_cpu", "file": "bevfusion-det_camera.onnx"},
+                  "fusion": {"backend": "mtk_npu", "file": "fusion.dla"}}
+        (package / "contract.json").write_text(json.dumps({"stages": stages}))
+        for name in ("sparse_weights.npz", "geometry.npz", "bevfusion-det_camera.onnx",
+                     "bevfusion-det_fusion.onnx", "fusion.dla"):
+            (package / name).write_bytes(b"test-only")
+        for name in ("sample.npz", "sample.json"):
+            (self.work / name).write_bytes(b"test-only")
+        ctx = SimpleNamespace(output=self.work, work=self.work, model=model, repo=ROOT,
+                              config={"board": {"deploy_dir": "/test-only/bevfusion"}})
+        with mock.patch.dict(os.environ, {"MTK_BOARD_HOST": "test-only"}), \
+                mock.patch.object(uploader, "context", return_value=ctx), \
+                mock.patch.object(uploader, "run_command") as command, \
+                mock.patch.object(uploader, "prune_models") as prune:
+            uploader.main()
+            calls = [call.args[0] for call in command.call_args_list]
+            self.assertEqual(calls[0][0], "ssh")
+            self.assertIn("/test-only/bevfusion/build/reference", calls[0][-1])
+            transfers = [args for args in calls if args[0] == "scp"]
+            self.assertEqual(len(transfers), 5)
+            for arguments in transfers:
+                self.assertTrue(arguments[5:-1])
+                self.assertTrue(all(Path(path).is_file() for path in arguments[5:-1]))
+                self.assertFalse(arguments[-1].endswith("/build/reference/"))
+            prune.assert_called_once()
+
+            (package / "fusion.dla").unlink()
+            command.reset_mock()
+            prune.reset_mock()
+            with self.assertRaises(FileNotFoundError):
+                uploader.main()
+            command.assert_not_called()
+            prune.assert_not_called()
+
     def test_bev_identity_ignores_unused_graphs(self):
         """真实模型标识只包含契约所用图和协议,目录残留不能破坏两端匹配."""
         source = ROOT / "models/pointcloud/three_d_fusion/mit_bevfusion/deploy/board/evaluate.py"
