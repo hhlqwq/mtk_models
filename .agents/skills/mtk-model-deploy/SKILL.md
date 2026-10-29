@@ -40,7 +40,7 @@ description: 在 mtk_models 仓库适配和部署官方开源模型到 MediaTek 
 - Docker 公共环境由创建容器入口和本地配置管理,模型脚本不重复配置 SDK、解释器或 Python 缓存策略.范围和运行编号属于单次执行状态,在入口确定;板端临时目录复用公共工具推导.板端独立运行所需的缓存控制仅放在板端分支,不要误当作 Docker 配置重复设置.
 - 临时文件也要精简:只保存运行、评分或排错必需的数据,不默认创建每步状态文件、逐样本日志、多种格式的同义输出或历史副本.逐样本结果优先汇总保存;保留运行器必需的张量、预测和解析日志,新增文件必须有具体用途.
 - 两阶段使用相同模型版本、预后处理与 DLA.若契约不能容纳完整评价则停止,不截题、丢样本或在评价中自动重编译.无正式精度协议时报告 partial 和原因,生成样例不得冒充全量精度.
-- LLM 的正式 MMLU 固定为 1000 题、57 学科、seed=17,完整执行该范围不等于完整 MMLU 14042 题;WikiText2 保持完整 test,DeepSeek 的题数协议不随之改变.仅做 W4A16,不新增 W8A16 实验.区分权重存储精度和本地参考计算精度,精度损失必须以同版本同题同 Token 对照分析,没有验收依据不判定掉点合理.细节见 references/evaluation.md.
+- 所有 LLM 的正式 MMLU 测试统一使用固定 1000 题、57 学科、seed=17,完整执行该范围不等于完整 MMLU 14042 题;WikiText2 使用完整 test.量化精度按已确认的部署配置执行,不擅自增加其他精度实验.区分权重存储精度和本地参考计算精度,精度损失必须以同版本同题同 Token 对照分析,没有验收依据不判定掉点合理.共享规范不按单个模型设置评价范围例外,具体适配差异及历史记录放在对应模型文档.细节见 references/evaluation.md.
 - 未明确要求的测试、耗时任务和大文件下载先确认再执行.修改文件不等于允许执行模型.升级、刷机、重启和停止其他进程按维护授权执行.
 - 编译使用 Ubuntu Docker,真实 NPU 验证在目标板执行.先读取本地配置并核对当前环境,不把公开配置模板当作实时设备状态.
 - 主机名、地址、凭据和内部绝对路径只保存在本地配置及本地运行记录.正式模型和数据集存 NAS,临时文件使用仓库约定的日期目录.
@@ -71,7 +71,7 @@ description: 在 mtk_models 仓库适配和部署官方开源模型到 MediaTek 
 | 人脸 | `models/interaction/face_recognition/mobilefacenet` | 五点对齐、128 维特征及 LFW 十折阈值协议 |
 | 分割与深度 | `models/navigation/segmentation/fastsam`、`models/navigation/single_camera_depth/depth_anything_v2_small` | 类别无关 AR@100 与 DA-2K 点对准确率,不能替换为其他任务指标 |
 | 音频 | `models/audio/ambient_sound/yamnet`、`models/audio/stt/whisper_tiny` | 标签投影和评价折;双 DLA、自回归解码与文本规范化 |
-| 原生 LLM | `models/gen_ai/llm/minicpm5_2b`、`deepseek_r1_distill_qwen_1_5b` | W4A16 双 DLA、独立 MMLU/PPL 与定长性能评价;保留各模型 tokenizer、停止 Token、GQA 和 KV 契约 |
+| 原生 LLM | `models/gen_ai/llm/minicpm5_2b`、`deepseek_r1_distill_qwen_1_5b` | 按配置的量化精度和 Prefill/Decode DLA、独立 MMLU/PPL 与定长性能评价;保留各模型 tokenizer、停止 Token、GQA 和 KV 契约 |
 
 G720 结果仅证明对应模型、版本和环境.G5100 无实测时保持未验证,先核实目标平台参数,不能复用 G720 编译目标或指标.
 
