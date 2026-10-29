@@ -206,10 +206,11 @@ def evaluate(args):
                 "text": tokenizer.decode(generated, skip_special_tokens=False),
             })
     else:
-        # Shape fixer 完成后会复制 embedding,评测不得提前修改静态图目录.
-        embedding = args.tflite / "embedding_int16.bin"
-        if not embedding.exists():
-            raise ValueError("请等待 Shape 阶段完成,量化评测需要实际 INT16 embedding.")
+        # 模型入口显式提供配套量化 embedding,独立 CLI 默认读取静态图目录.
+        embedding = (args.embedding if args.embedding is not None
+                     else args.tflite / "embedding_int16.bin")
+        if not embedding.is_file():
+            raise FileNotFoundError(f"质量评价所需 INT16 embedding 不存在: {embedding}.")
         protocol["embedding_sha256"] = sha256(embedding)
         graphs = list(args.tflite.glob("*.tflite"))
         if len(graphs) != 1:
@@ -267,6 +268,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--backend", choices=("pytorch", "tflite", "prepare_board"), required=True)
     parser.add_argument("--tflite", type=Path)
+    parser.add_argument("--embedding", type=Path,
+                        help="配套 INT16 embedding 文件,默认位于 --tflite 目录.")
     parser.add_argument("--decode-tflite", type=Path)
     parser.add_argument("--text-rows", type=int, default=128)
     parser.add_argument("--full-test", action="store_true",

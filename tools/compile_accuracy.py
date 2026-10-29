@@ -93,6 +93,7 @@ def language(ctx, host):
         options = SimpleNamespace(
             model=native.model, corpus=ctx.dataset / ctx.config["data"]["wikitext_test"],
             output=data / "quality", backend="pytorch", tflite=graph.parent,
+            embedding=native.quantized / "embedding_int16.bin",
             decode_tflite=None, text_rows=128, full_test=False, blocks=None,
             diagnostic_blocks=ctx.config["evaluation"].get("test_wikitext_blocks", 16),
             decode_steps=0, skip_demo=True, device=ctx.config["evaluation"]["reference_device"],

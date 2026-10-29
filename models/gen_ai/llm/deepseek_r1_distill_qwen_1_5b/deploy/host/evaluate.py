@@ -53,6 +53,7 @@ def main():
     quality = SimpleNamespace(
         model=native.model, corpus=datasets[1], output=output / "quality",
         backend="pytorch", tflite=graph.parent, decode_tflite=None,
+        embedding=native.quantized / "embedding_int16.bin",
         text_rows=128, full_test=True, blocks=None, diagnostic_blocks=0,
         decode_steps=0, skip_demo=True, device=device, cpu_threads=8)
     evaluate_quality.evaluate(quality)

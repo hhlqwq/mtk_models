@@ -49,6 +49,7 @@ def evaluate_mode(native, datasets):
     quality_args = SimpleNamespace(
         model=native.model, corpus=corpus, output=output / "quality",
         backend="pytorch", tflite=graph.parent, decode_tflite=None,
+        embedding=native.quantized / "embedding_int16.bin",
         text_rows=128, full_test=not is_test(), blocks=None,
         diagnostic_blocks=config["evaluation"]["test_wikitext_blocks"] if is_test() else 0,
         decode_steps=0, skip_demo=True,
