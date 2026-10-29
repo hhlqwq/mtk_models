@@ -151,3 +151,5 @@ env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
     "${MODEL_ASSETS_DIR}/build/model_int8.tflite" \
     -o "${MODEL_ASSETS_DIR}/model_int8.dla"
 ```
+
+Depth 的最多 5 次输出数值对比使用板端实际预处理得到的 FP32 输入,在内存中传回编译服务器运行浮点 ONNX 后生成参考.两端先核对原始图片内容,再严格匹配输入张量,避免 OpenCV 跨平台三次插值差异导致参考无法配对.此步骤只执行板端预处理,不启动 NPU;100 张子集任务精度和全量评价继续使用各自原有流程.
