@@ -72,3 +72,65 @@ compile.sh 独立对固定少量输入比较浮点与 NPU 输出,在终端显示
 compile.sh 使用 最多 100 帧,当前 mini_val 划分使用全部 81 帧并明确标注,复用正式评价协议.主机执行子集浮点推理,板端执行同一子集 NPU 推理,在终端打印精度和损失,并保存 results/summary_test.json.正的损失表示 NPU 变差,负值表示改善;Top-1、AP、AR 等使用浮点减 NPU 的百分点,WER 使用 NPU 减浮点的百分点,PPL 使用增量及相对增幅.
 
 普通样本跨完整划分按固定间隔抽取,保留展示及数值检查的必要输入;LFW、ESC-50 和 MMLU 保持折、类别和学科覆盖.同一子集两端通过样本指纹核对;MMLU 固定 seed=17 分层抽样.该报告不代表全量成绩,不改写 results/summary.json.中间数据覆盖保存在本模型 build/work/,CosSim、RMSE、NRMSE 仍只比较固定少量输入.详见[输出误差统计](../../../../docs/output_metrics.md).
+
+## 精度设置与编译命令
+
+本模型当前是 CPU FP32 + NPU FP16 混合部署,没有做 INT8/INT16 校准量化.配置见 [config.yaml](config.yaml),导出和编译由 [compile.py](deploy/host/compile.py) 完成.
+
+### 转换设置
+
+| 参数 | 当前设置 |
+| --- | --- |
+| 转换器 | 每个 FP32 ONNX 子图分别使用 MTK `OnnxConverter` |
+| 量化开关 | `quantize=False`,没有校准集和整数 scale/zero point |
+| NPU 精度 | NCC `--relax-fp32` 的 FP16 路线;代码未设置 `convert_float32_weights_to_float16` |
+| CPU 精度 | 相机完整子图 ONNX Runtime FP32,LiDAR 稀疏主干 NumPy FP32,几何/体素化/BEV pooling/解码由 CPU 完成 |
+| 子图记录 | 每次实际后端、I/O 和编译失败原因写入 `models/contract.json`,不能仅因尝试编译就标成 NPU |
+
+### 特殊 ONNX 导出处理
+
+从官方 camera + LiDAR 完整权重构建四个固定子图,复用实际参数并检查全部权重覆盖.不是直接将原始完整网络导成单张 ONNX:
+
+| 子图 | 固定输入 | 当前执行方式 |
+| --- | --- | --- |
+| `camera` | NHWC image `[1,256,704,3]`,depth `[1,256,704,1]` | CPU FP32,保留 SwinTiny/LSSFPN/DepthLSS |
+| `camera_downsample` | `[1,360,360,80]` | NPU FP16 |
+| `fusion` | camera `[1,180,180,80]`,LiDAR `[1,180,180,256]` | NPU FP16 |
+| `head` | query `[1,200,128]`,position `[1,200,2]`,classes `[1,200,10]`,features `[1,32400,128]`,key position `[1,32400,2]` | NPU FP16 |
+
+导出为 opset 13,文件为 `models/bevfusion-det_<stage>.onnx`.稀疏参数和几何常量分别保存为 `sparse_weights.npz`、`geometry.npz`;SparseConvolution、ScatterND 等未被省略,由 CPU 路线完成.原始完整相机图编译不通过时明确保留 CPU,不启用 CPU bridge 来掩盖后端差异.
+
+### 完整 NCC 编译命令
+
+以下三条对应当前 NPU 子图,在已配置编译容器的仓库根目录使用已有 TFLite:
+
+```bash
+source tools/storage.sh models/pointcloud/three_d_fusion/mit_bevfusion
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
+    "${NCC_ROOT}/bin/ncc-tflite" \
+    --arch=mdla5.3 --suppress-output --disallow-bridge --relax-fp32 --suppress-input \
+    "${MODEL_ASSETS_DIR}/build/camera_downsample.tflite" \
+    -o "${MODEL_ASSETS_DIR}/models/camera_downsample.dla"
+
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
+    "${NCC_ROOT}/bin/ncc-tflite" \
+    --arch=mdla5.3 --suppress-output --disallow-bridge --relax-fp32 --suppress-input \
+    "${MODEL_ASSETS_DIR}/build/fusion.tflite" \
+    -o "${MODEL_ASSETS_DIR}/models/fusion.dla"
+
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
+    "${NCC_ROOT}/bin/ncc-tflite" \
+    --arch=mdla5.3 --suppress-output --disallow-bridge --relax-fp32 --suppress-input \
+    "${MODEL_ASSETS_DIR}/build/head.tflite" \
+    -o "${MODEL_ASSETS_DIR}/models/head.dla"
+```
+
+脚本对 `camera` 也尝试相同参数的命令;这是能力检查,当前没有交付其 DLA.仅在该子图 TFLite 成功生成时才进入 NCC:
+
+```bash
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
+    "${NCC_ROOT}/bin/ncc-tflite" \
+    --arch=mdla5.3 --suppress-output --disallow-bridge --relax-fp32 --suppress-input \
+    "${MODEL_ASSETS_DIR}/build/camera.tflite" \
+    -o "${MODEL_ASSETS_DIR}/models/camera.dla"
+```

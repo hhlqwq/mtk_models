@@ -158,3 +158,48 @@ compile.sh 独立对固定少量输入比较浮点与 NPU 输出,在终端显示
 compile.sh 使用 50 条 LibriSpeech 音频,复用正式评价协议.主机执行子集浮点推理,板端执行同一子集 NPU 推理,在终端打印精度和损失,并保存 results/summary_test.json.正的损失表示 NPU 变差,负值表示改善;Top-1、AP、AR 等使用浮点减 NPU 的百分点,WER 使用 NPU 减浮点的百分点,PPL 使用增量及相对增幅.
 
 普通样本跨完整划分按固定间隔抽取,保留展示及数值检查的必要输入;LFW、ESC-50 和 MMLU 保持折、类别和学科覆盖.同一子集两端通过样本指纹核对;MMLU 固定 seed=17 分层抽样.该报告不代表全量成绩,不改写 results/summary.json.中间数据覆盖保存在本模型 build/work/,CosSim、RMSE、NRMSE 仍只比较固定少量输入.详见[输出误差统计](../../../../docs/output_metrics.md).
+
+## 量化参数与编译命令
+
+配置见 [config.yaml](config.yaml),转换与编译实现见 [convert_model.py](deploy/host/convert_model.py)、[compile_model.py](deploy/host/compile_model.py).
+
+### 量化设置
+
+| 参数 | 当前设置 |
+| --- | --- |
+| 转换器 | MTK `OnnxConverter`,分别转换 `tiny_encoder.onnx` 和 `tiny_decoder_step.onnx` |
+| 精度 | `precision=w8a16`,INT8 权重、对称 INT16 激活及原生 I/O,逐输出通道权重量化 |
+| 校准 | LibriSpeech test-clean 按路径排序前 8 条真实音频;Encoder 每条 1 次,Decoder 每条最多 32 步真实浮点自回归状态,遇 EOT 提前结束 |
+| 静态配置 | `cacheSize=256`,`maxTokenLength=448`,Decoder 每次 1 Token,满 Cache 后使用滑动窗口 |
+| 注意力掩码 | 导出图的 `MASK_NEGATIVE=-100.0` |
+| 对称性 | `allow_asym16_quantization=False`,`use_symmetric_quantization=True`;满足注意力 BatchMatMul 的 INT16 要求 |
+| 位宽 | `quantize=True`,`default_quantization_bitwidth=16`,`default_weights_quantization_bitwidth=8`,`input_quantization_bitwidths=16` |
+| 其他属性 | `use_per_output_channel_quantization=True`,`append_output_dequantize_ops=False` |
+| 审计与尺度 | 逐个仿射层核对 INT16/INT8/INT16,拒绝浮点回退;实际 I/O 顺序、形状和尺度写入 `build/runtime_contract.json` |
+
+校准语音与 test-clean 全量评价存在重叠,报告必须保留此说明.8 条音频和最多 32 步的量化校准范围不同于任务精度子集.
+
+### 特殊 ONNX 导出处理
+
+[export_onnx.py](deploy/host/export_onnx.py) 关闭 SDPA,使用官方 MatMul/Softmax 分支;将 22 个 LayerNorm 改写为逐行缩放的中心化、方差和 RSQRT,epsilon 同步除以缩放值平方,保留原始权重和数学语义,避免直接 LayerNorm 融合及整数小方差失真.改写函数对普通、小方差、常量及大幅值输入执行 `atol=rtol=2e-5` 检查.
+
+Encoder 固定 Mel 输入 `[1,80,3000]`,输出 `[1,1500,384]`.Decoder 拆成显式 KV Cache 的单步图,用 Token One-Hot、448 维位置权重和 Cache Mask 替代动态索引/更新,将 Cache 作为输入输出,固定长度 256.两图使用 opset 17,浮点参考、校准和板端共享该静态解码协议.
+
+### 完整 NCC 编译命令
+
+在仓库根目录的已配置编译容器中,分别编译已有的两个 TFLite:
+
+```bash
+source tools/storage.sh models/audio/stt/whisper_tiny
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
+    "${NCC_ROOT}/bin/ncc-tflite" \
+    --arch=mdla5.3 --suppress-output --disallow-bridge --suppress-input \
+    "${MODEL_ASSETS_DIR}/build/tiny_encoder_w8a16.tflite" \
+    -o "${MODEL_ASSETS_DIR}/tiny_encoder_w8a16.dla"
+
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
+    "${NCC_ROOT}/bin/ncc-tflite" \
+    --arch=mdla5.3 --suppress-output --disallow-bridge --suppress-input \
+    "${MODEL_ASSETS_DIR}/build/tiny_decoder_w8a16_1t256c.tflite" \
+    -o "${MODEL_ASSETS_DIR}/tiny_decoder_w8a16_1t256c.dla"
+```

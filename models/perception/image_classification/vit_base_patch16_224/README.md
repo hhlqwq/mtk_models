@@ -128,3 +128,35 @@ compile.sh 独立对固定少量输入比较浮点与 NPU 输出,在终端显示
 compile.sh 使用 1000 张 ImageNet 验证图片,复用正式评价协议.主机执行子集浮点推理,板端执行同一子集 NPU 推理,在终端打印精度和损失,并保存 results/summary_test.json.正的损失表示 NPU 变差,负值表示改善;Top-1、AP、AR 等使用浮点减 NPU 的百分点,WER 使用 NPU 减浮点的百分点,PPL 使用增量及相对增幅.
 
 普通样本跨完整划分按固定间隔抽取,保留展示及数值检查的必要输入;LFW、ESC-50 和 MMLU 保持折、类别和学科覆盖.同一子集两端通过样本指纹核对;MMLU 固定 seed=17 分层抽样.该报告不代表全量成绩,不改写 results/summary.json.中间数据覆盖保存在本模型 build/work/,CosSim、RMSE、NRMSE 仍只比较固定少量输入.详见[输出误差统计](../../../../docs/output_metrics.md).
+
+## 量化参数与编译命令
+
+以下为当前 [config.yaml](config.yaml)、[量化实现](deploy/host/convert_int8.py) 和 [编译实现](deploy/host/compile_model.py) 中的配置.未显式覆盖的 Converter 属性沿用当前 SDK 默认值,实际 scale/zero point 由校准产物读取,不能写死为通用常量.
+
+### 量化设置
+
+| 参数 | 当前设置 |
+| --- | --- |
+| 转换入口 | `deploy/host/convert_int8.py`,MTK `OnnxConverter` |
+| 精度 | W8A8 PTQ,逐输出通道权重量化 |
+| 校准 | ImageNet 验证图片按文件名排序,跳过前 1000 张,取 100 张 |
+| 输入 | FP32 `[1,3,224,224]`,短边 256、中心裁剪、RGB / 255;mean/std 在图内 |
+| 显式设置 | `quantize=True`,`use_per_output_channel_quantization=True`;其余属性沿用当前 SDK 默认值 |
+| 量化输入/结果 | `vit_b_16_mtk_compatible.onnx` → `build/model_int8.tflite`,I/O 尺度保存到 `build/quantization.json` |
+
+### 特殊 ONNX 导出处理
+
+[export_onnx.py](deploy/host/export_onnx.py) 将 12 层 MultiheadAttention 改写为最多四维的 Q/K/V、MatMul 和 Softmax,复用原始投影参数;改写前后以同一输入核对,最大绝对差须不超过 `1e-4`.同时将 ImageNet mean/std 放进图内.保留精确 GELU 的 `vit_b_16.onnx` 作为参考;量化使用的兼容图将 GELU 改为 `approximate="tanh"`,这是近似替换,不能称为与精确 GELU 严格等价.两图均为固定 batch=1、opset 17.
+
+### 完整 NCC 编译命令
+
+在仓库根目录的已配置编译容器中,对已生成的 TFLite 执行.路径通过本地配置加载,命令不触发重新量化:
+
+```bash
+source tools/storage.sh models/perception/image_classification/vit_base_patch16_224
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
+    "${NCC_ROOT}/bin/ncc-tflite" \
+    --arch=mdla5.3 --suppress-output --disallow-bridge \
+    "${MODEL_ASSETS_DIR}/build/model_int8.tflite" \
+    -o "${MODEL_ASSETS_DIR}/model_int8.dla"
+```

@@ -118,3 +118,35 @@ compile.sh 独立对固定少量输入比较浮点与 NPU 输出,在终端显示
 compile.sh 使用 300 张 COCO 验证图片,复用正式评价协议.主机执行子集浮点推理,板端执行同一子集 NPU 推理,在终端打印精度和损失,并保存 results/summary_test.json.正的损失表示 NPU 变差,负值表示改善;Top-1、AP、AR 等使用浮点减 NPU 的百分点,WER 使用 NPU 减浮点的百分点,PPL 使用增量及相对增幅.
 
 普通样本跨完整划分按固定间隔抽取,保留展示及数值检查的必要输入;LFW、ESC-50 和 MMLU 保持折、类别和学科覆盖.同一子集两端通过样本指纹核对;MMLU 固定 seed=17 分层抽样.该报告不代表全量成绩,不改写 results/summary.json.中间数据覆盖保存在本模型 build/work/,CosSim、RMSE、NRMSE 仍只比较固定少量输入.详见[输出误差统计](../../../../docs/output_metrics.md).
+
+## 量化参数与编译命令
+
+以下为当前 [config.yaml](config.yaml)、[量化实现](deploy/host/convert_int8.py) 和 [编译实现](deploy/host/compile_model.py) 中的配置.未显式覆盖的 Converter 属性沿用当前 SDK 默认值,实际 scale/zero point 由校准产物读取,不能写死为通用常量.
+
+### 量化设置
+
+| 参数 | 当前设置 |
+| --- | --- |
+| 转换入口 | `deploy/host/convert_int8.py`,MTK `PyTorchConverter`,输入是 `build/yolov5s.torchscript`,不是 ONNX |
+| 精度 | INT8 PTQ;权重通道模式和位宽属性未在本模型显式覆盖,沿用当前 SDK 默认值 |
+| 校准 | COCO val2017 图片按文件名排序取前 100 张 |
+| 输入 | FP32 `[1,3,640,640]`,保持比例 resize、114 填充 letterbox、RGB / 255 |
+| 显式设置 | `quantize=True`,`append_output_dequantize_ops=False`,`input_shapes=[(1,3,640,640)]` |
+| 量化结果 | `build/model_int8.tflite`,保留原始检测头,后处理由 Python 完成 |
+
+### 特殊导出处理
+
+[export_model.py](deploy/host/export_model.py) 对固定官方源码应用已有 `Fix_yolov5_mtk_tflite_issue.patch`.补丁把 Detect 前向改为三个尺度的原始卷积输出,将 reshape、Sigmoid、anchor/grid 解码和 NMS 留给后处理.同一次 `export.py --include torchscript onnx` 生成 `yolov5s.onnx` 和 TorchScript;实际量化走 TorchScript 路线.补丁作用于 `build/yolov5/` 副本,原始权重和源码压缩包不改写.
+
+### 完整 NCC 编译命令
+
+在仓库根目录的已配置编译容器中,对已生成的 TFLite 执行.路径通过本地配置加载,命令不触发重新量化:
+
+```bash
+source tools/storage.sh models/perception/object_detection/yolov5s
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
+    "${NCC_ROOT}/bin/ncc-tflite" \
+    --arch=mdla5.3 --suppress-output --disallow-bridge \
+    "${MODEL_ASSETS_DIR}/build/model_int8.tflite" \
+    -o "${MODEL_ASSETS_DIR}/model_int8.dla"
+```

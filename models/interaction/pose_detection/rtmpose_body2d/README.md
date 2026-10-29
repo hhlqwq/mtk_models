@@ -140,3 +140,35 @@ compile.sh 独立对固定少量输入比较浮点与 NPU 输出,在终端显示
 compile.sh 使用 至少 500 个人体实例,保留选中图片的全部人体框,同时打印实际图片数和实例数,复用正式评价协议.主机执行子集浮点推理,板端执行同一子集 NPU 推理,在终端打印精度和损失,并保存 results/summary_test.json.正的损失表示 NPU 变差,负值表示改善;Top-1、AP、AR 等使用浮点减 NPU 的百分点,WER 使用 NPU 减浮点的百分点,PPL 使用增量及相对增幅.
 
 普通样本跨完整划分按固定间隔抽取,保留展示及数值检查的必要输入;LFW、ESC-50 和 MMLU 保持折、类别和学科覆盖.同一子集两端通过样本指纹核对;MMLU 固定 seed=17 分层抽样.该报告不代表全量成绩,不改写 results/summary.json.中间数据覆盖保存在本模型 build/work/,CosSim、RMSE、NRMSE 仍只比较固定少量输入.详见[输出误差统计](../../../../docs/output_metrics.md).
+
+## 量化参数与编译命令
+
+以下为当前 [config.yaml](config.yaml)、[量化实现](deploy/host/convert_int8.py) 和 [编译实现](deploy/host/compile_model.py) 中的配置.未显式覆盖的 Converter 属性沿用当前 SDK 默认值,实际 scale/zero point 由校准产物读取,不能写死为通用常量.
+
+### 量化设置
+
+| 参数 | 当前设置 |
+| --- | --- |
+| 转换入口 | `deploy/host/convert_int8.py`,MTK `OnnxConverter` |
+| 精度 | W8A8 PTQ,逐输出通道权重量化 |
+| 校准 | COCO-WholeBody 的有效 person 框,按既有 `load_person_samples` 顺序取 100 个框;`offset=0` |
+| 输入 | FP32 `[1,3,256,192]`,按人体框仿射裁剪后的 RGB [0,255];mean/std 在导出图内 |
+| 显式设置 | `quantize=True`,`use_per_output_channel_quantization=True`;其余属性沿用当前 SDK 默认值 |
+| 量化输入/结果 | `rtmpose-m_simcc-coco-wholebody_pt-aic-coco_270e-256x192_mtk_compatible.onnx` → `build/model_int8.tflite` |
+
+### 特殊 ONNX 导出处理
+
+[export_model.py](deploy/host/export_model.py) 将官方 MMPose 模型包装成含 RGB mean/std 的主干 + SimCC 双输出图,固定 opset 17、133 个关键点.兼容处理合并外部权重,将 IR 限制到 8、标准 opset 上限限制到 18;仅在确认不改变当前 reshape 语义时移除 `allowzero`.GAU 中不受支持的双轴 Mul 广播通过常量扩展与 Concat 改写为同形状乘法.保留原始 ONNX 和兼容 ONNX,量化只读取后者.
+
+### 完整 NCC 编译命令
+
+在仓库根目录的已配置编译容器中,对已生成的 TFLite 执行.路径通过本地配置加载,命令不触发重新量化:
+
+```bash
+source tools/storage.sh models/interaction/pose_detection/rtmpose_body2d
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
+    "${NCC_ROOT}/bin/ncc-tflite" \
+    --arch=mdla5.3 --suppress-output --disallow-bridge \
+    "${MODEL_ASSETS_DIR}/build/model_int8.tflite" \
+    -o "${MODEL_ASSETS_DIR}/model_int8.dla"
+```

@@ -74,3 +74,65 @@ compile.sh 独立对固定少量输入比较浮点与 NPU 输出,在终端显示
 compile.sh 使用 100 道覆盖 57 学科的 MMLU 题和 16 个 WikiText2 块,复用正式评价协议.主机执行子集浮点推理,板端执行同一子集 NPU 推理,在终端打印精度和损失,并保存 results/summary_test.json.正的损失表示 NPU 变差,负值表示改善;Top-1、AP、AR 等使用浮点减 NPU 的百分点,WER 使用 NPU 减浮点的百分点,PPL 使用增量及相对增幅.
 
 普通样本跨完整划分按固定间隔抽取,保留展示及数值检查的必要输入;LFW、ESC-50 和 MMLU 保持折、类别和学科覆盖.同一子集两端通过样本指纹核对;MMLU 固定 seed=17 分层抽样.该报告不代表全量成绩,不改写 results/summary.json.中间数据覆盖保存在本模型 build/work/,CosSim、RMSE、NRMSE 仍只比较固定少量输入.详见[输出误差统计](../../../../docs/output_metrics.md).
+
+## 量化参数与编译命令
+
+参数来自 [config.yaml](config.yaml)、[转换实现](deploy/host/convert.py) 和 [编译实现](deploy/host/compile.py).实际配方记录保存在模型资源的 `build/native/quantization_settings.json`.
+
+### 量化设置
+
+| 参数 | 当前设置 |
+| --- | --- |
+| 转换入口 | `deploy/host/convert.py`,通过公共 SDK 适配函数调用 PTQ,不是 ONNX Converter |
+| 精度 | Attention、MLP、LM Head 均为 `asym4W_sym16A`,外置 embedding 与 KV 接口为 INT16 |
+| 校准数据 | WikiText2 train 均匀选取 16 段×256 Token,另加 8 条自编中英文输入;不使用 WikiText2 test 做校准 |
+| 校准批次 | 24 条校准输入生成 48 个批次,`calibration_batches=48`,SDK 参数 `-b 48 -m 128` |
+| PTQ 参数 | `-p asym4W_sym16A -tp asym4W_sym16A -m Overall --weight_optimization hessian` |
+| Hessian 附加配置 | `--extra_converter_options deploy/host/hessian_stable.json`,内容为 `hessian_opt_stability_ratio=0.1`;路径实际由入口解析为绝对路径 |
+| 旋转与掩码 | `rotate=false`,`mask_value=-10000`,保留原模型 RoPE 配置 |
+| 静态形状 | `context=1024`,Prefill=128 Token,Decode=1 Token,每阶段 1 张静态图 |
+| 位宽核对 | 检查全部 Attention/MLP/LM Head 投影权重为 INT4、接口为 INT16,不能只根据文件名认定 W4A16 |
+
+本模型使用 SDK 原生量化及静态 TFLite 路线,不经 ONNX.工作副本将最大上下文固定为 1024,按官方 tokenizer/generation 配置对齐特殊 Token,并保留官方聊天模板.导出 Prefill/Decode 单图时,不同 INT16 单尺度的分片接口通过显式 Requantize 连接.实际原始权重不改写.
+
+下列为当前 [compile.py](deploy/host/compile.py) 的完整 NCC 参数,输入文件名按现有静态图核对.两个阶段的额外优化参数不同,不能合并成一条通用命令.
+
+### 完整 NCC 编译命令
+
+在仓库根目录的已配置编译容器中,只编译已有 TFLite.原生 I/O 形状和量化尺度以静态图及部署契约为准:
+
+```bash
+source tools/storage.sh models/gen_ai/llm/deepseek_r1_distill_qwen_1_5b
+WORK="${MODEL_ASSETS_DIR}/build/native"
+PREFIX="DeepSeek-R1-Distill-Qwen-1.5B_asym4W_sym16A_Overall_hessian_hessian_stable"
+PREFILL_DIR="${WORK}/tflite/${PREFIX}_128t1024c"
+DECODE_DIR="${WORK}/tflite/${PREFIX}_1t1024c"
+
+# Prefill 阶段: 每块 128 Token.
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
+    "${NCC_ROOT}/bin/ncc-tflite" \
+    --arch=mdla5.3 --l1-size-kb=256 --num-mdla=1 \
+    --opt=3 --opt-footprint --opt-accuracy --stable-linearize \
+    --gno=LTS,Inception --gno-exp --gno-non-4d-tiling --mlo \
+    --disable-apusys --fc-to-conv --mdla-int16-lut \
+    --suppress-input --suppress-output --show-memory-summary \
+    --mdla-conv-exp --intval-color-legacy --disallow-bridge \
+    --broadcast-act-wgt --broadcast-flow-distance=63 --split-large-conv-ic=1536 \
+    "${PREFILL_DIR}/${PREFIX}_28layer_128t1024c_0.tflite" \
+    --dla-file "${PREFILL_DIR}/DeepSeek-R1-Distill-Qwen-1.5B_asym4W_sym16A_28layer_prefill_128t_1024c.dla"
+
+# Decode: 每次 1 Token.
+env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
+    "${NCC_ROOT}/bin/ncc-tflite" \
+    --arch=mdla5.3 --l1-size-kb=256 --num-mdla=1 \
+    --opt=3 --opt-footprint --opt-accuracy --stable-linearize \
+    --gno=LTS,Inception --gno-exp --gno-non-4d-tiling --mlo \
+    --disable-apusys --fc-to-conv --mdla-int16-lut \
+    --suppress-input --suppress-output --show-memory-summary \
+    --mdla-conv-exp --intval-color-legacy --disallow-bridge \
+    --split-16a4w-conv-oc \
+    "${DECODE_DIR}/${PREFIX}_28layer_1t1024c_0.tflite" \
+    --dla-file "${DECODE_DIR}/DeepSeek-R1-Distill-Qwen-1.5B_asym4W_sym16A_28layer_decode_1t_1024c.dla"
+```
+
+编译输出仍在转换工作目录,后续打包将两张 DLA 放入模型资源 `models/1024c/`,板端同样从 `models/1024c/` 加载.底层命令不包含重新准备、量化或评价步骤.
