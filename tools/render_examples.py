@@ -262,7 +262,7 @@ def main() -> None:
         "output_dir": lambda c: c.root / "examples/output",
         "work_dir": lambda c: c.work,
         "dataset_root": lambda c: c.dataset,
-        "models_dir": lambda c: c.root / "models",
+        "models_dir": lambda c: c.root / "build/reference",
     })
     args = parser.parse_args()
     manifest = read_json(args.input_dir / "samples.json")

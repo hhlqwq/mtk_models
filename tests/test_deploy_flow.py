@@ -379,6 +379,44 @@ class DeployFlowTest(unittest.TestCase):
                     expressions.append((values["sample_id"], [p.name for p in values["sample_files"]]))
                 self.assertEqual(*expressions)
 
+    def test_yamnet_examples_use_uploaded_reference_directory(self):
+        """实际无参数运行展示脚本,只在上传目录放标签,确认三个示例生成."""
+        board = self.work / "board"
+        board.mkdir()
+        script = board / "render_examples.py"
+        script.write_bytes((ROOT / "tools/render_examples.py").read_bytes())
+        (self.work / "config.json").write_text(json.dumps({
+            "name": "yamnet", "board": {"dataset_dir": str(self.work)},
+            "deployment": {"model_directory": "."}}))
+        reference = self.work / "build/reference"
+        reference.mkdir(parents=True)
+        (reference / "yamnet_class_map.csv").write_text(
+            "index,display_name\n" + "".join(f"{i},class_{i}\n" for i in range(521)))
+        inputs = self.work / "examples/input"
+        inputs.mkdir(parents=True)
+        records = [{"filename": f"audio_{i}.wav", "category": f"category_{i}"}
+                   for i in range(3)]
+        (inputs / "samples.json").write_text(json.dumps({"samples": records}))
+        work = self.work / "build/work"
+        work.mkdir()
+        (work / "audio_manifest.json").write_text(json.dumps(records))
+        scores = np.zeros((3, 521), dtype="<f4")
+        for i in range(3):
+            scores[i, i + 10] = 0.9
+        scores.tofile(work / "scores.bin")
+        before = (work / "scores.bin").read_bytes()
+        result = subprocess.run([sys.executable, str(script)], cwd=ROOT,
+            env=dict(os.environ, PYTHONPATH=str(ROOT)), capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        outputs = sorted((self.work / "examples/output").glob("sample_*_events.json"))
+        self.assertEqual(len(outputs), 3)
+        for i, path in enumerate(outputs):
+            report = json.loads(path.read_text())
+            self.assertEqual(report["source_filename"], records[i]["filename"])
+            self.assertEqual(report["top5_yamnet"][0]["class"], f"class_{i + 10}")
+        self.assertEqual((work / "scores.bin").read_bytes(), before)
+        self.assertFalse((self.work / "models").exists())
+
     def test_report_isolation_and_invalid_write(self):
         """只保留两份报告,无效新结果不损坏旧报告."""
         evaluation.publish_result(self.work, {"test": 1}, "summary_test.json")
