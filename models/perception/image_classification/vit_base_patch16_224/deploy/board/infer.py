@@ -12,7 +12,7 @@ from tools.output_metrics import OutputComparison
 
 
 def floating_preprocess(path):
-    """沿用短边 256、双三次缩放、中心裁剪及 RGB NCHW 协议."""
+    """沿用短边 256、双三次缩放、中心裁剪,返回 RGB NCHW FP32 输入."""
     image = cv2.imread(str(path))
     if image is None:
         raise ValueError(f"无法读取图片: {path}.")
@@ -22,7 +22,7 @@ def floating_preprocess(path):
     image = cv2.resize(image, (width, height), interpolation=cv2.INTER_CUBIC)
     left, top = (width - 224) // 2, (height - 224) // 2
     values = image[top:top + 224, left:left + 224, ::-1].transpose(2, 0, 1)
-    return values.astype(np.float64)[None] / 255
+    return values.astype(np.float32)[None] / np.float32(255.0)
 
 
 def preprocess(path, scale, zero_point):

@@ -160,3 +160,5 @@ env LD_LIBRARY_PATH="${NCC_ROOT}/lib" \
     "${MODEL_ASSETS_DIR}/build/model_int8.tflite" \
     -o "${MODEL_ASSETS_DIR}/model_int8.dla"
 ```
+
+主机校准、浮点参考和板端量化前输入统一为 FP32 RGB NCHW [0,1],mean/std 仍在模型图内.板端按现有 scale/zero_point 量化为 INT8;数值对比不要求跨平台预处理数组逐字节一致.

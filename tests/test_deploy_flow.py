@@ -465,6 +465,33 @@ class DeployFlowTest(unittest.TestCase):
                 module.upload_inputs(ctx)
             run.assert_not_called()
 
+    def test_vit_preprocessing_matches_fp32_calibration(self):
+        """执行真实 ViT 前处理和校准函数,验证类型、范围及每个像素值一致."""
+        import cv2
+
+        model = ROOT / "models/perception/image_classification/vit_base_patch16_224/deploy"
+        functions = {}
+        for file, name in ((model / "board/infer.py", "floating_preprocess"),
+                           (model / "host/convert_int8.py", "preprocess_image")):
+            tree = ast.parse(file.read_text())
+            node = next(item for item in tree.body if isinstance(item, ast.FunctionDef) and item.name == name)
+            namespace = {"np": np, "cv2": cv2, "Path": Path}
+            exec(compile(ast.Module(body=[node], type_ignores=[]), str(file), "exec"), namespace)
+            functions[name] = namespace[name]
+        image = np.arange(300 * 400 * 3, dtype=np.uint8).reshape(300, 400, 3)
+        path = self.work / "sample.png"
+        self.assertTrue(cv2.imwrite(str(path), image))
+        tensor = functions["floating_preprocess"](path)
+        expected = functions["preprocess_image"](path)
+        self.assertEqual(tensor.dtype, np.float32)
+        self.assertEqual(tensor.shape, (1, 3, 224, 224))
+        np.testing.assert_array_equal(tensor, expected)
+        self.assertTrue(np.all((tensor >= 0) & (tensor <= 1)))
+        # 旧浮点参考先做 FP64 除法再转 FP32,新实现对全部像素值保持一致.
+        pixels = np.arange(256)
+        np.testing.assert_array_equal((pixels.astype(np.float64) / 255).astype(np.float32),
+                                      pixels.astype(np.float32) / np.float32(255.0))
+
     def test_report_isolation_and_invalid_write(self):
         """只保留两份报告,无效新结果不损坏旧报告."""
         evaluation.publish_result(self.work, {"test": 1}, "summary_test.json")
