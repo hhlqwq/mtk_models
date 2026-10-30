@@ -33,7 +33,7 @@ description: 在 mtk_models 仓库适配和部署官方开源模型到 MediaTek 
 - `deploy/evaluate.sh` 是独立正式评价入口.容器端仅对已有浮点模型完成约定全量任务精度并自动上传同协议参考和必要输入;板端 evaluate.sh 使用已有 DLA 与程序评价精度、统计性能和进程峰值 RSS.不触发导出、量化、编译、构建或重新部署.
 - 每模型 results/ 只保留 summary_test.json 和 summary.json: 前者由板端 compile 发布子集任务精度、损失及数值误差,后者由 evaluate 发布全量精度、损失、性能和 RSS.两阶段互不覆盖,不增加其他 Markdown/CSV/JSON 报告副本.
 - 板端普通 DLA 放模型根目录,多文件运行包放 models/,代码放 board/,必要参考及评价输入放 build/reference/,当前过程数据放 build/work/ 并覆盖.原始资源只在运行确有需要时放 original/,不把训练权重和主机编译缓存重复上传.
-- 仅维护 compile.sh、evaluate.sh 两个总入口,不提供 upload.sh.回传实现位于总 compile.sh 末尾,板端 compile 完成回传子集报告和示例;板端 evaluate 完成调用其仅回传分支,回传已有两份报告及示例,不得重新触发编译或推理.
+- 总入口分为 models/deploy/compile.sh、evaluate.sh、compile_board.sh、evaluate_board.sh 四个文件,分别固定用于主机和板端,不判断运行位置,不提供 upload.sh.两个板端总入口末尾明确调用共用结果回传实现,compile_board 回传子集报告和示例,evaluate_board 回传已有两份报告及示例,不互相调用或重新触发编译与推理.单模型仍使用 deploy/compile.sh 和 deploy/evaluate.sh 两个入口.
 - README 必需的少量输入、结果图及文本放 examples/.主机预测、缓存和中间指标放本地日期临时目录,板端放 build/work/ 并覆盖,失败现场不放 results.模型契约、tokenizer 和评价输入属于必要资源,不能为了文件少而删掉运行必需数据.
 - 入口直接顺序调用命令,只补充必要阶段提示,工具输出和错误直接显示在终端.不默认增加日志文件、命令包装或额外管理机制;保持整个流程简单干净.
 - 主流程独立文件默认无参数运行:主机读取所属模型 config.yaml,板端读取部署包 config.json.入口不重复传配置路径和运行编号.只保留影响行为的参数,不预先补充尚未需要的功能;普通容器步骤使用已配置的 python,板端保留现有 python3.

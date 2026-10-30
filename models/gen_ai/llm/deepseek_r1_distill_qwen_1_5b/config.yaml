@@ -31,6 +31,8 @@ native:
   weight_opt_config: deploy/host/hessian_stable.json
   calibration_train: wikitext/wikitext-2-raw-v1/train-00000-of-00001.parquet
 evaluation:
+  mmlu_questions: 1000
+  mmlu_seed: 17
   test_mmlu_questions: 100
   test_wikitext_blocks: 16
   reference_device: cuda

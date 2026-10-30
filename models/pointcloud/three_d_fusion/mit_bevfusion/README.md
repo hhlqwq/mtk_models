@@ -21,7 +21,7 @@
 bash models/pointcloud/three_d_fusion/mit_bevfusion/deploy/compile.sh
 ```
 
-入口离线加载已有权重,核对完整参数覆盖,导出四个 FP32 ONNX,尝试 MDLA 5.3 FP16 编译,准备现有 nuScenes 数据的固定子集,计算浮点精度并上传.不自动执行板端推理.登录开发板后进入本模型部署目录执行:
+入口离线加载已有权重,核对完整参数覆盖,导出四个 FP32 ONNX,尝试 MDLA 5.3 FP16 编译,准备现有 nuScenes 数据的固定子集,计算浮点精度并上传.随后由本模型的 host/upload.py --inputs 按样本清单同步必需的相机、LiDAR 和历史 sweep 文件至板端配置的数据集目录,保留官方相对路径,并核对全部文件大小及同一份清单;重跑使用 rsync 校验复用已有文件,不删除数据集其他资源.不自动执行板端推理.登录开发板后进入本模型部署目录执行:
 
 ```bash
 bash compile.sh

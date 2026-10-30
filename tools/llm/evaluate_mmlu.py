@@ -84,6 +84,8 @@ def prepare(args):
     rows = parquet.read_table(args.dataset).to_pylist()
     if len(rows) != 14042 or len({row["subject"] for row in rows}) != 57:
         raise ValueError("完整 MMLU 题数或学科数不符.")
+    if args.limit != 1000 or args.seed != 17:
+        raise ValueError("LLM MMLU 协议固定为 1000 题、57 学科、seed=17.")
     test_questions = getattr(args, "test_questions", 100)
     if is_test() and not 57 <= test_questions <= len(rows):
         raise ValueError("MMLU 子集至少需要 57 题以覆盖全部学科.")
@@ -127,11 +129,9 @@ def prepare(args):
     protocol = {"dataset": "cais/mmlu", "dataset_sha256": DATA_SHA256,
                 "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
                 "split": "test", "shots": 0, "subjects": subject_count,
-                "scope": "smoke_subset" if is_test() else (
-                    "first_round_stratified_subset" if args.limit else "full_test"),
+                "scope": "smoke_subset" if is_test() else "first_round_stratified_subset",
                 "dataset_questions": len(rows), "sampling_seed": args.seed,
-                "sampling": "fixed_seed_stratified_subset" if is_test() else (
-                    "all_test_questions" if args.limit == 0 else "proportional_subject_largest_remainder"),
+                "sampling": "fixed_seed_stratified_subset" if is_test() else "proportional_subject_largest_remainder",
                 "selected_source_question_ids": selected,
                 "questions": len(cases), "maximum_prompt_tokens": maximum,
                 "context": args.context, "choice_token_ids": [x[0] for x in choices],
@@ -329,11 +329,21 @@ def evaluate_sdk(args):
     (args.output / "mmlu_accuracy.json").write_text(json.dumps(report, indent=2) + "\n")
 
 
+def validate_protocol(protocol):
+    """所有 LLM 正式评分执行同一千题协议,拒绝旧全题集或错误抽样."""
+    if protocol.get("evaluation_scope") == "full" and (
+            protocol.get("questions") != 1000 or protocol.get("subjects") != 57
+            or protocol.get("sampling_seed") != 17
+            or protocol.get("scope") != "first_round_stratified_subset"):
+        raise ValueError("LLM 正式 MMLU 必须为 1000 题、57 学科、seed=17,请重新准备参考.")
+
+
 def evaluate(args):
     """统一评分完整题集,落盘每题选项分数和可恢复的进度."""
+    protocol = json.loads((args.data / "protocol.json").read_text())
+    validate_protocol(protocol)
     if args.backend == "sdk":
         return evaluate_sdk(args)
-    protocol = json.loads((args.data / "protocol.json").read_text())
     if sha256(args.data / "cases.json") != protocol["cases_sha256"]:
         raise ValueError("MMLU 题目 Token 文件哈希不符.")
     if protocol.get("evaluation_scope") == "subset" and not is_test():
@@ -514,7 +524,7 @@ def main():
     parser.add_argument("--graph", type=Path)
     parser.add_argument("--context", type=int, default=1024)
     parser.add_argument("--limit", type=int, default=1000,
-                        help="默认按学科分层抽取 1000 题;0 表示完整测试集,模型入口按约定显式选择.")
+                        help="固定按学科分层抽取 1000 题,seed=17;compile 使用配置的较小子集.")
     parser.add_argument("--seed", type=int, default=17)
     parser.add_argument("--diagnostic-questions", type=int, default=0,
                         help="仅用于覆盖不同长度的多块执行诊断,不代替千题成绩.")

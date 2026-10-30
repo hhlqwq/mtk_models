@@ -83,7 +83,8 @@ def language(ctx, host):
         evaluate_mmlu.prepare(SimpleNamespace(
             dataset=ctx.dataset / ctx.config["data"]["mmlu_test"], model=native.model,
             source_model=native.source, graph=graph, context=native.context,
-            limit=1000 if name == "minicpm5_2b" else 0, seed=17,
+            limit=ctx.config["evaluation"]["mmlu_questions"],
+            seed=ctx.config["evaluation"]["mmlu_seed"],
             test_questions=ctx.config["evaluation"].get("test_mmlu_questions", 100),
             output=data / "mmlu"))
         evaluate_mmlu.evaluate(SimpleNamespace(

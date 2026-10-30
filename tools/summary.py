@@ -58,7 +58,6 @@ def llm_accuracy(ctx):
     """核对约定范围的 MMLU/PPL 协议及模型标识,不读取 Demo 或性能文件."""
     from tools.llm.artifacts import dla_relative_path
 
-    minicpm = ctx.config["name"] == "minicpm5_2b"
     data = ctx.root / "build/reference/full"
     mmlu = read_json(ctx.result / "mmlu/mmlu_accuracy.json")
     ppl = read_json(ctx.result / "wikitext/npu_quality.json")
@@ -76,19 +75,18 @@ def llm_accuracy(ctx):
         for field in fields:
             if actual[field] != reference[field]:
                 raise ValueError(f"LLM 参考与硬件评价协议不一致: {field}.")
-    require_count(mmlu["evaluated_questions"], 1000 if minicpm else 14042)
-    expected_scope = "first_round_stratified_subset" if minicpm else "full_test"
+    require_count(mmlu["evaluated_questions"], 1000)
+    expected_scope = "first_round_stratified_subset"
     if mmlu["scope"] != expected_scope or ppl["protocol"] != "full_test_block128_v1":
         raise ValueError("MMLU 或 WikiText2 test 不符合本模型约定的评价范围.")
-    if minicpm:
-        for row in (mmlu, reference_mmlu):
-            if (row.get("sampling_seed") != 17 or row.get("subjects") != 57
-                    or row.get("source_tokenizer_parity") is not True
-                    or row.get("choice_continuation_checked") is not True):
-                raise ValueError("MiniCPM 千题抽样或 Token 协议核对记录不完整.")
-        if (mmlu.get("tokenizer_sha256") != reference_mmlu.get("tokenizer_sha256")
-                or reference_mmlu.get("reference", {}).get("parameter_dtypes") != ["torch.float32"]):
-            raise ValueError("MiniCPM 参考缺少匹配的 Tokenizer 或实际 FP32 精度记录.")
+    for row in (mmlu, reference_mmlu):
+        if (row.get("sampling_seed") != 17 or row.get("subjects") != 57
+                or row.get("source_tokenizer_parity") is not True
+                or row.get("choice_continuation_checked") is not True):
+            raise ValueError("LLM 千题抽样或 Token 协议核对记录不完整.")
+    if (mmlu.get("tokenizer_sha256") != reference_mmlu.get("tokenizer_sha256")
+            or reference_mmlu.get("reference", {}).get("parameter_dtypes") != ["torch.float32"]):
+        raise ValueError("LLM 参考缺少匹配的 Tokenizer 或实际 FP32 精度记录.")
     manifest = read_json(ctx.models / "manifest.json")
     prompt_name = dla_relative_path(manifest, "prompt")
     prompt = next(row for row in manifest["files"] if row["name"] == prompt_name)

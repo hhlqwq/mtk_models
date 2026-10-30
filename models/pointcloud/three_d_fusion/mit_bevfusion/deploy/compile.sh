@@ -22,4 +22,6 @@ else
     echo "[容器 3/3] 评估浮点子集并上传完整部署包和参考."
     echo "[浮点子集精度] 评估完整选定子集并上传模型、精度及数值参考."
     python "${MTK_MODELS_ROOT}/tools/compile_accuracy.py" "${SCRIPT_DIR}"
+    echo "[子集输入] 上传本模型清单对应的相机、LiDAR 和历史帧文件."
+    python "${SCRIPT_DIR}/host/upload.py" --inputs
 fi

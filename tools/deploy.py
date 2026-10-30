@@ -251,7 +251,7 @@ def upload_evaluation(deploy):
     name = ctx.config["name"]
     files = {}
     if name in ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b"):
-        mode = "mmlu1000" if name == "minicpm5_2b" else "full"
+        mode = "mmlu1000"
         data = ctx.work / "evaluation" / mode
         names = ("mmlu/protocol.json", "mmlu/cases.json", "mmlu/mmlu_inputs.npz",
                  "mmlu/board_input_contract.json", "quality/board_quality_protocol.json",

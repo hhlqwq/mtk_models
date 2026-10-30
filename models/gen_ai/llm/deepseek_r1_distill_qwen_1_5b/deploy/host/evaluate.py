@@ -1,4 +1,4 @@
-"""使用已有 DeepSeek 浮点模型准备完整 MMLU、WikiText2 参考与原生输入."""
+"""使用已有 DeepSeek 浮点模型准备固定千题 MMLU、WikiText2 参考与原生输入."""
 
 import os
 import sys
@@ -39,11 +39,15 @@ def main():
     device = native.ctx.config["evaluation"]["reference_device"]
     if device not in ("cuda", "cpu"):
         raise ValueError("reference_device 仅支持 cuda 或 cpu.")
-    output = native.ctx.work / "evaluation/full"
+    output = native.ctx.work / "evaluation/mmlu1000"
     mmlu = SimpleNamespace(
         dataset=datasets[0], model=native.model, graph=graph,
-        context=native.context, limit=0, seed=17, output=output / "mmlu")
-    print("[参考 1/3] 完整 MMLU Token 与长度检查,不截题.", flush=True)
+        context=native.context, limit=native.ctx.config["evaluation"]["mmlu_questions"],
+        seed=native.ctx.config["evaluation"]["mmlu_seed"], source_model=native.source,
+        output=output / "mmlu")
+    if mmlu.limit != 1000 or mmlu.seed != 17:
+        raise ValueError("LLM 正式 MMLU 固定为 1000 题,57 学科,seed=17.")
+    print("[参考 1/3] 固定千题 MMLU Token 与长度检查,不截题.", flush=True)
     evaluate_mmlu.prepare(mmlu)
     print("[参考 2/3] 官方权重 FP32 MMLU.", flush=True)
     evaluate_mmlu.evaluate(SimpleNamespace(

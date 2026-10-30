@@ -47,7 +47,7 @@ ncc-tflite --arch=mdla5.3 --suppress-output --disallow-bridge input.tflite -o mo
 - 双 DLA、外置 embedding、tokenizer、配置及 Python 推理代码共同构成交付,依赖匹配的 SDK 动态库,不能只统计单 DLA.生成循环、KV 转移及采样均使用 Python.
 - W4A16 与 INT16 原生 I/O 按实际图记录,重新量化后不能复用旧契约.
 - MiniCPM 和 DeepSeek 使用各自的 host/convert.py、compile.py、package.py 及板端入口,共享量化适配、KV 转移和评价工具.不得跨模型复制特殊 Token、聊天模板或 KV Head 配置.
-- 编译阶段准备同子集 MMLU/PPL 浮点参考、生成示例所需 Token 与运行参数.按约定范围的 MMLU/PPL 参考和评价输入在 evaluate.sh 阶段准备;MiniCPM 固定千题 MMLU 的正式资源在板端用 build/reference/full/,DeepSeek 完整 MMLU 的资源在板端用 build/reference/full/,两者 WikiText2 均为完整 test.
+- 编译阶段准备同子集 MMLU/PPL 浮点参考、生成示例所需 Token 与运行参数.按约定范围的 MMLU/PPL 参考和评价输入在 evaluate.sh 阶段准备;所有 LLM 使用固定 1000 题、57 学科、seed=17 的正式 MMLU,资源统一放板端 build/reference/full/,WikiText2 均为完整 test.
 - Prefill/Decode 测速及 RSS 采集只属于 evaluate.sh,输入长度、生成计数及内存范围统一写入 summary.json.
 - 生成文本放 examples/output,日志和中间指标放临时目录,results 仅保留 summary_test.json 和 summary.json.
 
@@ -62,3 +62,5 @@ ncc-tflite --arch=mdla5.3 --suppress-output --disallow-bridge input.tflite -o mo
 | 缺样本 / 参考不匹配 | 样本 ID、覆盖、权重及协议 | 保留错误和预测,不混用子集与全量指标 |
 
 保留原始错误、失败阶段和最小复现输入.组件不匹配时规划官方匹配发布组合的维护,不能为单模型覆盖系统库.维护前确认设备任务及授权.
+
+总入口固定为主机 compile.sh/evaluate.sh 和板端 compile_board.sh/evaluate_board.sh,四者均位于 models/deploy/.主机 compile 上传两个板端入口、common.sh 和本地回传配置至板端 deploy/.总入口只顺序调用单模型入口、保存本地覆盖日志及执行约定传输;不互相递归或通过 compile 的隐藏参数完成评价回传.

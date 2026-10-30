@@ -36,7 +36,7 @@ bash deploy/evaluate.sh
 
 此步骤只用已有浮点工作副本和静态图准备完整参考,不会重新量化、编译或部署.默认使用 CUDA FP32;需要 CPU 时修改 `evaluation.reference_device`.
 
-- MMLU: test 全部 14042 题、57 学科、0-shot.两端共用题目 Token,按空格加 A/B/C/D 的单 Token logits 评分,不套聊天模板.
+- MMLU: 从完整 test 的 14042 题按学科分层固定抽取 1000 题、覆盖 57 学科、seed=17、0-shot.正式入口执行完整的这 1000 题,不表示完整 MMLU 基准.两端共用题目 Token,按空格加 A/B/C/D 的单 Token logits 评分,不套聊天模板.
 - WikiText2: raw test 全部文本,按 128 Token 分块并重置每块上下文,每块评分 127 次下一 Token,记录不足一块的尾部数量.
 - 当前固定 MMLU 题集按此格式编码最长 1010 Token,可容纳于默认 1024 上下文.更换输入协议后仍检查完整题目长度,超过已有上下文时在浮点评分前停止并输出 `mmlu/length_report.json`,不截题、不丢题、不自动重编译.
 
@@ -46,7 +46,7 @@ bash deploy/evaluate.sh
 bash evaluate.sh
 ```
 
-板端核对部署模型与参考输入后,采集生成样例、128 Token 输入/最多 128 Token 输出的Python Prefill/Decode 阶段速度及进程 RSS,再执行完整 MMLU/WikiText2.最终只发布 `results/summary.json`.速度按实际生成数量记录,Python 阶段速度与纯 NPU 调用耗时分开标注,未采集分项明确列出.板端预测与内部指标统一保存在本模型部署目录的 build/work/,每次开始推理时覆盖.
+板端核对部署模型与参考输入后,采集生成样例、128 Token 输入/最多 128 Token 输出的Python Prefill/Decode 阶段速度及进程 RSS,再执行约定的千题 MMLU 和完整 WikiText2 test.最终只发布 `results/summary.json`.速度按实际生成数量记录,Python 阶段速度与纯 NPU 调用耗时分开标注,未采集分项明确列出.板端预测与内部指标统一保存在本模型部署目录的 build/work/,每次开始推理时覆盖.
 
 ## 模型约定
 

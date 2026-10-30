@@ -207,7 +207,6 @@ def run(entry):
         if is_test():
             model.comparison.finish()
             return
-        evaluation = "mmlu1000" if ctx.config["name"] == "minicpm5_2b" else "full"
         quality = read_json(ctx.root / "build/reference/full/quality/board_quality_protocol.json")
         tokens = quality["input_ids"][:128]
         if len(tokens) != 128:

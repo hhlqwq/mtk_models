@@ -417,6 +417,54 @@ class DeployFlowTest(unittest.TestCase):
         self.assertEqual((work / "scores.bin").read_bytes(), before)
         self.assertFalse((self.work / "models").exists())
 
+    def test_llm_formal_protocol_has_no_model_exception(self):
+        """所有模型接受相同千题协议,拒绝 14042 题及错误学科或随机种子."""
+        from tools.llm.evaluate_mmlu import validate_protocol
+
+        protocol = {"evaluation_scope": "full", "questions": 1000, "subjects": 57,
+                    "sampling_seed": 17, "scope": "first_round_stratified_subset"}
+        validate_protocol(protocol)
+        for key, value in (("questions", 14042), ("subjects", 56),
+                           ("sampling_seed", 0), ("scope", "full_test")):
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                validate_protocol(dict(protocol, **{key: value}))
+        for model in ("minicpm5_2b", "deepseek_r1_distill_qwen_1_5b"):
+            import yaml
+            config = yaml.safe_load((ROOT / "models/gen_ai/llm" / model / "config.yaml").read_text())
+            self.assertEqual(config["evaluation"]["mmlu_questions"], 1000)
+            self.assertEqual(config["evaluation"]["mmlu_seed"], 17)
+
+    def test_bev_input_transfer_is_model_local(self):
+        """本模型清单覆盖当前帧、历史帧和相机,缺文件在传输前拒绝."""
+        import importlib.util
+
+        source = ROOT / "models/pointcloud/three_d_fusion/mit_bevfusion/deploy/host/upload.py"
+        spec = importlib.util.spec_from_file_location("bev_inputs_test", source)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        dataset = self.work / "dataset"
+        names = ["samples/lidar.bin", "sweeps/previous.bin", "samples/camera.jpg"]
+        for name in names:
+            target = dataset / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(b"input")
+        data = {"frames": [{"token": "frame", "lidar": names[0],
+                           "sweeps": [{"path": names[1]}], "cameras": [{"path": names[2]}]}]}
+        (self.work / "samples.json").write_text(json.dumps(data))
+        ctx = SimpleNamespace(work=self.work, dataset=dataset,
+            config={"board": {"dataset_dir": "/data/test", "deploy_dir": "/models/bev"}})
+        with mock.patch.dict(os.environ, {"MTK_BOARD_HOST": "test"}), \
+                mock.patch.object(module, "run_command") as run:
+            module.upload_inputs(ctx)
+            self.assertEqual(run.call_args_list[1].args[0][0], "rsync")
+            self.assertEqual(set((self.work / "input_files.txt").read_text().splitlines()), set(names))
+            self.assertEqual(json.loads(run.call_args_list[2].kwargs["input"])["manifest"], data)
+            (dataset / names[1]).unlink()
+            run.reset_mock()
+            with self.assertRaises(FileNotFoundError):
+                module.upload_inputs(ctx)
+            run.assert_not_called()
+
     def test_report_isolation_and_invalid_write(self):
         """只保留两份报告,无效新结果不损坏旧报告."""
         evaluation.publish_result(self.work, {"test": 1}, "summary_test.json")
@@ -454,7 +502,7 @@ class DeployFlowTest(unittest.TestCase):
         root = self.work / "flow"
         deploy = root / "models/deploy" if host else root / "deploy"
         deploy.mkdir(parents=True)
-        for name in ("compile.sh", "evaluate.sh"):
+        for name in ("compile.sh", "evaluate.sh", "compile_board.sh", "evaluate_board.sh", "common.sh"):
             (deploy / name).write_bytes((ROOT / "models/deploy" / name).read_bytes())
         entry = (deploy / "compile.sh").read_text()
         models = re.search(r"MODELS=\(\n(.*?)\n\)", entry, re.S).group(1).split()
@@ -508,7 +556,7 @@ class DeployFlowTest(unittest.TestCase):
                 other = deploy / ("evaluate.log" if phase == "compile" else "compile.log")
                 other.write_text("另一阶段的已有日志\n")
                 target.write_text("本阶段的旧日志\n")
-                result = subprocess.run(["bash", str(deploy / f"{phase}.sh")],
+                result = subprocess.run(["bash", str(deploy / (f"{phase}.sh" if host else f"{phase}_board.sh"))],
                                         env=environment, capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(target.read_text(), result.stdout)
@@ -523,13 +571,32 @@ class DeployFlowTest(unittest.TestCase):
 
                 calls.write_text("")
                 failed = dict(environment, FAIL_MODEL=models[1])
-                result = subprocess.run(["bash", str(deploy / f"{phase}.sh")],
+                result = subprocess.run(["bash", str(deploy / (f"{phase}.sh" if host else f"{phase}_board.sh"))],
                                         env=failed, capture_output=True, text=True)
                 self.assertEqual(result.returncode, 7)
                 self.assertEqual(target.read_text(), result.stdout)
                 self.assertIn("退出码 7", target.read_text())
                 self.assertNotIn(f"{phase}:" + models[2], calls.read_text())
                 self.assertEqual(other.read_text(), "另一阶段的已有日志\n")
+
+    def test_four_entries_have_fixed_roles(self):
+        """四个总入口固定两端职责,没有运行位置猜测、自调用或隐藏回传参数."""
+        expected = None
+        for name in ("compile.sh", "evaluate.sh", "compile_board.sh", "evaluate_board.sh"):
+            source = (ROOT / "models/deploy" / name).read_text()
+            models = re.search(r"MODELS=\(\n(.*?)\n\)", source, re.S).group(1).split()
+            if expected is None:
+                expected = models
+            self.assertEqual(models, expected)
+            self.assertEqual(len(models), 13)
+            for old in ("RETURN_ONLY", "--return-results", "MTK_DEPLOY_LOG_ACTIVE", "LOCATION="):
+                self.assertNotIn(old, source)
+            if "_board" in name:
+                self.assertIn("${MODEL##*/}", source)
+                self.assertIn("return_results", source)
+            else:
+                self.assertIn("${MODEL}/deploy/", source)
+                self.assertNotIn("return_results", source)
 
     def test_host_entry_logs(self):
         """编译服务器的两个固定日志完整保存标准输出与错误输出."""
@@ -565,7 +632,7 @@ class DeployFlowTest(unittest.TestCase):
     def test_board_compile_and_full_return(self):
         """真实板端总入口顺序执行 13 模型,全量末尾回传不再次触发 compile."""
         deploy, environment, log, models = self.make_shell_environment()
-        subprocess.run(["bash", str(deploy / "compile.sh")], env=environment,
+        subprocess.run(["bash", str(deploy / "compile_board.sh")], env=environment,
                        capture_output=True, text=True, check=True)
         rows = log.read_text().splitlines()
         self.assertEqual([row for row in rows if row.startswith("compile:")],
@@ -574,7 +641,7 @@ class DeployFlowTest(unittest.TestCase):
         self.assertEqual(len(transfers), 26)
         self.assertTrue(all("summary.json" not in row and ".dla" not in row for row in transfers))
         log.write_text("")
-        subprocess.run(["bash", str(deploy / "evaluate.sh")], env=environment,
+        subprocess.run(["bash", str(deploy / "evaluate_board.sh")], env=environment,
                        capture_output=True, text=True, check=True)
         rows = log.read_text().splitlines()
         self.assertFalse(any(row.startswith("compile:") for row in rows))
@@ -626,7 +693,7 @@ class DeployFlowTest(unittest.TestCase):
                 backend = "pytorch" if language else "onnx"
                 report = {"evaluation": evaluation.accuracy_result(model, backend, {metric: 0.8}, 1, unit)}
                 if language:
-                    mode = "mmlu1000" if model == "minicpm5_2b" else "full"
+                    mode = "mmlu1000"
                     data = work / "evaluation" / mode
                     for name in ("mmlu/protocol.json", "mmlu/cases.json", "mmlu/mmlu_inputs.npz",
                                  "mmlu/board_input_contract.json", "quality/board_quality_protocol.json",
@@ -848,6 +915,7 @@ class DeployFlowTest(unittest.TestCase):
         ctx = SimpleNamespace(output=self.work, work=self.work, model=model, repo=ROOT,
                               config={"board": {"deploy_dir": "/test-only/bevfusion"}})
         with mock.patch.dict(os.environ, {"MTK_BOARD_HOST": "test-only"}), \
+                mock.patch.object(sys, "argv", [str(source)]), \
                 mock.patch.object(uploader, "context", return_value=ctx), \
                 mock.patch.object(uploader, "run_command") as command, \
                 mock.patch.object(uploader, "prune_models") as prune:

@@ -33,11 +33,11 @@ bash models/deploy/compile.sh
 总入口顺序调用全部模型已有入口.四个阶段依次执行:
 
 1. 编译服务器: `bash models/deploy/compile.sh`,完成各模型导出、量化、编译、部署和固定子集浮点精度评估,自动上传必要参考.
-2. 板端部署根目录: `bash deploy/compile.sh`,完成相同子集 NPU 精度、精度损失、CosSim/RMSE/NRMSE 和示例,保存并回传 `results/summary_test.json` 与 `examples/output/`.
+2. 板端部署根目录: `bash deploy/compile_board.sh`,完成相同子集 NPU 精度、精度损失、CosSim/RMSE/NRMSE 和示例,保存并回传 `results/summary_test.json` 与 `examples/output/`.
 3. 编译服务器: `bash models/deploy/evaluate.sh`,使用已有模型完成约定全量浮点评估,自动上传结果及必要评价输入,不重新量化或编译.
-4. 板端部署根目录: `bash deploy/evaluate.sh`,完成相同全量范围的 NPU 精度、精度损失、性能和峰值 RSS,保存 `results/summary.json`,最后自动回传两份已有报告及示例.
+4. 板端部署根目录: `bash deploy/evaluate_board.sh`,完成相同全量范围的 NPU 精度、精度损失、性能和峰值 RSS,保存 `results/summary.json`,最后自动回传两份已有报告及示例.
 
-两个总入口将标准输出和错误输出同时显示在终端并保存在本地日志.编译服务器保存为 `models/deploy/compile.log`、`models/deploy/evaluate.log`;板端保存为部署根目录下的 `deploy/compile.log`、`deploy/evaluate.log`.每次运行覆盖对应日志,日志开头记录开始时间.板端 evaluate 末尾的结果回传也保存在 evaluate.log,不会覆盖 compile.log.日志不存 NAS、不纳入 Git、不自动回传;流程失败保留原退出码,日志写入失败也返回失败.
+四个总入口将标准输出和错误输出同时显示在终端并保存在本地日志.编译服务器保存为 `models/deploy/compile.log`、`models/deploy/evaluate.log`;板端保存为部署根目录下的 `deploy/compile.log`、`deploy/evaluate.log`.每次运行覆盖对应日志,日志开头标明日志文件.板端 evaluate 末尾的结果回传也保存在 evaluate.log,不会覆盖 compile.log.日志不存 NAS、不纳入 Git、不自动回传;流程失败保留原退出码,日志写入失败也返回失败.
 
 两端均不混用子集和全量结果.普通模型数值对比最多选择 5 次输入;LLM 对比示例首个 Prefill 的有效输出,Whisper 对比 Encoder,BEVFusion 对比单帧各 NPU 子图.数值误差写入 summary_test.json,全量评价不采集输出张量或重复执行数值比较.
 
